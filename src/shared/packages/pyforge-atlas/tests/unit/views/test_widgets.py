@@ -33,9 +33,7 @@ from pyforge.atlas.views.widgets import WIDGETS, Widget, get_widget
 
 
 def _rows_for(view, db_path, monkeypatch):
-    module = cli_bridge.load_cli_module(
-        view.script, scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module(view.script, scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", db_path)
     return cli_bridge.call_query(module, **view.query_kwargs)
 
@@ -55,9 +53,7 @@ def test_render_rows_dispatches_through_the_registry_with_exact_args_and_return_
         calls.append((v, r))
         return ("<script>spy</script>", "<div>spy</div>")
 
-    monkeypatch.setitem(
-        WIDGETS, "spy-only", Widget(name="spy-only", static_renderer=_spy_static_renderer)
-    )
+    monkeypatch.setitem(WIDGETS, "spy-only", Widget(name="spy-only", static_renderer=_spy_static_renderer))
     view = replace(get_view("staleness-report"), widget="spy-only")
 
     result = render_rows(view, rows)
@@ -66,9 +62,7 @@ def test_render_rows_dispatches_through_the_registry_with_exact_args_and_return_
     assert result == ("<script>spy</script>", "<div>spy</div>")
 
 
-def test_get_widget_grid_static_renderer_produces_a_valid_static_fragment(
-    atlas_db_path, monkeypatch
-):
+def test_get_widget_grid_static_renderer_produces_a_valid_static_fragment(atlas_db_path, monkeypatch):
     """HAPPY_PATH: get_widget("grid") returns the registered Widget; calling its
     static_renderer directly (not just through render_rows) produces a real, well-formed
     Bokeh fragment whose declared columns are present."""

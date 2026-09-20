@@ -11,16 +11,15 @@ from urllib.parse import parse_qs
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.conf import settings
-from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.exceptions import BadSignatureError
-from django_pyforge.assertion.exceptions import ExpiredAssertionError
-from django_pyforge.assertion.exceptions import WrongAudienceError
-from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.assertion.schema import EVENTS_AUDIENCE
+from django_pyforge.assertion.exceptions import (
+    AssertionRefusedError,
+    BadSignatureError,
+    ExpiredAssertionError,
+    WrongAudienceError,
+)
+from django_pyforge.assertion.schema import CLAIM_SUB, EVENTS_AUDIENCE
 from django_pyforge.assertion.verify import verify_assertion_claims
-from django_pyforge.events.browser_relay import cloudevent_from_fields
-from django_pyforge.events.browser_relay import matches_subject
-from django_pyforge.events.browser_relay import tail_events
+from django_pyforge.events.browser_relay import cloudevent_from_fields, matches_subject, tail_events
 
 _CLOSE_UNAUTHORIZED = 4401
 

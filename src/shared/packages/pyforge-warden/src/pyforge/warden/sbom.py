@@ -121,10 +121,7 @@ def render_cyclonedx(inventory: ResolvedInventory, report: ComplianceReport) -> 
         version=report.tool_version,
         type=ComponentType.APPLICATION,
     )
-    partial_inventory = any(
-        coverage.manifests_parsed < coverage.manifests_found
-        for coverage in report.coverage
-    )
+    partial_inventory = any(coverage.manifests_parsed < coverage.manifests_found for coverage in report.coverage)
     bom = Bom(
         components=components,
         metadata=BomMetaData(
@@ -144,9 +141,7 @@ def render_cyclonedx(inventory: ResolvedInventory, report: ComplianceReport) -> 
     rendered = JsonV1Dot6(bom).output_as_string(indent=2)
     error = _VALIDATOR.validate_str(rendered)
     if error is not None:
-        raise SbomValidationError(
-            f"rendered CycloneDX SBOM failed 1.6 schema validation: {error}"
-        )
+        raise SbomValidationError(f"rendered CycloneDX SBOM failed 1.6 schema validation: {error}")
     return rendered
 
 
@@ -185,11 +180,7 @@ def _cfe_properties(component: Component) -> list[Property]:
     properties = [Property(name="cfe:pypi_purl", value=str(pypi_purl))]
     if component.identity_source is IdentitySource.MAP:
         if component.mapping_confidence is not None:
-            properties.append(
-                Property(
-                    name="cfe:match_confidence", value=component.mapping_confidence
-                )
-            )
+            properties.append(Property(name="cfe:match_confidence", value=component.mapping_confidence))
         match_source = _match_source(component.name)
         if match_source is not None:
             properties.append(Property(name="cfe:match_source", value=match_source))

@@ -5,6 +5,7 @@ in ``test_fleet_picture_dispatch_phase.py`` (the ``station_state()`` sibling) bu
 ``main()``'s ATTENTION ``needs.append`` branch via a mocked ``running_stations()`` —
 same isolation pattern as ``tests/scripts/test_fleet_picture_baseline_drift_attention.py``.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -23,9 +24,7 @@ _REFUSED_LINE = "dispatch verify REFUSED"
 
 
 def _load_fleet_picture():
-    spec = importlib.util.spec_from_file_location(
-        "fleet_picture_attention_dispatch_refused_test", FLEET_PICTURE
-    )
+    spec = importlib.util.spec_from_file_location("fleet_picture_attention_dispatch_refused_test", FLEET_PICTURE)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["fleet_picture_attention_dispatch_refused_test"] = mod
     spec.loader.exec_module(mod)
@@ -33,13 +32,7 @@ def _load_fleet_picture():
 
 
 def _seed_marshal_ledger(repo: Path) -> None:
-    ledger_dir = (
-        repo
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "planning-artifacts"
-    )
+    ledger_dir = repo / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts"
     ledger_dir.mkdir(parents=True)
     (ledger_dir / "sprint-status-ledger.yaml").write_text(
         "development_status:\n  epic-34: backlog\n  34-4-x: backlog\n",
@@ -120,9 +113,7 @@ def test_main_attention_names_genuine_dispatch_refused(fleet, monkeypatch, capsy
     assert f">> marshal: {_REFUSED_LINE} ({_GATE}) on {_STORY}" in out
 
 
-def test_main_attention_silent_when_refused_verdict_is_stale(
-    fleet, monkeypatch, capsys, tmp_path
-):
+def test_main_attention_silent_when_refused_verdict_is_stale(fleet, monkeypatch, capsys, tmp_path):
     """Spin session live (``dispatch_phase=None``) must not ATTENTION off stale refused."""
     rc = _run_main_with_live(
         fleet,

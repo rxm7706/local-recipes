@@ -12,6 +12,7 @@ import urllib.request
 from urllib.parse import unquote
 
 import pytest
+
 from pyforge.steward.keys import HostScopedCredential
 from pyforge.steward.sync import (
     SyncAPIError,
@@ -49,9 +50,7 @@ CONFIG = SyncConfig(
     status_mapping={"To Do": "To Do", "In Progress": "In Progress", "Blocked": "Blocked"},
 )
 
-CONFIG_JIRA_WINS = SyncConfig(
-    **{**CONFIG.__dict__, "field_overrides": {"status": "jira"}}
-)
+CONFIG_JIRA_WINS = SyncConfig(**{**CONFIG.__dict__, "field_overrides": {"status": "jira"}})
 
 # Story 8.7: github login -> jira accountId, covering this file's assignee
 # fixture vocabulary. "ghost"/"acc_ghost" are deliberately absent -- the
@@ -122,22 +121,13 @@ class FakeTransport:
         variables = body["variables"]
         if "fieldId" in variables:
             self.github_fields[variables["fieldId"]] = variables["value"]["text"]
-            payload = {
-                "data": {
-                    "updateProjectV2ItemFieldValue": {
-                        "projectV2Item": {"id": variables["itemId"]}
-                    }
-                }
-            }
+            payload = {"data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": variables["itemId"]}}}}
             return TransportResponse(status=200, body=json.dumps(payload).encode())
 
         node = {
             "id": self.github_item_id,
             "fieldValues": {
-                "nodes": [
-                    {"text": value, "field": {"id": field_id}}
-                    for field_id, value in self.github_fields.items()
-                ]
+                "nodes": [{"text": value, "field": {"id": field_id}} for field_id, value in self.github_fields.items()]
             },
         }
         if self.github_content_unreadable:
@@ -149,9 +139,7 @@ class FakeTransport:
 
     # -- GitHub REST v3 (Story 8.7: assignee writes only) -----------------
 
-    def _github_rest_assignees(
-        self, method: str, url: str, body: dict[str, object] | None
-    ) -> TransportResponse:
+    def _github_rest_assignees(self, method: str, url: str, body: dict[str, object] | None) -> TransportResponse:
         """Distinct from `_jira` (Story 8.7: both are non-GraphQL HTTP
         calls, routed by URL host/path in `__call__` above, never
         conflated). Records the call (already done in `__call__`) and
@@ -167,10 +155,7 @@ class FakeTransport:
         if method not in ("POST", "DELETE"):
             raise AssertionError(f"FakeTransport: unexpected github REST call {method} {url}")
         if self.github_content is not None:
-            logins = [
-                node["login"]
-                for node in ((self.github_content.get("assignees") or {}).get("nodes") or [])
-            ]
+            logins = [node["login"] for node in ((self.github_content.get("assignees") or {}).get("nodes") or [])]
             for login in (body or {}).get("assignees", []):
                 if method == "POST" and login not in logins:
                     logins.append(login)
@@ -308,9 +293,7 @@ def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_baselin
 
 # ── Row (Story 8.6, AD-6/CAP-5): a mapped Jira status translates before writing to GitHub ──
 
-CONFIG_STATUS_TRANSLATION = SyncConfig(
-    **{**CONFIG.__dict__, "status_mapping": {"Closed": "Done"}}
-)
+CONFIG_STATUS_TRANSLATION = SyncConfig(**{**CONFIG.__dict__, "status_mapping": {"Closed": "Done"}})
 
 
 def test_mapped_jira_status_translates_before_writing_to_github():
@@ -775,9 +758,7 @@ def test_baseline_written_after_the_tracked_value_write_not_before():
     writes = transport.write_calls()
     # The tracked-value write (the Jira transition POST) happens before
     # either baseline write (one GitHub GraphQL mutation, one Jira PUT).
-    transition_index = next(
-        i for i, c in enumerate(writes) if c["url"].endswith("/transitions")
-    )
+    transition_index = next(i for i, c in enumerate(writes) if c["url"].endswith("/transitions"))
     baseline_indices = [i for i in range(len(writes)) if i != transition_index]
     assert baseline_indices, "expected two baseline writes after the tracked-value write"
     assert all(i > transition_index for i in baseline_indices)
@@ -823,9 +804,7 @@ def test_both_identifiers_given_and_reciprocal_reconciles_normally():
         jira_transitions=[{"id": "31", "to": {"name": "In Progress"}}],
     )
 
-    result = reconcile(
-        github_item_id="ITEM_1", jira_issue_key="PROJ-1", config=CONFIG, transport=transport
-    )
+    result = reconcile(github_item_id="ITEM_1", jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
 
     assert result.ok is True
     assert result.details["decision"] == "push_to_jira"
@@ -908,9 +887,7 @@ def test_jira_transitions_not_a_list_is_a_named_failure():
 
     credential = HostScopedCredential(hosts=("example.atlassian.net",))
     with pytest.raises(SyncAPIError, match="not a list"):
-        transition_jira_issue(
-            "PROJ-1", "In Progress", config=CONFIG, credential=credential, transport=transport
-        )
+        transition_jira_issue("PROJ-1", "In Progress", config=CONFIG, credential=credential, transport=transport)
 
 
 def test_parse_baseline_treats_none_and_empty_string_as_never_synced():
@@ -1570,9 +1547,7 @@ def test_one_sided_link_mismatch_is_rejected_even_when_the_other_side_is_empty()
         },
     )
 
-    result = reconcile(
-        github_item_id="ITEM_1", jira_issue_key="PROJ-1", config=CONFIG, transport=transport
-    )
+    result = reconcile(github_item_id="ITEM_1", jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
 
     assert result.ok is False
     assert "not a reciprocal pair" in result.summary
@@ -1669,9 +1644,7 @@ def test_real_conflict_honors_field_overrides_assignee_jira_wins():
             "jira_baseline": '{"status": "To Do", "assignee": null}',  # stale -- jira_assignee_changed
         },
     )
-    config = SyncConfig(
-        **{**CONFIG_USER_MAPPING.__dict__, "field_overrides": {"assignee": "jira"}}
-    )
+    config = SyncConfig(**{**CONFIG_USER_MAPPING.__dict__, "field_overrides": {"assignee": "jira"}})
 
     result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
 
@@ -2217,9 +2190,7 @@ class ScheduleFakeTransport:
             item_id = variables["itemId"]
             self.items.setdefault(item_id, {"fields": {}, "updated_at": None, "content": None})
             self.items[item_id]["fields"][variables["fieldId"]] = variables["value"]["text"]
-            payload = {
-                "data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": item_id}}}
-            }
+            payload = {"data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": item_id}}}}
             return TransportResponse(status=200, body=json.dumps(payload).encode())
 
         if "itemId" in variables:
@@ -2237,10 +2208,7 @@ class ScheduleFakeTransport:
             "id": item_id,
             "updatedAt": entry.get("updated_at"),
             "fieldValues": {
-                "nodes": [
-                    {"text": value, "field": {"id": field_id}}
-                    for field_id, value in entry["fields"].items()
-                ]
+                "nodes": [{"text": value, "field": {"id": field_id}} for field_id, value in entry["fields"].items()]
             },
         }
         if entry.get("content") is not None:
@@ -2249,9 +2217,7 @@ class ScheduleFakeTransport:
 
     # -- GitHub REST v3 (Story 8.7: assignee writes only) -----------------
 
-    def _github_rest_assignees(
-        self, method: str, url: str, body: dict[str, object] | None
-    ) -> TransportResponse:
+    def _github_rest_assignees(self, method: str, url: str, body: dict[str, object] | None) -> TransportResponse:
         if method not in ("POST", "DELETE"):
             raise AssertionError(f"ScheduleFakeTransport: unexpected github REST call {method} {url}")
         return TransportResponse(status=200, body=b"{}")
@@ -2412,9 +2378,7 @@ def test_schedule_batch_with_multiple_candidates_all_converge_cleanly():
                     "gh_baseline": '{"status": "In Progress"}',
                 }
             },
-            "ITEM_3": {
-                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
-            },
+            "ITEM_3": {"fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}},
         },
         jira_issues={
             "PROJ-1": {
@@ -2465,9 +2429,7 @@ def test_schedule_batch_dry_run_threads_through_every_candidate_with_no_writes()
             "ITEM_1": {
                 "fields": {"gh_link": "PROJ-1", "gh_status": "In Progress", "gh_baseline": '{"status": "To Do"}'}
             },
-            "ITEM_2": {
-                "fields": {"gh_link": "PROJ-2", "gh_status": "Blocked", "gh_baseline": '{"status": "To Do"}'}
-            },
+            "ITEM_2": {"fields": {"gh_link": "PROJ-2", "gh_status": "Blocked", "gh_baseline": '{"status": "To Do"}'}},
         },
         jira_issues={
             "PROJ-1": {
@@ -2502,13 +2464,9 @@ def test_schedule_batch_dry_run_threads_through_every_candidate_with_no_writes()
 def test_schedule_batch_one_candidate_failing_does_not_abort_the_others():
     transport = ScheduleFakeTransport(
         items={
-            "ITEM_1": {
-                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
-            },
+            "ITEM_1": {"fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}},
             "ITEM_2": {"fields": {"gh_link": "PROJ-2", "gh_status": "In Progress"}},
-            "ITEM_3": {
-                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
-            },
+            "ITEM_3": {"fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}},
         },
         jira_issues={
             "PROJ-1": {
@@ -2552,9 +2510,7 @@ def test_schedule_batch_with_one_unmapped_status_among_linked_items_fails_only_t
     fails_only_that_entry`)."""
     transport = ScheduleFakeTransport(
         items={
-            "ITEM_1": {
-                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
-            },
+            "ITEM_1": {"fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}},
             "ITEM_2": {
                 "fields": {
                     "gh_link": "PROJ-2",
@@ -2562,9 +2518,7 @@ def test_schedule_batch_with_one_unmapped_status_among_linked_items_fails_only_t
                     "gh_baseline": '{"status": "In Progress"}',  # matches current -- gh unchanged
                 }
             },
-            "ITEM_3": {
-                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
-            },
+            "ITEM_3": {"fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}},
         },
         jira_issues={
             "PROJ-1": {
@@ -2595,10 +2549,7 @@ def test_schedule_batch_with_one_unmapped_status_among_linked_items_fails_only_t
     assert candidates["ITEM_1"]["ok"] is True
     assert candidates["ITEM_3"]["ok"] is True
     assert candidates["ITEM_2"]["ok"] is False
-    assert (
-        "unmapped: jira status 'Triage' has no status_mapping entry for github"
-        in candidates["ITEM_2"]["summary"]
-    )
+    assert "unmapped: jira status 'Triage' has no status_mapping entry for github" in candidates["ITEM_2"]["summary"]
     assert "1 failed" in result.summary
     assert "3 candidates" in result.summary
 
@@ -2615,13 +2566,9 @@ def test_schedule_batch_with_one_unlinked_item_among_linked_items_fails_only_tha
     jira issue"` summary; the aggregate `DutyResult.ok` is `False`."""
     transport = ScheduleFakeTransport(
         items={
-            "ITEM_1": {
-                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
-            },
+            "ITEM_1": {"fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}},
             "ITEM_2": {"fields": {"gh_status": "In Progress"}},  # no gh_link -- unlinked
-            "ITEM_3": {
-                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
-            },
+            "ITEM_3": {"fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}},
         },
         jira_issues={
             "PROJ-1": {
@@ -2739,10 +2686,7 @@ def test_schedule_batch_with_one_unmapped_assignee_among_linked_items_fails_only
     assert candidates["ITEM_1"]["ok"] is True
     assert candidates["ITEM_3"]["ok"] is True
     assert candidates["ITEM_2"]["ok"] is False
-    assert (
-        "unmapped: github login 'ghost' has no user_mapping entry for jira"
-        in candidates["ITEM_2"]["summary"]
-    )
+    assert "unmapped: github login 'ghost' has no user_mapping entry for jira" in candidates["ITEM_2"]["summary"]
     assert "1 failed" in result.summary
     assert "3 candidates" in result.summary
 

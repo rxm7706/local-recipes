@@ -187,8 +187,7 @@ KIT_ITEMS: tuple[KitItem, ...] = (
         relpath=CCR_STORE_RELPATH,
         is_dir=True,
         summary=(
-            "the loop-home-scoped reversible compress-cache-retrieve store the wire"
-            " wrapper writes originals into"
+            "the loop-home-scoped reversible compress-cache-retrieve store the wire wrapper writes originals into"
         ),
     ),
     KitItem(
@@ -198,10 +197,7 @@ KIT_ITEMS: tuple[KitItem, ...] = (
         probe_binary="codegraph",
         relpath=CODEGRAPH_INDEX_RELPATH,
         is_dir=False,
-        summary=(
-            "the pre-built local code-structure index a session queries instead of"
-            " re-reading files"
-        ),
+        summary=("the pre-built local code-structure index a session queries instead of re-reading files"),
     ),
 )
 

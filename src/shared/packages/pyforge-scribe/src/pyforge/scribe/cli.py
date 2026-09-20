@@ -18,8 +18,8 @@ import json
 from pathlib import Path
 
 import typer
-
 from pyforge.core.atomic_write import atomic_write_text
+
 from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
 from pyforge.scribe.compile import (
@@ -63,10 +63,7 @@ app = typer.Typer(
 graph_app = typer.Typer(help="Knowledge-graph projection commands (Epic 2).")
 app.add_typer(graph_app, name="graph")
 index_app = typer.Typer(
-    help=(
-        "graphify compile_surface ingest + report verbs (Story 6.1); "
-        "cocoindex incremental refresh (Story 6.2)."
-    )
+    help=("graphify compile_surface ingest + report verbs (Story 6.1); cocoindex incremental refresh (Story 6.2).")
 )
 app.add_typer(index_app, name="index")
 
@@ -104,9 +101,7 @@ def capture_cmd(
     capture_type: CaptureType | None = typer.Option(
         None, "--type", help="Capture type: feedback | project | reference."
     ),
-    text: str | None = typer.Option(
-        None, "--text", help="Raw text to capture verbatim (FR-1)."
-    ),
+    text: str | None = typer.Option(None, "--text", help="Raw text to capture verbatim (FR-1)."),
     promote: bool = typer.Option(
         False,
         "--promote",
@@ -142,9 +137,7 @@ def capture_cmd(
 
     if transcripts:
         if capture_type is not None or text is not None:
-            typer.echo(
-                "--transcripts is mutually exclusive with --type/--text", err=True
-            )
+            typer.echo("--transcripts is mutually exclusive with --type/--text", err=True)
             raise typer.Exit(code=2)
         _run_transcripts(source)
         return
@@ -180,9 +173,7 @@ def _run_promote(source: Path | None) -> None:
     """
     source_root = source if source is not None else default_user_local_root()
     try:
-        proposal = classify_and_draft(
-            source_root, memory_root=_MEMORY_ROOT, repo_root=Path.cwd()
-        )
+        proposal = classify_and_draft(source_root, memory_root=_MEMORY_ROOT, repo_root=Path.cwd())
     except ValueError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
@@ -211,9 +202,7 @@ def _render_proposal(proposal: PromotionProposal) -> str:
     counts: dict[str, int] = {}
     for entry in proposal.entries:
         counts[entry.classification] = counts.get(entry.classification, 0) + 1
-        lines.append(
-            f"  [{entry.classification}] {entry.source_path.name} -- {entry.reason}"
-        )
+        lines.append(f"  [{entry.classification}] {entry.source_path.name} -- {entry.reason}")
         if entry.classification == "team-relevant":
             lines.append(f"      -> {entry.target_path}")
             lines.append(f"      MEMORY.md line: {entry.memory_index_line}")
@@ -222,9 +211,7 @@ def _render_proposal(proposal: PromotionProposal) -> str:
                 lines.append(f"      {content_line}")
             lines.append("      --------------------------")
 
-    summary = ", ".join(
-        f"{count} {classification}" for classification, count in sorted(counts.items())
-    )
+    summary = ", ".join(f"{count} {classification}" for classification, count in sorted(counts.items()))
     noun = "entry" if len(proposal.entries) == 1 else "entries"
     lines.append(f"{len(proposal.entries)} {noun} scanned: {summary or 'none'}.")
     return "\n".join(lines)
@@ -295,9 +282,7 @@ def _render_transcript_proposal(proposal: TranscriptScanProposal) -> str:
 
 @graph_app.command("compile")
 def graph_compile(
-    nightly: bool = typer.Option(
-        False, "--nightly", help="Run in unattended nightly mode."
-    ),
+    nightly: bool = typer.Option(False, "--nightly", help="Run in unattended nightly mode."),
 ) -> None:
     """Rebuild the compiled knowledge graph from `.claude/memory/`,
     `.memlog.md` files, git history, retros, CHANGELOGs (Story 2.2/2.3), and
@@ -307,9 +292,7 @@ def graph_compile(
     `docs/cli-runbooks.md`). An overlapping run against the same store skips
     cleanly with exit 0 rather than double-writing."""
     try:
-        result = compile_graph(
-            memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly
-        )
+        result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)
     except CompileInProgressError as exc:
         # Benign under a scheduler (Story 3.3): an overlapping cron firing
         # must not produce a non-zero exit / red cron mail -- mirror the
@@ -329,16 +312,11 @@ def graph_compile(
 
 @app.command("recall")
 def recall_cmd(
-    query: str = typer.Argument(
-        ..., help="Natural-language question to recall an answer for."
-    ),
+    query: str = typer.Argument(..., help="Natural-language question to recall an answer for."),
     semantic: bool = typer.Option(
         False,
         "--semantic",
-        help=(
-            "Opt-in: rank by SHA-256 bag-of-concepts similarity (pgvector driver only; "
-            "not embedding-model recall)."
-        ),
+        help=("Opt-in: rank by SHA-256 bag-of-concepts similarity (pgvector driver only; not embedding-model recall)."),
     ),
     scope: str = typer.Option(
         None,
@@ -465,9 +443,7 @@ def index_move_list() -> None:
     Does not require graphifyy or `SCRIBE_GRAPHIFY_EXTRA`."""
     repo_root = Path.cwd()
     count = _write_move_list(repo_root)
-    typer.echo(
-        f"wrote {_index_artifact_path(repo_root, 'move-list.json')} ({count} finding(s))"
-    )
+    typer.echo(f"wrote {_index_artifact_path(repo_root, 'move-list.json')} ({count} finding(s))")
 
 
 def _write_move_list(repo_root: Path) -> int:
@@ -486,15 +462,11 @@ def _write_move_list(repo_root: Path) -> int:
         ]
     }
     move_list_path = _index_artifact_path(repo_root, "move-list.json")
-    atomic_write_text(
-        move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n"
-    )
+    atomic_write_text(move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
     return len(findings)
 
 
-def _write_graph_index(
-    repo_root: Path, target: Path | None, warnings: list[str]
-) -> int:
+def _write_graph_index(repo_root: Path, target: Path | None, warnings: list[str]) -> int:
     """Ingest `target` with graphifyy and upsert through the persist port --
     shared by `index build` and `index refresh`'s cocoindex-gated derive
     step (Story 6.2). Raises `GraphifyUnavailableError` unchanged; callers
@@ -508,9 +480,7 @@ def _write_graph_index(
 
 
 @index_app.command("refresh")
-def index_refresh(
-    target: Path | None = _TARGET_OPTION, declare: Path | None = _DECLARE_OPTION
-) -> None:
+def index_refresh(target: Path | None = _TARGET_OPTION, declare: Path | None = _DECLARE_OPTION) -> None:
     """Incrementally refresh Story 6.1's two derived artifacts -- the
     graphify-ingested code graph and the foundry-cutover move list -- via
     the cocoindex `compile_surface` extra (Story 6.2): an artifact whose
@@ -564,9 +534,7 @@ def index_refresh(
         counts["move-list"] = f"{_write_move_list(repo_root)} finding(s)"
 
     def _derive_graph_index() -> None:
-        counts["graphify-ingest"] = (
-            f"{_write_graph_index(repo_root, target, warnings)} node(s)"
-        )
+        counts["graphify-ingest"] = f"{_write_graph_index(repo_root, target, warnings)} node(s)"
 
     artifacts = [
         DerivedArtifact(
@@ -587,10 +555,7 @@ def index_refresh(
         raise typer.Exit(code=2) from exc
     for warning in warnings:
         typer.echo(f"warning: {warning}", err=True)
-    refreshed_desc = ", ".join(
-        f"{name} ({counts[name]})" if name in counts else name
-        for name in result.refreshed
-    )
+    refreshed_desc = ", ".join(f"{name} ({counts[name]})" if name in counts else name for name in result.refreshed)
     typer.echo(
         f"refreshed: {refreshed_desc or '(none)'}; "
         f"skipped (unchanged): {', '.join(result.skipped) or '(none)'} "
@@ -605,9 +570,7 @@ def _declared_artifacts_index_path(repo_root: Path) -> Path:
     return _index_artifact_path(repo_root, "declared-artifacts-index.json")
 
 
-def _index_refresh_declared(
-    repo_root: Path, manifest_path: Path, warnings: list[str]
-) -> None:
+def _index_refresh_declared(repo_root: Path, manifest_path: Path, warnings: list[str]) -> None:
     """`index refresh --declare <manifest_path>` -- see `index_refresh`'s
     own docstring for the contract. Never raises past this function: a
     malformed manifest or an unavailable cocoindex both exit(2) with a
@@ -618,9 +581,7 @@ def _index_refresh_declared(
         typer.echo(f"could not read declare manifest {manifest_path}: {exc}", err=True)
         raise typer.Exit(code=2) from exc
     except ValueError as exc:
-        typer.echo(
-            f"declare manifest {manifest_path} is not valid JSON: {exc}", err=True
-        )
+        typer.echo(f"declare manifest {manifest_path} is not valid JSON: {exc}", err=True)
         raise typer.Exit(code=2) from exc
 
     raw_artifacts = document.get("artifacts") if isinstance(document, dict) else None

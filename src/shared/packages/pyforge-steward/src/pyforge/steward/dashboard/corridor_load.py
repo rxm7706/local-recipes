@@ -137,9 +137,7 @@ def record_corridor_load(
         return _refused(direction, batch_sha, waybill, transport, exc, slice_name=slice_name, signer=signer)
 
     try:
-        existing = CorridorLoad.objects.filter(
-            direction=direction, batch_sha=batch_sha, waybill=waybill
-        ).first()
+        existing = CorridorLoad.objects.filter(direction=direction, batch_sha=batch_sha, waybill=waybill).first()
     except (ImproperlyConfigured, OperationalError, ProgrammingError) as exc:
         return _refused(direction, batch_sha, waybill, transport, exc, slice_name=slice_name, signer=signer)
 
@@ -179,9 +177,7 @@ def record_corridor_load(
         # and the `UniqueConstraint` caught it. The loser of that race must
         # still report the idempotent outcome the caller actually gets, not
         # a data-integrity failure -- re-query and return the winner's row.
-        existing = CorridorLoad.objects.filter(
-            direction=direction, batch_sha=batch_sha, waybill=waybill
-        ).first()
+        existing = CorridorLoad.objects.filter(direction=direction, batch_sha=batch_sha, waybill=waybill).first()
         if existing is not None:
             return _idempotent(
                 direction,

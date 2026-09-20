@@ -216,8 +216,7 @@ def _build(db_path: Path, *, with_rows: bool) -> None:
                     list(row.values()),
                 )
             conn.executemany(
-                "INSERT INTO upstream_versions (conda_name, source, version, url) "
-                "VALUES (?, ?, ?, ?)",
+                "INSERT INTO upstream_versions (conda_name, source, version, url) VALUES (?, ?, ?, ?)",
                 _UPSTREAM_VERSIONS,
             )
             conn.executemany(
@@ -227,13 +226,10 @@ def _build(db_path: Path, *, with_rows: bool) -> None:
                 _VULN_HISTORY,
             )
             conn.executemany(
-                "INSERT INTO package_version_downloads (conda_name, version, upload_unix) "
-                "VALUES (?, ?, ?)",
+                "INSERT INTO package_version_downloads (conda_name, version, upload_unix) VALUES (?, ?, ?)",
                 _PACKAGE_VERSION_DOWNLOADS,
             )
-            conn.executemany(
-                "INSERT INTO maintainers (id, handle) VALUES (?, ?)", _MAINTAINERS
-            )
+            conn.executemany("INSERT INTO maintainers (id, handle) VALUES (?, ?)", _MAINTAINERS)
             conn.executemany(
                 "INSERT INTO package_maintainers (conda_name, maintainer_id) VALUES (?, ?)",
                 _PACKAGE_MAINTAINERS,

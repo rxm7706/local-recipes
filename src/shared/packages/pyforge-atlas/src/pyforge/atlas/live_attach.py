@@ -24,9 +24,7 @@ class PostgresNotProvisionedError(PyforgeError, RuntimeError):
 
 def _valid_identifier(value: str, what: str) -> str:
     if not isinstance(value, str) or not _IDENTIFIER_RE.match(value):
-        raise ValueError(
-            f"invalid {what} identifier {value!r}: must match {_IDENTIFIER_RE.pattern}"
-        )
+        raise ValueError(f"invalid {what} identifier {value!r}: must match {_IDENTIFIER_RE.pattern}")
     return value
 
 
@@ -69,6 +67,4 @@ def attach_postgres_readonly(
     dsn = dsn.strip()
     alias = _valid_identifier(alias, "attach alias")
     load_postgres_offline(connection)
-    connection.execute(
-        f"ATTACH {_sql_string(dsn)} AS {alias} (TYPE POSTGRES, READ_ONLY)"
-    )
+    connection.execute(f"ATTACH {_sql_string(dsn)} AS {alias} (TYPE POSTGRES, READ_ONLY)")

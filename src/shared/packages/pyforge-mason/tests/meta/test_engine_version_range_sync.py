@@ -119,7 +119,13 @@ def test_ranges_are_ranges_not_exact_pins():
     reason; only `PIXI_VERSION_RANGE` does (an in-env pixi above the
     workspace's `requires-pixi` line would parse a manifest the workspace has
     not tested)."""
-    for rng in (PIXI_VERSION_RANGE, TWINE_VERSION_RANGE, CONDA_LOCK_VERSION_RANGE, PYTHON_BUILD_VERSION_RANGE, GH_VERSION_RANGE):
+    for rng in (
+        PIXI_VERSION_RANGE,
+        TWINE_VERSION_RANGE,
+        CONDA_LOCK_VERSION_RANGE,
+        PYTHON_BUILD_VERSION_RANGE,
+        GH_VERSION_RANGE,
+    ):
         assert len(rng) >= 1
         assert all(spec.operator != "==" for spec in rng), f"exact pin in {rng}"
     assert len(PIXI_VERSION_RANGE) == 2  # the one reasoned window

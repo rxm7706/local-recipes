@@ -43,11 +43,7 @@ def test_tool_only_inventory_helper_is_declared():
 def test_fixture_cli_on_surface_missing_tool_fails():
     """Deliberate FR-155 miss: on-surface CLI verb with no tool."""
     # Drop status from tools; keep it off the CLI-only allowlist.
-    broken = {
-        name: dict(spec)
-        for name, spec in TOOL_SPECS.items()
-        if name != "marshal_status"
-    }
+    broken = {name: dict(spec) for name, spec in TOOL_SPECS.items() if name != "marshal_status"}
     findings = parity_findings(tool_specs=broken)
     codes = {f.code for f in findings}
     assert "cli_missing_tool" in codes

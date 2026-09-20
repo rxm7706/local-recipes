@@ -52,23 +52,11 @@ def resolve_repo_root(start: Path | None = None) -> Path:
     for parent in [here, *here.parents]:
         if (parent / "pixi.toml").is_file() and (parent / ".claude").is_dir():
             return parent
-    raise FileNotFoundError(
-        f"could not locate repo root (pixi.toml + .claude) from {here}"
-    )
+    raise FileNotFoundError(f"could not locate repo root (pixi.toml + .claude) from {here}")
 
 
 def _package_mcp_dir(repo_root: Path, station: str) -> Path:
-    return (
-        repo_root
-        / "src"
-        / "shared"
-        / "packages"
-        / f"pyforge-{station}"
-        / "src"
-        / "pyforge"
-        / station
-        / "mcp"
-    )
+    return repo_root / "src" / "shared" / "packages" / f"pyforge-{station}" / "src" / "pyforge" / station / "mcp"
 
 
 def station_governed_surface(

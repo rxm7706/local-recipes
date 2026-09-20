@@ -15,8 +15,8 @@ from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.cli.config import repo_root
 from pyforge.marshal.cli.deploy import (
-    _DeployRun,
     _deploy_writer_id,
+    _DeployRun,
     _execute_promotion_plan,
     _scan_promotions,
 )
@@ -32,9 +32,7 @@ from pyforge.marshal.core.journal import Phase
 _FINALIZE_RESYNC_KIND = "dispatch-land-finalize-resync"
 
 
-def finalize_dispatch_land(
-    project_slug: str, story_key: str, worktree: Path | None = None
-) -> int:
+def finalize_dispatch_land(project_slug: str, story_key: str, worktree: Path | None = None) -> int:
     """Run the post-merge finalize sequence for ``story_key``.
 
     ``worktree`` (Story 51.2), when given, is the dispatch worktree the
@@ -68,9 +66,7 @@ def finalize_dispatch_land(
             # longer promote a Tier-3 spec that was never actually landed.
             # Fails closed (never corroborates) on any git read failure.
             try:
-                spec_text = dispatch_core.spec_text_at_ref(
-                    vcs, root, project_slug, str(candidate_key)
-                )
+                spec_text = dispatch_core.spec_text_at_ref(vcs, root, project_slug, str(candidate_key))
             except VcsCommandError:
                 return None
             return promotion.read_spec_status(spec_text)
@@ -81,22 +77,11 @@ def finalize_dispatch_land(
             project_slug,
             spec_status_for=_spec_status_for,
         )
-        to_promote = tuple(
-            candidate
-            for candidate in scan.plan.to_promote
-            if candidate.story_key in corroborated
-        )
+        to_promote = tuple(candidate for candidate in scan.plan.to_promote if candidate.story_key in corroborated)
     else:
         to_promote = ()
     if to_promote:
-        specs_dir = (
-            root
-            / "_bmad-output"
-            / "projects"
-            / project_slug
-            / "planning-artifacts"
-            / "specs"
-        )
+        specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
         _execute_promotion_plan(
             to_promote,
             project_slug=project_slug,
@@ -112,9 +97,7 @@ def finalize_dispatch_land(
     # CAP-5 made ``base`` keyword-only. Omitting it crashed finalize
     # after a green merge, so the tracked ledger stayed backlog/review
     # and drain re-implemented the landed story (42.2 / 42.3).
-    _promote_sprint_ledger(
-        fs, vcs, root, project_slug, [key], deploy_run, findings, base="main"
-    )
+    _promote_sprint_ledger(fs, vcs, root, project_slug, [key], deploy_run, findings, base="main")
     # Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` deliberately
     # never touches the primary checkout's own working tree (CAP-5) -- so
     # nothing else picked up that promotion either, and the fleet

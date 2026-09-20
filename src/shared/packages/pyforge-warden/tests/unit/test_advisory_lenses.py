@@ -22,6 +22,7 @@ from typing import Any
 
 import pytest
 from pyforge.core.hooks import PluginRegistry, SecondVerdictError, publish_verdict
+
 from pyforge.warden.hooks import PR_GATE_SCAN, PR_GATE_VERDICT, invoke_pr_gate
 from pyforge.warden.models import AXIS_VULNERABILITY, Status, StatusDriver
 from pyforge.warden.scanner_plugins import findings_from_plugin_context
@@ -110,9 +111,7 @@ def test_compose_is_identical_with_and_without_the_advisory_lens():
     context_without: dict[str, Any] = {}
     invoke_pr_gate(PR_GATE_SCAN, "around", context_without, registry=registry_without)
 
-    plugin = _AdvisoryLensPlugin(
-        "bmad-os-findings-triage", "finding consolidation note"
-    )
+    plugin = _AdvisoryLensPlugin("bmad-os-findings-triage", "finding consolidation note")
     registry_with = PluginRegistry()
     registry_with.register(plugin)
     context_with: dict[str, Any] = {}

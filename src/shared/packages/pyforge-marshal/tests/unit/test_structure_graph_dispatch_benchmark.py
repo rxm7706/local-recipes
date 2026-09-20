@@ -38,9 +38,7 @@ def test_derive_recommendation_prefers_shared_index_when_sync_is_cheap():
         files=(),
     )
     sync = sg.SyncMeasurement(wall_clock_seconds=4.0)
-    rec, rationale = sg.derive_recommendation(
-        index_build=index, navigation=nav, sync_from_base=sync
-    )
+    rec, rationale = sg.derive_recommendation(index_build=index, navigation=nav, sync_from_base=sync)
     assert rec == "share-repo-level-index"
     assert "sync" in rationale.lower()
 
@@ -60,9 +58,7 @@ def test_derive_recommendation_spin_only_when_navigation_is_trivial():
         overhead_factor=1.0,
         files=(),
     )
-    rec, _ = sg.derive_recommendation(
-        index_build=index, navigation=nav, sync_from_base=None
-    )
+    rec, _ = sg.derive_recommendation(index_build=index, navigation=nav, sync_from_base=None)
     assert rec == "spin-only"
 
 
@@ -108,9 +104,7 @@ def test_build_artifact_round_trip_json():
         (19.0, 52000, None, "build-per-worktree"),
     ],
 )
-def test_matrix_recommendation_rows(
-    init_s: float, nav_tokens: int, sync_s: float | None, expected: str
-):
+def test_matrix_recommendation_rows(init_s: float, nav_tokens: int, sync_s: float | None, expected: str):
     """I/O matrix: recommendation reached for measured inputs."""
     index = sg.IndexBuildMeasurement(
         wall_clock_seconds=init_s,
@@ -127,7 +121,5 @@ def test_matrix_recommendation_rows(
         files=(),
     )
     sync = sg.SyncMeasurement(wall_clock_seconds=sync_s) if sync_s is not None else None
-    rec, _ = sg.derive_recommendation(
-        index_build=index, navigation=nav, sync_from_base=sync
-    )
+    rec, _ = sg.derive_recommendation(index_build=index, navigation=nav, sync_from_base=sync)
     assert rec == expected

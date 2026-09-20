@@ -176,9 +176,7 @@ _AMBIGUOUS_BARE_LABELS = frozenset({"gpl"})
 # unresolvable made every such license ``unknown`` AND made a
 # ``--deny-licenses LicenseRef-...`` entry structurally inert (review
 # finding, 2026-07-18 follow-up pass) -- see ``_license_ref_reparse``.
-_LICENSE_REF_RE = re.compile(
-    r"(?:DocumentRef-[A-Za-z0-9.\-]+:)?LicenseRef-[A-Za-z0-9.\-]+"
-)
+_LICENSE_REF_RE = re.compile(r"(?:DocumentRef-[A-Za-z0-9.\-]+:)?LicenseRef-[A-Za-z0-9.\-]+")
 
 # A small, curated SPDX-id -> coarse "family" grouping (mirrors
 # conda-forge's own about.license_family convention) -- NOT the ScanCode
@@ -230,11 +228,9 @@ _CLASSIFIER_SPDX: dict[str, str] = {
     "License :: OSI Approved :: Apache Software License": "Apache-2.0",
     "License :: OSI Approved :: ISC License (ISCL)": "ISC",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
-    "License :: OSI Approved :: "
-    "GNU General Public License v3 or later (GPLv3+)": "GPL-3.0-or-later",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)": "GPL-3.0-or-later",
     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)": "GPL-2.0-only",
-    "License :: OSI Approved :: "
-    "GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
     "License :: OSI Approved :: GNU Affero General Public License v3": "AGPL-3.0-only",
     "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
     "License :: OSI Approved :: Python Software Foundation License": "PSF-2.0",
@@ -287,9 +283,7 @@ def license_rung(
     # fail closed via the `.get(..., INDETERMINATE)` fallback below, never
     # short-circuit back to the all-WARN module default (a false-green
     # direction). `None` alone means "no policy supplied" -> module default.
-    status = (
-        policy if policy is not None else DEFAULT_LICENSE_POLICY
-    ).get(info.verdict, Status.INDETERMINATE)
+    status = (policy if policy is not None else DEFAULT_LICENSE_POLICY).get(info.verdict, Status.INDETERMINATE)
     return (
         status,
         StatusDriver(axis=finding.axis, finding_id=finding.id),
@@ -347,9 +341,7 @@ def _parse_spdx(candidate: str | None) -> tuple[str, str | None] | None:
     if parsed is None:
         return None
     expression = str(parsed)
-    family = (
-        _SPDX_FAMILY.get(getattr(parsed, "key", None)) if parsed.isliteral else None
-    )
+    family = _SPDX_FAMILY.get(getattr(parsed, "key", None)) if parsed.isliteral else None
     return (expression, family)
 
 
@@ -367,9 +359,7 @@ def _license_ref_reparse(text: str) -> object | None:
     grammar-degenerate input like ``"()"``)."""
     try:
         unknown = _LICENSING.unknown_license_keys(text)
-        if not unknown or not all(
-            _LICENSE_REF_RE.fullmatch(key) for key in unknown
-        ):
+        if not unknown or not all(_LICENSE_REF_RE.fullmatch(key) for key in unknown):
             return None
         return _LICENSING.parse(text, validate=False, strict=False)
     except Exception:  # noqa: BLE001 — same never-raises contract as _parse_spdx
@@ -491,7 +481,7 @@ def _read_about_license(manifest_path: Path) -> str | None:
     never a crash."""
     try:
         text = manifest_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None
     basename = manifest_path.name
     if basename == "recipe.yaml":
@@ -509,7 +499,7 @@ def _read_about_license(manifest_path: Path) -> str | None:
         # ComposerError/ConstructorError are yaml.YAMLError subclasses, so both
         # still degrade to `unknown` via the existing except below.
         document = yaml_safe_load_strict(neutralized)
-    except (yaml.YAMLError, RecursionError):
+    except yaml.YAMLError, RecursionError:
         # RecursionError (follow-up review pass, 2026-07-18): deeply nested
         # flow collections blow the interpreter's recursion limit inside
         # yaml's parser — not a YAMLError subclass, so it escaped the
@@ -549,9 +539,7 @@ def _select_conda_manifest(provenance: tuple[Provenance, ...]) -> str | None:
     return provenance[0].manifest
 
 
-def _conda_about_license(
-    component: Component, target: Path, cache: dict[str, str | None]
-) -> str | None:
+def _conda_about_license(component: Component, target: Path, cache: dict[str, str | None]) -> str | None:
     """``component``'s manifest's own ``about: license:`` value, memoized per
     ``Provenance.manifest`` path across one ``license_findings`` call — every
     conda component declared by the SAME manifest shares its ``about:
@@ -651,14 +639,10 @@ def _resolve_pypi_license(component: Component) -> tuple[str, str | None] | None
     uncaught and crashed the engine. Caught alongside
     ``PackageNotFoundError`` here so this degrades to ``None`` (unknown)
     like any other unresolvable name, never a crash."""
-    name = (
-        component.pypi_identity.name
-        if component.pypi_identity is not None
-        else component.name
-    )
+    name = component.pypi_identity.name if component.pypi_identity is not None else component.name
     try:
         meta = importlib.metadata.metadata(name)
-    except (importlib.metadata.PackageNotFoundError, ValueError):
+    except importlib.metadata.PackageNotFoundError, ValueError:
         return None
     for candidate in _pypi_license_candidates(meta):
         parsed = _parse_spdx(candidate)
@@ -748,9 +732,7 @@ def _license_finding(
     ``denied``, or the literal ``"unknown"`` token for ``unknown`` — the
     ``license:<spdx-or-"unknown">:<pkg>@<ver>`` grammar
     (``models.py:_FINDING_ID_FAMILIES``)."""
-    version_segment = (
-        _sanitize_id_segment(component.version) if component.version else "unspecified"
-    )
+    version_segment = _sanitize_id_segment(component.version) if component.version else "unspecified"
     name_segment = _sanitize_id_segment(component.name)
     if verdict is LicenseVerdict.UNKNOWN or resolution is None:
         expression = "unknown"

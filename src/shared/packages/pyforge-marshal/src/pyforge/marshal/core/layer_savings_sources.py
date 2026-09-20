@@ -55,9 +55,7 @@ _OUTCOME_PHASE = "outcome"
 
 COCOINDEX_INDEX_RELPATH = ".claude/data/pyforge-scribe/cocoindex-index.json"
 GRAPH_STORE_RELPATH = ".claude/data/pyforge-scribe/graph.json"
-PLANNING_GRAPH_TELEMETRY_RELPATH = (
-    ".claude/data/pyforge-marshal/planning-graph/last-retrieval.json"
-)
+PLANNING_GRAPH_TELEMETRY_RELPATH = ".claude/data/pyforge-marshal/planning-graph/last-retrieval.json"
 CODEGRAPH_STATS_RELPATH = ".claude/data/pyforge-marshal/layer-savings/codegraph.json"
 
 IntSavings = int | str
@@ -93,7 +91,7 @@ def read_headroom_wire_saved(home: Path) -> IntSavings:
     for (entry_json,) in rows:
         try:
             payload = json.loads(entry_json)
-        except (json.JSONDecodeError, TypeError):
+        except json.JSONDecodeError, TypeError:
             continue
         original = payload.get("original_tokens")
         compressed = payload.get("compressed_tokens")
@@ -112,7 +110,7 @@ def read_caveman_output_saved(home: Path) -> IntSavings:
         return "output-savings-ledger-missing"
     try:
         payload = json.loads(ledger_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return "output-savings-ledger-unreadable"
     estimate = payload.get("estimate") if isinstance(payload, dict) else None
     if isinstance(estimate, dict):
@@ -131,7 +129,7 @@ def read_codegraph_hits_vs_reads(home: Path) -> GraphStats:
     if stats_path.is_file():
         try:
             payload = json.loads(stats_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except OSError, json.JSONDecodeError:
             return "codegraph-stats-unreadable"
         if isinstance(payload, dict):
             hits = payload.get("graph_hits", payload.get("hits"))
@@ -152,7 +150,7 @@ def read_cocoindex_cache_hits(home: Path) -> IntSavings:
         return "cocoindex-index-missing"
     try:
         payload = json.loads(index_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return "cocoindex-index-unreadable"
     if isinstance(payload, dict):
         cache_hits = payload.get("cache_hits")
@@ -174,7 +172,7 @@ def read_planning_graph_tokens_saved(home: Path) -> IntSavings:
         return "planning-graph-retrieval-not-recorded"
     try:
         payload = json.loads(telemetry_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return "planning-graph-telemetry-unreadable"
     if isinstance(payload, dict):
         tokens_saved = payload.get("tokens_saved")
@@ -185,16 +183,9 @@ def read_planning_graph_tokens_saved(home: Path) -> IntSavings:
     return "planning-graph-tokens-not-recorded"
 
 
-def read_dispatch_idle_timing(
-    repo_root: Path, *, project_slug: str = "pyforge-marshal"
-) -> dict[str, object]:
+def read_dispatch_idle_timing(repo_root: Path, *, project_slug: str = "pyforge-marshal") -> dict[str, object]:
     """Q-14: one wave of per-session timing from dispatch journals."""
-    runs_dir = (
-        repo_root
-        / "_bmad-output/projects"
-        / project_slug
-        / "implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = repo_root / "_bmad-output/projects" / project_slug / "implementation-artifacts/dispatch-runs"
     if not runs_dir.is_dir():
         return {
             "status": "no-dispatch-journals",
@@ -284,9 +275,7 @@ def currency_for_harness(profile_name: str | None) -> str:
     return HARNESS_CURRENCY.get(profile_name, UNKNOWN_HARNESS_CURRENCY)
 
 
-def read_rollup_by_harness(
-    repo_root: Path, *, project_slug: str = "pyforge-marshal"
-) -> dict[str, object]:
+def read_rollup_by_harness(repo_root: Path, *, project_slug: str = "pyforge-marshal") -> dict[str, object]:
     """Per-harness savings rollup (Story 46.5, CAP-193). Mirrors
     ``read_dispatch_idle_timing``'s manual-JSONL-scan idiom: no
     ``core/journal.py`` domain-model import, plain ``json.loads`` per line.
@@ -328,12 +317,7 @@ def read_rollup_by_harness(
     "configured": {...}, "runs": N}}}`` -- never a cross-harness summed
     total.
     """
-    runs_dir = (
-        repo_root
-        / "_bmad-output/projects"
-        / project_slug
-        / "implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = repo_root / "_bmad-output/projects" / project_slug / "implementation-artifacts/dispatch-runs"
     if not runs_dir.is_dir():
         return {"status": "no-dispatch-journals", "harnesses": {}}
 
@@ -350,7 +334,7 @@ def read_rollup_by_harness(
     for journal_path in journal_paths:
         try:
             text = journal_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             # A filesystem race (removed/permission-changed between glob and
             # read), or a non-UTF-8 journal file, skips this one run,
             # matching this module's own per-line JSONDecodeError tolerance

@@ -7,8 +7,8 @@ import json
 from pathlib import Path
 
 import pytest
-
 from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.adapters import scribe_cli
 from pyforge.marshal.adapters.scribe_cli import ScribeCli, ScribeRecallOutcome
 from pyforge.marshal.cli import context as context_cli
@@ -47,12 +47,10 @@ def repo(tmp_path: Path, monkeypatch) -> Path:
 
 
 def _declare_layer(repo: Path, *, enabled: bool) -> None:
-    policy_path = repo / (
-        f"_bmad-output/projects/{_SLUG}/planning-artifacts/marshal-policy.toml"
-    )
+    policy_path = repo / (f"_bmad-output/projects/{_SLUG}/planning-artifacts/marshal-policy.toml")
     _write(
         policy_path,
-        "[context.planning-graph]\n" f"enabled = {str(enabled).lower()}\n",
+        f"[context.planning-graph]\nenabled = {str(enabled).lower()}\n",
     )
 
 
@@ -107,9 +105,7 @@ class TestScribeRecallAdapter:
         assert "planning-graph" in (outcome.reason or "")
 
     def test_non_zero_exit_degrades(self, tmp_path):
-        process = _FakeProcess(
-            ProcessResult(returncode=2, stdout="", stderr="graph not compiled\n")
-        )
+        process = _FakeProcess(ProcessResult(returncode=2, stdout="", stderr="graph not compiled\n"))
         outcome = ScribeCli(process).recall(
             repo_root=tmp_path,
             query="q",
@@ -130,9 +126,7 @@ class TestScribeRecallAdapter:
 class TestContextRetrieveCli:
     def test_layer_off_reports_fallback_without_calling_scribe(self, repo: Path):
         _declare_layer(repo, enabled=False)
-        process = _FakeProcess(
-            ProcessResult(returncode=0, stdout="should not run\n", stderr="")
-        )
+        process = _FakeProcess(ProcessResult(returncode=0, stdout="should not run\n", stderr=""))
         exit_code = context_cli.run_context_retrieve(
             _args(repo, epic="28", story="9"),
             scribe=ScribeCli(process),
@@ -180,10 +174,8 @@ class TestContextRetrieveCli:
 
     def test_grammar_failure_falls_back(self, repo: Path, capsys):
         _declare_layer(repo, enabled=True)
-        process = _FakeProcess(
-            ProcessResult(returncode=2, stdout="", stderr="no graph\n")
-        )
-        exit_code = context_cli.run_context_retrieve(
+        process = _FakeProcess(ProcessResult(returncode=2, stdout="", stderr="no graph\n"))
+        context_cli.run_context_retrieve(
             _args(repo, epic="28", json=True),
             scribe=ScribeCli(process),
         )

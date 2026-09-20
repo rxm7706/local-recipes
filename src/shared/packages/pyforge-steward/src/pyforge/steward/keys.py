@@ -103,8 +103,8 @@ if _HTTP_SCRIPTS_DIR not in sys.path:
 
 from _http import auth_headers_for  # noqa: E402  # the delegate target (AD-1/AD-2)
 
-
 # ── Host-scoped credential resolver (FR-7) ──────────────────────────────────
+
 
 @dataclass(frozen=True)
 class HostScopedCredential:
@@ -231,6 +231,7 @@ def resolve_headers(credential: HostScopedCredential, url: str) -> dict[str, str
 # framework. See "Design Notes" in this story's spec for the full heuristic;
 # summarized here where the code implements it.
 
+
 @dataclass(frozen=True)
 class DriftFinding:
     """One occurrence of the pre-fix unconditional-injection shape."""
@@ -309,11 +310,7 @@ def _is_env_presence_check(test: ast.expr) -> bool:
     """True if `test` is exactly ``os.environ.get(...)`` or ``os.environ[...]``."""
     if isinstance(test, ast.Call):
         func = test.func
-        return (
-            isinstance(func, ast.Attribute)
-            and func.attr == "get"
-            and _is_os_environ_expr(func.value)
-        )
+        return isinstance(func, ast.Attribute) and func.attr == "get" and _is_os_environ_expr(func.value)
     if isinstance(test, ast.Subscript):
         return _is_os_environ_expr(test.value)
     return False
@@ -383,6 +380,7 @@ def _find_credential_assignments(stmt: ast.stmt, func_name: str) -> list[DriftFi
 # `subprocess.CalledProcessError` is left to propagate here — caught only at
 # the `KeysDuty` boundary — matching `scan_source`'s `SyntaxError` precedent
 # of not swallowing errors at the primitive level.
+
 
 def _reject_dash(role: str, value: str | Path) -> None:
     """Refuse `age`'s `-` stdin/stdout sentinel for a single named `role`.
@@ -464,6 +462,7 @@ def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | 
 # a caller must never conflate them. Story 1.6 wires a CLI verb; this story
 # only proves the primitive (mirrors how 1.2 framed its own drift scan).
 
+
 @dataclass(frozen=True)
 class PlaintextSecretFinding:
     """One line of file content plausibly matching a known secret shape."""
@@ -506,10 +505,7 @@ def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
                         path=path,
                         line=lineno,
                         pattern_name=pattern_name,
-                        message=(
-                            f"{path}:{lineno} matches the {pattern_name!r} "
-                            "plaintext-secret pattern"
-                        ),
+                        message=(f"{path}:{lineno} matches the {pattern_name!r} plaintext-secret pattern"),
                     )
                 )
     return findings
@@ -593,8 +589,8 @@ class KeyIdentityEntry:
 
     name: str
     scope: str
-    provenance: str          # "issued" | "observed"
-    status: str               # "active" | "retired"
+    provenance: str  # "issued" | "observed"
+    status: str  # "active" | "retired"
     last_rotated: str | None
     identity_path: str | None
     secrets: tuple[str, ...] = ()
@@ -624,10 +620,7 @@ def load_inventory(path: str | Path) -> tuple[KeyIdentityEntry, ...]:
     with path.open("r", encoding="utf-8") as f:
         document = yaml.safe_load(f) or {}
     if not isinstance(document, dict):
-        raise InventoryError(
-            f"{path}: top-level document must be a mapping, got "
-            f"{type(document).__name__}"
-        )
+        raise InventoryError(f"{path}: top-level document must be a mapping, got {type(document).__name__}")
     entries: list[KeyIdentityEntry] = []
     for raw in document.get("identities") or []:
         if not isinstance(raw, dict):
@@ -645,13 +638,9 @@ def load_inventory(path: str | Path) -> tuple[KeyIdentityEntry, ...]:
         except KeyError as exc:
             raise InventoryError(f"{path}: identity entry missing required field {exc}") from exc
         if entry.provenance not in _VALID_PROVENANCE:
-            raise InventoryError(
-                f"{path}: identity {entry.name!r} has unknown provenance {entry.provenance!r}"
-            )
+            raise InventoryError(f"{path}: identity {entry.name!r} has unknown provenance {entry.provenance!r}")
         if entry.status not in _VALID_STATUS:
-            raise InventoryError(
-                f"{path}: identity {entry.name!r} has unknown status {entry.status!r}"
-            )
+            raise InventoryError(f"{path}: identity {entry.name!r} has unknown status {entry.status!r}")
         entries.append(entry)
     return tuple(entries)
 
@@ -751,20 +740,15 @@ def generate_identity(output_path: str | Path) -> str:
         stdin=subprocess.DEVNULL,
     )
     try:
-        pubkey_line = next(
-            line for line in result.stderr.splitlines() if line.startswith("Public key: ")
-        )
+        pubkey_line = next(line for line in result.stderr.splitlines() if line.startswith("Public key: "))
     except StopIteration:
         raise RuntimeError(
-            "age-keygen exited 0 but wrote no 'Public key: ' line to stderr "
-            f"(stderr={result.stderr!r})"
+            f"age-keygen exited 0 but wrote no 'Public key: ' line to stderr (stderr={result.stderr!r})"
         ) from None
     return pubkey_line.removeprefix("Public key: ")
 
 
-def rotate_identity(
-    inventory_path: str | Path, *, scope: str, new_identity_path: str | Path
-) -> KeyIdentityEntry:
+def rotate_identity(inventory_path: str | Path, *, scope: str, new_identity_path: str | Path) -> KeyIdentityEntry:
     """Rotate the `issued`/`active` identity for `scope`.
 
     Generates a fresh `age` identity at `new_identity_path`, re-encrypts
@@ -804,10 +788,7 @@ def rotate_identity(
             if entry.scope == scope and entry.provenance == "issued" and entry.status == "active"
         ]
         if not candidates:
-            raise InventoryError(
-                f"rotate: no issued/active identity found for scope {scope!r} in "
-                f"{inventory_path}"
-            )
+            raise InventoryError(f"rotate: no issued/active identity found for scope {scope!r} in {inventory_path}")
         if len(candidates) > 1:
             # Review finding: silently acting on the first match (a
             # for/break loop) would rotate ONE of several ambiguous active
@@ -905,9 +886,7 @@ def format_inventory(entries: tuple[KeyIdentityEntry, ...], *, as_json: bool) ->
     header = f"{'NAME':<20} {'SCOPE':<20} {'PROVENANCE':<10} {'STATUS':<8} LAST_ROTATED"
     lines = [header]
     for e in entries:
-        lines.append(
-            f"{e.name:<20} {e.scope:<20} {e.provenance:<10} {e.status:<8} {e.last_rotated or '-'}"
-        )
+        lines.append(f"{e.name:<20} {e.scope:<20} {e.provenance:<10} {e.status:<8} {e.last_rotated or '-'}")
     return "\n".join(lines)
 
 
@@ -980,13 +959,9 @@ def revoke_identity(inventory_path: str | Path, *, scope: str) -> KeyIdentityEnt
     with _locked_inventory(inventory_path):
         entries = load_inventory(inventory_path)
 
-        candidates = [
-            entry for entry in entries if entry.scope == scope and entry.status == "active"
-        ]
+        candidates = [entry for entry in entries if entry.scope == scope and entry.status == "active"]
         if not candidates:
-            raise InventoryError(
-                f"revoke: no active identity found for scope {scope!r} in {inventory_path}"
-            )
+            raise InventoryError(f"revoke: no active identity found for scope {scope!r} in {inventory_path}")
         if len(candidates) > 1:
             # Review finding (mirrors rotate_identity's identical fix): a
             # scope with two active entries (e.g. an `issued` one and a
@@ -1103,9 +1078,7 @@ class KeysDuty:
                 decrypt_file(ns.file, identity=ns.identity, output=ns.output)
             elif verb == "rotate":
                 inventory_path = ns.inventory or default_inventory_path()
-                entry = rotate_identity(
-                    inventory_path, scope=ns.scope, new_identity_path=ns.new_identity
-                )
+                entry = rotate_identity(inventory_path, scope=ns.scope, new_identity_path=ns.new_identity)
                 # Names the new entry and where its identity file lives —
                 # never the public key or any secret content (Boundaries &
                 # Constraints: rotate never prints a secret value).
@@ -1128,10 +1101,7 @@ class KeysDuty:
                 guidance = _remediation_for(entry)
                 return DutyResult(
                     ok=True,
-                    summary=(
-                        f"keys revoke: scope {ns.scope!r} ({entry.name!r}) marked "
-                        f"retired.\n{guidance}"
-                    ),
+                    summary=(f"keys revoke: scope {ns.scope!r} ({entry.name!r}) marked retired.\n{guidance}"),
                 )
         except ValueError as exc:
             return DutyResult(ok=False, summary=f"keys {verb}: {exc}")

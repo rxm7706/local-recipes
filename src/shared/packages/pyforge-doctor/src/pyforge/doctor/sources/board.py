@@ -44,14 +44,11 @@ redesign"); each stays exactly as strict or as lenient as its own original.
 from __future__ import annotations
 
 import bisect
-import functools
 import http.server
 import importlib.util
 import json
 import re
-import socketserver
 import sys
-import threading
 from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
@@ -134,29 +131,30 @@ def _spec_status_groups(target: Path) -> tuple[frozenset[str], frozenset[str], d
         raw_spec_statuses = data["spec_statuses"]
         raw_terminal = data["spec_statuses_terminal"]
         raw_ended_acts = data["spec_statuses_ended_acts"]
-        if not all(
-            isinstance(v, list)
-            for v in (raw_spec_statuses, raw_terminal, raw_ended_acts)
-        ):
-            raise TypeError(
-                "spec_statuses/spec_statuses_terminal/spec_statuses_ended_acts "
-                "must be lists"
-            )
+        if not all(isinstance(v, list) for v in (raw_spec_statuses, raw_terminal, raw_ended_acts)):
+            raise TypeError("spec_statuses/spec_statuses_terminal/spec_statuses_ended_acts must be lists")
         spec_statuses = frozenset(str(s) for s in raw_spec_statuses)
         terminal = frozenset(str(s) for s in raw_terminal)
         ended_acts = frozenset(str(s) for s in raw_ended_acts)
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
-        return OPEN_SPEC_STATUSES, DELIVERED_SPEC_STATUSES, {
-            "inv": "", "kind": "spec-status-roster-degraded",
-            "project": "", "subject": rel, "status": "",
-            "detail": (
-                f"{rel} could not be read for INV-A's Spec-status vocabulary "
-                f"({exc.__class__.__name__}: {exc}) — falling back to "
-                f"OPEN_SPEC_STATUSES/DELIVERED_SPEC_STATUSES"
-            ),
-            "remedy": f"restore {rel} so INV-A reads the live declaration",
-            "warn": True,
-        }
+        return (
+            OPEN_SPEC_STATUSES,
+            DELIVERED_SPEC_STATUSES,
+            {
+                "inv": "",
+                "kind": "spec-status-roster-degraded",
+                "project": "",
+                "subject": rel,
+                "status": "",
+                "detail": (
+                    f"{rel} could not be read for INV-A's Spec-status vocabulary "
+                    f"({exc.__class__.__name__}: {exc}) — falling back to "
+                    f"OPEN_SPEC_STATUSES/DELIVERED_SPEC_STATUSES"
+                ),
+                "remedy": f"restore {rel} so INV-A reads the live declaration",
+                "warn": True,
+            },
+        )
     return (
         spec_statuses - terminal - {"extension-point"},
         terminal - ended_acts,
@@ -205,10 +203,9 @@ DEFERRED_SPECS: dict[str, str] = {
     # residual for no-Task surfaces; CAP-4 verified; marshal Epic 45 (45.1–45.3)
     # is the dispatch home. Do not treat this as full Ask-panel / all-skills
     # parity, and do not ship CAP-3a without its own evidence.
-    "spec-pyforge-charter":
-        "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
-        "no story can pick up; CAP-3 mechanism shipped as doctor 21.4; CAP-7/AUT-3 "
-        "wait on the Guildhall referent — do not mint a Charter epic",
+    "spec-pyforge-charter": "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
+    "no story can pick up; CAP-3 mechanism shipped as doctor 21.4; CAP-7/AUT-3 "
+    "wait on the Guildhall referent — do not mint a Charter epic",
     # `spec-token-economy-claude-session-path` was registered here 2026-09-16
     # (morning) as a `draft` seed whose three open questions were answered in its
     # memlog. De-registered the same day: the operator ruled no satellite Specs,
@@ -267,7 +264,7 @@ def _parse_declared_cap_ids(spec_md_text: str) -> set[int]:
     if not m:
         return set()
     nxt = _HEADING_RE.search(spec_md_text, m.end())
-    body = spec_md_text[m.end():nxt.start() if nxt else len(spec_md_text)]
+    body = spec_md_text[m.end() : nxt.start() if nxt else len(spec_md_text)]
     ids: set[int] = set()
     for line in body.splitlines():
         dm = _CAP_DECL_LINE_RE.match(line)
@@ -459,7 +456,7 @@ def _continuation_scalar(lines: list[str], idx: int) -> str | None:
     ``:``), or nothing at all -- exactly the shapes ``_frontmatter``'s two
     consumed keys never take, and which it has always skipped.
     """
-    for nxt in lines[idx + 1:]:
+    for nxt in lines[idx + 1 :]:
         if not nxt.strip():
             continue
         if not nxt[0].isspace():
@@ -621,7 +618,7 @@ def _board_lines(data_js: Path) -> dict[str, tuple[int, int]] | None:
         text = data_js.read_text(encoding="utf-8")
         if not text.startswith(_CHAIN_DATA_JS_PREFIX):
             return None
-        data = json.loads(text[len(_CHAIN_DATA_JS_PREFIX):].rstrip().rstrip(";"))
+        data = json.loads(text[len(_CHAIN_DATA_JS_PREFIX) :].rstrip().rstrip(";"))
     except Exception:  # noqa: BLE001 -- "cannot read the generated board" is
         # the one thing this function promises to degrade on, mirroring the
         # original script's own broad except.
@@ -709,9 +706,7 @@ def _station_board_line(proj: object) -> tuple[int, int] | None:
     return done, len(stories)
 
 
-def _check_chain_completeness(
-    target: Path, board: dict[str, tuple[int, int]] | None
-) -> list[dict]:
+def _check_chain_completeness(target: Path, board: dict[str, tuple[int, int]] | None) -> list[dict]:
     """Port of the original script's own ``check()`` -- see this module's own
     header and the original's for the full INV-A/B/C/D rationale. Findings
     are structured dicts here rather than printed lines; ``kind``/``detail``/
@@ -752,18 +747,22 @@ def _check_chain_completeness(
             _check_project_chain_completeness(project_dir, board, findings)
         except Exception as exc:  # noqa: BLE001 -- one project's failure must
             # not discard every other project's already-computed findings.
-            findings.append({
-                # NOT "INV-A": this catch wraps the whole INV-A/B/C/D
-                # evaluation, so stamping one invariant would point an
-                # operator (or an --inv filter) at Spec decomposition when the
-                # broken input was, say, the ledger INV-B reads.
-                "inv": "", "kind": "chain-completeness-unevaluable",
-                "project": project, "subject": project, "status": "",
-                "detail": (f"could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "remedy": "fix the malformed/unreadable input, then re-check",
-                "warn": True,
-            })
+            findings.append(
+                {
+                    # NOT "INV-A": this catch wraps the whole INV-A/B/C/D
+                    # evaluation, so stamping one invariant would point an
+                    # operator (or an --inv filter) at Spec decomposition when the
+                    # broken input was, say, the ledger INV-B reads.
+                    "inv": "",
+                    "kind": "chain-completeness-unevaluable",
+                    "project": project,
+                    "subject": project,
+                    "status": "",
+                    "detail": (f"could not be evaluated here — {exc.__class__.__name__}: {exc}"),
+                    "remedy": "fix the malformed/unreadable input, then re-check",
+                    "warn": True,
+                }
+            )
     return findings
 
 
@@ -816,7 +815,7 @@ def _check_project_chain_completeness(
         except Exception:  # noqa: BLE001, S112 -- see raw_prose's own loop.
             continue
         heading = _HEADING_RE.search(text)
-        stripped_parts.append(text[heading.start():] if heading else text)
+        stripped_parts.append(text[heading.start() :] if heading else text)
     prose = "\n\n".join(stripped_parts)
 
     spec_paths = sorted(pa.glob("specs/spec-*/SPEC.md"))
@@ -831,9 +830,7 @@ def _check_project_chain_completeness(
     # INV-B/C/D input) never pays for -- or risks degrading on -- a roster
     # read it has no use for.
     if spec_paths:
-        open_statuses, delivered_statuses, roster_warning = _spec_status_groups(
-            project_dir.parents[2]
-        )
+        open_statuses, delivered_statuses, roster_warning = _spec_status_groups(project_dir.parents[2])
         if roster_warning is not None:
             findings.append({**roster_warning, "project": project})
         decomposition_owed_statuses = open_statuses | delivered_statuses
@@ -853,13 +850,17 @@ def _check_project_chain_completeness(
         if slug in DEFERRED_SPECS:
             continue
         if "status" not in fm:
-            findings.append({
-                "inv": "INV-A", "kind": "spec-status-missing",
-                "project": project, "subject": slug, "status": "",
-                "detail": f"Spec {slug!r} has no status: in frontmatter",
-                "remedy": (f"add a status: line to {slug}, or add the slug to "
-                           f"DEFERRED_SPECS with the reason"),
-            })
+            findings.append(
+                {
+                    "inv": "INV-A",
+                    "kind": "spec-status-missing",
+                    "project": project,
+                    "subject": slug,
+                    "status": "",
+                    "detail": f"Spec {slug!r} has no status: in frontmatter",
+                    "remedy": (f"add a status: line to {slug}, or add the slug to DEFERRED_SPECS with the reason"),
+                }
+            )
             continue
         status = str(fm.get("status", "")).strip()
         if status not in decomposition_owed_statuses:
@@ -890,17 +891,26 @@ def _check_project_chain_completeness(
                 or (bool(dream_stem) and f"{dream_stem}.md" in raw_prose)
             )
             if not referenced:
-                findings.append({
-                    "inv": "INV-A", "kind": "delivered-spec-not-decomposed",
-                    "project": project, "subject": slug, "status": status,
-                    "detail": (f"{station} shipped {slug} ({status}) and no FR or epic "
-                               f"references it — its CAPs were delivered with no story "
-                               f"trail, so the ledger under-reports what shipped"),
-                    "remedy": (f"mint a RETROACTIVE epic for {slug} in {project}'s "
-                               f"epics.md documenting what already exists (stories at "
-                               f"done, precedent: Epics 38/39/57) plus its ledger keys "
-                               f"— never DEFERRED_SPECS, which is for undone work"),
-                })
+                findings.append(
+                    {
+                        "inv": "INV-A",
+                        "kind": "delivered-spec-not-decomposed",
+                        "project": project,
+                        "subject": slug,
+                        "status": status,
+                        "detail": (
+                            f"{station} shipped {slug} ({status}) and no FR or epic "
+                            f"references it — its CAPs were delivered with no story "
+                            f"trail, so the ledger under-reports what shipped"
+                        ),
+                        "remedy": (
+                            f"mint a RETROACTIVE epic for {slug} in {project}'s "
+                            f"epics.md documenting what already exists (stories at "
+                            f"done, precedent: Epics 38/39/57) plus its ledger keys "
+                            f"— never DEFERRED_SPECS, which is for undone work"
+                        ),
+                    }
+                )
             continue
 
         if not declared:
@@ -909,31 +919,49 @@ def _check_project_chain_completeness(
             # requirement -- see the block comment above).
             bare = slug.removeprefix("spec-")
             if bare not in raw_prose and slug not in raw_prose:
-                findings.append({
-                    "inv": "INV-A", "kind": "spec-not-decomposed",
-                    "project": project, "subject": slug, "status": status,
-                    "detail": (f"{station} owns an open Spec ({status}) that no FR or "
-                               f"epic references — the station can render 100% while "
-                               f"owing it"),
-                    "remedy": (f"decompose {slug} into {project}'s PRD + epics, or add "
-                               f"it to DEFERRED_SPECS with the reason"),
-                })
+                findings.append(
+                    {
+                        "inv": "INV-A",
+                        "kind": "spec-not-decomposed",
+                        "project": project,
+                        "subject": slug,
+                        "status": status,
+                        "detail": (
+                            f"{station} owns an open Spec ({status}) that no FR or "
+                            f"epic references — the station can render 100% while "
+                            f"owing it"
+                        ),
+                        "remedy": (
+                            f"decompose {slug} into {project}'s PRD + epics, or add "
+                            f"it to DEFERRED_SPECS with the reason"
+                        ),
+                    }
+                )
             continue
 
         uncovered = sorted(declared - cited_by_spec.get(slug, set()))
         if uncovered:
             missing = _format_cap_ids(uncovered)
-            findings.append({
-                "inv": "INV-A", "kind": "spec-not-decomposed",
-                "project": project, "subject": slug, "status": status,
-                "detail": (f"{station} owns an open Spec ({status}) with {missing} "
-                           f"uncovered by any epic or FR — the station can render "
-                           f"100% while owing them"),
-                "remedy": (f"decompose {missing} of {slug} into {project}'s PRD + "
-                           f"epics, or add {slug} to DEFERRED_SPECS with the reason "
-                           f"(DEFERRED_SPECS remains available as a whole-Spec escape "
-                           f"hatch)"),
-            })
+            findings.append(
+                {
+                    "inv": "INV-A",
+                    "kind": "spec-not-decomposed",
+                    "project": project,
+                    "subject": slug,
+                    "status": status,
+                    "detail": (
+                        f"{station} owns an open Spec ({status}) with {missing} "
+                        f"uncovered by any epic or FR — the station can render "
+                        f"100% while owing them"
+                    ),
+                    "remedy": (
+                        f"decompose {missing} of {slug} into {project}'s PRD + "
+                        f"epics, or add {slug} to DEFERRED_SPECS with the reason "
+                        f"(DEFERRED_SPECS remains available as a whole-Spec escape "
+                        f"hatch)"
+                    ),
+                }
+            )
 
     # ---- INV-B: epics.md set == ledger set ------------------------------------
     epics_md = _canonical_epics(project_dir)
@@ -943,26 +971,37 @@ def _check_project_chain_completeness(
     led, unparsed = _ledger_story_ids(story_rows)
 
     if epics_md and unparsed:
-        findings.append({
-            "inv": "INV-B", "kind": "unparseable-ledger-key",
-            "project": project, "subject": f"{len(unparsed)} key(s)",
-            "status": ", ".join(sorted(unparsed)[:6]),
-            "detail": ("no recognisable story id — reported rather than dropped, "
-                       "because silently skipping a key is how a detector claims a "
-                       "clean set it never compared"),
-            "remedy": "rename to <epic>-<seq>-… or <wave><n>-…, or retire the key",
-        })
+        findings.append(
+            {
+                "inv": "INV-B",
+                "kind": "unparseable-ledger-key",
+                "project": project,
+                "subject": f"{len(unparsed)} key(s)",
+                "status": ", ".join(sorted(unparsed)[:6]),
+                "detail": (
+                    "no recognisable story id — reported rather than dropped, "
+                    "because silently skipping a key is how a detector claims a "
+                    "clean set it never compared"
+                ),
+                "remedy": "rename to <epic>-<seq>-… or <wave><n>-…, or retire the key",
+            }
+        )
     if epics_md and story_rows and not _story_ids_from_epics(epics_md):
-        findings.append({
-            "inv": "INV-D", "kind": "canonical-epics-declares-no-stories",
-            "project": project, "subject": epics_md.name,
-            "status": f"0 `### Story` headings vs {len(story_rows)} ledger key(s)",
-            "detail": ("the canonical epics doc declares NO stories in the shape every "
-                       "other station uses, so INV-B has nothing to compare and would "
-                       "silently pass — an empty set trivially matches nothing"),
-            "remedy": ("rewrite as `## Epic N: Title` + `### Story <id>: Title`, "
-                       "covering every ledger story"),
-        })
+        findings.append(
+            {
+                "inv": "INV-D",
+                "kind": "canonical-epics-declares-no-stories",
+                "project": project,
+                "subject": epics_md.name,
+                "status": f"0 `### Story` headings vs {len(story_rows)} ledger key(s)",
+                "detail": (
+                    "the canonical epics doc declares NO stories in the shape every "
+                    "other station uses, so INV-B has nothing to compare and would "
+                    "silently pass — an empty set trivially matches nothing"
+                ),
+                "remedy": ("rewrite as `## Epic N: Title` + `### Story <id>: Title`, covering every ledger story"),
+            }
+        )
     if epics_md and story_rows:
         ep_sets = _story_ids_from_epics(epics_md)
         ep_all = {i for s in ep_sets for i in s}
@@ -970,22 +1009,32 @@ def _check_project_chain_completeness(
             only_epics = sorted(next(iter(sorted(s))) for s in ep_sets if not (s & led))
             only_ledger = sorted(led - ep_all)
             if only_epics:
-                findings.append({
-                    "inv": "INV-B", "kind": "story-without-ledger-key",
-                    "project": project, "subject": f"{len(only_epics)} story(ies)",
-                    "status": ", ".join(only_epics[:10]),
-                    "detail": ("in epics.md with no ledger key — the board's percentage "
-                               "is computed over a set that excludes them"),
-                    "remedy": f"add them to {project}'s Tier-3 feed, then sprint-ledger-sync",
-                })
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "story-without-ledger-key",
+                        "project": project,
+                        "subject": f"{len(only_epics)} story(ies)",
+                        "status": ", ".join(only_epics[:10]),
+                        "detail": (
+                            "in epics.md with no ledger key — the board's percentage "
+                            "is computed over a set that excludes them"
+                        ),
+                        "remedy": f"add them to {project}'s Tier-3 feed, then sprint-ledger-sync",
+                    }
+                )
             if only_ledger:
-                findings.append({
-                    "inv": "INV-B", "kind": "ledger-key-without-story",
-                    "project": project, "subject": f"{len(only_ledger)} key(s)",
-                    "status": ", ".join(only_ledger[:10]),
-                    "detail": "in the ledger with no epics.md story — an untraceable row",
-                    "remedy": f"add the story to {epics_md.name}, or retire the key",
-                })
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "ledger-key-without-story",
+                        "project": project,
+                        "subject": f"{len(only_ledger)} key(s)",
+                        "status": ", ".join(only_ledger[:10]),
+                        "detail": "in the ledger with no epics.md story — an untraceable row",
+                        "remedy": f"add the story to {epics_md.name}, or retire the key",
+                    }
+                )
 
     # ---- INV-B (epic arm): `## Epic N` headings == `epic-N` ledger keys ------
     # Added 2026-09-14. The story arm above compares `### Story` ids only; every
@@ -999,43 +1048,62 @@ def _check_project_chain_completeness(
             heading_no_key = sorted(ep_headings - ep_keys)
             key_no_heading = sorted(ep_keys - ep_headings)
             if heading_no_key:
-                findings.append({
-                    "inv": "INV-B", "kind": "epic-heading-without-ledger-key",
-                    "project": project, "subject": f"{len(heading_no_key)} epic(s)",
-                    "status": ", ".join(f"Epic {n}" for n in heading_no_key[:10]),
-                    "detail": (f"{', '.join(f'Epic {n}' for n in heading_no_key[:10])} "
-                               f"declared in {epics_md.name} with no `epic-N` ledger key — "
-                               f"fleet-picture counts epics from the ledger, so this epic "
-                               f"is invisible to the board"),
-                    "remedy": f"add the epic-N key to the ledger, or retire the heading",
-                })
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "epic-heading-without-ledger-key",
+                        "project": project,
+                        "subject": f"{len(heading_no_key)} epic(s)",
+                        "status": ", ".join(f"Epic {n}" for n in heading_no_key[:10]),
+                        "detail": (
+                            f"{', '.join(f'Epic {n}' for n in heading_no_key[:10])} "
+                            f"declared in {epics_md.name} with no `epic-N` ledger key — "
+                            f"fleet-picture counts epics from the ledger, so this epic "
+                            f"is invisible to the board"
+                        ),
+                        "remedy": "add the epic-N key to the ledger, or retire the heading",
+                    }
+                )
             if key_no_heading:
-                findings.append({
-                    "inv": "INV-B", "kind": "ledger-epic-key-without-heading",
-                    "project": project, "subject": f"{len(key_no_heading)} key(s)",
-                    "status": ", ".join(f"epic-{n}" for n in key_no_heading[:10]),
-                    "detail": (f"{', '.join(f'epic-{n}' for n in key_no_heading[:10])} "
-                               f"in the ledger with no `## Epic N` heading in "
-                               f"{epics_md.name} — its stories render under the preceding "
-                               f"epic, and the board over-counts"),
-                    "remedy": (f"write the missing `## Epic N:` heading above that epic's "
-                               f"own stories, or retire the key"),
-                })
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "ledger-epic-key-without-heading",
+                        "project": project,
+                        "subject": f"{len(key_no_heading)} key(s)",
+                        "status": ", ".join(f"epic-{n}" for n in key_no_heading[:10]),
+                        "detail": (
+                            f"{', '.join(f'epic-{n}' for n in key_no_heading[:10])} "
+                            f"in the ledger with no `## Epic N` heading in "
+                            f"{epics_md.name} — its stories render under the preceding "
+                            f"epic, and the board over-counts"
+                        ),
+                        "remedy": (
+                            "write the missing `## Epic N:` heading above that epic's own stories, or retire the key"
+                        ),
+                    }
+                )
 
     # ---- INV-C: board line == ledger ------------------------------------------
     if board is not None and station in board and story_rows:
         b_done, b_total = board[station]
         l_done = sum(1 for v in story_rows.values() if v == "done")
         if (b_total, b_done) != (len(story_rows), l_done):
-            findings.append({
-                "inv": "INV-C", "kind": "board-diverges-from-ledger",
-                "project": project, "subject": station,
-                "status": f"board {b_done}/{b_total} vs ledger {l_done}/{len(story_rows)}",
-                "detail": ("the Guildhall renders a different story set than the "
-                           "durable record; scan_projects only UPGRADES a curated "
-                           "line, so this cannot self-heal"),
-                "remedy": "rebuild the station's data.js epics array from its ledger",
-            })
+            findings.append(
+                {
+                    "inv": "INV-C",
+                    "kind": "board-diverges-from-ledger",
+                    "project": project,
+                    "subject": station,
+                    "status": f"board {b_done}/{b_total} vs ledger {l_done}/{len(story_rows)}",
+                    "detail": (
+                        "the Guildhall renders a different story set than the "
+                        "durable record; scan_projects only UPGRADES a curated "
+                        "line, so this cannot self-heal"
+                    ),
+                    "remedy": "rebuild the station's data.js epics array from its ledger",
+                }
+            )
 
 
 def gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
@@ -1084,9 +1152,7 @@ def _checkpoint_finding(
         check=check,
         status=DoctorStatus.OK if passed else DoctorStatus.FAIL,
         message=(
-            f"project {project}: {name} checkpoint pass"
-            if passed
-            else f"project {project}: {name} checkpoint fail"
+            f"project {project}: {name} checkpoint pass" if passed else f"project {project}: {name} checkpoint fail"
         ),
         evidence={
             "kind": check,
@@ -1098,9 +1164,7 @@ def _checkpoint_finding(
     )
 
 
-def gather_chain_layers_audit(
-    target: Path, project: str
-) -> tuple[Finding, ...]:
+def gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...]:
     """CAP-3 chain audit for ``project`` (Stories 17.3 + 21.1).
 
     Read-only; pass/fail per checkpoint (layers, coherence, staleness,
@@ -1114,9 +1178,7 @@ def gather_chain_layers_audit(
     )
 
 
-def _gather_chain_layers_audit(
-    target: Path, project: str
-) -> tuple[Finding, ...]:
+def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...]:
     try:
         gen = _load_dashboard_generate(target)
     except Exception as exc:  # noqa: BLE001 -- unevaluable, never crash
@@ -1125,10 +1187,7 @@ def _gather_chain_layers_audit(
                 source=Source.CHAIN_LAYERS_AUDIT,
                 check="chain-layers-audit-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"fleet_scan failed to load — "
-                    f"chain layer audit cannot be evaluated ({exc})"
-                ),
+                message=(f"fleet_scan failed to load — chain layer audit cannot be evaluated ({exc})"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
                     "project": project,
@@ -1197,20 +1256,12 @@ def _gather_chain_layers_audit(
                 source=Source.CHAIN_LAYERS_AUDIT,
                 check="chain-layers-audit-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"project {project!r} has no planning-artifacts tree — "
-                    "chain layer audit cannot be evaluated"
-                ),
+                message=(f"project {project!r} has no planning-artifacts tree — chain layer audit cannot be evaluated"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
                     "project": project,
                     "detail": "planning-artifacts missing",
-                    "subject": str(
-                        Path("_bmad-output")
-                        / "projects"
-                        / project
-                        / "planning-artifacts"
-                    ),
+                    "subject": str(Path("_bmad-output") / "projects" / project / "planning-artifacts"),
                 },
             ),
         )
@@ -1222,11 +1273,7 @@ def _gather_chain_layers_audit(
     # CAP-3 coherence/staleness: reuse scan_fleet's live row for this project.
     fleet = gen.scan_fleet({}, None)
     fleet_row = next(
-        (
-            r
-            for r in fleet.get("rows", [])
-            if r.get("project") == project and r.get("slug") == project
-        ),
+        (r for r in fleet.get("rows", []) if r.get("project") == project and r.get("slug") == project),
         None,
     )
     if fleet_row is None:
@@ -1240,10 +1287,7 @@ def _gather_chain_layers_audit(
                 source=Source.CHAIN_LAYERS_AUDIT,
                 check="chain-layers-audit-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"project {project!r} has no fleet chain row — "
-                    "CAP-3 audit cannot be evaluated"
-                ),
+                message=(f"project {project!r} has no fleet chain row — CAP-3 audit cannot be evaluated"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
                     "project": project,
@@ -1304,8 +1348,7 @@ def _gather_chain_layers_audit(
             status=DoctorStatus.OK if not missing else DoctorStatus.WARN,
             message=(
                 f"project {project}: {len(present)}/{len(applicable)} chain layers "
-                f"present"
-                + (f"; missing: {', '.join(missing)}" if missing else "")
+                f"present" + (f"; missing: {', '.join(missing)}" if missing else "")
             ),
             evidence={
                 "kind": "chain-layers-audit",
@@ -1356,8 +1399,8 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
                     "every open Spec is decomposed, and epics, ledger and board agree"
                     if board is not None
                     else "every open Spec is decomposed and epics and ledger agree; "
-                         "INV-C (Guildhall data.js) is retired, so INV-C was NOT "
-                         "evaluated"
+                    "INV-C (Guildhall data.js) is retired, so INV-C was NOT "
+                    "evaluated"
                 ),
                 evidence={"projects": n, "board_read": board is not None},
             ),
@@ -1495,16 +1538,6 @@ def _load_dashboard_generate(target: Path):  # pragma: no cover -- retired Guild
     return gen
 
 
-
-
-
-
-
-
-
-
-
-
 def _no_system_exit(fn):
     """Run ``fn``, converting a ``SystemExit`` it raises into a plain
     ``RuntimeError`` so ``degrade_on_exception`` can see it.
@@ -1522,9 +1555,7 @@ def _no_system_exit(fn):
     try:
         return fn()
     except SystemExit as exc:
-        raise RuntimeError(
-            f"a dynamically loaded file called sys.exit({exc.code!r}) at call time"
-        ) from exc
+        raise RuntimeError(f"a dynamically loaded file called sys.exit({exc.code!r}) at call time") from exc
 
 
 _RETIRED_CONSOLE_FILES = (
@@ -1588,10 +1619,7 @@ def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
             source=Source.DASHBOARD_DRIFT,
             check="dashboard-drift",
             status=DoctorStatus.OK,
-            message=(
-                "Guildhall generator, data.js, and the four dashboard pixi "
-                "tasks stay gone"
-            ),
+            message=("Guildhall generator, data.js, and the four dashboard pixi tasks stay gone"),
             evidence={"retired": True},
         ),
     )
@@ -1655,8 +1683,6 @@ _LAYOUT_CHECK = "console-bar-layout"
 # sizes; they are the invariants.
 
 
-
-
 class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
     """SimpleHTTPRequestHandler logs every GET to stderr, which buries the one
     line a detector is supposed to emit. A gate's output is its whole product.
@@ -1667,14 +1693,6 @@ class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
 
     def log_message(self, *_args):  # noqa: D102
         pass
-
-
-
-
-
-
-
-
 
 
 def _layout_warn(message: str, target: Path) -> tuple[Finding, ...]:
@@ -1735,6 +1753,3 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
             evidence={"retired": True},
         ),
     )
-
-
-

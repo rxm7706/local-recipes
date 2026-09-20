@@ -62,9 +62,7 @@ class _FakeGraphifyModule:
         return [Path(target) / "a.py"]
 
     def extract(self, files, cache_root=None, root=None, parallel=True):
-        self.extract_calls.append(
-            {"files": files, "cache_root": cache_root, "root": root, "parallel": parallel}
-        )
+        self.extract_calls.append({"files": files, "cache_root": cache_root, "root": root, "parallel": parallel})
         return {"nodes": [], "edges": [], "hyperedges": []}
 
     def build_from_json(self, extraction, root=None):
@@ -119,9 +117,7 @@ def test_graphify_extra_enabled_defaults_to_false(monkeypatch: pytest.MonkeyPatc
         ("nope", False),
     ],
 )
-def test_graphify_extra_enabled_parses_env_var(
-    monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
-) -> None:
+def test_graphify_extra_enabled_parses_env_var(monkeypatch: pytest.MonkeyPatch, value: str, expected: bool) -> None:
     monkeypatch.setenv(GRAPHIFY_EXTRA_ENV, value)
     assert graphify_extra_enabled() is expected
 
@@ -157,9 +153,7 @@ def test_ingest_repo_raises_clear_error_when_graphify_not_installed(tmp_path: Pa
         ingest_repo(tmp_path)
 
 
-def test_ingest_repo_converts_nodes_and_drops_sourceless_stubs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_ingest_repo_converts_nodes_and_drops_sourceless_stubs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
     (target / "example.py").write_text("def foo():\n    pass\n", encoding="utf-8")
@@ -178,9 +172,7 @@ def test_ingest_repo_converts_nodes_and_drops_sourceless_stubs(
             "source_file": "",
         },
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
 
     warnings: list[str] = []
     nodes = ingest_repo(tmp_path, warnings=warnings)
@@ -208,9 +200,7 @@ def test_ingest_repo_node_without_source_location_citation_is_bare_path(
             "source_file": "src/shared/packages/example.py",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
 
     nodes = ingest_repo(tmp_path)
 
@@ -218,9 +208,7 @@ def test_ingest_repo_node_without_source_location_citation_is_bare_path(
     assert nodes[0].citation == "src/shared/packages/example.py"
 
 
-def test_ingest_repo_writes_through_the_same_flatfile_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_ingest_repo_writes_through_the_same_flatfile_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC2: never a parallel store -- the returned nodes upsert cleanly
     through the ordinary `GraphStore` port."""
     from pyforge.scribe.graph_store import FlatFileGraphStore
@@ -235,9 +223,7 @@ def test_ingest_repo_writes_through_the_same_flatfile_store(
             "source_location": "L1",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
 
     nodes = ingest_repo(tmp_path)
     store = FlatFileGraphStore(tmp_path / "graph.json")
@@ -256,9 +242,7 @@ def test_graphify_api_unwraps_submodule_shadowing_the_callable() -> None:
     assert extract.__func__ is fake.extract.extract.__func__
 
 
-def test_ingest_repo_unwraps_extract_submodule(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_ingest_repo_unwraps_extract_submodule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
     (target / "example.py").write_text("x = 1\n", encoding="utf-8")
@@ -307,16 +291,12 @@ def test_build_graph_report_missing_target_raises(tmp_path: Path) -> None:
         build_graph_report(tmp_path)
 
 
-def test_build_graph_report_includes_god_node_findings(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_build_graph_report_includes_god_node_findings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
     fake_nodes = {"a": {"label": "A", "source_file": "src/shared/packages/a.py"}}
     god = [{"id": "a", "label": "A", "degree": 5}]
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes, god)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes, god))
 
     report = build_graph_report(tmp_path)
 
@@ -326,14 +306,10 @@ def test_build_graph_report_includes_god_node_findings(
     assert "A (degree=5)" in report
 
 
-def test_build_graph_report_no_god_nodes_says_none(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_build_graph_report_no_god_nodes_says_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule({}, [])
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule({}, []))
 
     report = build_graph_report(tmp_path)
 
@@ -393,9 +369,7 @@ class _PerTargetFake(_FakeGraphifyModule):
         assert last is not None
         posix = last.as_posix()
         rel = next(
-            name
-            for name in ("src/shared/packages", "src/platform", "scripts", "recipes")
-            if posix.endswith(name)
+            name for name in ("src/shared/packages", "src/platform", "scripts", "recipes") if posix.endswith(name)
         )
         return _FakeGraph(
             {
@@ -409,9 +383,7 @@ class _PerTargetFake(_FakeGraphifyModule):
         )
 
 
-def test_ingest_repo_walks_named_list_and_skips_recipes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_ingest_repo_walks_named_list_and_skips_recipes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     for rel in (
         "src/shared/packages",
         "src/platform",
@@ -435,9 +407,7 @@ def test_ingest_repo_walks_named_list_and_skips_recipes(
     assert warnings == []
 
 
-def test_ingest_repo_missing_optional_targets_are_silent(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_ingest_repo_missing_optional_targets_are_silent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     packages = tmp_path / "src" / "shared" / "packages"
     packages.mkdir(parents=True)
     (packages / "a.py").write_text("x = 1\n", encoding="utf-8")
@@ -451,9 +421,7 @@ def test_ingest_repo_missing_optional_targets_are_silent(
     assert {n.citation for n in nodes} == {"src/shared/packages/a.py:L1"}
 
 
-def test_ingest_repo_explicit_target_stays_one_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_ingest_repo_explicit_target_stays_one_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     for rel in ("src/shared/packages", "scripts"):
         path = tmp_path / rel
         path.mkdir(parents=True)
@@ -465,12 +433,6 @@ def test_ingest_repo_explicit_target_stays_one_path(
 
     assert {n.citation for n in nodes} == {"scripts/a.py:L1"}
     assert len(fake.seen) == 1
-
-
-def test_default_graphify_targets_are_the_named_list_not_recipes() -> None:
-    rels = {p.as_posix() for p in DEFAULT_GRAPHIFY_TARGETS}
-    assert rels == {"src/shared/packages", "src/platform", "scripts"}
-    assert DEFAULT_GRAPHIFY_TARGET.as_posix() == "src/shared/packages"
 
 
 class _PerTargetFake(_FakeGraphifyModule):
@@ -489,9 +451,7 @@ class _PerTargetFake(_FakeGraphifyModule):
         assert last is not None
         posix = last.as_posix()
         rel = next(
-            name
-            for name in ("src/shared/packages", "src/platform", "scripts", "recipes")
-            if posix.endswith(name)
+            name for name in ("src/shared/packages", "src/platform", "scripts", "recipes") if posix.endswith(name)
         )
         return _FakeGraph(
             {
@@ -503,61 +463,3 @@ class _PerTargetFake(_FakeGraphifyModule):
                 }
             }
         )
-
-
-def test_ingest_repo_walks_named_list_and_skips_recipes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    for rel in (
-        "src/shared/packages",
-        "src/platform",
-        "scripts",
-        "recipes",
-    ):
-        path = tmp_path / rel
-        path.mkdir(parents=True)
-        (path / "a.py").write_text("x = 1\n", encoding="utf-8")
-    fake = _PerTargetFake()
-    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: fake)
-    warnings: list[str] = []
-
-    nodes = ingest_repo(tmp_path, warnings=warnings)
-
-    citations = {n.citation for n in nodes}
-    assert "src/shared/packages/a.py:L1" in citations
-    assert "src/platform/a.py:L1" in citations
-    assert "scripts/a.py:L1" in citations
-    assert not any(c.startswith("recipes/") for c in citations)
-    assert warnings == []
-
-
-def test_ingest_repo_missing_optional_targets_are_silent(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    packages = tmp_path / "src" / "shared" / "packages"
-    packages.mkdir(parents=True)
-    (packages / "a.py").write_text("x = 1\n", encoding="utf-8")
-    fake = _PerTargetFake()
-    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: fake)
-    warnings: list[str] = []
-
-    nodes = ingest_repo(tmp_path, warnings=warnings)
-
-    assert warnings == []
-    assert {n.citation for n in nodes} == {"src/shared/packages/a.py:L1"}
-
-
-def test_ingest_repo_explicit_target_stays_one_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    for rel in ("src/shared/packages", "scripts"):
-        path = tmp_path / rel
-        path.mkdir(parents=True)
-        (path / "a.py").write_text("x = 1\n", encoding="utf-8")
-    fake = _PerTargetFake()
-    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: fake)
-
-    nodes = ingest_repo(tmp_path, target=Path("scripts"))
-
-    assert {n.citation for n in nodes} == {"scripts/a.py:L1"}
-    assert len(fake.seen) == 1

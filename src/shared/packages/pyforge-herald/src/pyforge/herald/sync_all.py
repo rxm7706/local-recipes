@@ -83,7 +83,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from pyforge.core.atomic_write import atomic_write_text
 
-from . import errors, state, stamps
+from . import errors, stamps, state
 from .deck_pipeline import (
     _EXPORT_ARTIFACT_PREFIX,
     PROTOTYPE_ARTIFACT_KEY,
@@ -175,10 +175,7 @@ class DeckSyncReport:
             return False
         if self.dry_run:
             return not self.would_sync
-        return not (
-            self.pulled or self.overwrote_local or self.overrode or self.derived
-            or self.pushed
-        )
+        return not (self.pulled or self.overwrote_local or self.overrode or self.derived or self.pushed)
 
     def labels(self) -> tuple[str, ...]:
         if self.skipped_reason is not None:
@@ -271,9 +268,7 @@ def _write_proof(
             json.dumps(_report_to_dict(report), indent=2, sort_keys=True) + "\n",
         )
     except (OSError, ValueError) as exc:
-        raise errors.HeraldError(
-            f"could not write proof report {report_path}: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"could not write proof report {report_path}: {exc}") from exc
     stamps.write_stamp(report_path, repo_root=repo_root, slug=report.slug)
 
 
@@ -316,31 +311,20 @@ class LocalEditDetector(Protocol):
         ...
 
 
-def _run_bounded(
-    cmd: list[str], *, cwd: Path, timeout: float, what: str
-) -> subprocess.CompletedProcess[str]:
+def _run_bounded(cmd: list[str], *, cwd: Path, timeout: float, what: str) -> subprocess.CompletedProcess[str]:
     """Shared bounded-subprocess wrapper -- mirrors
     ``deck_pipeline.PixiDeckExporter``'s own shape exactly (capture output,
     bounded timeout, never ``check=True``, a tail of stderr/stdout on a
     non-zero exit)."""
     try:
-        completed = subprocess.run(
-            cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout, check=False
-        )
+        completed = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout, check=False)
     except subprocess.TimeoutExpired as exc:
-        raise errors.HeraldError(
-            f"{what} failed: {' '.join(cmd)!r} in {cwd} exceeded {timeout}s ({exc})"
-        ) from exc
+        raise errors.HeraldError(f"{what} failed: {' '.join(cmd)!r} in {cwd} exceeded {timeout}s ({exc})") from exc
     except OSError as exc:
-        raise errors.HeraldError(
-            f"{what} failed: could not run {' '.join(cmd)!r} in {cwd} ({exc})"
-        ) from exc
+        raise errors.HeraldError(f"{what} failed: could not run {' '.join(cmd)!r} in {cwd} ({exc})") from exc
     if completed.returncode != 0:
         tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
-        raise errors.HeraldError(
-            f"{what} failed: {' '.join(cmd)!r} in {cwd} exited "
-            f"{completed.returncode}: {tail}"
-        )
+        raise errors.HeraldError(f"{what} failed: {' '.join(cmd)!r} in {cwd} exited {completed.returncode}: {tail}")
     return completed
 
 
@@ -393,13 +377,10 @@ class PixiDeckDeriver:
         before = self._export_fingerprint(deck_dir, slug)
         trio_changed = False
         project_dir = deck_dir / "project"
-        has_poster = project_dir.is_dir() and any(
-            project_dir.glob(f"*{_POSTER_SUFFIX}")
-        )
+        has_poster = project_dir.is_dir() and any(project_dir.glob(f"*{_POSTER_SUFFIX}"))
         if has_poster:
             completed = _run_bounded(
-                ["pixi", "run", "-e", "pyforge-guild", "deck-trio", slug,
-                 "--head", "--deck"],
+                ["pixi", "run", "-e", "pyforge-guild", "deck-trio", slug, "--head", "--deck"],
                 cwd=repo_root,
                 timeout=self._timeout,
                 what="deck-trio",
@@ -412,10 +393,7 @@ class PixiDeckDeriver:
     @staticmethod
     def _export_fingerprint(deck_dir: Path, slug: str) -> tuple[tuple[str, str], ...]:
         return tuple(
-            sorted(
-                (candidate.filename, candidate.local_hash)
-                for candidate in _discover_export_files(deck_dir, slug)
-            )
+            sorted((candidate.filename, candidate.local_hash) for candidate in _discover_export_files(deck_dir, slug))
         )
 
 
@@ -459,9 +437,7 @@ class GitLocalEditDetector:
 # --- the loop -------------------------------------------------------------
 
 
-def _local_path_for_pull(
-    deck_dir: Path, slug: str, artifact_key: str, *, persona: str, date_str: str
-) -> Path:
+def _local_path_for_pull(deck_dir: Path, slug: str, artifact_key: str, *, persona: str, date_str: str) -> Path:
     """The exact local path each ``pull_*`` function itself lands
     ``artifact_key`` at -- duplicated here (not exported by
     ``deck_pipeline``) purely so the dirty-check below can run BEFORE the
@@ -470,17 +446,11 @@ def _local_path_for_pull(
     if artifact_key == PROTOTYPE_ARTIFACT_KEY:
         return deck_dir / "project" / f"PyForge {persona}.dc.html"
     if artifact_key == STANDALONE_BUNDLE_ARTIFACT_KEY:
-        return (
-            deck_dir / "src" / "marp"
-            / f"{slug}-infographic-standalone-{date_str}.html"
-        )
+        return deck_dir / "src" / "marp" / f"{slug}-infographic-standalone-{date_str}.html"
     if artifact_key.startswith("marp:"):
         kind = artifact_key.removeprefix("marp:")
         return deck_dir / "src" / "marp" / f"{slug}-{kind}-{date_str}.md"
-    raise errors.HeraldError(
-        f"cannot sync {slug!r}: unrecognized tracked artifact key "
-        f"{artifact_key!r}"
-    )
+    raise errors.HeraldError(f"cannot sync {slug!r}: unrecognized tracked artifact key {artifact_key!r}")
 
 
 def _pull_one(
@@ -502,35 +472,43 @@ def _pull_one(
     only when the local file existed, carried an uncommitted edit, AND the
     pull actually changed it (a dirty file the pull left untouched -- the
     etag hadn't moved -- was never overwritten, so it is not reported)."""
-    local_path = _local_path_for_pull(
-        deck_dir, slug, artifact_key, persona=persona, date_str=date_str
-    )
-    was_dirty = local_path.is_file() and edit_detector.is_dirty(
-        repo_root=repo_root, path=local_path
-    )
+    local_path = _local_path_for_pull(deck_dir, slug, artifact_key, persona=persona, date_str=date_str)
+    was_dirty = local_path.is_file() and edit_detector.is_dirty(repo_root=repo_root, path=local_path)
     if artifact_key == PROTOTYPE_ARTIFACT_KEY:
         result = pull_prototype(
-            transport, slug=slug, repo_root=repo_root, state_path=state_path,
-            prover=prover, exporter=_SKIP_EXPORTER, now=now,
+            transport,
+            slug=slug,
+            repo_root=repo_root,
+            state_path=state_path,
+            prover=prover,
+            exporter=_SKIP_EXPORTER,
+            now=now,
         )
     elif artifact_key == STANDALONE_BUNDLE_ARTIFACT_KEY:
         result = pull_standalone_bundle(
-            transport, slug=slug, repo_root=repo_root, state_path=state_path,
-            exporter=_SKIP_EXPORTER, now=now,
+            transport,
+            slug=slug,
+            repo_root=repo_root,
+            state_path=state_path,
+            exporter=_SKIP_EXPORTER,
+            now=now,
         )
     else:
         kind = artifact_key.removeprefix("marp:")
         result = pull_marp_source(
-            transport, slug=slug, repo_root=repo_root, state_path=state_path,
-            kind=kind, exporter=_SKIP_EXPORTER, now=now,
+            transport,
+            slug=slug,
+            repo_root=repo_root,
+            state_path=state_path,
+            kind=kind,
+            exporter=_SKIP_EXPORTER,
+            now=now,
         )
     changed = not result.unchanged
     return changed, (changed and was_dirty)
 
 
-def _dry_run_preview(
-    transport: DesignTransport, *, slug: str, existing: state.DeckState
-) -> DeckSyncReport:
+def _dry_run_preview(transport: DesignTransport, *, slug: str, existing: state.DeckState) -> DeckSyncReport:
     """Read-only preview of the pull step only (module docstring). Compares
     only pull-tracked keys, skipping ``_EXPORT_ARTIFACT_PREFIX`` ones the
     same way ``_sync_one_deck``'s real-run loop does -- unlike
@@ -551,9 +529,7 @@ def _dry_run_preview(
             continue  # push-tracked, not pull-tracked
         remote_path = _remote_path_for_artifact(slug, artifact_key)
         try:
-            file_read = transport.read_file(
-                project_id=existing.project_id, path=remote_path, if_none_match=etag
-            )
+            file_read = transport.read_file(project_id=existing.project_id, path=remote_path, if_none_match=etag)
         except errors.TransportError:
             saw_conflict = True
             continue
@@ -561,7 +537,8 @@ def _dry_run_preview(
             saw_change = True
     if saw_conflict:
         return DeckSyncReport(
-            slug=slug, dry_run=True,
+            slug=slug,
+            dry_run=True,
             error="dry-run: could not compare against Design (conflict)",
         )
     return DeckSyncReport(slug=slug, dry_run=True, would_sync=saw_change)
@@ -583,7 +560,8 @@ def _sync_one_deck(
     existing = state.read(state_path, slug)
     if existing is None:
         return DeckSyncReport(
-            slug=slug, dry_run=dry_run,
+            slug=slug,
+            dry_run=dry_run,
             skipped_reason="not seeded -- run 'herald deck seed' first",
         )
     if not existing.etags:
@@ -591,10 +569,9 @@ def _sync_one_deck(
         # from a genuinely fully-synced "unchanged" deck (there is nothing
         # here to compare against, pull-tracked or otherwise).
         return DeckSyncReport(
-            slug=slug, dry_run=dry_run,
-            skipped_reason=(
-                "seeded but nothing pulled yet -- run 'herald deck pull' first"
-            ),
+            slug=slug,
+            dry_run=dry_run,
+            skipped_reason=("seeded but nothing pulled yet -- run 'herald deck pull' first"),
         )
 
     if dry_run:
@@ -621,9 +598,16 @@ def _sync_one_deck(
         if artifact_key.startswith(_EXPORT_ARTIFACT_PREFIX):
             continue  # push-tracked, not pull-tracked
         changed, overwrote = _pull_one(
-            transport, slug=slug, repo_root=repo_root, state_path=state_path,
-            artifact_key=artifact_key, deck_dir=deck_dir, persona=persona,
-            date_str=date_str, edit_detector=edit_detector, prover=prover,
+            transport,
+            slug=slug,
+            repo_root=repo_root,
+            state_path=state_path,
+            artifact_key=artifact_key,
+            deck_dir=deck_dir,
+            persona=persona,
+            date_str=date_str,
+            edit_detector=edit_detector,
+            prover=prover,
             now=_frozen_now,
         )
         if changed:
@@ -641,8 +625,12 @@ def _sync_one_deck(
         overrode = facts_refresher.refresh(slug=slug, repo_root=repo_root)
         derived = deriver.derive(slug=slug, repo_root=repo_root)
         push_result = push_exports(
-            transport, slug=slug, repo_root=repo_root, state_path=state_path,
-            prove=True, now=_frozen_now,
+            transport,
+            slug=slug,
+            repo_root=repo_root,
+            state_path=state_path,
+            prove=True,
+            now=_frozen_now,
         )
     except errors.AuthError:
         raise
@@ -699,9 +687,7 @@ def sync_all(
     the "zero writes" AC without hand-wiring a special case for it) -- the
     site build has no per-slug scope, so every deck that changed this run
     is marked ``published`` together."""
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     resolved_facts_refresher = facts_refresher or PixiFactsRefresher()
     resolved_deriver = deriver or PixiDeckDeriver()
     resolved_site_publisher = site_publisher or PixiSitePublisher()
@@ -710,9 +696,7 @@ def sync_all(
 
     if slug is not None:
         if not (repo_root / "presentations" / slug).is_dir():
-            raise errors.HeraldError(
-                f"cannot sync-all: presentations/{slug} not found"
-            )
+            raise errors.HeraldError(f"cannot sync-all: presentations/{slug} not found")
         targets = [slug]
     else:
         targets = _known_slugs(repo_root, resolved_state_path)
@@ -722,10 +706,16 @@ def sync_all(
         try:
             reports.append(
                 _sync_one_deck(
-                    transport, slug=one, repo_root=repo_root,
-                    state_path=resolved_state_path, dry_run=dry_run,
-                    facts_refresher=resolved_facts_refresher, deriver=resolved_deriver,
-                    edit_detector=resolved_edit_detector, prover=prover, now=resolved_now,
+                    transport,
+                    slug=one,
+                    repo_root=repo_root,
+                    state_path=resolved_state_path,
+                    dry_run=dry_run,
+                    facts_refresher=resolved_facts_refresher,
+                    deriver=resolved_deriver,
+                    edit_detector=resolved_edit_detector,
+                    prover=prover,
+                    now=resolved_now,
                 )
             )
         except errors.AuthError:
@@ -735,10 +725,7 @@ def sync_all(
         except errors.HeraldError as exc:
             reports.append(DeckSyncReport(slug=one, dry_run=dry_run, error=str(exc)))
 
-    any_change = any(
-        r.error is None and r.skipped_reason is None and not r.unchanged
-        for r in reports
-    )
+    any_change = any(r.error is None and r.skipped_reason is None and not r.unchanged for r in reports)
     published = False
     publish_error: str | None = None
     if any_change and not dry_run:
@@ -752,9 +739,7 @@ def sync_all(
         else:
             published = True
             reports = [
-                replace(r, published=True)
-                if r.error is None and r.skipped_reason is None and not r.unchanged
-                else r
+                replace(r, published=True) if r.error is None and r.skipped_reason is None and not r.unchanged else r
                 for r in reports
             ]
 
@@ -765,16 +750,10 @@ def sync_all(
         proof_errors: list[str] = []
         for report in reports:
             try:
-                _write_proof(
-                    report, proof_dir=proof_dir, repo_root=repo_root, now=resolved_now
-                )
+                _write_proof(report, proof_dir=proof_dir, repo_root=repo_root, now=resolved_now)
             except errors.HeraldError as exc:
                 proof_errors.append(str(exc))
         if proof_errors:
-            raise errors.HeraldError(
-                "could not write proof report(s): " + "; ".join(proof_errors)
-            )
+            raise errors.HeraldError("could not write proof report(s): " + "; ".join(proof_errors))
 
-    return SyncAllReport(
-        decks=tuple(reports), published=published, publish_error=publish_error
-    )
+    return SyncAllReport(decks=tuple(reports), published=published, publish_error=publish_error)

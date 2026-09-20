@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from pyforge.core.hooks import PluginRegistry
+
 from pyforge.warden import tea_advisory
 from pyforge.warden.hooks import PR_GATE_SCAN, invoke_pr_gate
 from pyforge.warden.scanner_plugins import OPTIONAL_SCANNER_IDS
@@ -40,9 +41,7 @@ def _write_tea_roster(target: Path) -> None:
     entirely" (fail-closed)."""
     config_dir = target / "_bmad" / "custom"
     config_dir.mkdir(parents=True, exist_ok=True)
-    (config_dir / "config.toml").write_text(
-        "[modules.tea]\nversion = \"1.0\"\n", encoding="utf-8"
-    )
+    (config_dir / "config.toml").write_text('[modules.tea]\nversion = "1.0"\n', encoding="utf-8")
 
 
 # --- run_tea_test_review: AD-9 roster lacks tea (fail-CLOSED, AD-10) -------
@@ -70,9 +69,7 @@ def test_roster_present_but_empty_modules_table_still_refuses(tmp_path):
     not fail-open."""
     config_dir = tmp_path / "_bmad" / "custom"
     config_dir.mkdir(parents=True)
-    (config_dir / "config.toml").write_text(
-        "[modules.skf]\nversion = \"1.0\"\n", encoding="utf-8"
-    )
+    (config_dir / "config.toml").write_text('[modules.skf]\nversion = "1.0"\n', encoding="utf-8")
 
     try:
         run_tea_test_review(tmp_path)
@@ -283,9 +280,7 @@ def test_injected_runner_exit_1_with_valid_json_is_still_trusted(tmp_path):
     generic subprocess failure -- this story's own acceptance criterion
     requires it stays trusted (``ran=True``, real score/recommendation)."""
 
-    def exit_1_runner(
-        target: Path, json_path: Path
-    ) -> subprocess.CompletedProcess[str]:
+    def exit_1_runner(target: Path, json_path: Path) -> subprocess.CompletedProcess[str]:
         _write_verdict(
             json_path,
             {
@@ -294,9 +289,7 @@ def test_injected_runner_exit_1_with_valid_json_is_still_trusted(tmp_path):
                 "violations": {},
             },
         )
-        return subprocess.CompletedProcess(
-            args=["tea-test-review"], returncode=1, stdout="", stderr=""
-        )
+        return subprocess.CompletedProcess(args=["tea-test-review"], returncode=1, stdout="", stderr="")
 
     result = run_tea_test_review(tmp_path, runner=exit_1_runner)
 
@@ -311,15 +304,9 @@ def test_injected_runner_exit_2_with_valid_json_is_fail_open(tmp_path):
     leaves a JSON file behind on a genuine error exit, but this must
     degrade even when one happens to exist at ``json_path``)."""
 
-    def exit_2_runner(
-        target: Path, json_path: Path
-    ) -> subprocess.CompletedProcess[str]:
-        _write_verdict(
-            json_path, {"recommendation": "Approve", "qualityScore": 92}
-        )
-        return subprocess.CompletedProcess(
-            args=["tea-test-review"], returncode=2, stdout="", stderr=""
-        )
+    def exit_2_runner(target: Path, json_path: Path) -> subprocess.CompletedProcess[str]:
+        _write_verdict(json_path, {"recommendation": "Approve", "qualityScore": 92})
+        return subprocess.CompletedProcess(args=["tea-test-review"], returncode=2, stdout="", stderr="")
 
     result = run_tea_test_review(tmp_path, runner=exit_2_runner)
 
@@ -528,9 +515,7 @@ def test_registry_invoke_without_enabling_leaves_both_channels_empty(tmp_path):
 # --- Full CLI pipeline: the acceptance criterion, end to end ---------------
 
 
-def test_full_scan_with_low_scoring_advisory_leaves_verdict_byte_identical(
-    monkeypatch, tmp_path, capsys
-):
+def test_full_scan_with_low_scoring_advisory_leaves_verdict_byte_identical(monkeypatch, tmp_path, capsys):
     """Acceptance criterion: with ``TeaAdvisoryScanPlugin`` enabled and an
     injected runner reporting a score below its ``--min-score``, the
     PR-gate scan/aggregate/verdict pipeline's composed status, findings,
@@ -563,16 +548,12 @@ def test_full_scan_with_low_scoring_advisory_leaves_verdict_byte_identical(
         return registry
 
     monkeypatch.delenv("WARDEN_OPTIONAL_SCANNERS", raising=False)
-    monkeypatch.setattr(
-        scanner_plugins_module, "scanner_plugin_registry", _defaults_only_registry
-    )
+    monkeypatch.setattr(scanner_plugins_module, "scanner_plugin_registry", _defaults_only_registry)
     rc_baseline = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
     baseline = json.loads(capsys.readouterr().out)
 
     monkeypatch.setenv("WARDEN_OPTIONAL_SCANNERS", "tea-test-review")
-    monkeypatch.setattr(
-        scanner_plugins_module, "scanner_plugin_registry", _tea_registry
-    )
+    monkeypatch.setattr(scanner_plugins_module, "scanner_plugin_registry", _tea_registry)
     rc_tea = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
     with_tea = json.loads(capsys.readouterr().out)
 
@@ -588,9 +569,7 @@ def test_full_scan_with_low_scoring_advisory_leaves_verdict_byte_identical(
         assert with_tea[key] == baseline[key], f"{key!r} differs with tea enabled"
 
 
-def test_full_scan_with_roster_missing_refuses_not_a_silent_pass(
-    monkeypatch, tmp_path, capsys
-):
+def test_full_scan_with_roster_missing_refuses_not_a_silent_pass(monkeypatch, tmp_path, capsys):
     """DW-FU-11-2's end-to-end proof: enabling ``tea-test-review`` via
     ``WARDEN_OPTIONAL_SCANNERS`` against a target with NO AD-9 roster at
     all (``tmp_path`` has no ``_bmad`` directory -- ``steward provision
@@ -616,16 +595,12 @@ def test_full_scan_with_roster_missing_refuses_not_a_silent_pass(
         return registry
 
     monkeypatch.delenv("WARDEN_OPTIONAL_SCANNERS", raising=False)
-    monkeypatch.setattr(
-        scanner_plugins_module, "scanner_plugin_registry", _defaults_only_registry
-    )
+    monkeypatch.setattr(scanner_plugins_module, "scanner_plugin_registry", _defaults_only_registry)
     rc_baseline = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
     baseline = json.loads(capsys.readouterr().out)
 
     monkeypatch.setenv("WARDEN_OPTIONAL_SCANNERS", "tea-test-review")
-    monkeypatch.setattr(
-        scanner_plugins_module, "scanner_plugin_registry", _tea_registry
-    )
+    monkeypatch.setattr(scanner_plugins_module, "scanner_plugin_registry", _tea_registry)
     rc_refused = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
     refused = json.loads(capsys.readouterr().out)
 
@@ -633,20 +608,17 @@ def test_full_scan_with_roster_missing_refuses_not_a_silent_pass(
         "sanity: the scanner-disabled baseline records no tea-test-review error"
     )
     assert rc_refused != rc_baseline, (
-        "a missing AD-9 roster must change the exit code -- a silent pass "
-        "would leave it identical to the baseline"
+        "a missing AD-9 roster must change the exit code -- a silent pass would leave it identical to the baseline"
     )
     tea_errors = [e for e in refused["errors"] if e["owner"] == "tea-test-review"]
     assert len(tea_errors) == 1, (
-        "expected exactly one recorded tea-test-review error, found "
-        f"{tea_errors!r} in {refused['errors']!r}"
+        f"expected exactly one recorded tea-test-review error, found {tea_errors!r} in {refused['errors']!r}"
     )
     assert tea_errors[0]["kind"] == "config-validation"
     assert "modules.tea" in tea_errors[0]["message"]
     assert "steward provision --module tea" in tea_errors[0]["message"]
     assert refused.get("advisory") is None, (
-        "a refusal contributes no advisory note -- distinguishing it from "
-        "the ordinary scored-finding path"
+        "a refusal contributes no advisory note -- distinguishing it from the ordinary scored-finding path"
     )
 
 

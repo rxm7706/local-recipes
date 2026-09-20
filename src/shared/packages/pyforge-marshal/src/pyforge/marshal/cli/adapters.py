@@ -168,6 +168,8 @@ _SMOKE_DEFAULT_TIMEOUT_S = 900.0
 _SMOKE_STORY_KEY = "1-1-marshal-conformance-smoke"
 _SMOKE_SPRINT_STATUS = f"development_status:\n  {_SMOKE_STORY_KEY}: ready-for-dev\n"
 _SMOKE_SPEC_FILENAME = f"spec-{_SMOKE_STORY_KEY}.md"
+
+
 def _now_utc() -> datetime:
     """Mirrors `cli/spin.py`'s/`cli/retire.py`'s own identically-named,
     un-injected helper -- no `ClockPort` precedent exists in this file, and
@@ -392,10 +394,7 @@ def _render_text_conform(data: dict[str, object], findings: tuple[Finding, ...])
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints, mirroring ``_render_text``'s own shape
     (AD-14)."""
-    lines = [
-        f"adapters conform -- canonical={data.get('canonical')} "
-        f"mechanism={data.get('platform_mechanism')}"
-    ]
+    lines = [f"adapters conform -- canonical={data.get('canonical')} mechanism={data.get('platform_mechanism')}"]
     checks = data.get("checks")
     if isinstance(checks, list):
         for entry in checks:
@@ -711,8 +710,7 @@ def run_adapters_sync(
                 code="MRS-ADP-002",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home not provisioned: {str(home)!r} is not a directory "
-                    f"-- run 'marshal init {slug}' first"
+                    f"loop home not provisioned: {str(home)!r} is not a directory -- run 'marshal init {slug}' first"
                 ),
                 path=str(home),
             )
@@ -851,9 +849,7 @@ def run_adapters_sync(
             projections.append({"tree": tree, "adapters": [], "mechanism": None, "action": "already-absent"})
             continue
         live_exists = fs.exists(tree_path)  # follows the symlink; False iff dangling
-        resolves_to_canonical = live_exists and fs.resolve_path(tree_path) == fs.resolve_path(
-            canonical_dir
-        )
+        resolves_to_canonical = live_exists and fs.resolve_path(tree_path) == fs.resolve_path(canonical_dir)
         if live_exists and not resolves_to_canonical:
             # A LIVE symlink pointing somewhere else entirely -- possibly
             # hand-modified by the operator. Never touched.
@@ -1143,10 +1139,7 @@ def gather_conformance_findings(
             Finding(
                 code="MRS-ADP-005",
                 severity=Severity.WARN,
-                message=(
-                    "link-target identity could not be evaluated for: "
-                    f"{', '.join(report.unevaluated_trees)}"
-                ),
+                message=(f"link-target identity could not be evaluated for: {', '.join(report.unevaluated_trees)}"),
             )
         )
 
@@ -1214,8 +1207,7 @@ def run_adapters_conform(
                 code="MRS-ADP-002",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home not provisioned: {str(home)!r} is not a directory "
-                    f"-- run 'marshal init {slug}' first"
+                    f"loop home not provisioned: {str(home)!r} is not a directory -- run 'marshal init {slug}' first"
                 ),
                 path=str(home),
             )
@@ -1336,8 +1328,7 @@ def run_adapters_probe(
                 code="MRS-ADP-002",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home not provisioned: {str(home)!r} is not a directory "
-                    f"-- run 'marshal init {slug}' first"
+                    f"loop home not provisioned: {str(home)!r} is not a directory -- run 'marshal init {slug}' first"
                 ),
                 path=str(home),
             )
@@ -1448,9 +1439,7 @@ def _add_smoke_worktree(vcs: VcsPort, repo_root: Path, adapter_name: str) -> tup
     # structural pattern match with no semantic awareness).
     slug = "_smoke-" + safe_adapter + "-" + suffix
     if not policy._is_valid_project_slug(slug):
-        raise _SmokeProvisionError(
-            f"generated ephemeral smoke slug {slug!r} is not a valid project slug"
-        )
+        raise _SmokeProvisionError(f"generated ephemeral smoke slug {slug!r} is not a valid project slug")
     home = _loop_home_root() / slug
     branch = f"loop/{slug}"
     try:
@@ -1499,9 +1488,7 @@ def _materialize_smoke_scaffold(fs: FsPort, home: Path, adapter_name: str) -> No
         effective, _policy_findings = policy.compose(project_slug=slug, project={}, flags={})
         write_policy_toml(effective, home, adapter=adapter_name)
     except (FsError, HarnessPolicyWriteError) as exc:
-        raise _SmokeProvisionError(
-            f"cannot materialize the ephemeral smoke scaffold in {home}: {exc}"
-        ) from exc
+        raise _SmokeProvisionError(f"cannot materialize the ephemeral smoke scaffold in {home}: {exc}") from exc
 
 
 def _teardown_smoke_home(vcs: VcsPort, repo_root: Path, home: Path, branch: str) -> str | None:
@@ -1689,10 +1676,7 @@ def run_adapters_smoke(
                     Finding(
                         code="MRS-SMOKE-001",
                         severity=Severity.ERROR,
-                        message=(
-                            f"could not drive the conformance smoke against adapter "
-                            f"{adapter_name!r}: {exc}"
-                        ),
+                        message=(f"could not drive the conformance smoke against adapter {adapter_name!r}: {exc}"),
                     )
                 )
 
@@ -1775,10 +1759,7 @@ def run_adapters_smoke(
                             Finding(
                                 code="MRS-SMOKE-006",
                                 severity=Severity.ERROR,
-                                message=(
-                                    f"writing the machine-scoped smoke record "
-                                    f"{str(state_path)!r}: {exc}"
-                                ),
+                                message=(f"writing the machine-scoped smoke record {str(state_path)!r}: {exc}"),
                                 path=str(state_path),
                             )
                         )
@@ -1892,14 +1873,7 @@ def run_adapters_matrix(
 
     root = repo_root()
     matrix_path = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "conformance"
-        / "matrix"
-        / f"{hostname}.md"
+        root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "conformance" / "matrix" / f"{hostname}.md"
     )
     data["path"] = str(matrix_path)
     try:
@@ -1983,10 +1957,7 @@ def run_adapters_entry_files(
             Finding(
                 code="MRS-ENTRY-001",
                 severity=Severity.WARN,
-                message=(
-                    f"entry-file family drift detected for {len(divergences)} "
-                    f"member(s): {summary}"
-                ),
+                message=(f"entry-file family drift detected for {len(divergences)} member(s): {summary}"),
             )
         )
 

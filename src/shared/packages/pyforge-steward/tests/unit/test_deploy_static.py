@@ -23,6 +23,7 @@ from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.deploy import (
     DeployDuty,
@@ -35,9 +36,7 @@ from pyforge.steward.deploy import (
 
 
 def _ns(*, board="demo", panel=None, access_column=None) -> argparse.Namespace:
-    return argparse.Namespace(
-        deploy_verb="static", board=board, panel=panel, access_column=access_column
-    )
+    return argparse.Namespace(deploy_verb="static", board=board, panel=panel, access_column=access_column)
 
 
 @pytest.fixture
@@ -565,9 +564,7 @@ def test_fifo_at_tmp_entry_refuses_without_hanging(fake_repo, tmp_path):
     assert result.ok is False
 
 
-def test_write_failure_after_mkdir_cleans_up_every_freshly_created_ancestor_dir(
-    tmp_path, monkeypatch
-):
+def test_write_failure_after_mkdir_cleans_up_every_freshly_created_ancestor_dir(tmp_path, monkeypatch):
     root = tmp_path / "repo"
     root.mkdir()
     # docs/dashboard does NOT exist yet -- mkdir(parents=True) must create
@@ -617,8 +614,14 @@ def test_static_via_cli_access_column_refuses(tmp_path, monkeypatch):
 
     rc = main(
         [
-            "deploy", "static", "--board", "demo", "--panel", f"East={panel}",
-            "--access-column", "region",
+            "deploy",
+            "static",
+            "--board",
+            "demo",
+            "--panel",
+            f"East={panel}",
+            "--access-column",
+            "region",
         ]
     )
 

@@ -113,8 +113,7 @@ def _load_yaml_mapping(document_path: Path, *, what: str) -> dict[str, Any]:
         document = {}
     if not isinstance(document, dict):
         raise CorridorConfigError(
-            f"{document_path}: top-level document must be a mapping, got "
-            f"{type(document).__name__}"
+            f"{document_path}: top-level document must be a mapping, got {type(document).__name__}"
         )
     return document
 
@@ -124,9 +123,7 @@ def _normalize_state(document_path: Path, raw: object, where: str) -> str:
     if isinstance(raw, bool):
         raw = STATE_ON if raw else STATE_OFF
     if not isinstance(raw, str) or raw.strip() not in STATES:
-        raise CorridorConfigError(
-            f"{document_path}: '{where}.state' = {raw!r} is not one of {STATES!r}"
-        )
+        raise CorridorConfigError(f"{document_path}: '{where}.state' = {raw!r} is not one of {STATES!r}")
     return raw.strip()
 
 
@@ -235,9 +232,7 @@ def load_extract(
     extra is not installed.
     """
     if direction not in DIRECTIONS:
-        raise CorridorLoadError(
-            f"unknown direction {direction!r}; must be one of {DIRECTIONS!r}"
-        )
+        raise CorridorLoadError(f"unknown direction {direction!r}; must be one of {DIRECTIONS!r}")
 
     # The gate applies to `outbound` only -- normalize here, before either
     # value is used anywhere below (a record call or the returned outcome),
@@ -301,13 +296,10 @@ def load_extract(
     decl = config.transport(transport)
     declared = ", ".join(t.name for t in config.transports) or "(none declared)"
     if decl is None:
-        raise CorridorLoadError(
-            f"unknown transport {transport!r}; declared transports: {declared}"
-        )
+        raise CorridorLoadError(f"unknown transport {transport!r}; declared transports: {declared}")
     if decl.state != STATE_ON:
         raise CorridorLoadError(
-            f"transport {transport!r} is declared 'off' in corridor.yaml "
-            f"(declared transports: {declared})"
+            f"transport {transport!r} is declared 'off' in corridor.yaml (declared transports: {declared})"
         )
 
     result = module.record_corridor_load(
@@ -343,9 +335,7 @@ def _outcome_payload(outcome: LoadOutcome) -> dict[str, object]:
 _MAX_WAYBILL_LENGTH = 128
 
 
-def _load_result(
-    ok: bool, text: str, payload: dict[str, object], *, as_json: bool
-) -> DutyResult:
+def _load_result(ok: bool, text: str, payload: dict[str, object], *, as_json: bool) -> DutyResult:
     """Every ``LoadDuty.run`` branch returns through here: one consistent
     payload shape (``"ok"`` always present, merged with the branch's own
     fields) and one consistent ``--json`` rule (``json.dumps(...)`` or the
@@ -373,9 +363,7 @@ class LoadDuty:
         try:
             root = repo_root()
             corridor_arg = getattr(ns, "corridor", None)
-            corridor_dir = (
-                Path(corridor_arg).resolve() if corridor_arg else default_corridor_dir(root)
-            )
+            corridor_dir = Path(corridor_arg).resolve() if corridor_arg else default_corridor_dir(root)
             try:
                 config = load_config(corridor_dir / CONFIG_FILENAME)
             except CorridorConfigError as exc:
@@ -390,8 +378,7 @@ class LoadDuty:
             waybill = ns.waybill
             if len(waybill) > _MAX_WAYBILL_LENGTH:
                 text = (
-                    f"load {verb}: waybill is {len(waybill)} characters, over the "
-                    f"{_MAX_WAYBILL_LENGTH}-character limit"
+                    f"load {verb}: waybill is {len(waybill)} characters, over the {_MAX_WAYBILL_LENGTH}-character limit"
                 )
                 return _load_result(False, text, {"message": text}, as_json=as_json)
 

@@ -57,9 +57,7 @@ _CEILING_FIXTURES: tuple[tuple[str, object, tuple[Finding, ...]], ...] = (
                 message="mystery-pkg: license could not be resolved",
                 subject="mystery-pkg",
                 severity=None,
-                license=LicenseInfo(
-                    expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN
-                ),
+                license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
             ),
             Finding(
                 id="license:unknown:bare-pkg@unspecified",
@@ -67,9 +65,7 @@ _CEILING_FIXTURES: tuple[tuple[str, object, tuple[Finding, ...]], ...] = (
                 message="bare-pkg: license could not be resolved",
                 subject="bare-pkg",
                 severity=None,
-                license=LicenseInfo(
-                    expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN
-                ),
+                license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
             ),
         ),
     ),
@@ -172,11 +168,7 @@ def test_gating_license_policy_escalates_every_ceiling_fixture():
     for finding in license_entry[2]:
         status, _driver = license_rung(finding, policy=policy)
         assert status is not Status.WARN
-        expected = (
-            Status.POLICY_VIOLATION
-            if finding.license.verdict is LicenseVerdict.DENIED
-            else Status.INDETERMINATE
-        )
+        expected = Status.POLICY_VIOLATION if finding.license.verdict is LicenseVerdict.DENIED else Status.INDETERMINATE
         assert status is expected
 
 

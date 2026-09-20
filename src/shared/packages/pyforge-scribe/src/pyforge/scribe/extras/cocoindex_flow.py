@@ -70,6 +70,7 @@ from pathlib import Path
 
 from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.errors import PyforgeError
+
 from pyforge.scribe.compile import _rglob_excluding
 
 #: Off by default (air-gap, AD-6) -- only a truthy value turns the extra on.
@@ -161,9 +162,7 @@ def refresh_incremental(
     degrade a failure into a warning, and this module does not do that on
     its own behalf.
     """
-    resolved_index_path = (
-        index_path if index_path is not None else default_cocoindex_index_path(repo_root)
-    )
+    resolved_index_path = index_path if index_path is not None else default_cocoindex_index_path(repo_root)
     collected_warnings = warnings if warnings is not None else []
     cocoindex = _import_cocoindex()
     previous = _load_index(resolved_index_path)
@@ -183,9 +182,7 @@ def refresh_incremental(
             refreshed.append(artifact.name)
     finally:
         _save_index(resolved_index_path, current)
-    return RefreshResult(
-        refreshed=tuple(refreshed), skipped=tuple(skipped), index_path=resolved_index_path
-    )
+    return RefreshResult(refreshed=tuple(refreshed), skipped=tuple(skipped), index_path=resolved_index_path)
 
 
 def _source_signature(
@@ -223,9 +220,7 @@ def _source_signature(
     return tuple(entries)
 
 
-def _file_entry(
-    path: Path, repo_root: Path, warnings: list[str]
-) -> tuple[str, int, int] | None:
+def _file_entry(path: Path, repo_root: Path, warnings: list[str]) -> tuple[str, int, int] | None:
     """``None`` (skip, warn) when ``path`` vanishes or becomes unreadable
     between the directory listing and this `.stat()` call -- mirrors
     `extras/move_list.py::scan_move_list`'s own ``except OSError: continue``
@@ -250,7 +245,7 @@ def _load_index(index_path: Path) -> dict[str, str]:
         return {}
     try:
         document = json.loads(index_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return {}
     if not isinstance(document, dict):
         return {}

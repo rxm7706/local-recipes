@@ -9,7 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pyforge.steward.bootstrap import SetupStep, ValidateFastStep, initrepo_steps, setup_steps
+
+from pyforge.steward.bootstrap import initrepo_steps, setup_steps
 from pyforge.steward.cli import EXIT_OK, main
 
 
@@ -22,9 +23,7 @@ def repo_root() -> Path:
     pytest.fail("could not locate local-recipes repo root from test file location")
 
 
-def test_clean_container_sequence_is_fully_composed(
-    repo_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_clean_container_sequence_is_fully_composed(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """init → setup → initrepo → validate-fast, each step delegated — no gaps."""
     monkeypatch.chdir(repo_root)
     monkeypatch.setattr(

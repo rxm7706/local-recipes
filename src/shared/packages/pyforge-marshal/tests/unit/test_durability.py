@@ -20,9 +20,7 @@ def _task(
     commit_sha: str | None = None,
     branch: str = "",
 ) -> TaskPhaseSnapshot:
-    return TaskPhaseSnapshot(
-        story_key=story_key, phase=phase, commit_sha=commit_sha, branch=branch
-    )
+    return TaskPhaseSnapshot(story_key=story_key, phase=phase, commit_sha=commit_sha, branch=branch)
 
 
 # --- no-op shapes --------------------------------------------------------------
@@ -50,25 +48,19 @@ def test_a_story_absent_from_current_produces_no_trigger():
 def test_review_verify_newly_reached_fires_review_verdict_recorded():
     previous = {"1.1": _task("1.1", "review-running")}
     current = {"1.1": _task("1.1", "review-verify")}
-    assert classify_push_triggers(previous, current) == (
-        PushTrigger("1.1", "review-verdict-recorded"),
-    )
+    assert classify_push_triggers(previous, current) == (PushTrigger("1.1", "review-verdict-recorded"),)
 
 
 def test_commit_sha_newly_non_none_fires_dev_commit_landed():
     previous = {"1.1": _task("1.1", "committing", commit_sha=None)}
     current = {"1.1": _task("1.1", "committing", commit_sha="abc123")}
-    assert classify_push_triggers(previous, current) == (
-        PushTrigger("1.1", "dev-commit-landed"),
-    )
+    assert classify_push_triggers(previous, current) == (PushTrigger("1.1", "dev-commit-landed"),)
 
 
 def test_done_newly_reached_fires_story_merged():
     previous = {"1.1": _task("1.1", "committing")}
     current = {"1.1": _task("1.1", "done")}
-    assert classify_push_triggers(previous, current) == (
-        PushTrigger("1.1", "story-merged"),
-    )
+    assert classify_push_triggers(previous, current) == (PushTrigger("1.1", "story-merged"),)
 
 
 def test_a_story_missing_from_previous_still_fires_on_first_observation():
@@ -135,9 +127,7 @@ def test_a_story_leaving_done_and_returning_refires_story_merged():
     interval is reported"."""
     previous = {"1.1": _task("1.1", "dev-running")}
     current = {"1.1": _task("1.1", "done")}
-    assert classify_push_triggers(previous, current) == (
-        PushTrigger("1.1", "story-merged"),
-    )
+    assert classify_push_triggers(previous, current) == (PushTrigger("1.1", "story-merged"),)
 
 
 # --- multiple stories in one diff ------------------------------------------------

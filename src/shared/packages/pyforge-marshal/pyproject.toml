@@ -168,3 +168,204 @@ type = "forbidden"
 # meta-test precedent: "so the guard cannot be routed around").
 source_modules = ["pyforge.marshal.seed.regions"]
 forbidden_modules = ["pyforge.marshal.seed.model.manifest"]
+
+# Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`
+# / `ruff-format` reads THIS block (run from inside the package). Line width is ruff format's job;
+# E501 is off because 290 legacy long strings/comments predate the gate -- format keeps code at 120.
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+extend-exclude = ["*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]   # re-exports
+"**/tests/**" = ["E402"]    # test modules that bootstrap sys.path before importing the package
+
+# Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the type gate `pixi run -e pyforge-guild mypy`
+# reads THIS block (run from inside the package). The [[tool.mypy.overrides]] entries below are the
+# 2026-09-20 baseline: every finding the gate met on its first run, disabled PER MODULE with exactly
+# the error codes that module trips -- never `ignore_errors` -- so the gate is live for every other
+# module and every other code. Tighten or drop an entry whenever its module is touched.
+[tool.mypy]
+python_version = "3.14"
+mypy_path = "src"
+explicit_package_bases = true   # `pyforge` is a namespace package (no src/pyforge/__init__.py)
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+# Sibling stations and bmad_loop ship no py.typed marker; their imports are checked as untyped, not refused.
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.adapters.fs_local"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.adapters.harness_bmadloop"
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-overload", "index", "operator", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.adapters.oidc_pkce"
+disable_error_code = ["union-attr"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.adapters.skill_invoke_harness"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.adapters"
+disable_error_code = ["arg-type", "call-overload"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.benchmark"
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.chain"
+disable_error_code = ["assignment", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.config"
+disable_error_code = ["arg-type", "call-overload", "index", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.deploy"
+disable_error_code = ["arg-type", "assignment", "attr-defined", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.dispatch"
+disable_error_code = ["arg-type", "attr-defined", "call-overload", "list-item", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.gate"
+disable_error_code = ["arg-type", "attr-defined", "call-overload", "index"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.init"
+disable_error_code = ["arg-type", "attr-defined", "index"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.land"
+disable_error_code = ["arg-type", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.planning"
+disable_error_code = ["assignment", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.refresh"
+disable_error_code = ["arg-type", "attr-defined", "call-overload", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.retire"
+disable_error_code = ["arg-type", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.spin"
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-overload", "index"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.status"
+disable_error_code = ["arg-type", "assignment", "attr-defined", "no-redef"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.upstream"
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.cli.watch"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.chain_regen"
+disable_error_code = ["call-overload", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.dispatch_survival"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.harness_profile"
+disable_error_code = ["index"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.journal"
+disable_error_code = ["arg-type", "return-value"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.layer_savings_sources"
+disable_error_code = ["attr-defined", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.policy"
+disable_error_code = ["arg-type", "attr-defined", "operator"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.retire"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.status"
+disable_error_code = ["arg-type", "assignment", "no-redef"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.tier_routing"
+disable_error_code = ["arg-type", "attr-defined", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.token_economy_benchmark"
+disable_error_code = ["arg-type", "call-overload", "dict-item"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.core.verdict"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.dispatch_land"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.dispatch_land_finalize.__main__"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.dispatch_supervisor.__main__"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.dispatch_verify"
+disable_error_code = ["arg-type", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.seed.migrate.registry"
+disable_error_code = ["func-returns-value"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.seed.model.manifest"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.seed.model.version"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.seed.plan.build"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.seed.verbs.adopt"
+disable_error_code = ["arg-type", "assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.seed.verbs.update"
+disable_error_code = ["arg-type", "assignment", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.marshal.supervisor.__main__"
+disable_error_code = ["arg-type", "misc", "union-attr"]

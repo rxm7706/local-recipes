@@ -124,15 +124,11 @@ def _compose_effective(slug: str) -> policy_core.EffectivePolicy:
                 project_data = dict(_read_project_policy(candidate))
             except PolicyIOError:
                 project_data = {}
-    effective, _findings = policy_core.compose(
-        project_slug=slug, project=project_data, flags={}
-    )
+    effective, _findings = policy_core.compose(project_slug=slug, project=project_data, flags={})
     return effective
 
 
-def _render_policy_step(
-    slug: str, home: Path, findings: list[Finding]
-) -> RefreshStep:
+def _render_policy_step(slug: str, home: Path, findings: list[Finding]) -> RefreshStep:
     try:
         effective = _compose_effective(slug)
         written = write_policy_toml(effective, home)
@@ -149,9 +145,7 @@ def _render_policy_step(
         return RefreshStep(STEP_RENDER_POLICY, "failed", str(exc))
 
 
-def _sync_status_step(
-    slug: str, git_repo_root: Path, findings: list[Finding]
-) -> RefreshStep:
+def _sync_status_step(slug: str, git_repo_root: Path, findings: list[Finding]) -> RefreshStep:
     """Regenerate ``slug``'s Tier-3 ``sprint-status.yaml`` from its tracked
     ``epics.md``, via the same script ``bmad-sprint-planning`` uses. Writes
     to the SHARED physical ``_bmad-output/projects/<slug>/`` location every
@@ -161,14 +155,7 @@ def _sync_status_step(
     epic_file = project_dir / "planning-artifacts" / "epics.md"
     if not epic_file.is_file():
         return RefreshStep(STEP_SYNC_STATUS, "skipped", "no epics.md")
-    script = (
-        git_repo_root
-        / ".claude"
-        / "skills"
-        / "bmad-sprint-planning"
-        / "scripts"
-        / "sprint_plan.py"
-    )
+    script = git_repo_root / ".claude" / "skills" / "bmad-sprint-planning" / "scripts" / "sprint_plan.py"
     if not script.is_file():
         return RefreshStep(STEP_SYNC_STATUS, "skipped", "sprint_plan.py not found")
     impl_dir = project_dir / "implementation-artifacts"
@@ -197,9 +184,7 @@ def _sync_status_step(
     # `encoding="utf-8", errors="replace"` (undecodable output is replaced,
     # never raised as a decode error).
     try:
-        result = PosixProcess().run(
-            argv, cwd=git_repo_root, timeout_s=_SYNC_STATUS_TIMEOUT_S
-        )
+        result = PosixProcess().run(argv, cwd=git_repo_root, timeout_s=_SYNC_STATUS_TIMEOUT_S)
     except ProcessError as exc:
         findings.append(
             Finding(
@@ -286,13 +271,9 @@ def _refresh_one_home(
             )
         )
         steps = ordered_steps(
-            fast_forward=RefreshStep(
-                STEP_FAST_FORWARD, "failed", f"dirt probe failed: {exc}"
-            ),
+            fast_forward=RefreshStep(STEP_FAST_FORWARD, "failed", f"dirt probe failed: {exc}"),
             push=RefreshStep(STEP_PUSH, "skipped", "fast-forward did not succeed"),
-            render_policy=RefreshStep(
-                STEP_RENDER_POLICY, "skipped", "dirt probe failed"
-            ),
+            render_policy=RefreshStep(STEP_RENDER_POLICY, "skipped", "dirt probe failed"),
             sync_status=_sync_status_step(slug, git_repo_root, findings),
         )
         return HomeRefreshResult(
@@ -321,9 +302,7 @@ def _refresh_one_home(
         )
         render_step = _render_policy_step(slug, home, findings)
         steps = ordered_steps(
-            fast_forward=RefreshStep(
-                STEP_FAST_FORWARD, "failed", "dirty working tree"
-            ),
+            fast_forward=RefreshStep(STEP_FAST_FORWARD, "failed", "dirty working tree"),
             push=RefreshStep(STEP_PUSH, "skipped", "fast-forward refused"),
             render_policy=render_step,
             sync_status=_sync_status_step(slug, git_repo_root, findings),
@@ -341,9 +320,7 @@ def _refresh_one_home(
         )
 
     if behind_count == 0:
-        ff_step = RefreshStep(
-            STEP_FAST_FORWARD, "skipped", f"already current with {tip_ref}"
-        )
+        ff_step = RefreshStep(STEP_FAST_FORWARD, "skipped", f"already current with {tip_ref}")
     else:
         try:
             new_sha = vcs.fast_forward(home, tip_ref)
@@ -358,9 +335,7 @@ def _refresh_one_home(
                 Finding(
                     code=_MRS_REFRESH_003,
                     severity=Severity.WARN,
-                    message=(
-                        f"home {slug!r}: fast-forward to {tip_ref} failed: {exc}"
-                    ),
+                    message=(f"home {slug!r}: fast-forward to {tip_ref} failed: {exc}"),
                     path=path_str,
                 )
             )
@@ -476,10 +451,7 @@ def run_refresh(
             Finding(
                 code=_MRS_REFRESH_001,
                 severity=Severity.ERROR,
-                message=(
-                    f"malformed --project {args.project!r} -- expected a "
-                    "plain project slug (no path separators)"
-                ),
+                message=(f"malformed --project {args.project!r} -- expected a plain project slug (no path separators)"),
             )
         )
         return _emit(args, data, findings)

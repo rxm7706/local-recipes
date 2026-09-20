@@ -103,11 +103,7 @@ def test_golden_transcript_is_grammar_and_mcp_only():
 
 def test_freelance_filesystem_in_transcript_fails():
     root = _repo_root()
-    events = json.loads(
-        (_persona_dir(root) / "transcripts" / "marshal-status-e2e.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    events = json.loads((_persona_dir(root) / "transcripts" / "marshal-status-e2e.json").read_text(encoding="utf-8"))
     events.append({"kind": "filesystem", "path": ".bmad-loops/journal.jsonl"})
     try:
         validate_transcript(events)
@@ -119,11 +115,7 @@ def test_freelance_filesystem_in_transcript_fails():
 
 def test_adhoc_http_in_transcript_fails():
     root = _repo_root()
-    events = json.loads(
-        (_persona_dir(root) / "transcripts" / "marshal-status-e2e.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    events = json.loads((_persona_dir(root) / "transcripts" / "marshal-status-e2e.json").read_text(encoding="utf-8"))
     events.append({"kind": "http", "method": "GET", "url": "https://example.com"})
     try:
         validate_transcript(events)

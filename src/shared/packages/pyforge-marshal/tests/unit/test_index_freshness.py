@@ -14,11 +14,12 @@ import sys
 import time
 from pathlib import Path
 
+from pyforge.core.process import ProcessResult
+
 import pyforge.marshal
 from pyforge.marshal.cli import check as check_cli
-from pyforge.core.process import ProcessResult
-from pyforge.marshal.core.verdict import Verdict, classify, exit_code_for, compute_verdict
 from pyforge.marshal.core.model import Finding, Severity
+from pyforge.marshal.core.verdict import Verdict, classify, compute_verdict, exit_code_for
 from pyforge.marshal.seed.model.kit import CODEGRAPH_INDEX_RELPATH
 
 _PACKAGE_FILE = pyforge.marshal.__file__
@@ -32,7 +33,7 @@ DETECTORS = REPO_ROOT / "scripts" / "detectors.py"
 def _load_checker(monkeypatch, loop_root: Path):
     """Import index_freshness_check with LOOP_ROOT bound to ``loop_root``."""
     src = CHECKER.read_text(encoding="utf-8").replace(
-        "LOOP_ROOT = Path.home() / \".bmad-loops\"",
+        'LOOP_ROOT = Path.home() / ".bmad-loops"',
         f"LOOP_ROOT = Path({str(loop_root)!r})",
     )
     mod_path = loop_root / "_index_freshness_under_test.py"
@@ -80,10 +81,7 @@ def test_layer_off_raises_no_staleness_finding(tmp_path, monkeypatch):
     _loop_home(
         tmp_path,
         "home-off",
-        policy_toml=(
-            "[context.structure-graph]\nenabled = false\n"
-            "[context.derived-context]\nenabled = false\n"
-        ),
+        policy_toml=("[context.structure-graph]\nenabled = false\n[context.derived-context]\nenabled = false\n"),
     )
     checks = mod.check_home(tmp_path / "home-off")
     assert all(c.status == "layer-off" for c in checks)
@@ -251,10 +249,7 @@ def test_layer_off_main_emits_no_findings_json(tmp_path, monkeypatch, capsys):
     _loop_home(
         tmp_path,
         "home-off-json",
-        policy_toml=(
-            "[context.structure-graph]\nenabled = false\n"
-            "[context.derived-context]\nenabled = false\n"
-        ),
+        policy_toml=("[context.structure-graph]\nenabled = false\n[context.derived-context]\nenabled = false\n"),
     )
     monkeypatch.setattr(sys, "argv", ["index_freshness_check.py", "--json"])
     rc = mod.main()
@@ -293,9 +288,7 @@ def test_mrs_idxf_codes_classify_warn_only():
 
 
 def test_advisory_findings_alone_never_block_exit_domain():
-    findings = (
-        Finding(code="MRS-IDXF-002", severity=Severity.WARN, message="stale codegraph"),
-    )
+    findings = (Finding(code="MRS-IDXF-002", severity=Severity.WARN, message="stale codegraph"),)
     verdict = compute_verdict(findings)
     assert verdict is Verdict.WARN
     assert exit_code_for(verdict) == 0
@@ -384,9 +377,7 @@ def test_detectors_parse_structured_findings_from_json_output():
     assert mod._structured_findings_from_output("other_check", out) == []
 
 
-def test_run_one_index_freshness_check_wires_json_and_structured_findings(
-    tmp_path, monkeypatch
-):
+def test_run_one_index_freshness_check_wires_json_and_structured_findings(tmp_path, monkeypatch):
     """Exercise detectors.run_one subprocess + --json + structured_findings parse."""
     _load_checker(monkeypatch, tmp_path)
     patched_script = tmp_path / "_index_freshness_under_test.py"

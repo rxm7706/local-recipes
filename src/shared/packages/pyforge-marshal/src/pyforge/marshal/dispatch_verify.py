@@ -124,9 +124,7 @@ def _verify_commands_with_surface_guard(
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
     normalized_guard = " ".join(_SURFACE_RECONCILE_COMMAND.split())
-    verify = [
-        c for c in effective.verify_commands.value if " ".join(c.split()) != normalized_guard
-    ]
+    verify = [c for c in effective.verify_commands.value if " ".join(c.split()) != normalized_guard]
     verify.append(_SURFACE_RECONCILE_COMMAND)
     return tuple(verify)
 
@@ -179,26 +177,20 @@ def compose_dispatch_policy(slug: str, repo_root: Path) -> EffectivePolicy:
     if candidate.is_file():
         try:
             project_data = dict(tomllib.loads(candidate.read_text()))
-        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        except OSError, UnicodeDecodeError, tomllib.TOMLDecodeError:
             project_data = {}
-    effective, _findings = policy.compose(
-        project_slug=slug, project=project_data, flags={}
-    )
+    effective, _findings = policy.compose(project_slug=slug, project=project_data, flags={})
     return effective
 
 
-def resolve_spec_text_for_story(
-    repo_root: Path, project_slug: str, story_key: StoryKey
-) -> str | None:
+def resolve_spec_text_for_story(repo_root: Path, project_slug: str, story_key: StoryKey) -> str | None:
     """Read tracked spec text for ``story_key`` (best-effort)."""
-    spec_path = dispatch_core.resolve_story_spec_path(
-        repo_root, project_slug, render_feed_key(story_key)
-    )
+    spec_path = dispatch_core.resolve_story_spec_path(repo_root, project_slug, render_feed_key(story_key))
     if spec_path is None:
         return None
     try:
         return spec_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None
 
 
@@ -241,9 +233,7 @@ def evaluate_dispatch_verification(
             findings.append(gate.no_commands_configured_finding())
     else:
         for command in commands:
-            report, finding = _run_verify_command(
-                command, process=process, worktree=worktree
-            )
+            report, finding = _run_verify_command(command, process=process, worktree=worktree)
             command_reports.append(report)
             if finding is not None:
                 findings.append(finding)
@@ -256,41 +246,29 @@ def evaluate_dispatch_verification(
             Finding(
                 code="MRS-GATE-009",
                 severity=Severity.ERROR,
-                message=(
-                    f"dispatch scope check could not resolve changed files "
-                    f"for {story_key}: {exc}"
-                ),
+                message=(f"dispatch scope check could not resolve changed files for {story_key}: {exc}"),
             )
         )
         data["scope_check"] = {"checked": False, "reason": str(exc)}
     else:
-        policy_surface = gate.resolve_policy_surface(
-            effective.epic_surfaces.value, story_key.epic, project_slug
-        )
+        policy_surface = gate.resolve_policy_surface(effective.epic_surfaces.value, story_key.epic, project_slug)
         try:
-            spec_surface = (
-                parse_declared_surface(spec_text) if spec_text is not None else None
-            )
+            spec_surface = parse_declared_surface(spec_text) if spec_text is not None else None
         except SurfaceParseError as exc:
             findings.append(
                 Finding(
                     code="MRS-GATE-009",
                     severity=Severity.ERROR,
                     message=(
-                        f"dispatch scope check could not evaluate {story_key}: "
-                        f"malformed surface declaration: {exc}"
+                        f"dispatch scope check could not evaluate {story_key}: malformed surface declaration: {exc}"
                     ),
                 )
             )
             data["scope_check"] = {"checked": False, "reason": str(exc)}
         else:
-            effective_surface = gate.compute_effective_surface(
-                policy_surface, spec_surface
-            )
+            effective_surface = gate.compute_effective_surface(policy_surface, spec_surface)
             seed_frozen = effective.seed_view()["frozen_surfaces"].value
-            empty_fold = journal.FoldResult(
-                entries=(), open_intents=(), orphaned_outcomes=(), quarantined=()
-            )
+            empty_fold = journal.FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
             frozen_paths = empty_fold.live_frozen_surfaces(seed_frozen)
             # Story 28.15 (CAP-17): the SAME mode-application function
             # `cli/gate.py::_run_scope_check` uses -- this safety-relevant
@@ -304,13 +282,10 @@ def evaluate_dispatch_verification(
             advisory_paths = tuple(
                 finding.path
                 for finding in scope_findings
-                if finding.code in gate._SCOPE_VIOLATION_ADVISORY_CODES.values()
-                and finding.path
+                if finding.code in gate._SCOPE_VIOLATION_ADVISORY_CODES.values() and finding.path
             )
             if advisory_paths and scope_violation_mode == "warn":
-                widened_surface = gate.widen_effective_surface_with_paths(
-                    effective_surface, advisory_paths
-                )
+                widened_surface = gate.widen_effective_surface_with_paths(effective_surface, advisory_paths)
                 if widened_surface != effective_surface:
                     recheck_findings = gate.check_scope_with_mode(
                         widened_surface,
@@ -318,9 +293,7 @@ def evaluate_dispatch_verification(
                         changed,
                         mode=scope_violation_mode,
                     )
-                    if not any(
-                        finding.severity is Severity.ERROR for finding in recheck_findings
-                    ):
+                    if not any(finding.severity is Severity.ERROR for finding in recheck_findings):
                         effective_surface = widened_surface
                     else:
                         scope_findings = recheck_findings
@@ -363,17 +336,12 @@ def evaluate_dispatch_verification(
         findings.extend(binding_findings)
         data["spec_binding"] = {
             "story": str(story_key),
-            "declared_commands": (
-                list(declared_commands) if declared_commands is not None else None
-            ),
+            "declared_commands": (list(declared_commands) if declared_commands is not None else None),
             "violations": len(binding_findings),
         }
 
     cross_surface_command = gate.shared_surface_verify_command()
-    cross_surface_touched = (
-        scope_check_completed
-        and gate.changed_files_touch_shared_surface(scope_changed_files)
-    )
+    cross_surface_touched = scope_check_completed and gate.changed_files_touch_shared_surface(scope_changed_files)
     if cross_surface_touched:
         cross_report, cross_finding = _run_verify_command(
             cross_surface_command,
@@ -386,9 +354,7 @@ def evaluate_dispatch_verification(
                 cross_finding = Finding(
                     code=gate.CROSS_SURFACE_GATE_CODE,
                     severity=cross_finding.severity,
-                    message=cross_finding.message.replace(
-                        "verify command", "cross-surface verify command"
-                    ),
+                    message=cross_finding.message.replace("verify command", "cross-surface verify command"),
                 )
             findings.append(cross_finding)
         data["cross_surface_check"] = {
@@ -397,19 +363,14 @@ def evaluate_dispatch_verification(
             "touched_paths": [
                 path
                 for path in scope_changed_files
-                if path == gate.SHARED_SURFACE_PREFIX.rstrip("/")
-                or path.startswith(gate.SHARED_SURFACE_PREFIX)
+                if path == gate.SHARED_SURFACE_PREFIX.rstrip("/") or path.startswith(gate.SHARED_SURFACE_PREFIX)
             ],
             "report": cross_report,
         }
     else:
         data["cross_surface_check"] = {
             "checked": False,
-            "reason": (
-                "scope check incomplete"
-                if not scope_check_completed
-                else "diff does not touch shared surface"
-            ),
+            "reason": ("scope check incomplete" if not scope_check_completed else "diff does not touch shared surface"),
         }
 
     verdict_value = compute_verdict(findings)

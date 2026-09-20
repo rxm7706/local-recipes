@@ -5,8 +5,8 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from pyforge.atlas.mcp.server import build_server
 from pyforge.atlas.mcp import tools
+from pyforge.atlas.mcp.server import build_server
 
 SERVER_PATH = Path(__file__).resolve().parents[3] / "src" / "pyforge" / "atlas" / "mcp" / "server.py"
 
@@ -22,9 +22,7 @@ def test_wrappers_still_delegate_to_tools_module():
     calls = [
         node
         for node in ast.walk(tree)
-        if isinstance(node, ast.Attribute)
-        and isinstance(node.value, ast.Name)
-        and node.value.id == "tools"
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "tools"
     ]
     names = {node.attr for node in calls}
     assert "run_pipeline" in names

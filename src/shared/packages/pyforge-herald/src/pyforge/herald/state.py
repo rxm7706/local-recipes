@@ -130,14 +130,9 @@ def _load_document(state_path: Path) -> dict[str, object]:
         # subclass, so naming only JSONDecodeError would leak it raw.
         # FileNotFoundError is an OSError subclass, so its "no state yet"
         # branch above must stay first.
-        raise errors.HeraldError(
-            f"bridge state file {state_path} could not be read: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"bridge state file {state_path} could not be read: {exc}") from exc
     if not isinstance(document, dict):
-        raise errors.HeraldError(
-            f"bridge state file {state_path} does not hold a JSON object "
-            f"at its top level"
-        )
+        raise errors.HeraldError(f"bridge state file {state_path} does not hold a JSON object at its top level")
     return document
 
 
@@ -165,16 +160,12 @@ def read(state_path: Path, slug: str) -> DeckState | None:
     entry = _load_document(state_path).get(slug, _MISSING)
     if entry is _MISSING:
         return None
-    malformed = (
-        f"bridge state file {state_path} has a malformed entry for slug {slug!r}"
-    )
+    malformed = f"bridge state file {state_path} has a malformed entry for slug {slug!r}"
     if not isinstance(entry, dict):
         raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
     unknown = sorted(set(entry) - _DECK_STATE_FIELDS)
     if unknown:
-        raise errors.HeraldError(
-            f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}")
     project_id = entry.get("project_id")
     etags = entry.get("etags")
     last_pull = entry.get("last_pull")
@@ -239,20 +230,14 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
     entry; the operator's recovery is deleting the file) and when the
     filesystem refuses the write (a plain file where a directory is
     needed, a read-only tree, ``state_path`` itself being a directory)."""
-    could_not_write = (
-        f"bridge state for slug {slug!r} could not be written to {state_path}"
-    )
+    could_not_write = f"bridge state for slug {slug!r} could not be written to {state_path}"
     if not isinstance(slug, str):
-        raise errors.HeraldError(
-            f"{could_not_write}: slug must be a string, not {type(slug).__name__}"
-        )
+        raise errors.HeraldError(f"{could_not_write}: slug must be a string, not {type(slug).__name__}")
     if not isinstance(state, DeckState):
         # A duck-typed stand-in would otherwise crash asdict() raw (or, for
         # a plain dict, crash the attribute access just below) -- the same
         # annotation violation the slug check already refuses structurally.
-        raise errors.HeraldError(
-            f"{could_not_write}: state must be a DeckState, not {type(state).__name__}"
-        )
+        raise errors.HeraldError(f"{could_not_write}: state must be a DeckState, not {type(state).__name__}")
     problem = _fields_problem(state.project_id, state.etags, state.last_pull)
     if problem:
         raise errors.HeraldError(f"{could_not_write}: {problem}")

@@ -4,6 +4,23 @@ https://docs.kedro.org/en/stable/configure/configuration_basics/#configuration""
 
 import os
 
+# Story 10.6 (AD-23, audit AUD-ATLAS-046): run admission declared ONCE here so EVERY
+# entry point inherits it — the `kedro run` CLI, the seven MCP `run_*` tools, and the
+# Dagster plane all dispatch through the same hook manager. One OS file lock per output
+# dataset; reject-fast by default, bounded wait opt-in via
+# `--params admission_wait_seconds=<n>`. Constructed with no args → the lock root
+# resolves per-run from `run_params["project_path"]` (PROJECT-anchored, never
+# CWD-relative — a CWD-relative root would silently void admission between two
+# processes writing the same Parquet from different directories).
+#
+# Admission is acquired BEFORE every other before_pipeline_run and released BEFORE every
+# other after_pipeline_run — but that comes from the `@hook_impl(tryfirst=True)` markers on
+# RunAdmissionHooks, NOT from its position in this tuple. Kedro registers entry-point plugins
+# AFTER this tuple and pluggy dispatches LIFO, so tuple order alone puts any installed plugin
+# (kedro-viz is in this env) ahead of everything here. See pyforge.atlas.admission for the
+# measurement and for the boundaries that ordering creates.
+from pyforge.atlas.admission import RunAdmissionHooks
+
 # Instantiated project hooks.
 # Story A3 (assumption A3-1): ProjectHooks.after_catalog_created injects each
 # IncrementalParquetDataset's per-dataset TTL from params:ttls.<name>, keeping
@@ -33,23 +50,6 @@ from pyforge.atlas.observability import AtlasObservabilityHooks
 # the default path is offline and can never false-halt until a contract is declared.
 # See pyforge.atlas.validation.
 from pyforge.atlas.validation import DataValidationHooks
-
-# Story 10.6 (AD-23, audit AUD-ATLAS-046): run admission declared ONCE here so EVERY
-# entry point inherits it — the `kedro run` CLI, the seven MCP `run_*` tools, and the
-# Dagster plane all dispatch through the same hook manager. One OS file lock per output
-# dataset; reject-fast by default, bounded wait opt-in via
-# `--params admission_wait_seconds=<n>`. Constructed with no args → the lock root
-# resolves per-run from `run_params["project_path"]` (PROJECT-anchored, never
-# CWD-relative — a CWD-relative root would silently void admission between two
-# processes writing the same Parquet from different directories).
-#
-# Admission is acquired BEFORE every other before_pipeline_run and released BEFORE every
-# other after_pipeline_run — but that comes from the `@hook_impl(tryfirst=True)` markers on
-# RunAdmissionHooks, NOT from its position in this tuple. Kedro registers entry-point plugins
-# AFTER this tuple and pluggy dispatches LIFO, so tuple order alone puts any installed plugin
-# (kedro-viz is in this env) ahead of everything here. See pyforge.atlas.admission for the
-# measurement and for the boundaries that ordering creates.
-from pyforge.atlas.admission import RunAdmissionHooks
 
 HOOKS = (
     ProjectHooks(),

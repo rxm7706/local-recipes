@@ -101,9 +101,7 @@ class PackageIdentity:
     purl: str
 
 
-def resolve_identity(
-    ecosystem: Ecosystem, name: str, version: str | None = None
-) -> PackageIdentity:
+def resolve_identity(ecosystem: Ecosystem, name: str, version: str | None = None) -> PackageIdentity:
     """Resolve ``(ecosystem, name, version)`` to a canonical ``PackageIdentity``.
 
     PEP-503-normalizes ``name`` via ``inventory.canonical_name`` (identical
@@ -214,9 +212,7 @@ _CYCLONEDX_BOM_FORMAT = "CycloneDX"
 
 # purl type token -> Ecosystem (derived from the enum, never hand-spelled
 # twice -- both ecosystems' purl type strings equal their StrEnum value).
-_ECOSYSTEM_BY_PURL_TYPE: dict[str, Ecosystem] = {
-    ecosystem.value: ecosystem for ecosystem in Ecosystem
-}
+_ECOSYSTEM_BY_PURL_TYPE: dict[str, Ecosystem] = {ecosystem.value: ecosystem for ecosystem in Ecosystem}
 
 
 class CycloneDXSourceAdapter:
@@ -239,7 +235,7 @@ class CycloneDXSourceAdapter:
         ``feeds.load_kev_catalog``'s own tolerant fetch-stage convention."""
         try:
             return self._path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             return None
 
     def parse(self, raw: str | None) -> object | None:
@@ -348,7 +344,7 @@ class ManifestSourceAdapter:
                 extractor = extractor_for(manifest.kind, router)
                 extracted = extractor.extract(self._target / manifest.path, manifest)
                 components.extend(extracted)
-            except (SystemExit, Exception):  # noqa: BLE001, S112 -- the
+            except SystemExit, Exception:  # noqa: BLE001, S112 -- the
                 # tolerant-per-manifest seam doctrine (cli.py's own
                 # identical backstop at this call site): any exception here
                 # is this one manifest's problem, never a reason to abort
@@ -371,9 +367,7 @@ class ManifestSourceAdapter:
         components = self.validate(self.parse(self.fetch()))
         return tuple(
             SourceEvidence(
-                identity=resolve_identity(
-                    component.ecosystem, component.name, component.version
-                ),
+                identity=resolve_identity(component.ecosystem, component.name, component.version),
                 source_name=self.name,
                 locator=str(self._target),
                 raw_name=component.name,

@@ -28,16 +28,12 @@ def _construct_mapping_no_dupes(loader, node, deep=False):
     for key_node, _ in node.value:
         key = loader.construct_object(key_node, deep=deep)
         if key in seen:
-            raise _DuplicateKeyError(
-                f"duplicate key {key!r} at line {key_node.start_mark.line + 1}"
-            )
+            raise _DuplicateKeyError(f"duplicate key {key!r} at line {key_node.start_mark.line + 1}")
         seen.add(key)
     return yaml.SafeLoader.construct_mapping(loader, node, deep)
 
 
-_DupSafeLoader.add_constructor(
-    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping_no_dupes
-)
+_DupSafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping_no_dupes)
 
 
 def _assert_no_duplicate_keys(path):

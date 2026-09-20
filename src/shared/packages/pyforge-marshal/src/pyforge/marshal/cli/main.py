@@ -124,15 +124,15 @@ from ..core.context import MarshalContext
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 from . import adapters as adapters_cli
 from . import chain as chain_cli
-from . import planning as planning_cli
 from . import check as check_cli
 from . import config as config_cli
 from . import context as context_cli
 from . import deploy as deploy_cli
-from . import login as login_cli
 from . import gate as gate_cli
 from . import init as init_cli
 from . import land as land_cli
+from . import login as login_cli
+from . import planning as planning_cli
 from . import refresh as refresh_cli
 from . import retire as retire_cli
 from . import seed as seed_cli
@@ -198,8 +198,7 @@ def _version_text() -> str:
             )
         elif not harness_version_in_range(harness_version):
             lines.append(
-                f"WARNING: bmad-loop {harness_version} is outside the "
-                f"supported range {HARNESS_VERSION_RANGE_TEXT}"
+                f"WARNING: bmad-loop {harness_version} is outside the supported range {HARNESS_VERSION_RANGE_TEXT}"
             )
     return "\n".join(lines)
 
@@ -221,9 +220,7 @@ class _VersionAction(argparse.Action):
     printing the version under that approach)."""
 
     def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
-        super().__init__(
-            option_strings=option_strings, dest=dest, default=default, nargs=0, help=help
-        )
+        super().__init__(option_strings=option_strings, dest=dest, default=default, nargs=0, help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
         try:
@@ -321,9 +318,7 @@ def _resolve_context(args: argparse.Namespace) -> MarshalContext | None:
             except config_cli.PolicyIOError:
                 project_data = {}
 
-    effective, _findings = policy_core.compose(
-        project_slug=slug, project=project_data, flags={}
-    )
+    effective, _findings = policy_core.compose(project_slug=slug, project=project_data, flags={})
     loop_home = init_cli._home_path(slug) if policy_core._is_valid_project_slug(slug) else None
     story = getattr(args, "story", None)
     return MarshalContext(slug=slug, loop_home=loop_home, policy=effective, story=story)
@@ -378,11 +373,7 @@ def main(argv: list[str] | None = None) -> int:
             result = handler(args, context=_resolve_context(args))
         else:
             result = handler(args)
-        if (
-            isinstance(result, int)
-            and not isinstance(result, bool)
-            and result in GUARDED_EXIT_CODES
-        ):
+        if isinstance(result, int) and not isinstance(result, bool) and result in GUARDED_EXIT_CODES:
             return result
         # Same clamp as the SystemExit branch below, for the same reason: a
         # handler that returns None (fell off the end) or any value outside
@@ -404,11 +395,7 @@ def main(argv: list[str] | None = None) -> int:
         _drain_stdout()
         if exc.code is None:
             return EXIT_OK
-        if (
-            isinstance(exc.code, int)
-            and not isinstance(exc.code, bool)
-            and exc.code in GUARDED_EXIT_CODES
-        ):
+        if isinstance(exc.code, int) and not isinstance(exc.code, bool) and exc.code in GUARDED_EXIT_CODES:
             return exc.code
         # Any other int (or non-int, e.g. a message string) is clamped to
         # EXIT_USAGE -- defense in depth for a future argparse action that

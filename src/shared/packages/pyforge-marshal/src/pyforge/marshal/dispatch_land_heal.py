@@ -63,9 +63,7 @@ def try_heal_dispatch_land_merge(
     """Attempt ledger union or local main advance after ``merge_pr`` fails."""
     del head_sha, fs
     try:
-        conflict_paths = vcs.merge_tree_conflict_paths(
-            git_repo_root, base, head_branch
-        )
+        conflict_paths = vcs.merge_tree_conflict_paths(git_repo_root, base, head_branch)
     except VcsCommandError:
         return DispatchLandHealResult(healed=False)
 
@@ -103,9 +101,7 @@ def try_heal_dispatch_land_merge(
     # Re-probe after ledger union: conflicts may be cleared and GitHub may
     # still report DIRTY while merge-tree is clean (single-pass #985 recovery).
     try:
-        conflict_paths = vcs.merge_tree_conflict_paths(
-            git_repo_root, base, head_branch
-        )
+        conflict_paths = vcs.merge_tree_conflict_paths(git_repo_root, base, head_branch)
     except VcsCommandError:
         return DispatchLandHealResult(healed=False)
 

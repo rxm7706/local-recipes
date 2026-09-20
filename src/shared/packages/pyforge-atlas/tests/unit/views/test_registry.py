@@ -40,9 +40,7 @@ def test_every_view_declares_stable_nonempty_columns():
 
 @pytest.mark.parametrize("view", STATIC_VIEWS, ids=lambda v: v.name)
 def test_query_kwargs_are_accepted_by_the_clis_real_query_signature(view):
-    module = cli_bridge.load_cli_module(
-        view.script, scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module(view.script, scripts_dir=cli_bridge.default_scripts_dir())
     accepted = set(inspect.signature(module.query).parameters)
     unknown = set(view.query_kwargs) - accepted
     assert not unknown, (
@@ -52,14 +50,10 @@ def test_query_kwargs_are_accepted_by_the_clis_real_query_signature(view):
 
 
 @pytest.mark.parametrize("view", STATIC_VIEWS, ids=lambda v: v.name)
-def test_view_columns_are_a_subset_of_the_clis_real_output_keys(
-    view, atlas_db_path, monkeypatch
-):
+def test_view_columns_are_a_subset_of_the_clis_real_output_keys(view, atlas_db_path, monkeypatch):
     """Output-key parity — the counterpart to the query_kwargs INPUT-parity check above.
     Guards against a future CLI SELECT-column rename silently rendering a blank column."""
-    module = cli_bridge.load_cli_module(
-        view.script, scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module(view.script, scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", atlas_db_path)
 
     rows = cli_bridge.call_query(module, **view.query_kwargs)

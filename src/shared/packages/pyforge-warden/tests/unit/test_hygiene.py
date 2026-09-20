@@ -240,9 +240,7 @@ def test_non_dict_record_is_counted_and_reported():
     assert parse.records_total == 2
     assert parse.records_unparseable == 2
     assert parse.unparseable_rate == 1.0
-    assert all(
-        e.kind is ErrorKind.ENGINE_OUTPUT_UNRECOGNIZED for e in parse.errors
-    )
+    assert all(e.kind is ErrorKind.ENGINE_OUTPUT_UNRECOGNIZED for e in parse.errors)
 
 
 def test_mixed_valid_and_malformed_records_partition_correctly():
@@ -431,18 +429,14 @@ def test_frontdoor_writes_bare_name_when_version_unknown(component_factory):
 
 
 def test_frontdoor_excludes_components_with_no_pypi_identity(component_factory):
-    component = component_factory(
-        name="somepkg", version=None, pypi_identity=None, vuln_matchable=False
-    )
+    component = component_factory(name="somepkg", version=None, pypi_identity=None, vuln_matchable=False)
     synthesized = _synthesize_deptry_frontdoor([component])
     assert synthesized.lines == ()
     assert synthesized.excluded == ()  # never considered, not "excluded"
 
 
 def test_frontdoor_excludes_components_not_hygiene_covered(component_factory):
-    component = component_factory(
-        name="numpy", version="1.26.0", hygiene_covered=False
-    )
+    component = component_factory(name="numpy", version="1.26.0", hygiene_covered=False)
     synthesized = _synthesize_deptry_frontdoor([component])
     assert synthesized.lines == ()
 
@@ -564,9 +558,7 @@ def test_finds_py_even_deep_inside_a_large_tree(tmp_path):
     assert has_adjacent_python_source(tmp_path) is True
 
 
-def test_entry_cap_is_enforced_within_a_single_pathologically_wide_directory(
-    tmp_path, monkeypatch
-):
+def test_entry_cap_is_enforced_within_a_single_pathologically_wide_directory(tmp_path, monkeypatch):
     """Review finding, 2026-07-17: the entry cap must be checked ENTRY BY
     ENTRY (not once per os.walk step) so a single directory holding far
     more than the cap in non-.py files still bails out at the cap, rather

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from pyforge.atlas.datasets.refresh import RefreshRequest, WEEKLY_SECONDS
+from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest
 from pyforge.atlas.pipelines.pypi_intelligence.nodes import (
     _ttl_cadence,
     apply_readiness_scores,
@@ -22,8 +22,8 @@ from pyforge.atlas.pipelines.pypi_intelligence.nodes import (
     v_pypi_intelligence_valid,
 )
 
-
 # -- Phase C (parselmouth mapping; g10_spelling tier survives, no-clobber) ---
+
 
 def test_map_pypi_conda_preserves_g10_spelling_tier():
     parselmouth = pd.DataFrame(
@@ -48,6 +48,7 @@ def test_map_pypi_conda_empty_is_columned():
 
 # -- Phase C.5 (source-url extend; no-clobber discipline) --------------------
 
+
 def test_match_source_urls_no_clobber_of_protected_tier():
     base = pd.DataFrame(
         {
@@ -57,9 +58,7 @@ def test_match_source_urls_no_clobber_of_protected_tier():
         }
     )
     # source-url candidates: numpy already protected (skip); newpkg is new (add).
-    candidates = pd.DataFrame(
-        {"pypi_name": ["numpy", "newpkg"], "conda_name": ["numpy-wrong", "newpkg-conda"]}
-    )
+    candidates = pd.DataFrame({"pypi_name": ["numpy", "newpkg"], "conda_name": ["numpy-wrong", "newpkg-conda"]})
     out = match_source_urls(base, candidates)
     m = out.set_index("pypi_name")
     assert m.loc["numpy", "conda_name"] == "numpy"  # protected, NOT clobbered
@@ -69,6 +68,7 @@ def test_match_source_urls_no_clobber_of_protected_tier():
 
 
 # -- Phase D (universe enumeration; skippable) -------------------------------
+
 
 def test_enumerate_pypi_universe_normalizes_and_dedups():
     idx = pd.DataFrame({"pypi_name": ["a", "a", "b"], "last_serial": [10, 10, 20]})
@@ -84,6 +84,7 @@ def test_enumerate_pypi_universe_disabled_degrades_cleanly():
 
 # -- Phase O (activity band from snapshot deltas) ----------------------------
 
+
 def test_snapshot_pypi_serials_activity_band():
     idx = pd.DataFrame(
         {
@@ -94,13 +95,14 @@ def test_snapshot_pypi_serials_activity_band():
     )
     out = snapshot_pypi_serials(idx)
     band = dict(zip(out["pypi_name"], out["activity_band"]))
-    assert band["hot"] == "high"      # >=100
-    assert band["warm"] == "low"      # 5 -> 1..9
+    assert band["hot"] == "high"  # >=100
+    assert band["warm"] == "low"  # 5 -> 1..9
     assert band["cold"] == "dormant"  # 0
-    assert band["new"] == "dormant"   # NA delta
+    assert band["new"] == "dormant"  # NA delta
 
 
 # -- Phase P (pure normalization; INSERT OR IGNORE idempotency) --------------
+
 
 def test_fetch_pypi_downloads_idempotent_dedup():
     df = pd.DataFrame(
@@ -123,6 +125,7 @@ def test_fetch_pypi_downloads_disabled_no_op():
 
 # -- Phase Q (cross-channel BOOL pivot) --------------------------------------
 
+
 def test_flag_cross_channel_pivots_per_channel_bools():
     df = pd.DataFrame(
         {
@@ -140,6 +143,7 @@ def test_flag_cross_channel_pivots_per_channel_bools():
 
 
 # -- Tier 3 (OS-distro bulk-index BOOL pivot, Story 23.1) --------------------
+
 
 def test_flag_tier3_channels_pivots_and_normalizes_pypi_names():
     homebrew = pd.DataFrame({"name": ["Foo.Bar", "numpy"]})
@@ -175,6 +179,7 @@ def test_refresh_discovery_homebrew_store_reads_ttl_key():
 
 # -- Phase R/S (readiness + template; view discipline) -----------------------
 
+
 def test_score_pypi_readiness_emits_score_and_template():
     enriched = pd.DataFrame(
         {
@@ -190,7 +195,7 @@ def test_score_pypi_readiness_emits_score_and_template():
     assert m.loc["clean", "conda_forge_readiness"] == 100  # pure+licensed
     assert m.loc["clean", "recommended_template"] == "python/noarch-recipe.yaml"
     assert m.loc["rusty", "recommended_template"] == "python/maturin-recipe.yaml"
-    assert m.loc["murky", "conda_forge_readiness"] == 40   # unknown+unlicensed
+    assert m.loc["murky", "conda_forge_readiness"] == 40  # unknown+unlicensed
 
 
 def test_v_pypi_intelligence_valid_filters_view():
@@ -208,6 +213,7 @@ def test_v_pypi_intelligence_valid_filters_view():
 
 
 # -- single-write-path (add-handoff re-score routes through the SAME helper) --
+
 
 def test_add_handoff_rescore_routes_through_apply_readiness_scores():
     # a full Phase-S pass...
@@ -244,6 +250,7 @@ def test_phase_r_upsert_one_replaces_by_pypi_name():
 
 
 # -- notes operator overrides survive Phase S re-runs (AC-5) ------------------
+
 
 def test_notes_operator_override_survives_rescore():
     enriched = pd.DataFrame(

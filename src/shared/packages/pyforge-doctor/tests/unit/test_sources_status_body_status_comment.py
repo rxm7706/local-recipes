@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import status_body_consistency as sbc
 
@@ -13,14 +14,7 @@ _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "status_body"
 
 
 def _write_ledger(repo: Path, project: str, statuses: dict[str, str]) -> None:
-    ledger_path = (
-        repo
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = repo / "_bmad-output" / "projects" / project / "planning-artifacts" / "sprint-status-ledger.yaml"
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["development_status:"]
     lines.extend(f"  {key}: {value}" for key, value in sorted(statuses.items()))
@@ -47,21 +41,14 @@ def _status_comment_repo(tmp_path: Path) -> Path:
 
 
 def test_status_comment_text_collects_continuation_lines():
-    text = (
-        "---\n"
-        "status: realized   # first line\n"
-        "                   # → Epic 14 backlog\n"
-        "---\n"
-    )
+    text = "---\nstatus: realized   # first line\n                   # → Epic 14 backlog\n---\n"
     comment, line_no = sbc.status_comment_text(text)
     assert line_no == 2
     assert "Epic 14 backlog" in comment
 
 
 def test_parse_status_comment_references_epic_and_story():
-    refs = sbc.parse_status_comment_references(
-        "suite extension → Epic 14 backlog; Story 21.15 backlog"
-    )
+    refs = sbc.parse_status_comment_references("suite extension → Epic 14 backlog; Story 21.15 backlog")
     assert len(refs) == 2
     assert refs[0].ledger_key == "epic-14"
     assert refs[0].claimed_status == "backlog"
@@ -70,9 +57,7 @@ def test_parse_status_comment_references_epic_and_story():
 
 
 def test_parse_status_comment_references_ignores_keyless_comment():
-    assert sbc.parse_status_comment_references(
-        "2026-08-22 — decomposed into the station backlog same day"
-    ) == ()
+    assert sbc.parse_status_comment_references("2026-08-22 — decomposed into the station backlog same day") == ()
 
 
 def test_gather_status_comment_fires_on_contradiction(tmp_path: Path):
@@ -92,20 +77,14 @@ def test_gather_status_comment_fires_on_contradiction(tmp_path: Path):
 def test_gather_status_comment_ignores_no_key_comment(tmp_path: Path):
     repo = _status_comment_repo(tmp_path)
     findings = sbc.gather_status_comment_reconcile(repo)
-    no_key_paths = [
-        f for f in findings if f.evidence.get("path", "").endswith("no-key.md")
-    ]
+    no_key_paths = [f for f in findings if f.evidence.get("path", "").endswith("no-key.md")]
     assert not no_key_paths
 
 
 def test_gather_status_comment_reports_unresolvable_key(tmp_path: Path):
     repo = _status_comment_repo(tmp_path)
     findings = sbc.gather_status_comment_reconcile(repo)
-    hits = [
-        f
-        for f in findings
-        if f.check == sbc._CHECK_STATUS_COMMENT_UNRESOLVABLE
-    ]
+    hits = [f for f in findings if f.check == sbc._CHECK_STATUS_COMMENT_UNRESOLVABLE]
     assert len(hits) == 1
     assert hits[0].evidence["ledger_key"] == "epic-99"
     assert "epic-99" in hits[0].message
@@ -114,9 +93,7 @@ def test_gather_status_comment_reports_unresolvable_key(tmp_path: Path):
 def test_gather_status_comment_silent_when_comment_agrees(tmp_path: Path):
     repo = _status_comment_repo(tmp_path)
     findings = sbc.gather_status_comment_reconcile(repo)
-    agreement_paths = [
-        f for f in findings if f.evidence.get("path", "").endswith("agreement.md")
-    ]
+    agreement_paths = [f for f in findings if f.evidence.get("path", "").endswith("agreement.md")]
     assert not agreement_paths
 
 
@@ -129,11 +106,7 @@ def test_gather_live_bmad_method_version_drift_case():
     # pyforge-doctor), and the comment itself was corrected to match.
     repo_root = Path(__file__).resolve().parents[6]
     findings = sbc.gather_status_comment_reconcile(repo_root)
-    hits = [
-        f
-        for f in findings
-        if f.evidence.get("path") == "docs/dreams/bmad-method-version-drift.md"
-    ]
+    hits = [f for f in findings if f.evidence.get("path") == "docs/dreams/bmad-method-version-drift.md"]
     assert not hits, f"expected no findings, got: {hits}"
 
 
@@ -163,9 +136,9 @@ def test_gather_status_comment_resolves_within_owning_project_on_key_collision(
 
     findings = sbc.gather_status_comment_reconcile(tmp_path)
 
-    assert not any(
-        f.evidence.get("path", "").endswith("owned-by-second.md") for f in findings
-    ), "claimed backlog agrees with pyforge-second's own row — should be silent"
+    assert not any(f.evidence.get("path", "").endswith("owned-by-second.md") for f in findings), (
+        "claimed backlog agrees with pyforge-second's own row — should be silent"
+    )
 
 
 def test_gather_status_comment_fires_within_owning_project_not_the_wrong_one(
@@ -193,8 +166,7 @@ def test_gather_status_comment_fires_within_owning_project_not_the_wrong_one(
     hits = [
         f
         for f in findings
-        if f.check == sbc._CHECK_STATUS_COMMENT
-        and f.evidence.get("path", "").endswith("owned-by-second.md")
+        if f.check == sbc._CHECK_STATUS_COMMENT and f.evidence.get("path", "").endswith("owned-by-second.md")
     ]
     assert len(hits) == 1
     assert hits[0].evidence["ledger_project"] == "pyforge-second"

@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 import django
-import pytest
 from django.conf import settings
 
 _REPO_ROOT = Path(__file__).resolve().parents[5]
@@ -22,8 +21,7 @@ for rel in (
 def pytest_configure() -> None:
     if settings.configured:
         return
-    from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
-    from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
+    from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM, GOLDEN_PUBLIC_PEM
 
     settings.configure(
         SECRET_KEY="testing-kit-contract-test",

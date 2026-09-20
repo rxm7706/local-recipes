@@ -31,9 +31,7 @@ def _stub_evidence_validation(monkeypatch):
 # --- happy path / empty DB --------------------------------------------------
 
 
-def test_scheduler_run_on_an_empty_db_reports_zero_counts_and_exits_0(
-    capsys, tmp_path
-):
+def test_scheduler_run_on_an_empty_db_reports_zero_counts_and_exits_0(capsys, tmp_path):
     rc = cli.main(["scheduler", "run", "--repo-root", str(tmp_path)])
     assert rc == 0
     out = capsys.readouterr().out
@@ -41,9 +39,7 @@ def test_scheduler_run_on_an_empty_db_reports_zero_counts_and_exits_0(
     assert "0 claim(s) revalidated" in out
 
 
-def test_scheduler_run_happy_path_revalidates_and_aggregates_in_one_invocation(
-    capsys, tmp_path
-):
+def test_scheduler_run_happy_path_revalidates_and_aggregates_in_one_invocation(capsys, tmp_path):
     claims_path = tmp_path / claims.DEFAULT_CLAIMS_PATH
     claims.create(
         claims_path,
@@ -78,16 +74,12 @@ def test_scheduler_run_happy_path_revalidates_and_aggregates_in_one_invocation(
 # --- broken evidence link: exit 0, claim named ------------------------------
 
 
-def test_scheduler_run_names_a_broken_evidence_claim_and_still_exits_0(
-    capsys, tmp_path, monkeypatch
-):
+def test_scheduler_run_names_a_broken_evidence_claim_and_still_exits_0(capsys, tmp_path, monkeypatch):
     claims_path = tmp_path / claims.DEFAULT_CLAIMS_PATH
     claim = claims.create(
         claims_path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://broken", label="t")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://broken", label="t")],
     )
 
     class _Broken:
@@ -107,9 +99,7 @@ def test_scheduler_run_names_a_broken_evidence_claim_and_still_exits_0(
 # --- --json output -----------------------------------------------------------
 
 
-def test_scheduler_run_json_emits_one_object_with_counts_and_broken_ids(
-    capsys, tmp_path
-):
+def test_scheduler_run_json_emits_one_object_with_counts_and_broken_ids(capsys, tmp_path):
     claims_path = tmp_path / claims.DEFAULT_CLAIMS_PATH
     claims.create(
         claims_path,
@@ -131,9 +121,7 @@ def test_scheduler_run_json_names_a_broken_claim(capsys, tmp_path, monkeypatch):
     claim = claims.create(
         claims_path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://broken", label="t")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://broken", label="t")],
     )
 
     class _Broken:
@@ -180,9 +168,7 @@ def test_scheduler_run_out_dir_override(tmp_path):
 # --- OSError surfaces as a structured HeraldError, not a raw traceback ------
 
 
-def test_scheduler_run_wraps_an_unwritable_out_dir_as_a_herald_error(
-    capsys, tmp_path
-):
+def test_scheduler_run_wraps_an_unwritable_out_dir_as_a_herald_error(capsys, tmp_path):
     """``--out-dir`` colliding with an existing file makes ``mkdir`` raise
     ``FileExistsError`` (an ``OSError``) -- this must surface through
     ``dispatch``'s structured error contract (AD-6), not an uncaught

@@ -35,16 +35,13 @@ def test_skill_projection_manifest_is_untracked():
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "", (
-        ".bmad-loop/skill-projection.json must be untracked -- git ls-files "
-        f"still reports: {result.stdout!r}"
+        f".bmad-loop/skill-projection.json must be untracked -- git ls-files still reports: {result.stdout!r}"
     )
 
 
 def test_gitignore_covers_skill_projection_manifest():
     repo_root = _repo_root()
-    gitignore_lines = {
-        line.strip() for line in (repo_root / ".gitignore").read_text(encoding="utf-8").splitlines()
-    }
+    gitignore_lines = {line.strip() for line in (repo_root / ".gitignore").read_text(encoding="utf-8").splitlines()}
     assert ".bmad-loop/skill-projection.json" in gitignore_lines, (
         ".gitignore must contain a literal '.bmad-loop/skill-projection.json' line"
     )
@@ -67,9 +64,7 @@ def test_git_check_ignore_covers_skill_projection_manifest():
 
 def test_gitignore_covers_projected_agents_tree():
     repo_root = _repo_root()
-    gitignore_lines = {
-        line.strip() for line in (repo_root / ".gitignore").read_text(encoding="utf-8").splitlines()
-    }
+    gitignore_lines = {line.strip() for line in (repo_root / ".gitignore").read_text(encoding="utf-8").splitlines()}
     assert "/.agents/" in gitignore_lines, ".gitignore must contain a literal '/.agents/' line"
 
 
@@ -83,6 +78,5 @@ def test_git_check_ignore_covers_projected_agents_tree():
         timeout=30,
     )
     assert result.returncode == 0, (
-        "git check-ignore says .agents/skills is NOT effectively ignored "
-        f"(rc={result.returncode}): {result.stderr!r}"
+        f"git check-ignore says .agents/skills is NOT effectively ignored (rc={result.returncode}): {result.stderr!r}"
     )

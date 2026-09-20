@@ -73,8 +73,8 @@ import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from . import probe_engine, require_engine
 from ..errors import ShipUploadTimeoutError
+from . import probe_engine, require_engine
 
 name = "twine"
 """`EngineAdapter.name` -- an `engines/__init__.py::_KNOWN_ENGINES` key."""
@@ -143,7 +143,10 @@ def _extract_view_at_url(stdout: str) -> str | None:
 
 
 def upload(
-    paths: Sequence[str], *, timeout: float | None = None, repository_url: str | None = None,
+    paths: Sequence[str],
+    *,
+    timeout: float | None = None,
+    repository_url: str | None = None,
 ) -> TwineUploadResult:
     """Upload `paths` (the wheel+sdist artifacts) to PyPI -- or, with
     `repository_url` given, to whatever index that URL names (Story 3.9,

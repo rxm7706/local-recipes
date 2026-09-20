@@ -61,13 +61,13 @@ import math
 import shutil
 import subprocess
 import tempfile
+import tomllib
 from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from typing import Any
 
-import tomllib
 from pyforge.core.errors import PyforgeError
 
 from .hooks import PR_GATE_SCAN
@@ -123,7 +123,7 @@ def _ad9_roster_has_tea(target: Path) -> bool:
     try:
         with config_path.open("rb") as handle:
             document = tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+    except OSError, tomllib.TOMLDecodeError, UnicodeDecodeError:
         return False
     modules = document.get("modules")
     return isinstance(modules, Mapping) and "tea" in modules
@@ -143,9 +143,7 @@ class TeaAdvisoryResult:
     skipped_reason: str | None
 
 
-def _default_runner(
-    binary: str, target: Path, json_path: Path
-) -> subprocess.CompletedProcess[str]:
+def _default_runner(binary: str, target: Path, json_path: Path) -> subprocess.CompletedProcess[str]:
     """Shell out to the real ``tea-test-review`` binary. Both the markdown
     report and the JSON verdict are written into ``json_path``'s own
     scratch directory -- never into ``target`` -- an advisory scanner must
@@ -239,10 +237,7 @@ def run_tea_test_review(
             # belt-and-suspenders per the module docstring): whatever JSON
             # happens to exist at json_path is not read at all.
             if completed is not None and completed.returncode not in (0, 1):
-                raise RuntimeError(
-                    f"tea-test-review exited {completed.returncode} -- "
-                    "verdict not trusted"
-                )
+                raise RuntimeError(f"tea-test-review exited {completed.returncode} -- verdict not trusted")
             with json_path.open("r", encoding="utf-8") as handle:
                 raw: Any = json.load(handle)
     except Exception as exc:  # noqa: BLE001 -- fail-open: any runner/parse
@@ -253,9 +248,7 @@ def run_tea_test_review(
             score=None,
             recommendation=None,
             summary="",
-            skipped_reason=(
-                f"tea-test-review run failed: {type(exc).__name__}: {exc}"
-            ),
+            skipped_reason=(f"tea-test-review run failed: {type(exc).__name__}: {exc}"),
         )
     if not isinstance(raw, Mapping):
         return TeaAdvisoryResult(
@@ -272,30 +265,20 @@ def run_tea_test_review(
             score=None,
             recommendation=None,
             summary="",
-            skipped_reason=(
-                str(reason)
-                if reason
-                else "tea-test-review reported nothing to review"
-            ),
+            skipped_reason=(str(reason) if reason else "tea-test-review reported nothing to review"),
         )
     score_raw = raw.get("qualityScore")
     score = (
         int(score_raw)
-        if isinstance(score_raw, (int, float))
-        and not isinstance(score_raw, bool)
-        and math.isfinite(score_raw)
+        if isinstance(score_raw, (int, float)) and not isinstance(score_raw, bool) and math.isfinite(score_raw)
         else None
     )
     recommendation_raw = raw.get("recommendation")
-    recommendation = (
-        str(recommendation_raw) if isinstance(recommendation_raw, str) else None
-    )
+    recommendation = str(recommendation_raw) if isinstance(recommendation_raw, str) else None
     violations = raw.get("violations")
     violations_text = ""
     if isinstance(violations, Mapping):
-        violations_text = ", ".join(
-            f"{severity}={count}" for severity, count in sorted(violations.items())
-        )
+        violations_text = ", ".join(f"{severity}={count}" for severity, count in sorted(violations.items()))
     summary = (
         f"tea-test-review: recommendation={recommendation or 'unknown'} "
         f"score={score if score is not None else 'unknown'}"

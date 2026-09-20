@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus
 from pyforge.doctor.sources import capability_effect
 
@@ -89,9 +90,7 @@ def test_missing_surface_path_is_named(tmp_path: Path) -> None:
     findings = capability_effect.gather_caller_reach(tmp_path)
 
     assert any(f.check == "capability-effect-absent-surface-path" for f in findings)
-    missing = next(
-        f for f in findings if f.check == "capability-effect-absent-surface-path"
-    )
+    missing = next(f for f in findings if f.check == "capability-effect-absent-surface-path")
     assert "src/no/such/module.py" in missing.message
 
 
@@ -180,9 +179,7 @@ def test_citing_story_without_surface_line_is_named(tmp_path: Path) -> None:
     )
     _write_epics(
         pa,
-        "## Epic 1\n\n"
-        "### Story 1.1: no surface\n\n"
-        "**FR/AD:** spec-no-surface CAP-1\n\n",
+        "## Epic 1\n\n### Story 1.1: no surface\n\n**FR/AD:** spec-no-surface CAP-1\n\n",
     )
 
     findings = capability_effect.gather_caller_reach(tmp_path)
@@ -214,17 +211,13 @@ def test_live_fleet_proves_capability_effect_no_caller_finding() -> None:
     findings = capability_effect.gather_caller_reach(root)
 
     no_caller = [f for f in findings if f.check == "capability-effect-no-caller"]
-    assert no_caller, (
-        "expected at least one live capability-effect-no-caller finding on "
-        "the real fleet"
-    )
+    assert no_caller, "expected at least one live capability-effect-no-caller finding on the real fleet"
 
     risk_findings = [
         f
         for f in no_caller
         if f.evidence.get("spec_slug") == "spec-risk-tiered-review-depth"
-        and f.evidence.get("symbol")
-        in {"classify_review_tier", "resolve_review_cycles"}
+        and f.evidence.get("symbol") in {"classify_review_tier", "resolve_review_cycles"}
     ]
     if not risk_findings:
         assert len(no_caller) >= 1
@@ -286,27 +279,14 @@ def test_test_only_reference_still_reports_no_caller(tmp_path: Path) -> None:
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    assert any(
-        f.check == "capability-effect-no-caller"
-        and f.evidence.get("symbol") == "orphan_only"
-        for f in findings
-    )
+    assert any(f.check == "capability-effect-no-caller" and f.evidence.get("symbol") == "orphan_only" for f in findings)
 
 
 def test_station_relative_surface_resolves_under_pyforge_package(
     tmp_path: Path,
 ) -> None:
     _init_repo(tmp_path)
-    station_root = (
-        tmp_path
-        / "src"
-        / "shared"
-        / "packages"
-        / "pyforge-demo"
-        / "src"
-        / "pyforge"
-        / "demo"
-    )
+    station_root = tmp_path / "src" / "shared" / "packages" / "pyforge-demo" / "src" / "pyforge" / "demo"
     module = station_root / "core.py"
     module.parent.mkdir(parents=True, exist_ok=True)
     module.write_text("def station_fn():\n    return 0\n", encoding="utf-8")
@@ -328,26 +308,12 @@ def test_station_relative_surface_resolves_under_pyforge_package(
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    assert any(
-        f.check == "capability-effect-no-caller"
-        and f.evidence.get("symbol") == "station_fn"
-        for f in findings
-    )
+    assert any(f.check == "capability-effect-no-caller" and f.evidence.get("symbol") == "station_fn" for f in findings)
 
 
 def test_directory_surface_fragment_resolves_as_existing(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    pkg_dir = (
-        tmp_path
-        / "src"
-        / "shared"
-        / "packages"
-        / "pyforge-demo"
-        / "src"
-        / "pyforge"
-        / "demo"
-        / "views"
-    )
+    pkg_dir = tmp_path / "src" / "shared" / "packages" / "pyforge-demo" / "src" / "pyforge" / "demo" / "views"
     pkg_dir.mkdir(parents=True)
     (pkg_dir / "__init__.py").write_text("", encoding="utf-8")
 
@@ -369,9 +335,7 @@ def test_directory_surface_fragment_resolves_as_existing(tmp_path: Path) -> None
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    assert not any(
-        f.check == "capability-effect-absent-surface-path" for f in findings
-    )
+    assert not any(f.check == "capability-effect-absent-surface-path" for f in findings)
 
 
 def test_brace_expansion_fragment_not_split_on_internal_comma(tmp_path: Path) -> None:
@@ -397,9 +361,7 @@ def test_brace_expansion_fragment_not_split_on_internal_comma(tmp_path: Path) ->
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    missing = [
-        f for f in findings if f.check == "capability-effect-absent-surface-path"
-    ]
+    missing = [f for f in findings if f.check == "capability-effect-absent-surface-path"]
     assert len(missing) == 1
     assert missing[0].evidence["missing_path"] == "src/pkg/{mod_a,mod_b}.py"
 
@@ -428,9 +390,7 @@ def test_double_colon_symbol_suffix_resolves_path(tmp_path: Path) -> None:
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    assert not any(
-        f.check == "capability-effect-absent-surface-path" for f in findings
-    )
+    assert not any(f.check == "capability-effect-absent-surface-path" for f in findings)
 
 
 def test_document_suffix_with_annotation_is_not_absent_path(tmp_path: Path) -> None:
@@ -450,24 +410,13 @@ def test_document_suffix_with_annotation_is_not_absent_path(tmp_path: Path) -> N
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    assert not any(
-        f.check == "capability-effect-absent-surface-path" for f in findings
-    )
+    assert not any(f.check == "capability-effect-absent-surface-path" for f in findings)
     assert any(f.check == "capability-effect-document-surface" for f in findings)
 
 
 def test_package_relative_tests_path_resolves(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    test_file = (
-        tmp_path
-        / "src"
-        / "shared"
-        / "packages"
-        / "pyforge-demo"
-        / "tests"
-        / "unit"
-        / "test_thing.py"
-    )
+    test_file = tmp_path / "src" / "shared" / "packages" / "pyforge-demo" / "tests" / "unit" / "test_thing.py"
     test_file.parent.mkdir(parents=True, exist_ok=True)
     test_file.write_text("def test_x():\n    assert True\n", encoding="utf-8")
 
@@ -488,9 +437,7 @@ def test_package_relative_tests_path_resolves(tmp_path: Path) -> None:
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    assert not any(
-        f.check == "capability-effect-absent-surface-path" for f in findings
-    )
+    assert not any(f.check == "capability-effect-absent-surface-path" for f in findings)
 
 
 def test_sibling_spec_shorthand_resolves_under_specs_dir(tmp_path: Path) -> None:
@@ -517,9 +464,7 @@ def test_sibling_spec_shorthand_resolves_under_specs_dir(tmp_path: Path) -> None
 
     findings = capability_effect.gather_caller_reach(tmp_path)
 
-    assert not any(
-        f.check == "capability-effect-absent-surface-path" for f in findings
-    )
+    assert not any(f.check == "capability-effect-absent-surface-path" for f in findings)
 
 
 # --- corpus fallback (the path taken when `git grep` cannot run) ------------
@@ -536,8 +481,7 @@ def _write_corpus_tree(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     (src / "use.py").write_text(
-        "from core import shared_fn\n\n\ndef shared_fn_wrapper():\n"
-        "    return shared_fn()\n",
+        "from core import shared_fn\n\n\ndef shared_fn_wrapper():\n    return shared_fn()\n",
         encoding="utf-8",
     )
     (src / "notes.txt").write_text("shared_fn shared_fn\n", encoding="utf-8")

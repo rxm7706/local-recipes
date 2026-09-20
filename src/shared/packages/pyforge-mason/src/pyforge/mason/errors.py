@@ -54,8 +54,7 @@ class MasonError(PyforgeError):
             )
         if not isinstance(message, str) or not message.strip():
             raise ValueError(
-                "MasonError message must be a non-empty string: it must state "
-                "what failed and what to do next (NFR-14)"
+                "MasonError message must be a non-empty string: it must state what failed and what to do next (NFR-14)"
             )
         self.identifier = identifier
         self.message = message
@@ -89,10 +88,7 @@ class CfeImportFloorError(MasonError):
             )
         self.missing = missing
         self.interpreter = interpreter
-        message = (
-            f"interpreter {interpreter!r} is missing CFE's import floor: "
-            f"{', '.join(missing)}"
-        )
+        message = f"interpreter {interpreter!r} is missing CFE's import floor: {', '.join(missing)}"
         super().__init__("cfe:import-floor-missing", message)
 
 
@@ -266,8 +262,7 @@ class EngineAbsentError(MasonError):
     def __init__(self, name: str, conda_package: str) -> None:
         if not isinstance(name, str) or not name.strip():
             raise ValueError(
-                "EngineAbsentError requires a non-empty `name`: an absence "
-                "error naming no engine is incoherent"
+                "EngineAbsentError requires a non-empty `name`: an absence error naming no engine is incoherent"
             )
         if not isinstance(conda_package, str) or not conda_package.strip():
             raise ValueError(
@@ -324,7 +319,11 @@ class PackageVersionMismatchError(MasonError):
     """
 
     def __init__(
-        self, wheel_version: str, conda_version: str, wheel_path: str, conda_path: str,
+        self,
+        wheel_version: str,
+        conda_version: str,
+        wheel_path: str,
+        conda_path: str,
     ) -> None:
         if not isinstance(wheel_version, str) or not wheel_version.strip():
             raise ValueError(
@@ -437,13 +436,11 @@ class PackageProjectPathError(MasonError):
     def __init__(self, project_path: str, reason: str) -> None:
         if not isinstance(project_path, str) or not project_path.strip():
             raise ValueError(
-                "PackageProjectPathError requires a non-empty `project_path`: "
-                "a path error naming no path is incoherent"
+                "PackageProjectPathError requires a non-empty `project_path`: a path error naming no path is incoherent"
             )
         if not isinstance(reason, str) or not reason.strip():
             raise ValueError(
-                "PackageProjectPathError requires a non-empty `reason`: "
-                "a path error giving no reason is incoherent"
+                "PackageProjectPathError requires a non-empty `reason`: a path error giving no reason is incoherent"
             )
         self.project_path = project_path
         self.reason = reason
@@ -544,8 +541,7 @@ class ShipCredentialMissingError(MasonError):
             )
         self.missing = missing
         message = (
-            f"missing PyPI upload credential(s) in the environment: "
-            f"{', '.join(missing)}; set them before shipping"
+            f"missing PyPI upload credential(s) in the environment: {', '.join(missing)}; set them before shipping"
         )
         super().__init__("ship:credential-missing", message)
 
@@ -859,14 +855,10 @@ class EnvironmentLockfileMissingError(MasonError):
         # takes that branch now.
         if lockfile_path:
             message = (
-                f"lockfile {lockfile_path!r} does not exist or is not a file; run "
-                "`mason environment lock` to create it"
+                f"lockfile {lockfile_path!r} does not exist or is not a file; run `mason environment lock` to create it"
             )
         else:
-            message = (
-                "no --lockfile path was given; run `mason environment lock` to "
-                "create one, then pass its path"
-            )
+            message = "no --lockfile path was given; run `mason environment lock` to create one, then pass its path"
         super().__init__("environment:lockfile-missing", message)
 
     def __reduce__(self):
@@ -1022,10 +1014,7 @@ class EnvironmentManifestsNotFoundError(MasonError):
             )
         self.directory = directory
         self.filenames = filenames
-        message = (
-            f"no dependency manifests found in {directory!r}; looked for "
-            f"{', '.join(filenames)}"
-        )
+        message = f"no dependency manifests found in {directory!r}; looked for {', '.join(filenames)}"
         super().__init__("environment:manifests-not-found", message)
 
     def __reduce__(self):

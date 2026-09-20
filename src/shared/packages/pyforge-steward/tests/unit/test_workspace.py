@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.workspace import (
     WorkspaceError,
@@ -24,9 +25,7 @@ from pyforge.steward.workspace import (
 
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
-    )
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
 def _make_repo(tmp_path: Path) -> Path:
@@ -82,9 +81,7 @@ def test_start_json_via_cli(repo: Path, tmp_path: Path, monkeypatch, capsys):
     dest = tmp_path / "cli-start"
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
     monkeypatch.setattr(
         "pyforge.steward.workspace.scratch_path_for",
         lambda slug, root=None: dest,
@@ -103,9 +100,7 @@ def test_start_json_via_cli(repo: Path, tmp_path: Path, monkeypatch, capsys):
 def test_ls_is_cheap_bookkeeping_only(repo: Path, tmp_path: Path, monkeypatch):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     dest = tmp_path / "owned"
-    start_workspace(
-        "owned", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("owned", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
 
     # Plant a foreign Marshal-style loop-home worktree — must stay invisible.
     foreign = tmp_path / "loop-homes" / "pyforge-marshal"
@@ -138,9 +133,7 @@ def test_foreign_loop_home_invisible_to_ls_and_clean(repo: Path, tmp_path: Path)
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     archive_dir = tmp_path / "archive"
     owned = tmp_path / "owned-wt"
-    start_workspace(
-        "owned", root=repo, bookkeeping=bookkeeping, path=owned, from_ref="origin/main"
-    )
+    start_workspace("owned", root=repo, bookkeeping=bookkeeping, path=owned, from_ref="origin/main")
 
     foreign = tmp_path / "loop-homes" / "pyforge-marshal"
     foreign.parent.mkdir(parents=True)
@@ -175,9 +168,7 @@ def test_clean_merged_only_leaves_unmerged(repo: Path, tmp_path: Path):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     archive_dir = tmp_path / "archive"
     dest = tmp_path / "unmerged"
-    start_workspace(
-        "unmerged", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("unmerged", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
     # Advance the branch so it is ahead of origin/main (not merged).
     _git("commit", "--allow-empty", "-m", "ahead", cwd=dest)
 
@@ -199,9 +190,7 @@ def test_clean_archives_not_deletes(repo: Path, tmp_path: Path):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     archive_dir = tmp_path / "archive"
     dest = tmp_path / "to-archive"
-    start_workspace(
-        "to-archive", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("to-archive", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
     (dest / "marker.txt").write_text("keep-me\n", encoding="utf-8")
 
     result = clean_workspaces(
@@ -229,20 +218,14 @@ def test_clean_json_via_cli(repo: Path, tmp_path: Path, monkeypatch, capsys):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     archive_dir = tmp_path / "archive"
     dest = tmp_path / "cli-clean"
-    start_workspace(
-        "cli-clean", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("cli-clean", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
     _git("checkout", "main", cwd=repo)
     _git("merge", "--ff-only", "cli-clean", cwd=repo)
     _git("push", "origin", "main", cwd=repo)
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_archive_dir", lambda: archive_dir
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
+    monkeypatch.setattr("pyforge.steward.workspace.default_archive_dir", lambda: archive_dir)
 
     rc = main(["workspace", "clean", "--merged-only", "--json"])
 
@@ -262,30 +245,25 @@ def test_duplicate_start_refuses(repo: Path, tmp_path: Path):
     dest = tmp_path / "dup"
     start_workspace("dup", root=repo, bookkeeping=bookkeeping, path=dest)
     with pytest.raises(WorkspaceError, match="already recorded"):
-        start_workspace(
-            "dup", root=repo, bookkeeping=bookkeeping, path=tmp_path / "dup-2"
-        )
+        start_workspace("dup", root=repo, bookkeeping=bookkeeping, path=tmp_path / "dup-2")
 
 
 def test_ls_json_via_cli_empty(repo: Path, monkeypatch, capsys):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
 
     rc = main(["workspace", "ls", "--json"])
 
     assert rc == EXIT_OK
     assert json.loads(capsys.readouterr().out) == []
 
+
 def test_clean_declined_confirm_skips_and_keeps_path(repo: Path, tmp_path: Path):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     archive_dir = tmp_path / "archive"
     dest = tmp_path / "declined"
-    start_workspace(
-        "declined", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("declined", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
 
     result = clean_workspaces(
         merged_only=False,
@@ -310,9 +288,7 @@ def test_start_cli_from_ref_json(repo: Path, tmp_path: Path, monkeypatch, capsys
     _git("push", "origin", "other", cwd=repo)
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
     monkeypatch.setattr(
         "pyforge.steward.workspace.scratch_path_for",
         lambda slug, root=None: dest,
@@ -333,9 +309,7 @@ def test_duplicate_start_via_cli_exits_failed(repo: Path, tmp_path: Path, monkey
     start_workspace("cli-dup", root=repo, bookkeeping=bookkeeping, path=dest)
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
     monkeypatch.setattr(
         "pyforge.steward.workspace.scratch_path_for",
         lambda slug, root=None: tmp_path / "cli-dup-2",
@@ -354,9 +328,7 @@ def test_start_cli_non_json_prints_exactly_path(repo: Path, tmp_path: Path, monk
     dest = tmp_path / "plain-path"
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
     monkeypatch.setattr(
         "pyforge.steward.workspace.scratch_path_for",
         lambda slug, root=None: dest,
@@ -374,9 +346,7 @@ def test_start_after_clean_reuses_slug(repo: Path, tmp_path: Path):
     archive_dir = tmp_path / "archive"
     dest1 = tmp_path / "reuse-1"
     dest2 = tmp_path / "reuse-2"
-    start_workspace(
-        "reuse", root=repo, bookkeeping=bookkeeping, path=dest1, from_ref="origin/main"
-    )
+    start_workspace("reuse", root=repo, bookkeeping=bookkeeping, path=dest1, from_ref="origin/main")
 
     result = clean_workspaces(
         merged_only=False,
@@ -389,9 +359,7 @@ def test_start_after_clean_reuses_slug(repo: Path, tmp_path: Path):
     assert load_bookkeeping(bookkeeping) == ()
 
     # Same slug must succeed again — branch was deleted during archive.
-    record = start_workspace(
-        "reuse", root=repo, bookkeeping=bookkeeping, path=dest2, from_ref="origin/main"
-    )
+    record = start_workspace("reuse", root=repo, bookkeeping=bookkeeping, path=dest2, from_ref="origin/main")
     assert record.slug == "reuse"
     assert dest2.is_dir()
 
@@ -402,9 +370,7 @@ def test_start_after_clean_reuses_slug(repo: Path, tmp_path: Path):
 def test_status_reports_clean_ahead_behind_merged(repo: Path, tmp_path: Path):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     dest = tmp_path / "status-a"
-    start_workspace(
-        "status-a", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("status-a", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
 
     # Fresh equal tip: clean, ahead=0, behind=0, merged into source.
     fresh = status_workspaces(root=repo, bookkeeping=bookkeeping)
@@ -473,9 +439,7 @@ def test_status_foreign_loop_home_invisible(repo: Path, tmp_path: Path):
 def test_status_unknown_slug_errors(repo: Path, tmp_path: Path):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     dest = tmp_path / "known"
-    start_workspace(
-        "known", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("known", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
     with pytest.raises(WorkspaceError, match="not in bookkeeping"):
         status_workspaces("missing", root=repo, bookkeeping=bookkeeping)
 
@@ -483,14 +447,10 @@ def test_status_unknown_slug_errors(repo: Path, tmp_path: Path):
 def test_status_json_via_cli(repo: Path, tmp_path: Path, monkeypatch, capsys):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     dest = tmp_path / "cli-status"
-    start_workspace(
-        "cli-status", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
-    )
+    start_workspace("cli-status", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
 
     rc = main(["workspace", "status", "cli-status", "--json"])
 
@@ -517,9 +477,7 @@ def test_status_cli_all_and_human(repo: Path, tmp_path: Path, monkeypatch, capsy
     )
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
 
     rc = main(["workspace", "status"])
     assert rc == EXIT_OK
@@ -530,9 +488,7 @@ def test_status_cli_all_and_human(repo: Path, tmp_path: Path, monkeypatch, capsy
     assert "merged" in out
 
 
-def test_status_missing_path_per_row_error_keeps_siblings(
-    repo: Path, tmp_path: Path, monkeypatch, capsys
-):
+def test_status_missing_path_per_row_error_keeps_siblings(repo: Path, tmp_path: Path, monkeypatch, capsys):
     """Missing bookkeeping path → per-row error; other rows still reported; duty ok."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     good = tmp_path / "status-good"
@@ -574,9 +530,7 @@ def test_status_missing_path_per_row_error_keeps_siblings(
     assert by_slug["status-gone"].merged is None
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
     rc = main(["workspace", "status", "--json"])
     assert rc == EXIT_OK
     payload = json.loads(capsys.readouterr().out)
@@ -601,16 +555,10 @@ def test_status_missing_path_per_row_error_keeps_siblings(
 def test_status_unknown_slug_via_cli_exits_failed(repo: Path, monkeypatch, capsys):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
 
     rc = main(["workspace", "status", "no-such-slug", "--json"])
 
     assert rc == EXIT_FAILED
     err = json.loads(capsys.readouterr().err)
     assert "not in bookkeeping" in err["error"]
-
-
-
-

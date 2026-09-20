@@ -100,70 +100,64 @@ class FindingType(StrEnum):
 # does not close that (the proxy is a read-only VIEW; mutating the
 # underlying dict is fully visible through it), so the literal is built
 # inline and never bound elsewhere.
-REMEDIES: Mapping[FindingType, str] = MappingProxyType({
-    FindingType.ARTIFACT_MISSING: (
-        "Run `marshal seed adopt` (or `init`, for a first-ever install) to "
-        "materialize it."
-    ),
-    FindingType.MANAGED_FILE_MODIFIED: (
-        "The file is tool-owned -- revert the local edit, or run `marshal "
-        "seed update --force` to accept it as the new baseline."
-    ),
-    FindingType.MANAGED_REGION_MODIFIED: (
-        "Revert edits inside the managed region, or run `marshal seed "
-        "update --force` to overwrite it; content outside the markers is "
-        "untouched."
-    ),
-    FindingType.MANAGED_REGION_MISSING: (
-        "Run `marshal seed update` to re-insert the region at its declared "
-        "anchor."
-    ),
-    FindingType.DERIVED_STALE: (
-        "Run `marshal seed update` to recompute it; this class is always "
-        "safe to regenerate."
-    ),
-    FindingType.MODEL_BEHIND: (
-        "Run `marshal seed update` to upgrade the repo to the currently "
-        "installed model version."
-    ),
-    FindingType.STATE_INVALID: (
-        "Restore `.marshal/seed-state.yml` from version control, or run "
-        "`marshal seed adopt` to rebuild it; never hand-edit state."
-    ),
-    FindingType.NEVER_WRITE_VIOLATION: (
-        "No repo action needed -- this names a bug in the plan builder or "
-        "manifest; file an issue against Genesis."
-    ),
-    FindingType.REFERENCED_DEP_MISSING: (
-        "Install the missing dependency at or above its declared floor "
-        "(`marshal doctor check` can do this where available)."
-    ),
-    FindingType.UNCOVERED: (
-        "Fix the manifest entry -- give it a valid `class`, or "
-        "`unclassified-deferred` with a `rationale`."
-    ),
-    FindingType.LEGACY_PRESENT: (
-        "Informational only, no action required; migrate to the named "
-        "successor by hand when ready."
-    ),
-    FindingType.OPTED_OUT: (
-        "Informational -- while this opt-out stands the tool will not "
-        "re-insert this region. To bring it back under management, run "
-        "`marshal seed adopt --reinstate <artifact>#<region>`."
-    ),
-    FindingType.KIT_ITEM_MISSING: (
-        "Run `marshal seed kit --apply` in the loop home to provision it, "
-        "or turn its `[context]` layer off if this home does not want it."
-    ),
-    FindingType.KIT_ITEM_STALE: (
-        "Run `marshal seed kit --apply` to refresh it; the item is there "
-        "but no longer matches what produced it."
-    ),
-    FindingType.KIT_INSTRUMENT_UNAVAILABLE: (
-        "Advisory -- install the named instrument (or accept the platform "
-        "gap); the layer stays off and nothing is blocked."
-    ),
-})
+REMEDIES: Mapping[FindingType, str] = MappingProxyType(
+    {
+        FindingType.ARTIFACT_MISSING: (
+            "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+        ),
+        FindingType.MANAGED_FILE_MODIFIED: (
+            "The file is tool-owned -- revert the local edit, or run `marshal "
+            "seed update --force` to accept it as the new baseline."
+        ),
+        FindingType.MANAGED_REGION_MODIFIED: (
+            "Revert edits inside the managed region, or run `marshal seed "
+            "update --force` to overwrite it; content outside the markers is "
+            "untouched."
+        ),
+        FindingType.MANAGED_REGION_MISSING: (
+            "Run `marshal seed update` to re-insert the region at its declared anchor."
+        ),
+        FindingType.DERIVED_STALE: (
+            "Run `marshal seed update` to recompute it; this class is always safe to regenerate."
+        ),
+        FindingType.MODEL_BEHIND: (
+            "Run `marshal seed update` to upgrade the repo to the currently installed model version."
+        ),
+        FindingType.STATE_INVALID: (
+            "Restore `.marshal/seed-state.yml` from version control, or run "
+            "`marshal seed adopt` to rebuild it; never hand-edit state."
+        ),
+        FindingType.NEVER_WRITE_VIOLATION: (
+            "No repo action needed -- this names a bug in the plan builder or manifest; file an issue against Genesis."
+        ),
+        FindingType.REFERENCED_DEP_MISSING: (
+            "Install the missing dependency at or above its declared floor "
+            "(`marshal doctor check` can do this where available)."
+        ),
+        FindingType.UNCOVERED: (
+            "Fix the manifest entry -- give it a valid `class`, or `unclassified-deferred` with a `rationale`."
+        ),
+        FindingType.LEGACY_PRESENT: (
+            "Informational only, no action required; migrate to the named successor by hand when ready."
+        ),
+        FindingType.OPTED_OUT: (
+            "Informational -- while this opt-out stands the tool will not "
+            "re-insert this region. To bring it back under management, run "
+            "`marshal seed adopt --reinstate <artifact>#<region>`."
+        ),
+        FindingType.KIT_ITEM_MISSING: (
+            "Run `marshal seed kit --apply` in the loop home to provision it, "
+            "or turn its `[context]` layer off if this home does not want it."
+        ),
+        FindingType.KIT_ITEM_STALE: (
+            "Run `marshal seed kit --apply` to refresh it; the item is there but no longer matches what produced it."
+        ),
+        FindingType.KIT_INSTRUMENT_UNAVAILABLE: (
+            "Advisory -- install the named instrument (or accept the platform "
+            "gap); the layer stays off and nothing is blocked."
+        ),
+    }
+)
 
 
 def _remedy_for(finding_type: FindingType) -> str:
@@ -176,8 +170,7 @@ def _remedy_for(finding_type: FindingType) -> str:
         return REMEDIES[finding_type]
     except KeyError:
         raise ValueError(
-            f"{finding_type.value}: no REMEDIES entry -- every FindingType member "
-            "must have a documented remedy"
+            f"{finding_type.value}: no REMEDIES entry -- every FindingType member must have a documented remedy"
         ) from None
 
 
@@ -222,9 +215,7 @@ class Finding:
         # construction site.
         expected_remedy = _remedy_for(self.type)
         if self.remedy != expected_remedy:
-            raise ValueError(
-                f"{self.type.value}: remedy must be {expected_remedy!r}, got {self.remedy!r}"
-            )
+            raise ValueError(f"{self.type.value}: remedy must be {expected_remedy!r}, got {self.remedy!r}")
 
     @classmethod
     def new(cls, severity: Severity | str, type: FindingType | str, path: str, message: str) -> Finding:

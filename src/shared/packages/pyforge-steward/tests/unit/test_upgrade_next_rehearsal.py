@@ -59,15 +59,9 @@ _SKILL_NEW = "ROUTE = new\nMID = x\nTAIL = same\n"
 
 _SKF_CONFIG_REL = "_bmad/skf/config.yaml"
 _SKF_CONFIG_TEXT = (
-    "# SKF Module Configuration\n"
-    "user_name: Test\n"
-    "ides:\n"
-    "  - claude-code\n"
-    "skills_output_folder: .claude/skills\n"
+    "# SKF Module Configuration\nuser_name: Test\nides:\n  - claude-code\nskills_output_folder: .claude/skills\n"
 )
-_PACKAGED_SOURCE_REL = (
-    ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
-)
+_PACKAGED_SOURCE_REL = ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
 _PACKAGED_FILES = {
     "skf-alpha/SKILL.md": "# skf-alpha\n",
     "skf-campaign/SKILL.md": "# skf-campaign\n",
@@ -76,9 +70,7 @@ _PACKAGED_FILES = {
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=repo, check=True, capture_output=True, text=True
-    )
+    return subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True)
 
 
 def _manifest_text() -> str:
@@ -112,17 +104,14 @@ def _write_rehearsal_repo(root: Path) -> Path:
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
     (manifest_dir / "manifest.yaml").write_text(_manifest_text(), encoding="utf-8")
-    (manifest_dir / "skill-manifest.csv").write_text(
-        f'canonicalId,name\n"{_SKILL}","{_SKILL}"\n', encoding="utf-8"
-    )
+    (manifest_dir / "skill-manifest.csv").write_text(f'canonicalId,name\n"{_SKILL}","{_SKILL}"\n', encoding="utf-8")
 
     for sub in ("bmm", "core", "scripts"):
         (root / "_bmad" / sub).mkdir(parents=True, exist_ok=True)
     (root / "_bmad" / "custom" / "config.toml").parent.mkdir(parents=True, exist_ok=True)
     (root / "_bmad" / "custom" / "config.toml").write_text("team = true\n", encoding="utf-8")
     (root / "_bmad" / "config.toml").write_text(
-        "[modules.skf]\n"
-        'sidecar_path = "{project-root}/_bmad/_memory/forger-sidecar"\n',
+        '[modules.skf]\nsidecar_path = "{project-root}/_bmad/_memory/forger-sidecar"\n',
         encoding="utf-8",
     )
 

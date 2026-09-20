@@ -120,7 +120,7 @@ def parse_declared_low_risk(text: str) -> bool:
             )
         try:
             value = ast.literal_eval(raw)
-        except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+        except ValueError, SyntaxError, TypeError, MemoryError, RecursionError:
             lowered = raw.lower()
             if _BARE_BOOL_RE.fullmatch(lowered):
                 return lowered in {"true", "yes"}

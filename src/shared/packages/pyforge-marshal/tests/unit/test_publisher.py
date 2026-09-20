@@ -7,19 +7,18 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
-
 from pyforge.core.client import StationClientError
+
 from pyforge.marshal.adapters.publisher_host import HostPublisher
 from pyforge.marshal.core.publish import (
     active_task_from_snapshot,
     dispatch_complete_result,
     layer_savings_dict,
-    shape_dispatch_publish,
     shape_heartbeat,
     shape_loop_publish,
 )
 from pyforge.marshal.ports.harness import LayerSavings, RunStatusSnapshot, TaskPhaseSnapshot
-from pyforge.marshal.ports.publisher import PublishRecord, RunPublisherPort
+from pyforge.marshal.ports.publisher import PublishRecord
 
 
 def _jsonrpc_result(result: object) -> bytes:
@@ -141,9 +140,12 @@ def test_no_bearer_skips_publish_and_reports_finding(
         transport=transport,
         mint_transport=RecordingMintTransport(transport),
     )
-    assert publisher.publish(
-        PublishRecord(station="pyforge-marshal", run_id="run-1"),
-    ) is None
+    assert (
+        publisher.publish(
+            PublishRecord(station="pyforge-marshal", run_id="run-1"),
+        )
+        is None
+    )
     assert transport.calls == []
     assert len(findings) == 1
     assert findings[0][0] == "publish"
@@ -161,9 +163,12 @@ def test_host_down_reports_finding_and_does_not_raise(tmp_path: Path) -> None:
         transport=transport,
         mint_transport=RecordingMintTransport(transport),
     )
-    assert publisher.publish(
-        PublishRecord(station="pyforge-marshal", run_id="run-1"),
-    ) is None
+    assert (
+        publisher.publish(
+            PublishRecord(station="pyforge-marshal", run_id="run-1"),
+        )
+        is None
+    )
     assert findings[0][0] == "publish"
 
 

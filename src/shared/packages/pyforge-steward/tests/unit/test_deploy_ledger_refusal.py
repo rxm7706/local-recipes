@@ -14,6 +14,7 @@ import os
 import sys
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.deploy import _STEWARD_LEDGER_RELATIVE_PATH as _LEDGER_RELATIVE_PATH
 
@@ -71,10 +72,7 @@ def test_ledger_merely_mentioning_the_key_in_a_comment_still_refuses(tmp_path, m
     marker = tmp_path / "built.txt"
     _write_ledger(
         tmp_path,
-        "not_a_ledger: true\n"
-        "# see development_status: elsewhere\n"
-        "sub_development_status:\n"
-        "  x: y\n",
+        "not_a_ledger: true\n# see development_status: elsewhere\nsub_development_status:\n  x: y\n",
     )
     monkeypatch.setattr("pyforge.steward.deploy.repo_root", lambda: tmp_path)
     monkeypatch.setattr(
@@ -197,9 +195,7 @@ def test_deploy_status_unaffected_by_a_missing_ledger(tmp_path, monkeypatch):
     import subprocess
 
     def _git(*args: str):
-        return subprocess.run(
-            ["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True
-        )
+        return subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True)
 
     _git("init", "-b", "main")
     _git("config", "user.email", "test@example.com")

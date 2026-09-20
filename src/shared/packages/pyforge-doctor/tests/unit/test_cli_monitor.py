@@ -16,7 +16,6 @@ import json
 from importlib import resources
 
 import jsonschema
-import pytest
 
 from pyforge.doctor.__main__ import main
 from pyforge.doctor.models import DoctorStatus, Finding, Source
@@ -24,18 +23,12 @@ from pyforge.doctor.sources import atlas
 
 
 def _schema() -> dict:
-    schema_text = (
-        resources.files("pyforge.doctor")
-        .joinpath("data", "report-schema.json")
-        .read_text(encoding="utf-8")
-    )
+    schema_text = resources.files("pyforge.doctor").joinpath("data", "report-schema.json").read_text(encoding="utf-8")
     return json.loads(schema_text)
 
 
 def _finding(source: Source, check: str, status: DoctorStatus) -> Finding:
-    return Finding(
-        source=source, check=check, status=status, message="stub", evidence={}
-    )
+    return Finding(source=source, check=check, status=status, message="stub", evidence={})
 
 
 def _stub_gather(monkeypatch, by_axis: dict[str, tuple[Finding, ...]]):
@@ -123,9 +116,7 @@ def test_monitor_multi_axis_exit_code_reflects_the_fail_among_them(monkeypatch):
     _stub_gather(
         monkeypatch,
         {
-            "staleness": (
-                _finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),
-            ),
+            "staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),),
             "cve": (_finding(Source.CVE_WATCHER, "pkg-b", DoctorStatus.FAIL),),
         },
     )
@@ -137,9 +128,7 @@ def test_monitor_multi_axis_json_report_has_both_sources(monkeypatch, capsys):
     _stub_gather(
         monkeypatch,
         {
-            "staleness": (
-                _finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),
-            ),
+            "staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),),
             "cve": (_finding(Source.CVE_WATCHER, "pkg-b", DoctorStatus.FAIL),),
         },
     )
@@ -171,9 +160,7 @@ def test_monitor_source_filters_human_output(monkeypatch, capsys):
     _stub_gather(
         monkeypatch,
         {
-            "staleness": (
-                _finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),
-            ),
+            "staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),),
             "cve": (_finding(Source.CVE_WATCHER, "pkg-b", DoctorStatus.FAIL),),
         },
     )
@@ -187,9 +174,7 @@ def test_monitor_source_filters_json_output_identically(monkeypatch, capsys):
     _stub_gather(
         monkeypatch,
         {
-            "staleness": (
-                _finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),
-            ),
+            "staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),),
             "cve": (_finding(Source.CVE_WATCHER, "pkg-b", DoctorStatus.FAIL),),
         },
     )
@@ -269,9 +254,7 @@ def test_monitor_exit_code_zero_for_warn_only(monkeypatch):
 # --- Story 4.2: --surface ----------------------------------------------
 
 
-def test_monitor_surface_writes_a_file_derived_from_this_runs_findings(
-    monkeypatch, tmp_path
-):
+def test_monitor_surface_writes_a_file_derived_from_this_runs_findings(monkeypatch, tmp_path):
     _stub_gather(
         monkeypatch,
         {"staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),)},
@@ -305,8 +288,14 @@ def test_monitor_surface_reflects_the_source_filtered_findings(monkeypatch, tmp_
     surface_path = tmp_path / "fleet-health.json"
     main(
         [
-            "monitor", "--fleet", "--watch", "staleness,cve",
-            "--source", "cve-watcher", "--surface", str(surface_path),
+            "monitor",
+            "--fleet",
+            "--watch",
+            "staleness,cve",
+            "--source",
+            "cve-watcher",
+            "--surface",
+            str(surface_path),
         ]
     )
     document = json.loads(surface_path.read_text(encoding="utf-8"))

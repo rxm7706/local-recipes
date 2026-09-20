@@ -15,8 +15,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pyforge.herald as herald_pkg
 import pytest
+
+import pyforge.herald as herald_pkg
 from pyforge.herald import (
     auth,
     bridge,
@@ -61,27 +62,19 @@ class FakeTransport:
     """A hand-written ``DesignTransport`` double: no network, no adapter,
     structurally conforms to the ``runtime_checkable`` protocol."""
 
-    def get_design_prompt(
-        self, *, design_system_id: str | None = None, project_id: str | None = None
-    ) -> str:
+    def get_design_prompt(self, *, design_system_id: str | None = None, project_id: str | None = None) -> str:
         return "PROMPT"
 
-    def create_project(
-        self, *, name: str, design_system_id: str | None = None
-    ) -> ProjectRef:
+    def create_project(self, *, name: str, design_system_id: str | None = None) -> ProjectRef:
         return ProjectRef(project_id="p-1", url="https://claude.ai/design/p/p-1")
 
     def list_projects(self):
         return []
 
-    def finalize_plan(
-        self, *, project_id, writes=(), deletes=(), scope="paths"
-    ) -> PlanHandle:
+    def finalize_plan(self, *, project_id, writes=(), deletes=(), scope="paths") -> PlanHandle:
         return PlanHandle(plan_token="tok")
 
-    def create_support_js(
-        self, *, project_id, if_match, path="support.js", plan_token=None
-    ):
+    def create_support_js(self, *, project_id, if_match, path="support.js", plan_token=None):
         return {}
 
     def copy_files(self, *, project_id, files, plan_token=None):
@@ -90,9 +83,7 @@ class FakeTransport:
     def write_files(self, *, project_id, files, plan_token=None):
         return {}
 
-    def read_file(
-        self, *, project_id, path, if_none_match=None, offset=None, limit=None
-    ) -> FileRead:
+    def read_file(self, *, project_id, path, if_none_match=None, offset=None, limit=None) -> FileRead:
         return FileRead(path=path, etag="E1", body="x", unchanged=False)
 
     def render_preview(self, *, project_id, path) -> PreviewRef:
@@ -245,9 +236,7 @@ that has nothing to do with a transport adapter. It joins ``cli``/
 ``transport`` in the sweep's exclusion set."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
-    module.name
-    for module in pkgutil.iter_modules(transport_pkg.__path__)
-    if module.name != "base"
+    module.name for module in pkgutil.iter_modules(transport_pkg.__path__) if module.name != "base"
 }
 """Concrete transport adapter *modules* bridge-core may never name directly
 (AD-3). Derived from the live package -- every submodule except ``base`` is
@@ -255,9 +244,7 @@ an adapter by construction -- so a new adapter is covered the day it lands,
 not the day someone remembers this set. Story 1.3's ``agent_sdk_transport``
 is covered this way now that it exists; no speculative name is needed."""
 
-_FORBIDDEN_ADAPTER_NAMES = {
-    name for name in transport_pkg.__all__ if not hasattr(transport_base, name)
-}
+_FORBIDDEN_ADAPTER_NAMES = {name for name in transport_pkg.__all__ if not hasattr(transport_base, name)}
 """Everything ``transport/__init__.py`` re-exports that does not come from
 ``transport.base`` -- the adapter classes plus their companions
 (``DesignCredential``, ``resolve_design_credential``, ``DESIGN_MCP_URL``,
@@ -378,14 +365,9 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
     seam -- importlib-loaded by the host, no ``pyforge.*`` import crossing
     that boundary, the same adapter shape as ``cli``/``transport`` -- see
     ``_BRIDGE_CORE_MODULES``'s own docstring)."""
-    package_modules = {
-        module.name for module in pkgutil.iter_modules(herald_pkg.__path__)
-    }
+    package_modules = {module.name for module in pkgutil.iter_modules(herald_pkg.__path__)}
     swept = {module.__name__.rsplit(".", 1)[-1] for module in _BRIDGE_CORE_MODULES}
-    assert (
-        package_modules - {"cli", "transport", "pptx_pipeline", "station_api"}
-        == swept
-    )
+    assert package_modules - {"cli", "transport", "pptx_pipeline", "station_api"} == swept
 
 
 def _import_statements(source: str) -> list[tuple[str, tuple[str, ...]]]:
@@ -461,9 +443,7 @@ def _module_source(module) -> str:
     return Path(module.__file__).read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize(
-    "module", (bridge, deck_pipeline, watch, sync_all), ids=lambda m: m.__name__
-)
+@pytest.mark.parametrize("module", (bridge, deck_pipeline, watch, sync_all), ids=lambda m: m.__name__)
 def test_bridge_and_deck_pipeline_reach_transport_only_via_transport_base(module):
     """``deck_pipeline.py`` (Story 1.6, CAP-1 ``seed``) joins ``bridge.py``
     here rather than the stricter ``state``/``errors``/``registry`` test
@@ -501,9 +481,7 @@ def test_bridge_core_never_names_a_concrete_transport_adapter(module):
 
 @pytest.mark.parametrize("module", _BRIDGE_CORE_MODULES, ids=lambda m: m.__name__)
 def test_bridge_core_never_names_a_recognized_inference_sdk_package(module):
-    assert _all_identifiers(_module_source(module)).isdisjoint(
-        _FORBIDDEN_INFERENCE_PACKAGES
-    )
+    assert _all_identifiers(_module_source(module)).isdisjoint(_FORBIDDEN_INFERENCE_PACKAGES)
 
 
 @pytest.mark.parametrize("module", _BRIDGE_CORE_MODULES, ids=lambda m: m.__name__)
@@ -513,16 +491,12 @@ def test_bridge_core_never_names_a_host_framework_package(module):
     docstring) may never literally import ``daphne``/``django``/``channels``/
     ``asgiref`` -- daphne stays a process invoked from the command line, and
     the Django stack stays confined to ``pyforge-steward``."""
-    assert _all_identifiers(_module_source(module)).isdisjoint(
-        _FORBIDDEN_HOST_FRAMEWORK_PACKAGES
-    )
+    assert _all_identifiers(_module_source(module)).isdisjoint(_FORBIDDEN_HOST_FRAMEWORK_PACKAGES)
 
 
 @pytest.mark.parametrize("module", _BRIDGE_CORE_MODULES, ids=lambda m: m.__name__)
 def test_bridge_core_never_names_dynamic_import_machinery(module):
-    assert _all_identifiers(_module_source(module)).isdisjoint(
-        _FORBIDDEN_DYNAMIC_IMPORT_NAMES
-    )
+    assert _all_identifiers(_module_source(module)).isdisjoint(_FORBIDDEN_DYNAMIC_IMPORT_NAMES)
 
 
 def test_importing_bridge_does_not_load_the_transport_package(tmp_path: Path):
@@ -538,9 +512,7 @@ def test_importing_bridge_does_not_load_the_transport_package(tmp_path: Path):
         "sys.exit(1 if any(m.startswith('pyforge.herald.transport') "
         "for m in sys.modules) else 0)"
     )
-    result = subprocess.run(
-        [sys.executable, "-c", probe], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -555,9 +527,7 @@ def test_importing_deck_pipeline_does_not_load_the_transport_package():
         "sys.exit(1 if any(m.startswith('pyforge.herald.transport') "
         "for m in sys.modules) else 0)"
     )
-    result = subprocess.run(
-        [sys.executable, "-c", probe], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -573,9 +543,7 @@ def test_importing_watch_does_not_load_the_transport_package():
         "sys.exit(1 if any(m.startswith('pyforge.herald.transport') "
         "for m in sys.modules) else 0)"
     )
-    result = subprocess.run(
-        [sys.executable, "-c", probe], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -661,9 +629,7 @@ def test_guard_flags_inference_and_dynamic_import_forms(evasion):
         (HeraldError("unmapped"), 1),
     ],
 )
-def test_dispatch_over_bridge_run_catches_each_error_exactly_once_at_the_boundary(
-    capsys, error, expected_code
-):
+def test_dispatch_over_bridge_run_catches_each_error_exactly_once_at_the_boundary(capsys, error, expected_code):
     """The epics AC's literal scenario, composed end to end: a transport
     double raises inside ``bridge.run``, nothing in between catches (1.4
     ships no layer in between), and ``cli.dispatch`` -- the CLI boundary --

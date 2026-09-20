@@ -26,25 +26,19 @@ def test_no_upstream_target_version_recommends_nothing():
 
 
 def test_patch_bump_with_no_breaking_change_signal_is_recommended():
-    target, reason = recommend_safe_upgrade(
-        _finding({"latest_conda_version": "1.2.3", "upstream_version": "1.2.4"})
-    )
+    target, reason = recommend_safe_upgrade(_finding({"latest_conda_version": "1.2.3", "upstream_version": "1.2.4"}))
     assert target == "1.2.4"
     assert "patch" in reason
 
 
 def test_minor_bump_with_no_breaking_change_signal_is_recommended():
-    target, reason = recommend_safe_upgrade(
-        _finding({"latest_conda_version": "1.2.3", "upstream_version": "1.3.0"})
-    )
+    target, reason = recommend_safe_upgrade(_finding({"latest_conda_version": "1.2.3", "upstream_version": "1.3.0"}))
     assert target == "1.3.0"
     assert "minor" in reason
 
 
 def test_major_version_jump_is_not_confidently_recommended():
-    target, reason = recommend_safe_upgrade(
-        _finding({"latest_conda_version": "1.2.3", "upstream_version": "2.0.0"})
-    )
+    target, reason = recommend_safe_upgrade(_finding({"latest_conda_version": "1.2.3", "upstream_version": "2.0.0"}))
     assert target is None
     assert "major" in reason
 
@@ -64,9 +58,7 @@ def test_explicit_breaking_change_signal_overrides_a_small_bump():
 
 
 def test_pypi_current_version_key_is_also_honored():
-    target, _reason = recommend_safe_upgrade(
-        _finding({"conda_version": "1.0.0", "pypi_current_version": "1.0.1"})
-    )
+    target, _reason = recommend_safe_upgrade(_finding({"conda_version": "1.0.0", "pypi_current_version": "1.0.1"}))
     assert target == "1.0.1"
 
 

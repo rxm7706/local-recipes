@@ -160,17 +160,7 @@ def test_an_indented_dashes_line_inside_a_block_scalar_is_not_the_closing_fence(
     path = _write(
         tmp_path,
         "indented-dashes.md",
-        (
-            "---\n"
-            "title: x\n"
-            "evidence: |\n"
-            "  first line\n"
-            "  ---\n"
-            "  third line\n"
-            "status: draft\n"
-            "owner: doctor\n"
-            "---\n\nbody\n"
-        ),
+        ("---\ntitle: x\nevidence: |\n  first line\n  ---\n  third line\nstatus: draft\nowner: doctor\n---\n\nbody\n"),
     )
     fields, unparseable = chain._frontmatter_parse(path)
     assert unparseable is False
@@ -404,15 +394,7 @@ def test_body_after_frontmatter_starts_at_the_line_anchored_closing_fence() -> N
     """A ``---`` quoted inside a frontmatter scalar is not where the body
     starts -- the old ``split("---", 2)`` returned the frontmatter tail as
     body, which the Kinship scan then read (review pass 1, ECH4/VG2)."""
-    text = (
-        "---\n"
-        "title: x\n"
-        'note: "---"\n'
-        "kin: [[not-a-link]]\n"
-        "---\n"
-        "\n"
-        "Body [[real-link]].\n"
-    )
+    text = '---\ntitle: x\nnote: "---"\nkin: [[not-a-link]]\n---\n\nBody [[real-link]].\n'
     assert chain._dream_body_after_frontmatter(text) == "\nBody [[real-link]].\n"
 
 

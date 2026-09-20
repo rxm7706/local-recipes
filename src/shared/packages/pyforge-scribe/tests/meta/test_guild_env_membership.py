@@ -51,7 +51,9 @@ def test_guild_default_environments_carry_the_guild_feature() -> None:
 @pytest.mark.parametrize("extra", HEAVY_EXTRAS)
 def test_heavy_scribe_extras_stay_out_of_the_guild_default(extra: str) -> None:
     deps = _pixi()["feature"]["pyforge-guild"]["dependencies"]
-    assert extra not in deps, f"{extra} is a per-env compile extra; it belongs to feature.pyforge-scribe, not the Guild default"
+    assert extra not in deps, (
+        f"{extra} is a per-env compile extra; it belongs to feature.pyforge-scribe, not the Guild default"
+    )
 
 
 @pytest.mark.parametrize("rel", GOVERNANCE_DOCS)

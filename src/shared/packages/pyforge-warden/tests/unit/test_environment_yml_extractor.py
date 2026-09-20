@@ -26,11 +26,7 @@ from pyforge.warden.models import (
 from pyforge.warden.routing import DefaultRouter
 
 FIXTURE = (
-    Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "projects"
-    / "environment_yml_common"
-    / "environment.yml"
+    Path(__file__).resolve().parent.parent / "fixtures" / "projects" / "environment_yml_common" / "environment.yml"
 )
 MANIFEST = ScannedManifest(path="environment.yml", kind=ENVIRONMENT_YML_KIND)
 
@@ -58,9 +54,7 @@ def test_common_case_fixture_yields_conda_and_pypi_rows():
     # Contiguous single `=` is conda's legacy fuzzy-prefix match -- withheld,
     # never treated as exact.
     assert python.version is None
-    assert [p.section for p in python.provenance] == [
-        ENVIRONMENT_YML_DEPENDENCIES_SECTION
-    ]
+    assert [p.section for p in python.provenance] == [ENVIRONMENT_YML_DEPENDENCIES_SECTION]
 
     numpy = by_name["numpy"]
     assert numpy.ecosystem is Ecosystem.CONDA
@@ -72,9 +66,7 @@ def test_common_case_fixture_yields_conda_and_pypi_rows():
     assert requests_component.identity_source is IdentitySource.NATIVE
     assert requests_component.cve_match_level is CveMatchLevel.EXACT
     assert requests_component.vuln_matchable is True
-    assert [p.section for p in requests_component.provenance] == [
-        ENVIRONMENT_YML_PIP_SECTION
-    ]
+    assert [p.section for p in requests_component.provenance] == [ENVIRONMENT_YML_PIP_SECTION]
 
 
 # --- conda matchspec parsing ----------------------------------------------------
@@ -166,9 +158,7 @@ def test_nameless_operator_leading_conda_dep_degrades(tmp_path):
 
 
 def test_pip_range_dep_is_withheld_range_only(tmp_path):
-    path = write_env(
-        tmp_path, "dependencies:\n  - pip:\n      - requests>=2.0\n"
-    )
+    path = write_env(tmp_path, "dependencies:\n  - pip:\n      - requests>=2.0\n")
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.ecosystem is Ecosystem.PYPI
     assert component.version is None
@@ -267,14 +257,8 @@ def test_oversized_line_raises_unparsable(tmp_path, monkeypatch):
 
 def test_router_routes_conda_and_pip_sections():
     router = DefaultRouter()
-    assert (
-        router.route(ENVIRONMENT_YML_KIND, ENVIRONMENT_YML_DEPENDENCIES_SECTION)
-        is Ecosystem.CONDA
-    )
-    assert (
-        router.route(ENVIRONMENT_YML_KIND, ENVIRONMENT_YML_PIP_SECTION)
-        is Ecosystem.PYPI
-    )
+    assert router.route(ENVIRONMENT_YML_KIND, ENVIRONMENT_YML_DEPENDENCIES_SECTION) is Ecosystem.CONDA
+    assert router.route(ENVIRONMENT_YML_KIND, ENVIRONMENT_YML_PIP_SECTION) is Ecosystem.PYPI
 
 
 # --- strict YAML loading (fixed 2026-07-16) -----------------------------------
@@ -289,10 +273,7 @@ def test_alias_expansion_is_rejected_never_amplified(tmp_path):
     whole-manifest error, never an OOM."""
     path = write_env(
         tmp_path,
-        "x0: &a0 [x, x, x, x, x, x, x, x]\n"
-        "x1: &a1 [*a0, *a0, *a0, *a0, *a0, *a0, *a0, *a0]\n"
-        "dependencies:\n"
-        "  - *a1\n",
+        "x0: &a0 [x, x, x, x, x, x, x, x]\nx1: &a1 [*a0, *a0, *a0, *a0, *a0, *a0, *a0, *a0]\ndependencies:\n  - *a1\n",
     )
     with pytest.raises(UnparsableManifestError, match="alias"):
         _extractor().extract(path, MANIFEST)

@@ -75,9 +75,7 @@ def test_deeply_nested_json_line_is_quarantined_not_a_crash():
 
 def test_fold_of_empty_lines_returns_an_empty_result():
     result = fold([])
-    assert result == FoldResult(
-        entries=(), open_intents=(), orphaned_outcomes=(), quarantined=()
-    )
+    assert result == FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
     assert result.is_evaluable(None, None) is True
 
 
@@ -312,9 +310,7 @@ def test_quarantined_finding_redacts_a_credential_shaped_payload_field():
 
 
 def test_fold_quarantines_a_non_str_element_without_aborting_the_fold():
-    good = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="run-started", phase=Phase.INTENT, payload={}
-    )
+    good = build_entry(id=_valid_id(), ts=_ts(0), run_id="run-1", kind="run-started", phase=Phase.INTENT, payload={})
     result = fold([123, _line(good)])  # type: ignore[list-item]
     assert good in result.entries
     assert len(result.quarantined) == 1
@@ -431,9 +427,7 @@ def test_sidecar_blob_that_is_not_valid_json_is_quarantined():
         payload={"data": "x" * 5000},
     )
     prepared = prepare_for_write(entry)
-    result = fold(
-        [prepared.line], sidecars={prepared.sidecar_relative_path: "not-json{"}
-    )
+    result = fold([prepared.line], sidecars={prepared.sidecar_relative_path: "not-json{"})
     assert result.entries == ()
     assert result.quarantined[0].finding.code == "MRS-JOURNAL-002"
 
@@ -453,9 +447,7 @@ def test_sidecar_blob_that_decodes_to_a_non_object_is_quarantined():
         payload={"data": "x" * 5000},
     )
     prepared = prepare_for_write(entry)
-    result = fold(
-        [prepared.line], sidecars={prepared.sidecar_relative_path: "[1, 2, 3]"}
-    )
+    result = fold([prepared.line], sidecars={prepared.sidecar_relative_path: "[1, 2, 3]"})
     assert result.entries == ()
     assert result.quarantined[0].finding.code == "MRS-JOURNAL-002"
 
@@ -545,9 +537,7 @@ def test_small_payload_shaped_exactly_like_the_placeholder_round_trips():
 
 
 def test_by_kind_and_for_story_return_empty_tuple_when_nothing_matches():
-    entry = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="run-started", phase=Phase.INTENT, payload={}
-    )
+    entry = build_entry(id=_valid_id(), ts=_ts(0), run_id="run-1", kind="run-started", phase=Phase.INTENT, payload={})
     result = fold([_line(entry)])
     assert result.by_kind("nope") == ()
     assert result.for_story(StoryKey(epic=9, seq=9)) == ()
@@ -675,9 +665,7 @@ def test_fold_result_rejects_a_non_intent_entry_in_open_intents():
 
 
 def test_fold_result_rejects_a_non_outcome_entry_in_orphaned_outcomes():
-    intent = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="k", phase=Phase.INTENT, payload={}
-    )
+    intent = build_entry(id=_valid_id(), ts=_ts(0), run_id="run-1", kind="k", phase=Phase.INTENT, payload={})
     with pytest.raises(ValueError, match="orphaned_outcomes"):
         FoldResult(entries=(intent,), open_intents=(), orphaned_outcomes=(intent,), quarantined=())
 
@@ -760,9 +748,7 @@ def test_sidecar_ref_naming_another_entrys_blob_is_quarantined():
             "payload": {"sidecar_ref": prepared.sidecar_relative_path},
         }
     )
-    result = fold(
-        [forged], sidecars={prepared.sidecar_relative_path: prepared.sidecar_content}
-    )
+    result = fold([forged], sidecars={prepared.sidecar_relative_path: prepared.sidecar_content})
     assert result.entries == ()
     assert len(result.quarantined) == 1
     assert result.quarantined[0].finding.code == "MRS-JOURNAL-002"
@@ -854,9 +840,7 @@ def test_by_kind_rejects_a_non_str_kind():
         result.by_kind(None)  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize(
-    ("story", "kind"), [("3.1", "k"), (31, "k"), (StoryKey(epic=3, seq=1), 7)]
-)
+@pytest.mark.parametrize(("story", "kind"), [("3.1", "k"), (31, "k"), (StoryKey(epic=3, seq=1), 7)])
 def test_is_evaluable_rejects_wrong_types(story, kind):
     result = fold([])
     with pytest.raises(TypeError):
@@ -903,9 +887,7 @@ def test_invalid_utf8_sidecar_blob_is_quarantined_as_a_sidecar_failure():
         payload={"data": "x" * 5000},
     )
     prepared = prepare_for_write(entry)
-    result = fold(
-        [prepared.line], sidecars={prepared.sidecar_relative_path: b"\xff\xfe"}
-    )
+    result = fold([prepared.line], sidecars={prepared.sidecar_relative_path: b"\xff\xfe"})
     assert result.entries == ()
     assert len(result.quarantined) == 1
     assert result.quarantined[0].finding.code == "MRS-JOURNAL-002"
@@ -948,9 +930,7 @@ def test_fold_result_rejects_a_generator_for_a_tuple_field():
     `tuple[...]` field was CONSUMED by the very `all()` that validated it,
     leaving an exhausted iterator every query method then read as empty --
     a silently wrong FoldResult with no error anywhere."""
-    entry = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="k", phase=Phase.OBSERVATION, payload={}
-    )
+    entry = build_entry(id=_valid_id(), ts=_ts(0), run_id="run-1", kind="k", phase=Phase.OBSERVATION, payload={})
     with pytest.raises(ValueError, match="entries must be a tuple"):
         FoldResult(
             entries=(e for e in (entry,)),  # type: ignore[arg-type]
@@ -977,16 +957,11 @@ def test_fold_result_rejects_entries_out_of_ad28_total_order():
     `by_kind(k)[-1]` as "the latest" is reading a promise this class makes.
     An out-of-order `entries` used to construct cleanly, and that consumer
     silently got the earliest instead."""
-    early = build_entry(
-        id=_valid_id(counter=0), ts=_ts(0), run_id="r", kind="k", phase=Phase.OBSERVATION, payload={}
-    )
-    late = build_entry(
-        id=_valid_id(counter=1), ts=_ts(1), run_id="r", kind="k", phase=Phase.OBSERVATION, payload={}
-    )
+    early = build_entry(id=_valid_id(counter=0), ts=_ts(0), run_id="r", kind="k", phase=Phase.OBSERVATION, payload={})
+    late = build_entry(id=_valid_id(counter=1), ts=_ts(1), run_id="r", kind="k", phase=Phase.OBSERVATION, payload={})
     with pytest.raises(ValueError, match="AD-28 total order"):
-        FoldResult(
-            entries=(late, early), open_intents=(), orphaned_outcomes=(), quarantined=()
-        )
-    assert FoldResult(
-        entries=(early, late), open_intents=(), orphaned_outcomes=(), quarantined=()
-    ).by_kind("k") == (early, late)
+        FoldResult(entries=(late, early), open_intents=(), orphaned_outcomes=(), quarantined=())
+    assert FoldResult(entries=(early, late), open_intents=(), orphaned_outcomes=(), quarantined=()).by_kind("k") == (
+        early,
+        late,
+    )

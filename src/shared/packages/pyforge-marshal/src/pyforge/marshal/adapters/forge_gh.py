@@ -73,9 +73,7 @@ def _run(args: list[str], *, timeout_s: float) -> ProcessResult:
         if isinstance(cause, FileNotFoundError):
             raise ForgeCommandError(f"gh executable not found: {cause}") from cause
         if isinstance(cause, subprocess.TimeoutExpired):
-            raise ForgeCommandError(
-                f"gh command timed out after {timeout_s}s: {' '.join(args)}"
-            ) from cause
+            raise ForgeCommandError(f"gh command timed out after {timeout_s}s: {' '.join(args)}") from cause
         # `cause` is `None` for `PosixProcess`'s own empty-argv guard (it
         # raises with no `from` clause) -- `exc` itself already carries that
         # message, so fall back to it rather than stringifying/chaining from
@@ -98,21 +96,13 @@ def _pr_info_from_json(entry: object, *, context: str) -> PrInfo:
     state = entry.get("state")
     base = entry.get("baseRefName")
     if not isinstance(number, int) or isinstance(number, bool):
-        raise ForgeCommandError(
-            f"{context}: gh returned a PR entry with a non-int number: {entry!r}"
-        )
+        raise ForgeCommandError(f"{context}: gh returned a PR entry with a non-int number: {entry!r}")
     if not isinstance(url, str) or not url:
-        raise ForgeCommandError(
-            f"{context}: gh returned a PR entry missing a url: {entry!r}"
-        )
+        raise ForgeCommandError(f"{context}: gh returned a PR entry missing a url: {entry!r}")
     if not isinstance(state, str) or not state:
-        raise ForgeCommandError(
-            f"{context}: gh returned a PR entry missing a state: {entry!r}"
-        )
+        raise ForgeCommandError(f"{context}: gh returned a PR entry missing a state: {entry!r}")
     if not isinstance(base, str) or not base:
-        raise ForgeCommandError(
-            f"{context}: gh returned a PR entry missing a baseRefName: {entry!r}"
-        )
+        raise ForgeCommandError(f"{context}: gh returned a PR entry missing a baseRefName: {entry!r}")
     return PrInfo(number=number, url=url, state=state.lower(), base=base)
 
 
@@ -151,8 +141,7 @@ class GhForge:
         )
         if result.returncode != 0:
             raise ForgeCommandError(
-                f"gh pr list --repo {repo_value} --head {head_branch_value} failed: "
-                f"{result.stderr.strip()}"
+                f"gh pr list --repo {repo_value} --head {head_branch_value} failed: {result.stderr.strip()}"
             )
         context = f"gh pr list --repo {repo_value} --head {head_branch_value}"
         data = _parse_json(result.stdout, context=context)
@@ -162,9 +151,7 @@ class GhForge:
             return None
         return _pr_info_from_json(data[0], context=context)
 
-    def create_pr(
-        self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted
-    ) -> PrInfo:
+    def create_pr(self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted) -> PrInfo:
         _require_redacted(title, body)
         repo_value, base_value, head_value = repo.value, base.value, head.value
         result = _run(
@@ -199,9 +186,7 @@ class GhForge:
             )
         return created
 
-    def update_pr(
-        self, repo: ForgeRef, number: int, title: Redacted, body: Redacted
-    ) -> PrInfo:
+    def update_pr(self, repo: ForgeRef, number: int, title: Redacted, body: Redacted) -> PrInfo:
         _require_redacted(title, body)
         repo_value = repo.value
         result = _run(
@@ -220,9 +205,7 @@ class GhForge:
             timeout_s=_GH_WRITE_TIMEOUT_S,
         )
         if result.returncode != 0:
-            raise ForgeCommandError(
-                f"gh pr edit {number} --repo {repo_value} failed: {result.stderr.strip()}"
-            )
+            raise ForgeCommandError(f"gh pr edit {number} --repo {repo_value} failed: {result.stderr.strip()}")
         view = _run(
             [
                 "gh",
@@ -238,8 +221,7 @@ class GhForge:
         )
         if view.returncode != 0:
             raise ForgeCommandError(
-                f"gh pr view {number} --repo {repo_value} failed after editing: "
-                f"{view.stderr.strip()}"
+                f"gh pr view {number} --repo {repo_value} failed after editing: {view.stderr.strip()}"
             )
         context = f"gh pr view {number} --repo {repo_value}"
         data = _parse_json(view.stdout, context=context)
@@ -259,13 +241,10 @@ class GhForge:
         result = _run(args, timeout_s=_GH_WRITE_TIMEOUT_S)
         if result.returncode != 0:
             raise ForgeCommandError(
-                f"gh pr edit {number} --repo {repo_value} --add-label {list(labels)} "
-                f"failed: {result.stderr.strip()}"
+                f"gh pr edit {number} --repo {repo_value} --add-label {list(labels)} failed: {result.stderr.strip()}"
             )
 
-    def check_run_status(
-        self, repo: ForgeRef, ref: ForgeRef, check_name: ForgeRef
-    ) -> str | None:
+    def check_run_status(self, repo: ForgeRef, ref: ForgeRef, check_name: ForgeRef) -> str | None:
         repo_value, ref_value, check_name_value = repo.value, ref.value, check_name.value
         result = _run(
             ["gh", "api", f"repos/{repo_value}/commits/{ref_value}/check-runs"],
@@ -273,8 +252,7 @@ class GhForge:
         )
         if result.returncode != 0:
             raise ForgeCommandError(
-                f"gh api repos/{repo_value}/commits/{ref_value}/check-runs failed: "
-                f"{result.stderr.strip()}"
+                f"gh api repos/{repo_value}/commits/{ref_value}/check-runs failed: {result.stderr.strip()}"
             )
         context = f"gh api repos/{repo_value}/commits/{ref_value}/check-runs"
         data = _parse_json(result.stdout, context=context)
@@ -286,6 +264,7 @@ class GhForge:
         matching = [run for run in runs if isinstance(run, Mapping) and run.get("name") == check_name_value]
         if not matching:
             return None
+
         # Code review (2026-08-06, P3, both reviewers independently): GitHub
         # can report multiple runs under the same check name (reruns), and
         # this endpoint's own response order is NOT documented/guaranteed
@@ -359,8 +338,7 @@ class GhForge:
         )
         if result.returncode != 0:
             raise ForgeCommandError(
-                f"gh pr view {number} --repo {repo_value} --json mergeStateStatus "
-                f"failed: {result.stderr.strip()}"
+                f"gh pr view {number} --repo {repo_value} --json mergeStateStatus failed: {result.stderr.strip()}"
             )
         context = f"gh pr view {number} --repo {repo_value}"
         data = _parse_json(result.stdout, context=context)
@@ -368,9 +346,7 @@ class GhForge:
             raise ForgeCommandError(f"{context}: gh returned a non-object payload: {data!r}")
         status = data.get("mergeStateStatus")
         if not isinstance(status, str) or not status:
-            raise ForgeCommandError(
-                f"{context}: gh returned a PR entry missing mergeStateStatus: {data!r}"
-            )
+            raise ForgeCommandError(f"{context}: gh returned a PR entry missing mergeStateStatus: {data!r}")
         return status
 
     def close_pr(self, repo: ForgeRef, number: int) -> None:
@@ -380,7 +356,4 @@ class GhForge:
             timeout_s=_GH_WRITE_TIMEOUT_S,
         )
         if result.returncode != 0:
-            raise ForgeCommandError(
-                f"gh pr close {number} --repo {repo_value} failed: "
-                f"{result.stderr.strip()}"
-            )
+            raise ForgeCommandError(f"gh pr close {number} --repo {repo_value} failed: {result.stderr.strip()}")

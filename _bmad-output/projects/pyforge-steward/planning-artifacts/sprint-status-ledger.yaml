@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 403
+# stories: 407
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -268,6 +268,8 @@ development_status:
   64-2-pyforge-publishes-its-frame-conformance-profile: done
   65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill: done
   65-2-the-ledger-query-answers-done-running-next-in-one-call: done
+  66-1-lint-and-types-gate-the-ten-packages-locally-and-on-the-runners-alike: done
+  66-2-the-pre-commit-set-attribution-lines-and-un-preflighted-pushes-are-refused-by-hooks: done
   7-1-one-build-whole-guild: done
   7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: done
@@ -411,6 +413,8 @@ development_status:
   epic-64-retrospective: optional
   epic-65: done
   epic-65-retrospective: optional
+  epic-66: done
+  epic-66-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

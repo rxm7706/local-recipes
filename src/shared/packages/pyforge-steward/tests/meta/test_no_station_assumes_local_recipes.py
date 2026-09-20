@@ -20,6 +20,7 @@ never reach the AST. `urn:local-recipes:...` schema ids and the GitHub
 `rxm7706/local-recipes` repo slug are the repository's NAME, not the env,
 and are excluded by pattern.
 """
+
 from __future__ import annotations
 
 import ast
@@ -46,7 +47,12 @@ def _docstring_nodes(tree: ast.AST) -> set[int]:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             body = getattr(node, "body", None)
-            if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) and isinstance(body[0].value.value, str):
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
                 lines.add(body[0].value.lineno)
     return lines
 
@@ -66,8 +72,13 @@ def _runtime_offenders(py_file: Path) -> list[tuple[int, str]]:
         if isinstance(node, (ast.List, ast.Tuple)):
             elts = node.elts
             for a, b in zip(elts, elts[1:]):
-                if (isinstance(a, ast.Constant) and a.value == "-e" and isinstance(b, ast.Constant)
-                        and b.value == "local-recipes" and b.lineno not in exempt):
+                if (
+                    isinstance(a, ast.Constant)
+                    and a.value == "-e"
+                    and isinstance(b, ast.Constant)
+                    and b.value == "local-recipes"
+                    and b.lineno not in exempt
+                ):
                     found.append((b.lineno, "-e local-recipes (argv)"))
         if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.lineno not in exempt:
             value = node.value

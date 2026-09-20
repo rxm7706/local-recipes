@@ -80,9 +80,7 @@ def _partition_one(finding: Finding) -> PartitionedFinding:
         reason = str(evidence.get("block_reason") or "no fix version published")
         return PartitionedFinding(finding, Partition.BLOCKED, reason)
 
-    return PartitionedFinding(
-        finding, Partition.ACTIONABLE, "actionable -- a remediation path exists"
-    )
+    return PartitionedFinding(finding, Partition.ACTIONABLE, "actionable -- a remediation path exists")
 
 
 def partition(findings: Iterable[Finding]) -> tuple[PartitionedFinding, ...]:
@@ -274,9 +272,7 @@ def rank(partitioned: Iterable[PartitionedFinding]) -> tuple[RankedPrescription,
     # caught before this ever reached a test: an earlier draft embedded
     # `finding` inside the sorted tuples themselves, which raises on any
     # tie).
-    scored = [
-        (finding, *_rank_factors_and_sort_key(finding)) for finding in actionable
-    ]
+    scored = [(finding, *_rank_factors_and_sort_key(finding)) for finding in actionable]
     scored.sort(key=lambda item: item[1])
     return tuple(
         RankedPrescription(finding=finding, rank=index + 1, rank_factors=factors)
@@ -297,9 +293,7 @@ def rank(partitioned: Iterable[PartitionedFinding]) -> tuple[RankedPrescription,
 _UNKNOWN_FEEDSTOCK_CHECK = "<unknown feedstock>"
 
 
-def _find_correlated_staleness(
-    finding: Finding, all_findings: Sequence[Finding]
-) -> Finding | None:
+def _find_correlated_staleness(finding: Finding, all_findings: Sequence[Finding]) -> Finding | None:
     """A same-``check`` ``Source.STALENESS_REPORT`` Finding in the same
     gather batch, if one exists -- the correlation Story 3.3 AC1 asks for
     ("a Prescription for a CVE Finding that traces to a staleness lag").
@@ -312,11 +306,7 @@ def _find_correlated_staleness(
     if finding.check == _UNKNOWN_FEEDSTOCK_CHECK:
         return None
     for other in all_findings:
-        if (
-            other is not finding
-            and other.source is Source.STALENESS_REPORT
-            and other.check == finding.check
-        ):
+        if other is not finding and other.source is Source.STALENESS_REPORT and other.check == finding.check:
             return other
     return None
 
@@ -360,9 +350,7 @@ def _templated_root_cause(finding: Finding) -> str:
     placeholder, so this is a genuine fallback, not a degraded one."""
     if not finding.evidence:
         return finding.message
-    evidence_clause = "; ".join(
-        f"{key}={value!s}" for key, value in sorted(finding.evidence.items())
-    )
+    evidence_clause = "; ".join(f"{key}={value!s}" for key, value in sorted(finding.evidence.items()))
     return f"{finding.message} (evidence: {evidence_clause})"
 
 
@@ -425,10 +413,7 @@ def recommend_safe_upgrade(finding: Finding) -> tuple[str | None, str]:
 
     conda_v = evidence.get("latest_conda_version") or evidence.get("conda_version")
     if evidence.get("breaking_change"):
-        return None, (
-            f"a breaking-change signal is present for {target_v!s} -- not "
-            "confidently safe"
-        )
+        return None, (f"a breaking-change signal is present for {target_v!s} -- not confidently safe")
 
     blast_label, _ = _classify_blast_radius(evidence)
     if blast_label == "major":
@@ -439,8 +424,5 @@ def recommend_safe_upgrade(finding: Finding) -> tuple[str | None, str]:
             "'next safe' target"
         )
     if blast_label in ("unknown", "current"):
-        return None, (
-            "no single confidently-known next-safe version in this "
-            "Finding's evidence"
-        )
+        return None, ("no single confidently-known next-safe version in this Finding's evidence")
     return str(target_v), f"{blast_label} version bump, no known breaking-change signal"

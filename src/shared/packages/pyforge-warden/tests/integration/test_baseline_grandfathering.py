@@ -67,12 +67,7 @@ _BLOCKING_FINDING_ID = "hygiene:DEP002:requests"
 
 
 def write_pyproject(directory: Path, deps: list[str]) -> None:
-    body = (
-        "[project]\n"
-        'name = "demo"\n'
-        'version = "0.0.1"\n'
-        f"dependencies = {json.dumps(deps)}\n"
-    )
+    body = f'[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = {json.dumps(deps)}\n'
     (directory / "pyproject.toml").write_text(body, encoding="utf-8")
 
 
@@ -92,13 +87,7 @@ def write_baseline_file(
     reason: str | None = "grandfathered at adoption",
 ) -> Path:
     reason_line = f"    reason: {reason!r}\n" if reason is not None else ""
-    body = (
-        "version: 1\n"
-        "baseline:\n"
-        f"  - id: {entry_id!r}\n"
-        f"    expires_at: {expires_at!r}\n"
-        f"{reason_line}"
-    )
+    body = f"version: 1\nbaseline:\n  - id: {entry_id!r}\n    expires_at: {expires_at!r}\n{reason_line}"
     path = directory / filename
     path.write_text(body, encoding="utf-8")
     return path
@@ -170,9 +159,7 @@ def test_baseline_suppresses_the_matching_finding_and_exits_bypassed(capsys, tmp
 
 def test_baseline_suppression_is_echoed_with_origin_baseline(capsys, tmp_path):
     _blocking_fixture(tmp_path)
-    baseline_path = write_baseline_file(
-        tmp_path, reason="grandfathered at adoption", expires_at=_FAR_FUTURE
-    )
+    baseline_path = write_baseline_file(tmp_path, reason="grandfathered at adoption", expires_at=_FAR_FUTURE)
     rc, document, _ = scan_json(capsys, tmp_path, ["--baseline", str(baseline_path)])
     assert rc == 0
     (suppression,) = document["suppressions"]
@@ -218,13 +205,9 @@ def test_expired_baseline_entry_reblocks_the_finding(capsys, tmp_path):
     assert document["suppressions"] == []
 
 
-def test_expired_baseline_entry_shows_a_baseline_expired_notice_not_a_suppression(
-    capsys, tmp_path
-):
+def test_expired_baseline_entry_shows_a_baseline_expired_notice_not_a_suppression(capsys, tmp_path):
     _blocking_fixture(tmp_path)
-    baseline_path = write_baseline_file(
-        tmp_path, reason="grandfathered at adoption", expires_at=_RECENTLY_EXPIRED
-    )
+    baseline_path = write_baseline_file(tmp_path, reason="grandfathered at adoption", expires_at=_RECENTLY_EXPIRED)
     rc, out, _ = scan_text(capsys, tmp_path, ["--baseline", str(baseline_path)])
     assert rc == 0
     assert "[baseline]" not in out
@@ -306,9 +289,7 @@ def test_baseline_emit_does_not_include_an_already_baselined_finding(capsys, tmp
     reappears as its own candidate."""
     _blocking_fixture(tmp_path)
     baseline_path = write_baseline_file(tmp_path)
-    rc, out, _ = scan_text(
-        capsys, tmp_path, ["--baseline", str(baseline_path), "--baseline-emit"]
-    )
+    rc, out, _ = scan_text(capsys, tmp_path, ["--baseline", str(baseline_path), "--baseline-emit"])
     assert rc == 0
     assert "status=bypassed" in out
     document = yaml.safe_load("\n".join(stanza_lines(out)))
@@ -339,9 +320,7 @@ def test_baseline_emit_never_proposes_the_empty_extraction_sentinel(capsys, tmp_
     assert "empty-extraction" not in stanza
 
 
-def test_emitted_stanza_committed_and_reingested_suppresses_the_finding(
-    capsys, tmp_path
-):
+def test_emitted_stanza_committed_and_reingested_suppresses_the_finding(capsys, tmp_path):
     """Review finding: the flag's whole workflow -- emit, human commits the
     file, --baseline on a later run -- had no end-to-end proof; a future
     emitter formatting change (timestamp quoting, key order) would break
@@ -355,23 +334,17 @@ def test_emitted_stanza_committed_and_reingested_suppresses_the_finding(
     rc2, document, _ = scan_json(capsys, tmp_path, ["--baseline", str(baseline_path)])
     assert rc2 == 0
     assert document["status"]["value"] == "bypassed"
-    assert [s["finding_id"] for s in document["suppressions"]] == [
-        _BLOCKING_FINDING_ID
-    ]
+    assert [s["finding_id"] for s in document["suppressions"]] == [_BLOCKING_FINDING_ID]
     assert document["suppressions"][0]["origin"] == "baseline"
 
 
-def test_bypass_and_baseline_emit_together_print_two_separated_stanzas(
-    capsys, tmp_path
-):
+def test_bypass_and_baseline_emit_together_print_two_separated_stanzas(capsys, tmp_path):
     """Review finding: --bypass's own stanza and --baseline-emit's stanza
     printed back-to-back with no boundary marker read as one ambiguous
     blob -- a `---` YAML document separator must appear between them, and
     each side must still parse independently."""
     _blocking_fixture(tmp_path)
-    rc, out, _ = scan_text(
-        capsys, tmp_path, ["--bypass", "--reason", "x", "--baseline-emit"]
-    )
+    rc, out, _ = scan_text(capsys, tmp_path, ["--bypass", "--reason", "x", "--baseline-emit"])
     assert rc == 0
     lines = stanza_lines(out)
     assert "---" in lines
@@ -382,16 +355,12 @@ def test_bypass_and_baseline_emit_together_print_two_separated_stanzas(
     assert baseline_doc["baseline"][0]["id"] == _BLOCKING_FINDING_ID
 
 
-def test_bypass_and_baseline_emit_together_under_json_format_use_stderr(
-    capsys, tmp_path
-):
+def test_bypass_and_baseline_emit_together_under_json_format_use_stderr(capsys, tmp_path):
     """Both stanzas land on stderr (NFR-I3: json stdout stays pure), `---`
     separated, and each side must still PARSE independently -- substring
     checks alone would pass on any error text containing the words."""
     _blocking_fixture(tmp_path)
-    rc, document, err = scan_json(
-        capsys, tmp_path, ["--bypass", "--reason", "x", "--baseline-emit"]
-    )
+    rc, document, err = scan_json(capsys, tmp_path, ["--bypass", "--reason", "x", "--baseline-emit"])
     assert rc == 0
     err_lines = err.splitlines()
     assert "---" in err_lines
@@ -430,17 +399,13 @@ def test_baseline_never_masks_a_co_occurring_tool_error(capsys, tmp_path):
     assert err != ""
 
 
-def test_baseline_entry_shaped_like_an_error_id_is_rejected_at_load_time(
-    capsys, tmp_path
-):
+def test_baseline_entry_shaped_like_an_error_id_is_rejected_at_load_time(capsys, tmp_path):
     """C0's structural guarantee starts at the file boundary: an
     error:<kind>:<subject> id fails the finding-id family regex, so a
     committed baseline can never even successfully NAME an error rung --
     the whole file is rejected as malformed, never silently accepted."""
     _blocking_fixture(tmp_path)
-    baseline_path = write_baseline_file(
-        tmp_path, entry_id="error:config-parse:some-subject"
-    )
+    baseline_path = write_baseline_file(tmp_path, entry_id="error:config-parse:some-subject")
     rc, document, _ = scan_json(capsys, tmp_path, ["--baseline", str(baseline_path)])
     assert rc == 2
     assert document["status"]["value"] == "error"
@@ -497,9 +462,7 @@ def test_malformed_baseline_file_still_fails_closed_even_with_bypass(capsys, tmp
     _blocking_fixture(tmp_path)
     path = tmp_path / ".warden-baseline.yaml"
     path.write_text("version: 1\nbaseline:\n  - id: [unterminated\n", encoding="utf-8")
-    rc, document, err = scan_json(
-        capsys, tmp_path, ["--baseline", str(path), "--bypass", "--reason", "x"]
-    )
+    rc, document, err = scan_json(capsys, tmp_path, ["--baseline", str(path), "--bypass", "--reason", "x"])
     assert rc == 2
     assert document["status"]["value"] == "error"
     assert err != ""

@@ -120,10 +120,7 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--root",
         default=None,
         metavar="PATH",
-        help=(
-            "Repo root to operate on (default: this checkout). Fixtures pass "
-            "an isolated tree; live runs omit this."
-        ),
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
     )
     refresh.add_argument(
         "--format",
@@ -169,10 +166,7 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--root",
         default=None,
         metavar="PATH",
-        help=(
-            "Repo root to operate on (default: this checkout). Fixtures pass "
-            "an isolated tree; live runs omit this."
-        ),
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
     )
     retrieve.add_argument(
         "--format",
@@ -194,9 +188,7 @@ def _listing(directory: Path) -> tuple[str, ...]:
         return ()
 
 
-def run_context_refresh(
-    args: argparse.Namespace, *, scribe: ScribeCli | None = None
-) -> int:
+def run_context_refresh(args: argparse.Namespace, *, scribe: ScribeCli | None = None) -> int:
     """CLI entry for ``marshal context refresh``. ``scribe`` is an
     injection seam so tests drive the grammar without a real install."""
     findings: list[Finding] = []
@@ -261,12 +253,8 @@ def run_context_refresh(
         project_slug=slug,
         epic=epic,
         planning_filenames=_listing(planning_dir),
-        planning_spec_filenames=_listing(
-            root / derived.planning_specs_relpath(slug)
-        ),
-        implementation_filenames=_listing(
-            root / derived.implementation_artifacts_relpath(slug)
-        ),
+        planning_spec_filenames=_listing(root / derived.planning_specs_relpath(slug)),
+        implementation_filenames=_listing(root / derived.implementation_artifacts_relpath(slug)),
     )
     data["declarations"] = [
         {
@@ -280,9 +268,7 @@ def run_context_refresh(
     manifest_path = root / _MANIFEST_DIR_RELPATH / f"{slug}-epic-{epic}.json"
     payload = derived.manifest_payload(declarations)
     try:
-        atomic_write_text(
-            manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n"
-        )
+        atomic_write_text(manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
     except OSError as exc:
         findings.append(
             Finding(
@@ -300,9 +286,7 @@ def run_context_refresh(
         return _emit(args, findings, data)
     data["manifest"] = str(manifest_path)
 
-    outcome = (scribe if scribe is not None else ScribeCli()).refresh(
-        repo_root=root, manifest_path=manifest_path
-    )
+    outcome = (scribe if scribe is not None else ScribeCli()).refresh(repo_root=root, manifest_path=manifest_path)
     if not outcome.ok:
         findings.append(
             Finding(
@@ -315,9 +299,7 @@ def run_context_refresh(
         return _emit(args, findings, data)
 
     data["mode"] = derived.MODE_INCREMENTAL
-    freshness = derived.resolve_freshness(
-        declarations, refreshed=outcome.refreshed, skipped=outcome.skipped
-    )
+    freshness = derived.resolve_freshness(declarations, refreshed=outcome.refreshed, skipped=outcome.skipped)
     data["artifacts"] = [
         {
             "name": item.name,
@@ -347,9 +329,7 @@ def run_context_refresh(
     return _emit(args, findings, data)
 
 
-def run_context_retrieve(
-    args: argparse.Namespace, *, scribe: ScribeCli | None = None
-) -> int:
+def run_context_retrieve(args: argparse.Namespace, *, scribe: ScribeCli | None = None) -> int:
     """CLI entry for ``marshal context retrieve``. ``scribe`` is an
     injection seam so tests drive the grammar without a real install."""
     findings: list[Finding] = []
@@ -361,11 +341,7 @@ def run_context_retrieve(
     layer = layers.get(planning.PLANNING_GRAPH_LAYER)
     enabled = planning.layer_enabled(layer)
     slug = _resolve_project_slug(root, args.project)
-    fallback_path = (
-        derived.epic_context_output_relpath(slug, epic)
-        if slug and derived.valid_epic(epic)
-        else None
-    )
+    fallback_path = derived.epic_context_output_relpath(slug, epic) if slug and derived.valid_epic(epic) else None
     data: dict[str, object] = {
         "epic": epic,
         "story": story,
@@ -406,14 +382,10 @@ def run_context_retrieve(
         return _emit_retrieve(args, findings, data)
 
     data["project"] = slug
-    query = planning.build_routing_query(
-        project_slug=slug, epic=epic, story=story
-    )
+    query = planning.build_routing_query(project_slug=slug, epic=epic, story=story)
     data["query"] = query
 
-    outcome = (scribe if scribe is not None else ScribeCli()).recall(
-        repo_root=root, query=query, scope=slug
-    )
+    outcome = (scribe if scribe is not None else ScribeCli()).recall(repo_root=root, query=query, scope=slug)
     if not outcome.ok:
         findings.append(
             Finding(
@@ -425,9 +397,7 @@ def run_context_retrieve(
         )
         return _emit_retrieve(args, findings, data)
 
-    mode = planning.resolve_retrieval_mode(
-        layer_enabled=True, recall_ok=True, grounded=outcome.grounded
-    )
+    mode = planning.resolve_retrieval_mode(layer_enabled=True, recall_ok=True, grounded=outcome.grounded)
     data["mode"] = mode
     data["grounded"] = outcome.grounded
     if outcome.grounded:
@@ -450,9 +420,7 @@ def run_context_retrieve(
     return _emit_retrieve(args, findings, data)
 
 
-def _emit_retrieve(
-    args: argparse.Namespace, findings: list[Finding], data: dict[str, object]
-) -> int:
+def _emit_retrieve(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
     verdict = compute_verdict(findings)
     envelope = build_envelope(
         command="context retrieve",
@@ -473,9 +441,7 @@ def _emit_retrieve(
     return exit_code_for(envelope.verdict)
 
 
-def _print_retrieve_text(
-    data: dict[str, object], findings: list[Finding], verdict: object
-) -> None:
+def _print_retrieve_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
     layer = data.get("layer") or {}
     print(
         f"context retrieve epic={data.get('epic')} story={data.get('story')} "
@@ -505,9 +471,7 @@ def _resolvable(slug: str, epic: str) -> bool:
     return bool(slug) and _is_valid_project_slug(slug) and derived.valid_epic(epic)
 
 
-def _emit(
-    args: argparse.Namespace, findings: list[Finding], data: dict[str, object]
-) -> int:
+def _emit(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
     verdict = compute_verdict(findings)
     envelope = build_envelope(
         command="context refresh",
@@ -528,9 +492,7 @@ def _emit(
     return exit_code_for(envelope.verdict)
 
 
-def _print_text(
-    data: dict[str, object], findings: list[Finding], verdict: object
-) -> None:
+def _print_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
     layer = data.get("layer") or {}
     print(
         f"context refresh epic={data.get('epic')} "

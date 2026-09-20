@@ -214,9 +214,7 @@ def test_dry_run_populates_actuation_without_changing_the_verdict(capsys):
 
 def test_dry_run_wins_when_both_flags_are_set(capsys):
     # Both flags -> dry-run wins -> planned, no socket, no creds needed.
-    rc, out, err = run_scan(
-        capsys, VULN_CRITICAL, "--open-fix-prs", "--fix-prs-dry-run"
-    )
+    rc, out, err = run_scan(capsys, VULN_CRITICAL, "--open-fix-prs", "--fix-prs-dry-run")
     document = parse_report(out)
     assert rc == 1
     assert document["actuation"]["dry_run"] is True
@@ -262,9 +260,7 @@ def test_duplicate_pr_is_skipped_not_reopened(capsys, monkeypatch):
     assert all(o["pr_url"] for o in outcomes)
 
 
-def test_forge_failure_leaves_exit_unchanged_with_a_stderr_line(
-    capsys, monkeypatch
-):
+def test_forge_failure_leaves_exit_unchanged_with_a_stderr_line(capsys, monkeypatch):
     with _FakeForge(_failing_responder) as forge:
         _set_forge_env(monkeypatch, forge.api_url)
         rc, out, err = run_scan(capsys, VULN_CRITICAL, "--open-fix-prs")
@@ -300,15 +296,10 @@ def test_baselined_finding_is_not_actuated(capsys, tmp_path):
     # whole point of grandfathering. Dry-run keeps it credential-free.
     baseline = tmp_path / ".warden-baseline.yaml"
     baseline.write_text(
-        "version: 1\n"
-        "baseline:\n"
-        f"  - id: {VULN_FINDING_ID!r}\n"
-        "    expires_at: '2099-01-01T00:00:00+00:00'\n",
+        f"version: 1\nbaseline:\n  - id: {VULN_FINDING_ID!r}\n    expires_at: '2099-01-01T00:00:00+00:00'\n",
         encoding="utf-8",
     )
-    rc, out, err = run_scan(
-        capsys, VULN_CRITICAL, "--baseline", str(baseline), "--fix-prs-dry-run"
-    )
+    rc, out, err = run_scan(capsys, VULN_CRITICAL, "--baseline", str(baseline), "--fix-prs-dry-run")
     document = parse_report(out)
     outcomes = {o["finding_id"] for o in document["actuation"]["outcomes"]}
     assert VULN_FINDING_ID not in outcomes  # baselined -> excluded from actuation

@@ -27,12 +27,8 @@ from pyforge.atlas.mcp.tools import TOOL_SPECS
 # sentence — an allowlist is a declaration with a reason, never a way to
 # reach green.
 CLI_ONLY_VERBS: dict[str, str] = {
-    "ipython": (
-        "Kedro interactive shell — operator surface, not an atlas MCP read/trigger."
-    ),
-    "package": (
-        "Kedro project packaging — not exposed on the atlas MCP tool surface."
-    ),
+    "ipython": ("Kedro interactive shell — operator surface, not an atlas MCP read/trigger."),
+    "package": ("Kedro project packaging — not exposed on the atlas MCP tool surface."),
 }
 
 # Named MCP tools that intentionally have no ``pyforge-atlas`` CLI counterpart.
@@ -88,7 +84,7 @@ def tools_by_cli_verb(
             continue
         try:
             verb = tool_cli_verb(spec)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         if verb is None:
             continue
@@ -106,9 +102,7 @@ def parity_findings(
     """Compute FR-155 parity mismatches for the given inventories."""
     specs = dict(TOOL_SPECS if tool_specs is None else tool_specs)
     verbs = discover_cli_verbs() if cli_verbs is None else frozenset(cli_verbs)
-    allow_cli_only = (
-        frozenset(CLI_ONLY_VERBS) if cli_only is None else frozenset(cli_only)
-    )
+    allow_cli_only = frozenset(CLI_ONLY_VERBS) if cli_only is None else frozenset(cli_only)
     allow_tool_only = TOOL_ONLY_NAMES if tool_only is None else frozenset(tool_only)
 
     findings: list[ParityFinding] = []
@@ -206,6 +200,4 @@ def assert_cli_tool_parity(
     if not findings:
         return
     lines = [f"{f.code}: {f.detail}" for f in findings]
-    raise AssertionError(
-        "CLI ⇄ tool parity gate failed (FR-155):\n  - " + "\n  - ".join(lines)
-    )
+    raise AssertionError("CLI ⇄ tool parity gate failed (FR-155):\n  - " + "\n  - ".join(lines))

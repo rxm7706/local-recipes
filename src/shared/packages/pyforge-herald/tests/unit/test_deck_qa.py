@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import deck_qa
 from pyforge.herald.errors import HeraldError
 
@@ -37,16 +38,12 @@ def test_zero_gates_prints_an_empty_gates_object(tmp_path: Path):
 
 
 def test_two_gates_one_flags_both_keys_present(tmp_path: Path):
-    report = deck_qa.run(
-        "pyforge-warden", tmp_path, gates={"a": _ok, "b": _with_finding}
-    )
+    report = deck_qa.run("pyforge-warden", tmp_path, gates={"a": _ok, "b": _with_finding})
     assert set(report.gates) == {"a", "b"}
     assert report.gates["a"].status == "ok"
     assert report.gates["a"].findings == []
     assert report.gates["b"].status == "ok"
-    assert report.gates["b"].findings == [
-        deck_qa.Finding(slide_id="slide-1", message="off-slide text")
-    ]
+    assert report.gates["b"].findings == [deck_qa.Finding(slide_id="slide-1", message="off-slide text")]
 
 
 def test_a_gate_that_raises_becomes_status_error_without_aborting_others(
@@ -81,9 +78,7 @@ def test_gate_context_carries_slug_and_repo_root(tmp_path: Path):
 
 
 def test_round_trip_equality(tmp_path: Path):
-    report = deck_qa.run(
-        "pyforge-warden", tmp_path, gates={"a": _ok, "b": _with_finding, "c": _raises}
-    )
+    report = deck_qa.run("pyforge-warden", tmp_path, gates={"a": _ok, "b": _with_finding, "c": _raises})
     round_tripped = deck_qa.parse_report(json.loads(json.dumps(deck_qa.to_dict(report))))
     assert round_tripped == report
 
@@ -135,9 +130,7 @@ def test_parse_report_rejects_an_unknown_finding_level_key():
                 "gates": {
                     "a": {
                         "status": "ok",
-                        "findings": [
-                            {"slide_id": "s1", "message": "m", "bogus": 1}
-                        ],
+                        "findings": [{"slide_id": "s1", "message": "m", "bogus": 1}],
                         "artifacts": [],
                         "error": None,
                     }
@@ -241,9 +234,7 @@ def test_a_gate_violating_the_status_error_invariant_becomes_status_error(
     assert report.gates["broken"].status == "error"
 
 
-def test_run_reads_default_gates_fresh_even_after_reassignment(
-    tmp_path: Path, monkeypatch
-):
+def test_run_reads_default_gates_fresh_even_after_reassignment(tmp_path: Path, monkeypatch):
     """The mutable-default-argument footgun this fix avoids: reassigning
     the module attribute (not mutating it in place) must still be picked
     up by a caller that never passes ``gates=`` explicitly."""
@@ -308,9 +299,7 @@ def _write_synthetic_deck(
     if with_manifest:
         slides_dir = deck_dir / "src" / "slides"
         slides_dir.mkdir(parents=True, exist_ok=True)
-        (slides_dir / "manifest.json").write_text(
-            json.dumps(manifest), encoding="utf-8"
-        )
+        (slides_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     if with_dist:
         dist_dir = deck_dir / "dist"
         dist_dir.mkdir(parents=True, exist_ok=True)
@@ -455,9 +444,7 @@ def test_render_gate_one_slide_fails_others_still_capture(tmp_path: Path, monkey
     assert len(result.artifacts) == 3
 
 
-def test_render_gate_all_slides_fail_status_stays_ok_no_contact_sheet(
-    tmp_path: Path, monkeypatch
-):
+def test_render_gate_all_slides_fail_status_stays_ok_no_contact_sheet(tmp_path: Path, monkeypatch):
     manifest = [{"id": "one"}, {"id": "two"}]
     _write_synthetic_deck(tmp_path, "demo-deck", manifest)
     context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
@@ -472,9 +459,7 @@ def test_render_gate_all_slides_fail_status_stays_ok_no_contact_sheet(
 
 
 def test_render_gate_missing_dist_raises_and_run_isolates_it(tmp_path: Path):
-    _write_synthetic_deck(
-        tmp_path, "no-dist-deck", [{"id": "cover"}], with_dist=False
-    )
+    _write_synthetic_deck(tmp_path, "no-dist-deck", [{"id": "cover"}], with_dist=False)
     context = deck_qa.GateContext(slug="no-dist-deck", repo_root=tmp_path)
 
     # Matches on "dist does not exist" specifically, not just the generic
@@ -485,9 +470,7 @@ def test_render_gate_missing_dist_raises_and_run_isolates_it(tmp_path: Path):
     with pytest.raises(Exception, match="dist does not exist"):
         deck_qa.render_gate(context)
 
-    report = deck_qa.run(
-        "no-dist-deck", tmp_path, gates={"render": deck_qa.render_gate}
-    )
+    report = deck_qa.run("no-dist-deck", tmp_path, gates={"render": deck_qa.render_gate})
     assert report.gates["render"].status == "error"
     assert report.gates["render"].error is not None
     # zero effect on any other gate id (Story 14.1's own isolation contract).
@@ -500,9 +483,7 @@ def test_render_gate_missing_dist_raises_and_run_isolates_it(tmp_path: Path):
 
 
 def test_render_gate_missing_manifest_raises(tmp_path: Path):
-    _write_synthetic_deck(
-        tmp_path, "no-manifest-deck", [], with_manifest=False, with_dist=True
-    )
+    _write_synthetic_deck(tmp_path, "no-manifest-deck", [], with_manifest=False, with_dist=True)
     context = deck_qa.GateContext(slug="no-manifest-deck", repo_root=tmp_path)
 
     # See the sibling missing-dist test above for why this matches the
@@ -530,17 +511,13 @@ def test_render_gate_no_usable_chromium_raises(tmp_path: Path, monkeypatch):
         def __exit__(self, *exc_info):
             return False
 
-    monkeypatch.setattr(
-        "playwright.sync_api.sync_playwright", lambda: _FakePlaywrightCtx()
-    )
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", lambda: _FakePlaywrightCtx())
 
     with pytest.raises(Exception, match="no usable chromium"):
         deck_qa.render_gate(context)
 
 
-def test_render_gate_no_usable_chromium_raises_even_on_system_exit(
-    tmp_path: Path, monkeypatch
-):
+def test_render_gate_no_usable_chromium_raises_even_on_system_exit(tmp_path: Path, monkeypatch):
     """Playwright's own internals have raised ``SystemExit`` live (Design
     Notes) -- the launch-fallback except clauses must catch it too, not
     just ``Exception`` (Review pass, second round). Before that fix, a
@@ -565,9 +542,7 @@ def test_render_gate_no_usable_chromium_raises_even_on_system_exit(
         def __exit__(self, *exc_info):
             return False
 
-    monkeypatch.setattr(
-        "playwright.sync_api.sync_playwright", lambda: _FakePlaywrightCtx()
-    )
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", lambda: _FakePlaywrightCtx())
 
     with pytest.raises(Exception, match="no usable chromium"):
         deck_qa.render_gate(context)
@@ -587,9 +562,7 @@ def test_suppress_close_swallows_system_exit_too():
 
 def test_render_gate_malformed_manifest_json_raises(tmp_path: Path):
     _write_synthetic_deck(tmp_path, "bad-json-deck", [{"id": "cover"}])
-    manifest_path = (
-        tmp_path / "presentations" / "bad-json-deck" / "src" / "slides" / "manifest.json"
-    )
+    manifest_path = tmp_path / "presentations" / "bad-json-deck" / "src" / "slides" / "manifest.json"
     manifest_path.write_text("{not valid json", encoding="utf-8")
     context = deck_qa.GateContext(slug="bad-json-deck", repo_root=tmp_path)
 
@@ -599,9 +572,7 @@ def test_render_gate_malformed_manifest_json_raises(tmp_path: Path):
 
 def test_render_gate_manifest_not_a_list_raises(tmp_path: Path):
     _write_synthetic_deck(tmp_path, "bad-shape-deck", [{"id": "cover"}])
-    manifest_path = (
-        tmp_path / "presentations" / "bad-shape-deck" / "src" / "slides" / "manifest.json"
-    )
+    manifest_path = tmp_path / "presentations" / "bad-shape-deck" / "src" / "slides" / "manifest.json"
     manifest_path.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
     context = deck_qa.GateContext(slug="bad-shape-deck", repo_root=tmp_path)
 
@@ -686,9 +657,7 @@ def test_render_gate_duplicate_ids_are_disambiguated(tmp_path: Path):
     assert len(result.artifacts) == 4  # 3 pngs + the real contact sheet
 
 
-def test_render_gate_isolates_a_contact_sheet_build_failure(
-    tmp_path: Path, monkeypatch
-):
+def test_render_gate_isolates_a_contact_sheet_build_failure(tmp_path: Path, monkeypatch):
     manifest = [{"id": "cover"}, {"id": "close"}]
     _write_synthetic_deck(tmp_path, "demo-deck", manifest)
     context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
@@ -779,9 +748,7 @@ def _write_synthetic_fragments_deck(
     slides_dir = repo_root / "presentations" / slug / "src" / "slides"
     if with_manifest:
         slides_dir.mkdir(parents=True, exist_ok=True)
-        (slides_dir / "manifest.json").write_text(
-            json.dumps(manifest), encoding="utf-8"
-        )
+        (slides_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     if with_fragments_dir:
         fragments_dir = slides_dir / "fragments"
         fragments_dir.mkdir(parents=True, exist_ok=True)
@@ -825,10 +792,7 @@ def test_image_slot_gate_every_slot_filled_no_findings(tmp_path: Path):
 def test_image_slot_gate_flags_the_raw_unconverted_tag(tmp_path: Path):
     manifest = [{"id": "screenshots"}]
     fragments = {
-        "screenshots": (
-            '<section><image-slot placeholder="Drop image">'
-            "</image-slot></section>"
-        ),
+        "screenshots": ('<section><image-slot placeholder="Drop image"></image-slot></section>'),
     }
     _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
     context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
@@ -846,10 +810,7 @@ def test_image_slot_gate_flags_once_when_both_spellings_present(tmp_path: Path):
     one per pattern."""
     manifest = [{"id": "screenshots"}]
     fragments = {
-        "screenshots": (
-            '<image-slot placeholder="Drop image"></image-slot>'
-            '<div class="image-slot"></div>'
-        ),
+        "screenshots": ('<image-slot placeholder="Drop image"></image-slot><div class="image-slot"></div>'),
     }
     _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
     context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
@@ -880,9 +841,7 @@ def test_image_slot_gate_missing_fragment_file_isolated(tmp_path: Path):
 def test_image_slot_gate_missing_manifest_raises_and_run_isolates_it(
     tmp_path: Path,
 ):
-    _write_synthetic_fragments_deck(
-        tmp_path, "no-manifest-deck", [], {}, with_manifest=False
-    )
+    _write_synthetic_fragments_deck(tmp_path, "no-manifest-deck", [], {}, with_manifest=False)
     context = deck_qa.GateContext(slug="no-manifest-deck", repo_root=tmp_path)
 
     with pytest.raises(Exception, match=r"manifest\.json does not exist"):
@@ -919,17 +878,8 @@ def test_image_slot_gate_missing_fragments_dir_raises(tmp_path: Path):
 
 
 def test_image_slot_gate_malformed_manifest_json_raises(tmp_path: Path):
-    _write_synthetic_fragments_deck(
-        tmp_path, "bad-json-deck", [{"id": "cover"}], {"cover": "<section></section>"}
-    )
-    manifest_path = (
-        tmp_path
-        / "presentations"
-        / "bad-json-deck"
-        / "src"
-        / "slides"
-        / "manifest.json"
-    )
+    _write_synthetic_fragments_deck(tmp_path, "bad-json-deck", [{"id": "cover"}], {"cover": "<section></section>"})
+    manifest_path = tmp_path / "presentations" / "bad-json-deck" / "src" / "slides" / "manifest.json"
     manifest_path.write_text("{not valid json", encoding="utf-8")
     context = deck_qa.GateContext(slug="bad-json-deck", repo_root=tmp_path)
 
@@ -944,14 +894,7 @@ def test_image_slot_gate_manifest_not_a_list_raises(tmp_path: Path):
         [{"id": "cover"}],
         {"cover": "<section></section>"},
     )
-    manifest_path = (
-        tmp_path
-        / "presentations"
-        / "bad-shape-deck"
-        / "src"
-        / "slides"
-        / "manifest.json"
-    )
+    manifest_path = tmp_path / "presentations" / "bad-shape-deck" / "src" / "slides" / "manifest.json"
     manifest_path.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
     context = deck_qa.GateContext(slug="bad-shape-deck", repo_root=tmp_path)
 
@@ -975,9 +918,7 @@ def test_image_slot_gate_round_trips_through_json(tmp_path: Path):
     result = deck_qa.image_slot_gate(context)
     report = deck_qa.DeckQaReport(slug="x", gates={"image-slot": result})
 
-    round_tripped = deck_qa.parse_report(
-        json.loads(json.dumps(deck_qa.to_dict(report)))
-    )
+    round_tripped = deck_qa.parse_report(json.loads(json.dumps(deck_qa.to_dict(report))))
     assert round_tripped == report
 
 
@@ -991,15 +932,7 @@ def test_image_slot_gate_isolates_a_non_utf8_fragment(tmp_path: Path):
         "close": "<section>clean</section>",
     }
     _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
-    bad_path = (
-        tmp_path
-        / "presentations"
-        / "demo-deck"
-        / "src"
-        / "slides"
-        / "fragments"
-        / "bad-encoding.html"
-    )
+    bad_path = tmp_path / "presentations" / "demo-deck" / "src" / "slides" / "fragments" / "bad-encoding.html"
     bad_path.write_bytes(b"\xff\xfe not valid utf-8")
     context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
 
@@ -1038,7 +971,7 @@ def test_image_slot_gate_does_not_over_match_a_hyphenated_custom_element(
     reject it."""
     manifest = [{"id": "screenshots"}]
     fragments = {
-        "screenshots": '<section><image-slot-carousel></image-slot-carousel></section>',
+        "screenshots": "<section><image-slot-carousel></image-slot-carousel></section>",
     }
     _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
     context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)

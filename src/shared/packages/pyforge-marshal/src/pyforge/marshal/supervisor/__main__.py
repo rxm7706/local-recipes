@@ -338,10 +338,10 @@ from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.publisher_host import HostPublisher
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
+from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.egress import to_redacted
@@ -354,6 +354,11 @@ from ..core.journal import (
     prepare_for_write,
 )
 from ..core.model import Finding, Severity
+from ..core.publish import (
+    active_task_from_snapshot,
+    loop_complete_result,
+    shape_loop_publish,
+)
 from ..core.supervise import (
     ACTION_PRECEDENCE,
     CeilingStatus,
@@ -368,18 +373,13 @@ from ..core.supervise import (
     rung_at,
     rung_index,
 )
-from ..core.publish import (
-    active_task_from_snapshot,
-    loop_complete_result,
-    shape_loop_publish,
-)
 from ..core.worktree_checkpoint import commit_worktree_checkpoint
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot, UsageSnapshot
 from ..ports.notify import NotifyPort
-from ..ports.publisher import RunPublisherPort
 from ..ports.observer import SessionObserverPort
+from ..ports.publisher import RunPublisherPort
 from ..ports.vcs import VcsPort
 from .durability import PushTrigger, classify_push_triggers
 from .intent_gap_preserve import (
@@ -447,9 +447,7 @@ def _layer_savings_payload(layer_savings: object) -> dict[str, object]:
     if layer_savings.derived_context_cache_hits is not None:
         savings_dict["derived_context_cache_hits"] = layer_savings.derived_context_cache_hits
     if layer_savings.planning_graph_tokens_saved is not None:
-        savings_dict["planning_graph_tokens_saved"] = (
-            layer_savings.planning_graph_tokens_saved
-        )
+        savings_dict["planning_graph_tokens_saved"] = layer_savings.planning_graph_tokens_saved
     return savings_dict
 
 
@@ -481,6 +479,7 @@ def _budget_usage_payload(
     if savings_usd:
         payload["layer_savings_usd"] = dict(savings_usd)
     return payload
+
 
 # Story 28.6 (CAP-8): compression escalation journals before terminal
 # budget-stop / idle-ladder actions on the same tick.
@@ -548,6 +547,7 @@ def _feed_key_form(raw: str) -> str:
     except ValueError:
         # `MalformedStoryKeyError` is a `ValueError`.
         return raw
+
 
 # `CeilingStatus` carries no intrinsic ordering (mirrors `LadderRung`'s own
 # convention, ordered via `core.supervise.rung_index`) -- this is the one
@@ -659,7 +659,7 @@ def _sidecar_refs(lines: Sequence[str]) -> tuple[str, ...]:
             continue
         try:
             document = json.loads(line)
-        except (ValueError, TypeError, RecursionError):
+        except ValueError, TypeError, RecursionError:
             continue
         if not isinstance(document, Mapping):
             continue
@@ -711,22 +711,20 @@ class _CompressionLadderConfig:
     declared_aggressiveness: str
 
 
-def _load_compression_ladder_config(
-    fs: FsPort, run_dir: Path
-) -> _CompressionLadderConfig | None:
+def _load_compression_ladder_config(fs: FsPort, run_dir: Path) -> _CompressionLadderConfig | None:
     """Read ``compression-ladder.json`` from ``run_dir``. Returns ``None`` when
     the sidecar is absent or malformed -- the ladder stays off and today's
     behavior is unchanged."""
     sidecar = run_dir / _COMPRESSION_LADDER_SIDECAR
     try:
         raw = fs.read_text(sidecar)
-    except (FsError, ValueError):
+    except FsError, ValueError:
         return None
     if not raw:
         return None
     try:
         payload = json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError, TypeError:
         return None
     if not isinstance(payload, Mapping):
         return None
@@ -841,7 +839,7 @@ def run_supervisor(
     # it guards against, escaping through the guard itself.
     try:
         threshold_s = float(idle_threshold_minutes) * 60.0
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         threshold_s = float("nan")
     if not (threshold_s > 0) or not math.isfinite(threshold_s):
         print(
@@ -873,8 +871,7 @@ def run_supervisor(
     ):
         if policy._valid_positive_number(_budget_value) is None:
             print(
-                f"supervisor: {_budget_label} must be a positive finite "
-                f"number, got {_budget_value!r}",
+                f"supervisor: {_budget_label} must be a positive finite number, got {_budget_value!r}",
                 file=sys.stderr,
             )
             return 1
@@ -913,7 +910,7 @@ def run_supervisor(
     for ref in _sidecar_refs(lines):
         try:
             sidecars[ref] = fs.read_text(run_dir / ref)
-        except (FsError, ValueError):
+        except FsError, ValueError:
             sidecars[ref] = None
     fold_result = fold(lines, sidecars=sidecars)
     # Widened to accept EITHER phase (review finding, both reviewers):
@@ -997,9 +994,7 @@ def run_supervisor(
         counter += 1
         prepared = prepare_for_write(entry)
         if prepared.sidecar_relative_path is not None:
-            fs.write_text_atomic(
-                run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
-            )
+            fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
         fs.append_line(journal_path, prepared.line, fsync=fsync)
         return entry_id
 
@@ -1009,9 +1004,7 @@ def run_supervisor(
     def _append_intent(kind: str, payload: Mapping[str, object]) -> JournalEntryId:
         return _write_entry(kind, Phase.INTENT, payload, fsync=True)
 
-    def _append_outcome(
-        kind: str, intent_id: JournalEntryId, payload: Mapping[str, object]
-    ) -> None:
+    def _append_outcome(kind: str, intent_id: JournalEntryId, payload: Mapping[str, object]) -> None:
         _write_entry(kind, Phase.OUTCOME, payload, intent_id=intent_id, fsync=False)
 
     def _journal_publish_finding(operation: str, message: str) -> None:
@@ -1025,8 +1018,12 @@ def run_supervisor(
             {"operation": operation, "finding": finding.to_json_dict()},
         )
 
-    _publisher = publisher if publisher is not None else HostPublisher(
-        on_finding=_journal_publish_finding,
+    _publisher = (
+        publisher
+        if publisher is not None
+        else HostPublisher(
+            on_finding=_journal_publish_finding,
+        )
     )
     run_publish_handle: str | None = None
     run_publish_completed = False
@@ -1242,10 +1239,7 @@ def run_supervisor(
                 finding = Finding(
                     code="MRS-SUPV-008",
                     severity=Severity.WARN,
-                    message=(
-                        f"durability push failed for branch {branch!r} "
-                        f"({boundary}): {redacted_text}"
-                    ),
+                    message=(f"durability push failed for branch {branch!r} ({boundary}): {redacted_text}"),
                 )
                 push_finding = finding.to_json_dict()
             push_payload: dict[str, object] = {"boundary": boundary, "branch": branch}
@@ -1257,8 +1251,11 @@ def run_supervisor(
             _append(_STAGE_PUSH_KIND, push_payload)
 
         def _classify_retired_branch(
-            branch: str, commit_sha: str | None, into: str,
-            boundary: str, story_key: str | None,
+            branch: str,
+            commit_sha: str | None,
+            into: str,
+            boundary: str,
+            story_key: str | None,
         ) -> bool:
             """S-3.9 (FR-170): is this per-story branch RETIRED rather than
             pushable? Returns ``True`` when it handled the boundary itself
@@ -1301,7 +1298,7 @@ def run_supervisor(
                 landed = False
                 if commit_sha:
                     landed = vcs.merge_base(repo_root, commit_sha, into) == commit_sha
-            except (VcsCommandError, OSError, subprocess.SubprocessError):
+            except VcsCommandError, OSError, subprocess.SubprocessError:
                 return False
             payload: dict[str, object] = {"boundary": boundary, "branch": branch}
             if story_key is not None:
@@ -1349,9 +1346,7 @@ def run_supervisor(
             if status_snapshot is None:
                 return
             current_task_phases = {task.story_key: task for task in status_snapshot.tasks}
-            triggers: tuple[PushTrigger, ...] = classify_push_triggers(
-                previous_task_phases, current_task_phases
-            )
+            triggers: tuple[PushTrigger, ...] = classify_push_triggers(previous_task_phases, current_task_phases)
             for trigger in triggers:
                 feed_key = _feed_key_form(trigger.story_key)
                 _push_branch(station_branch, trigger.boundary, feed_key)
@@ -1359,10 +1354,13 @@ def run_supervisor(
                 task = current_task_phases.get(trigger.story_key)
                 if task is not None and task.branch:
                     if _classify_retired_branch(
-                        task.branch, task.commit_sha, station_branch,
-                        trigger.boundary, feed_key,
+                        task.branch,
+                        task.commit_sha,
+                        station_branch,
+                        trigger.boundary,
+                        feed_key,
                     ):
-                        continue          # retired: nothing to push, already journaled
+                        continue  # retired: nothing to push, already journaled
                     _push_branch(task.branch, trigger.boundary, feed_key)
                     last_durability_push_monotonic = clock.monotonic()
             previous_task_phases = current_task_phases
@@ -1537,10 +1535,7 @@ def run_supervisor(
                 warn_finding = Finding(
                     code="MRS-SUPV-004",
                     severity=Severity.WARN,
-                    message=(
-                        f"budget ceiling approaching: {scope}/{metric} at "
-                        f"{observed!r} (limit {limit!r})"
-                    ),
+                    message=(f"budget ceiling approaching: {scope}/{metric} at {observed!r} (limit {limit!r})"),
                 )
                 _append(
                     _BUDGET_WARN_KIND,
@@ -1596,10 +1591,7 @@ def run_supervisor(
                     stop_finding = Finding(
                         code="MRS-SUPV-005",
                         severity=Severity.WARN,
-                        message=(
-                            f"budget-stop ({scope}/{metric}) failed for "
-                            f"harness run {harness_run_id!r}: {exc}"
-                        ),
+                        message=(f"budget-stop ({scope}/{metric}) failed for harness run {harness_run_id!r}: {exc}"),
                     )
                     stop_payload["finding"] = stop_finding.to_json_dict()
                 else:
@@ -1737,9 +1729,7 @@ def run_supervisor(
             # own `deferred` handling.)
             if watched_alive and not deferred:
                 run_elapsed_minutes = (monotonic_now - run_started_monotonic) / 60.0
-                new_run_wall_clock_status = evaluate_ceiling(
-                    run_elapsed_minutes, max_wall_clock_minutes_per_run
-                )
+                new_run_wall_clock_status = evaluate_ceiling(run_elapsed_minutes, max_wall_clock_minutes_per_run)
                 _act_on_budget_transition(
                     "run",
                     "wall_clock",
@@ -1805,9 +1795,7 @@ def run_supervisor(
                             )
                             _append(_BUDGET_USAGE_KIND, payload)
                         current_story_key = new_story_key
-                        story_started_monotonic = (
-                            monotonic_now if new_story_key is not None else None
-                        )
+                        story_started_monotonic = monotonic_now if new_story_key is not None else None
                         # A new story starts its own fresh ceiling
                         # bookkeeping -- mirrors the idle ladder's own
                         # "a successful retry starts its own fresh idle
@@ -1823,9 +1811,7 @@ def run_supervisor(
                         last_story_layer_savings_usd = usage.layer_savings_usd
 
                     if current_story_key is not None and story_started_monotonic is not None:
-                        story_elapsed_minutes = (
-                            monotonic_now - story_started_monotonic
-                        ) / 60.0
+                        story_elapsed_minutes = (monotonic_now - story_started_monotonic) / 60.0
                         new_story_wall_clock_status = evaluate_ceiling(
                             story_elapsed_minutes, max_wall_clock_minutes_per_story
                         )
@@ -1850,10 +1836,7 @@ def run_supervisor(
                     # the binding constraint.
                     state_json_path = _bmad_loop_state_json_path(home, harness_run_id)
                     state_mtime = observer.mtime(state_json_path)
-                    is_stale = (
-                        state_mtime is None
-                        or (moment.timestamp() - state_mtime) > threshold_s
-                    )
+                    is_stale = state_mtime is None or (moment.timestamp() - state_mtime) > threshold_s
                     # Widened to ALSO cover `usage is None` with a fresh
                     # mtime (review finding): a torn concurrent write, a
                     # transient `bmad_loop` import failure, or any other
@@ -1901,9 +1884,7 @@ def run_supervisor(
                         usage_stale = True
                     else:
                         usage_stale = False
-                        new_run_tokens_status = evaluate_ceiling(
-                            usage.run_weighted_tokens, max_tokens_per_run
-                        )
+                        new_run_tokens_status = evaluate_ceiling(usage.run_weighted_tokens, max_tokens_per_run)
                         _act_on_budget_transition(
                             "run",
                             "tokens",
@@ -1914,10 +1895,7 @@ def run_supervisor(
                         )
                         run_tokens_status = new_run_tokens_status
 
-                        if (
-                            usage.story_key is not None
-                            and usage.story_weighted_tokens is not None
-                        ):
+                        if usage.story_key is not None and usage.story_weighted_tokens is not None:
                             _maybe_escalate_compression(
                                 usage.story_weighted_tokens,
                                 max_tokens_per_story,
@@ -1948,12 +1926,7 @@ def run_supervisor(
             # its own terminal `budget-stop` -- the idle ladder must not
             # ALSO act in the same tick against a process that decision has
             # already targeted for a stop.
-            if (
-                watched_alive
-                and not deferred
-                and session_name is not None
-                and harness_log_path is not None
-            ):
+            if watched_alive and not deferred and session_name is not None and harness_log_path is not None:
                 # Sampled against the REAL session/log target (Story 3.5,
                 # closing the two placeholder gaps this module's own
                 # docstring names) -- feeds the pure `evaluate_idle` decision
@@ -2076,17 +2049,8 @@ def run_supervisor(
                 if rung_index(rung) > rung_index(last_acted_rung) + 1:
                     rung = rung_at(rung_index(last_acted_rung) + 1)
 
-                if (
-                    watched_alive
-                    and not deferred
-                    and samples
-                    and rung_index(rung) >= rung_index(LadderRung.NUDGE)
-                ):
-                    story_label = (
-                        _feed_key_form(current_story_key)
-                        if current_story_key is not None
-                        else slug
-                    )
+                if watched_alive and not deferred and samples and rung_index(rung) >= rung_index(LadderRung.NUDGE):
+                    story_label = _feed_key_form(current_story_key) if current_story_key is not None else slug
                     commit_worktree_checkpoint(
                         vcs,
                         repo_root=home,
@@ -2094,9 +2058,7 @@ def run_supervisor(
                         story_key=story_label,
                     )
 
-                if already_retried and rung_index(rung) >= rung_index(
-                    LadderRung.STOP_AND_RETRY
-                ):
+                if already_retried and rung_index(rung) >= rung_index(LadderRung.STOP_AND_RETRY):
                     # Bounded-retry gate (review finding): one retry cycle
                     # already happened for this run and is never undone, so
                     # a further idle recurrence on the new pid's window can
@@ -2191,18 +2153,10 @@ def run_supervisor(
                             rebased_pane = pane_content
                         samples[:] = [
                             Sample(
-                                moment=(
-                                    anchor_sample.moment
-                                    if anchor_sample is not None
-                                    else moment
-                                ),
+                                moment=(anchor_sample.moment if anchor_sample is not None else moment),
                                 pane_content=rebased_pane,
                                 log_mtime=log_mtime,
-                                monotonic_s=(
-                                    anchor_sample.monotonic_s
-                                    if anchor_sample is not None
-                                    else monotonic_now
-                                ),
+                                monotonic_s=(anchor_sample.monotonic_s if anchor_sample is not None else monotonic_now),
                             )
                         ]
                         _append_outcome(_NUDGE_KIND, intent_id, outcome_payload)
@@ -2226,10 +2180,7 @@ def run_supervisor(
                             retry_finding = Finding(
                                 code="MRS-SUPV-002",
                                 severity=Severity.WARN,
-                                message=(
-                                    "stop-and-retry failed for harness run "
-                                    f"{harness_run_id!r}: {exc}"
-                                ),
+                                message=(f"stop-and-retry failed for harness run {harness_run_id!r}: {exc}"),
                             )
                             _append_outcome(
                                 _STOP_AND_RETRY_KIND,
@@ -2284,9 +2235,7 @@ def run_supervisor(
                                 )
                             else:
                                 try:
-                                    new_pid = harness.resume(
-                                        home, harness_run_id, log_path=harness_log_path
-                                    )
+                                    new_pid = harness.resume(home, harness_run_id, log_path=harness_log_path)
                                 except HarnessError as exc:
                                     # `stop()` succeeded -- the original pid
                                     # is CONFIRMED dead, not "possibly still
@@ -2405,9 +2354,7 @@ def run_supervisor(
                             # stopped -- the run may still be running". The
                             # frame names the run; the detail says only what
                             # is known about WHY.
-                            defer_detail = (
-                                "bmad-loop reported it was not stopped"
-                            )
+                            defer_detail = "bmad-loop reported it was not stopped"
                         defer_payload["stopped"] = stopped
                         if not stopped:
                             # A failed stop at the TERMINAL rung is the worst
@@ -2570,23 +2517,18 @@ def run_supervisor(
                     if spec_path is not None:
                         try:
                             auto_run_text = spec_path.read_text(encoding="utf-8")
-                        except (OSError, UnicodeDecodeError):
+                        except OSError, UnicodeDecodeError:
                             auto_run_text = None
                     preserve_ref = status_snapshot.escalated_preserve_ref
                     # Story 20.4: intent-gap preserve when bmad-loop left
                     # ``preserve_ref`` empty (proactive snapshot taken each
                     # live tick while the worktree was dirty). Treat "" like
                     # None — an empty string is not a usable recovery pointer.
-                    if (
-                        not preserve_ref
-                        and looks_like_intent_gap(
-                            status_snapshot.paused_reason,
-                            auto_run_result_text=auto_run_text,
-                        )
+                    if not preserve_ref and looks_like_intent_gap(
+                        status_snapshot.paused_reason,
+                        auto_run_result_text=auto_run_text,
                     ):
-                        captured = attempt_snapshots.get(
-                            status_snapshot.paused_story_key
-                        )
+                        captured = attempt_snapshots.get(status_snapshot.paused_story_key)
                         if captured is not None:
                             bmad_run_dir = home / ".bmad-loop" / "runs" / harness_run_id
                             parked = park_preserve_artifact(
@@ -2600,9 +2542,7 @@ def run_supervisor(
                                 _append(
                                     _INTENT_GAP_PRESERVE_FAILED_KIND,
                                     {
-                                        "story_key": _feed_key_form(
-                                            status_snapshot.paused_story_key
-                                        ),
+                                        "story_key": _feed_key_form(status_snapshot.paused_story_key),
                                     },
                                 )
                     escalation_payload: dict[str, object] = {
@@ -2620,9 +2560,7 @@ def run_supervisor(
                                 _append(
                                     "intent-gap-preserve-notice-failed",
                                     {
-                                        "story_key": _feed_key_form(
-                                            status_snapshot.paused_story_key
-                                        ),
+                                        "story_key": _feed_key_form(status_snapshot.paused_story_key),
                                         "preserve_ref": preserve_ref,
                                     },
                                 )
@@ -2630,9 +2568,7 @@ def run_supervisor(
                             _append(
                                 "intent-gap-preserve-notice-failed",
                                 {
-                                    "story_key": _feed_key_form(
-                                        status_snapshot.paused_story_key
-                                    ),
+                                    "story_key": _feed_key_form(status_snapshot.paused_story_key),
                                     "preserve_ref": preserve_ref,
                                 },
                             )
@@ -2666,10 +2602,7 @@ def run_supervisor(
                         marker_finding = Finding(
                             code="MRS-SUPV-007",
                             severity=Severity.WARN,
-                            message=(
-                                f"cannot write escalation file marker "
-                                f"{str(marker_path)!r}: {exc}"
-                            ),
+                            message=(f"cannot write escalation file marker {str(marker_path)!r}: {exc}"),
                         )
                         detach_finding = marker_finding.to_json_dict()
                     # Best-effort: any exception or a `False` return is
@@ -2694,18 +2627,12 @@ def run_supervisor(
             detach_payload["finding"] = detach_finding
         _append("supervisor-detach", detach_payload)
         if run_publish_handle is not None:
-            complete_story_key = (
-                _feed_key_form(current_story_key) if current_story_key is not None else None
-            )
+            complete_story_key = _feed_key_form(current_story_key) if current_story_key is not None else None
             complete_commit: str | None = None
             if harness_run_id is not None:
                 final_snapshot = harness.run_status_snapshot(home, harness_run_id)
                 _, _, complete_commit = active_task_from_snapshot(final_snapshot)
-            final_usage = (
-                harness.usage_snapshot(home, harness_run_id)
-                if harness_run_id is not None
-                else None
-            )
+            final_usage = harness.usage_snapshot(home, harness_run_id) if harness_run_id is not None else None
             complete_status = detach_reason or "watched-process-exited"
             _publisher.complete(
                 run_publish_handle,
@@ -2872,8 +2799,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         # `stop` -- and the argument never rested on the count anyway, only
         # on refusing to journal an exit this process never observed.)
         print(
-            f"supervisor: watched pid {watched_pid} is not probeable "
-            f"(above {_MAX_PROBEABLE_PID})",
+            f"supervisor: watched pid {watched_pid} is not probeable (above {_MAX_PROBEABLE_PID})",
             file=sys.stderr,
         )
         return 1
@@ -2881,8 +2807,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         idle_threshold_minutes = float(idle_threshold_minutes_text)
     except ValueError:
         print(
-            f"supervisor: invalid idle threshold minutes "
-            f"{idle_threshold_minutes_text!r}",
+            f"supervisor: invalid idle threshold minutes {idle_threshold_minutes_text!r}",
             file=sys.stderr,
         )
         return 1
@@ -2901,8 +2826,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # point reachable with any argv at all.
     if not (idle_threshold_minutes > 0) or not math.isfinite(idle_threshold_minutes):
         print(
-            f"supervisor: idle threshold minutes must be a positive finite "
-            f"number, got {idle_threshold_minutes}",
+            f"supervisor: idle threshold minutes must be a positive finite number, got {idle_threshold_minutes}",
             file=sys.stderr,
         )
         return 1
@@ -2927,8 +2851,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         # plus an explicit finiteness check, never a bare `<= 0`.
         if not (_value > 0) or not math.isfinite(_value):
             print(
-                f"supervisor: {_name} must be a positive finite number, "
-                f"got {_value}",
+                f"supervisor: {_name} must be a positive finite number, got {_value}",
                 file=sys.stderr,
             )
             return 1

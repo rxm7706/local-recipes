@@ -9,8 +9,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.warden.discovery import RECIPE_YAML_KIND
-from pyforge.warden.extract import UnparsableManifestError
-from pyforge.warden.extract import recipe_v1
+from pyforge.warden.extract import UnparsableManifestError, recipe_v1
 from pyforge.warden.extract.recipe_v1 import (
     RECIPE_V1_REQUIREMENTS_SECTION,
     RecipeV1Extractor,
@@ -28,13 +27,7 @@ from pyforge.warden.models import (
 )
 from pyforge.warden.routing import DefaultRouter
 
-FIXTURE = (
-    Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "projects"
-    / "recipe_common"
-    / "recipe.yaml"
-)
+FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "projects" / "recipe_common" / "recipe.yaml"
 MANIFEST = ScannedManifest(path="recipe.yaml", kind=RECIPE_YAML_KIND)
 
 
@@ -103,9 +96,7 @@ def test_substitute_bare_vars_resolves_dollar_prefixed_and_bare_forms():
     context = {"name": "mypkg", "version": "1.2.3"}
     assert substitute_bare_vars("${{ name }}", context) == "mypkg"
     assert substitute_bare_vars("{{ version }}", context) == "1.2.3"
-    assert substitute_bare_vars("${{ name }} ${{ version }}", context) == (
-        "mypkg 1.2.3"
-    )
+    assert substitute_bare_vars("${{ name }} ${{ version }}", context) == ("mypkg 1.2.3")
 
 
 def test_substitute_bare_vars_leaves_unknown_var_untouched():
@@ -205,14 +196,7 @@ def test_bare_brace_list_item_never_breaks_yaml_parse_and_still_resolves(
     substitution target once the document parses (shared with v0), so a
     KNOWN context var still resolves correctly -- never a crash, and not
     even necessarily a degrade."""
-    body = (
-        "context:\n"
-        "  name: mypkg\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - python\n"
-        "    - {{ name }}\n"
-    )
+    body = "context:\n  name: mypkg\nrequirements:\n  run:\n    - python\n    - {{ name }}\n"
     path = write_recipe(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     by_name = {c.name: c for c in components}
@@ -241,13 +225,7 @@ def test_bare_brace_unresolvable_construct_is_raw_malformed(tmp_path):
 def test_unresolvable_expression_with_recoverable_name_degrades_to_name_only(
     tmp_path,
 ):
-    body = (
-        "context:\n"
-        '  version: "1.2.3"\n'
-        "requirements:\n"
-        "  run:\n"
-        "    - numpy ${{ version.replace('.', '_') }}\n"
-    )
+    body = "context:\n  version: \"1.2.3\"\nrequirements:\n  run:\n    - numpy ${{ version.replace('.', '_') }}\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "numpy"
@@ -258,11 +236,7 @@ def test_unresolvable_expression_with_recoverable_name_degrades_to_name_only(
 def test_unresolvable_expression_with_no_recoverable_name_is_raw_malformed(
     tmp_path,
 ):
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - ${{ pin_compatible('scipy') }}\n"
-    )
+    body = "requirements:\n  run:\n    - ${{ pin_compatible('scipy') }}\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
@@ -332,12 +306,8 @@ def test_outputs_are_walked_with_indexed_provenance(tmp_path):
     components = _extractor().extract(path, MANIFEST)
     by_name = {c.name: c for c in components}
     assert set(by_name) == {"click", "rich"}
-    assert [p.section for p in by_name["click"].provenance] == [
-        "outputs[0].requirements.run"
-    ]
-    assert [p.section for p in by_name["rich"].provenance] == [
-        "outputs[1].requirements.run"
-    ]
+    assert [p.section for p in by_name["click"].provenance] == ["outputs[0].requirements.run"]
+    assert [p.section for p in by_name["rich"].provenance] == ["outputs[1].requirements.run"]
 
 
 def test_outputs_run_constraints_are_excluded(tmp_path):
@@ -368,9 +338,7 @@ def test_oversized_manifest_raises_unparsable(tmp_path, monkeypatch):
 
 def test_oversized_line_raises_unparsable(tmp_path, monkeypatch):
     monkeypatch.setattr(recipe_v1, "_MAX_LINE_BYTES", 16)
-    path = write_recipe(
-        tmp_path, "requirements:\n  run: []\n# " + ("x" * 32) + "\n"
-    )
+    path = write_recipe(tmp_path, "requirements:\n  run: []\n# " + ("x" * 32) + "\n")
     with pytest.raises(UnparsableManifestError, match="length cap"):
         _extractor().extract(path, MANIFEST)
 
@@ -392,11 +360,7 @@ def test_canonical_python_min_pin_degrades_to_a_usable_python_name(tmp_path):
     """End-to-end: the fleet's most common templated shape (`python >=${{
     python_min }}`) must yield a NAME_ONLY component named `python`, never
     `'python >='`."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - python >=${{ python_min }}\n"
-    )
+    body = "requirements:\n  run:\n    - python >=${{ python_min }}\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "python"
@@ -409,11 +373,7 @@ def test_range_specifier_withholds_as_range_only_not_no_version(tmp_path):
     discarded at every conda call site, so a range-declared dep dishonestly
     reported `no-version` (RANGE_ONLY was unreachable for conda
     components)."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - numpy >=1.20\n"
-    )
+    body = "requirements:\n  run:\n    - numpy >=1.20\n"
     path = write_recipe(tmp_path, body)
     (ranged,) = _extractor().extract(path, MANIFEST)
     assert ranged.indeterminate_reason is WithholdReason.RANGE_ONLY
@@ -431,13 +391,7 @@ def test_selector_comment_on_a_bare_brace_line_never_becomes_a_version(
     """The defensive quoting of a bare `{{ ... }}` line used to swallow a
     trailing selector comment INTO the quoted string -- mirrors
     `meta_v0.py`'s identical fix (2026-07-16)."""
-    body = (
-        "context:\n"
-        "  nv: numpy\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - {{ nv }}  # [linux]\n"
-    )
+    body = "context:\n  nv: numpy\nrequirements:\n  run:\n    - {{ nv }}  # [linux]\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "numpy"
@@ -460,9 +414,7 @@ def test_per_output_tests_are_walked(tmp_path):
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "pytest"
-    assert [p.section for p in component.provenance] == [
-        "outputs[0].tests[0].requirements.run"
-    ]
+    assert [p.section for p in component.provenance] == ["outputs[0].tests[0].requirements.run"]
 
 
 def test_router_routes_recipe_v1_requirements_to_conda():
@@ -489,11 +441,7 @@ def test_float_context_use_degrades_to_name_only_never_a_wrong_version(
 ):
     path = write_recipe(
         tmp_path,
-        "context:\n"
-        "  version: 1.20\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - otherpkg ==${{ version }}\n",
+        "context:\n  version: 1.20\nrequirements:\n  run:\n    - otherpkg ==${{ version }}\n",
     )
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "otherpkg"
@@ -530,13 +478,7 @@ def test_templated_suffix_name_degrades_to_raw_malformed(tmp_path):
 
 
 def test_compiler_and_stdlib_calls_are_excluded_entirely(tmp_path):
-    body = (
-        "requirements:\n"
-        "  build:\n"
-        '    - ${{ compiler("c") }}\n'
-        '    - ${{ stdlib("c") }}\n'
-        "    - python\n"
-    )
+    body = 'requirements:\n  build:\n    - ${{ compiler("c") }}\n    - ${{ stdlib("c") }}\n    - python\n'
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "python"
@@ -562,11 +504,7 @@ def test_build_tool_call_sharing_a_line_with_unrelated_text_degrades(tmp_path):
     compiler()/stdlib()/pin_subpackage() call must NOT be swallowed whole
     by the exclude regex's `fullmatch` -- it falls through to the generic
     degrade ladder instead (kept, marked, never silently excluded)."""
-    body = (
-        "requirements:\n"
-        "  build:\n"
-        '    - ${{ compiler("c") }} ${{ pin_compatible("numpy") }}\n'
-    )
+    body = 'requirements:\n  build:\n    - ${{ compiler("c") }} ${{ pin_compatible("numpy") }}\n'
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
@@ -576,15 +514,7 @@ def test_build_tool_call_sharing_a_line_with_unrelated_text_degrades(tmp_path):
 
 
 def test_if_then_else_both_branches_are_unioned_and_tagged(tmp_path):
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - if: linux\n"
-        "      then:\n"
-        "        - numpy >=1.20\n"
-        "      else:\n"
-        "        - numpy\n"
-    )
+    body = "requirements:\n  run:\n    - if: linux\n      then:\n        - numpy >=1.20\n      else:\n        - numpy\n"
     path = write_recipe(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     # Per-entry (name, section, mode) tuples -- never a sorted()-over-
@@ -732,12 +662,7 @@ def test_condition_label_is_truncated_unconditionally(tmp_path):
     unconditionally -- an arbitrarily long condition scalar must never
     embed unbounded into `Provenance.section` (NFR-S5)."""
     long_condition = "x" * 500
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        f"    - if: {long_condition}\n"
-        "      then: posix\n"
-    )
+    body = f"requirements:\n  run:\n    - if: {long_condition}\n      then: posix\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     section = component.provenance[0].section
@@ -751,7 +676,7 @@ def test_deeply_nested_if_then_else_raises_unparsable_not_a_crash(tmp_path):
     never crash the process with a raw RecursionError (Review Pass 1
     correction #2)."""
     depth = 2000
-    opens = "".join(f'{{if: c{i}, then: [\n' for i in range(depth))
+    opens = "".join(f"{{if: c{i}, then: [\n" for i in range(depth))
     closes = "".join("]}\n" for _ in range(depth))
     body = f"requirements:\n  run:\n    - {opens}mypkg{closes}"
     path = write_recipe(tmp_path, body)

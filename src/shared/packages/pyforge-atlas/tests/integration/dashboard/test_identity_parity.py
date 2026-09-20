@@ -12,7 +12,8 @@ from pathlib import Path
 import pandas as pd
 import vizro.models as vm
 
-from pyforge.atlas.dashboard import app, data as dash_data
+from pyforge.atlas.dashboard import app
+from pyforge.atlas.dashboard import data as dash_data
 
 # Shared GIST-schema fixture corpus — single source for canvas writers and Vizro loaders.
 SHARED_GIST_CORPUS: tuple[dict[str, str | int], ...] = (
@@ -205,14 +206,8 @@ def _vizro_catalog_triples(loader_df: pd.DataFrame) -> set[tuple[str, str, str]]
 
 def _vizro_ops_aggregates(parquet_path: str) -> tuple[dict, dict, int, int]:
     priority_df = dash_data.load_identity_ops_priority(parquet_path)
-    priority_counts = {
-        str(p): int(count)
-        for p, count in priority_df.groupby("P")["package_count"].sum().items()
-    }
-    work_counts = {
-        str(w): int(count)
-        for w, count in priority_df.groupby("Work")["package_count"].sum().items()
-    }
+    priority_counts = {str(p): int(count) for p, count in priority_df.groupby("P")["package_count"].sum().items()}
+    work_counts = {str(w): int(count) for w, count in priority_df.groupby("Work")["package_count"].sum().items()}
     issues_df = dash_data.load_identity_ops_issues(parquet_path)
     have = int(
         issues_df.loc[issues_df["has_open_issue"] == True, "package_count"].sum()  # noqa: E712
@@ -237,9 +232,7 @@ def test_identity_catalog_matches_write_canvas_on_shared_fixture(tmp_path, write
 
     canvas_path = tmp_path / "catalog.canvas.tsx"
     priority.write_canvas(canvas_path, mapped_records, counts, "identity-fixture")
-    canvas_data = _decode_data_blob(
-        canvas_path.read_text(encoding="utf-8"), priority._CANVAS_PREFIX
-    )
+    canvas_data = _decode_data_blob(canvas_path.read_text(encoding="utf-8"), priority._CANVAS_PREFIX)
 
     parquet_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_complete_export")
     loader_df = dash_data.load_identity_catalog(parquet_path)
@@ -247,18 +240,14 @@ def test_identity_catalog_matches_write_canvas_on_shared_fixture(tmp_path, write
     assert sorted(_canvas_catalog_triples(canvas_data)) == sorted(_vizro_catalog_triples(loader_df))
 
 
-def test_identity_ops_pane_totals_match_write_ops_canvas_on_shared_fixture(
-    tmp_path, write_parquet, monkeypatch
-):
+def test_identity_ops_pane_totals_match_write_ops_canvas_on_shared_fixture(tmp_path, write_parquet, monkeypatch):
     gist_rows = list(SHARED_GIST_CORPUS)
     dashboards = _load_module("openteams_identity_dashboards.py")
     helpers = _ops_helpers(monkeypatch)
 
     canvas_path = tmp_path / "identity-ops.canvas.tsx"
     dashboards.write_ops_canvas(canvas_path, gist_rows, "identity-fixture", helpers)
-    canvas_data = _decode_data_blob(
-        canvas_path.read_text(encoding="utf-8"), dashboards._CANVAS_PREFIX
-    )
+    canvas_data = _decode_data_blob(canvas_path.read_text(encoding="utf-8"), dashboards._CANVAS_PREFIX)
 
     parquet_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_complete_export")
     priority_counts, work_counts, have, miss = _vizro_ops_aggregates(parquet_path)
@@ -269,9 +258,7 @@ def test_identity_ops_pane_totals_match_write_ops_canvas_on_shared_fixture(
     assert canvas_data["issues"]["miss"] == miss
 
 
-def test_identity_workbook_both_sides_degrade_honestly_on_same_fixture(
-    tmp_path, write_parquet, monkeypatch
-):
+def test_identity_workbook_both_sides_degrade_honestly_on_same_fixture(tmp_path, write_parquet, monkeypatch):
     gist_rows = list(SHARED_GIST_CORPUS)
     dashboards = _load_module("openteams_identity_dashboards.py")
     priority = _load_module("conda-forge-packaging-inventory-operations_priority.py")
@@ -279,9 +266,7 @@ def test_identity_workbook_both_sides_degrade_honestly_on_same_fixture(
 
     missing_export = tmp_path / "missing" / "identity_complete_export.parquet"
     canvas_path = tmp_path / "identity-workbook.canvas.tsx"
-    dashboards.write_workbook_canvas(
-        canvas_path, gist_rows, missing_export, "identity-fixture", helpers
-    )
+    dashboards.write_workbook_canvas(canvas_path, gist_rows, missing_export, "identity-fixture", helpers)
     canvas_text = canvas_path.read_text(encoding="utf-8")
     assert canvas_text.startswith(priority._CANVAS_PREFIX)
     canvas_data = _decode_data_blob(canvas_text, dashboards._CANVAS_PREFIX)
@@ -321,9 +306,7 @@ def test_empty_corpus_degrades_honestly_on_both_sides(tmp_path, write_parquet, m
     mapped_records, counts = _gist_to_write_canvas_records(gist_rows)
     catalog_path = tmp_path / "catalog-empty.canvas.tsx"
     priority.write_canvas(catalog_path, mapped_records, counts, "identity-fixture")
-    catalog_data = _decode_data_blob(
-        catalog_path.read_text(encoding="utf-8"), priority._CANVAS_PREFIX
-    )
+    catalog_data = _decode_data_blob(catalog_path.read_text(encoding="utf-8"), priority._CANVAS_PREFIX)
     assert catalog_data["rows"] == []
 
     ops_path = tmp_path / "ops-empty.canvas.tsx"
@@ -334,12 +317,8 @@ def test_empty_corpus_degrades_honestly_on_both_sides(tmp_path, write_parquet, m
 
     missing_export = tmp_path / "missing-export.parquet"
     workbook_path = tmp_path / "workbook-empty.canvas.tsx"
-    dashboards.write_workbook_canvas(
-        workbook_path, gist_rows, missing_export, "identity-fixture", helpers
-    )
-    workbook_data = _decode_data_blob(
-        workbook_path.read_text(encoding="utf-8"), dashboards._CANVAS_PREFIX
-    )
+    dashboards.write_workbook_canvas(workbook_path, gist_rows, missing_export, "identity-fixture", helpers)
+    workbook_data = _decode_data_blob(workbook_path.read_text(encoding="utf-8"), dashboards._CANVAS_PREFIX)
     assert workbook_data["neitherRows"] == []
 
     empty_parquet = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_complete_export")

@@ -33,9 +33,7 @@ class CliBridgeError(RuntimeError):
     timeout, or unparseable JSON on stdout."""
 
 
-def run_cli_json(
-    script_path: Path, args: list[str], *, timeout: float
-) -> Any:
+def run_cli_json(script_path: Path, args: list[str], *, timeout: float) -> Any:
     """Run ``python3 script_path *args`` and parse its stdout as JSON.
 
     ``args`` must already include any flag needed to get JSON output (e.g.
@@ -58,25 +56,16 @@ def run_cli_json(
             check=False,
         )
     except subprocess.TimeoutExpired as exc:
-        raise CliBridgeError(
-            f"{script_path.name} timed out after {timeout}s"
-        ) from exc
+        raise CliBridgeError(f"{script_path.name} timed out after {timeout}s") from exc
     except OSError as exc:
-        raise CliBridgeError(
-            f"{script_path.name} failed to launch: {exc!r}"
-        ) from exc
+        raise CliBridgeError(f"{script_path.name} failed to launch: {exc!r}") from exc
 
     if result.returncode != 0:
-        raise CliBridgeError(
-            f"{script_path.name} exited {result.returncode}: "
-            f"{result.stderr.strip()}"
-        )
+        raise CliBridgeError(f"{script_path.name} exited {result.returncode}: {result.stderr.strip()}")
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError as exc:
-        raise CliBridgeError(
-            f"{script_path.name} produced unparseable JSON on stdout: {exc}"
-        ) from exc
+        raise CliBridgeError(f"{script_path.name} produced unparseable JSON on stdout: {exc}") from exc
 
 
 def run_git(
@@ -128,17 +117,12 @@ def run_git(
             check=False,
         )
     except subprocess.TimeoutExpired as exc:
-        raise CliBridgeError(
-            f"git {' '.join(args[:2])} timed out after {timeout}s"
-        ) from exc
+        raise CliBridgeError(f"git {' '.join(args[:2])} timed out after {timeout}s") from exc
     except OSError as exc:
         raise CliBridgeError(f"git failed to launch: {exc!r}") from exc
 
     if result.returncode not in ok_exit_codes:
-        raise CliBridgeError(
-            f"git {' '.join(args[:2])} exited {result.returncode}: "
-            f"{result.stderr.strip()}"
-        )
+        raise CliBridgeError(f"git {' '.join(args[:2])} exited {result.returncode}: {result.stderr.strip()}")
     return result.stdout
 
 

@@ -9,8 +9,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.warden.discovery import META_YAML_KIND
-from pyforge.warden.extract import UnparsableManifestError
-from pyforge.warden.extract import meta_v0
+from pyforge.warden.extract import UnparsableManifestError, meta_v0
 from pyforge.warden.extract.meta_v0 import (
     META_V0_REQUIREMENTS_SECTION,
     MetaV0Extractor,
@@ -21,13 +20,7 @@ from pyforge.warden.extract.meta_v0 import (
 from pyforge.warden.models import Ecosystem, ExtractionMode, ScannedManifest
 from pyforge.warden.routing import DefaultRouter
 
-FIXTURE = (
-    Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "projects"
-    / "meta_common"
-    / "meta.yaml"
-)
+FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "projects" / "meta_common" / "meta.yaml"
 MANIFEST = ScannedManifest(path="meta.yaml", kind=META_YAML_KIND)
 
 
@@ -72,25 +65,14 @@ def test_run_constrained_is_excluded_entirely():
 
 
 def test_strip_jinja_statements_captures_quoted_and_numeric_literals():
-    text = (
-        '{% set version = "1.2.3" %}\n'
-        "{% set build_number = 0 %}\n"
-        "requirements:\n"
-        "  run: []\n"
-    )
+    text = '{% set version = "1.2.3" %}\n{% set build_number = 0 %}\nrequirements:\n  run: []\n'
     stripped, context = strip_jinja_statements(text)
     assert context == {"version": "1.2.3", "build_number": "0"}
     assert "{%" not in stripped
 
 
 def test_strip_jinja_statements_blanks_non_set_control_flow_lines():
-    text = (
-        "{% if linux %}\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - python\n"
-        "{% endif %}\n"
-    )
+    text = "{% if linux %}\nrequirements:\n  run:\n    - python\n{% endif %}\n"
     stripped, context = strip_jinja_statements(text)
     assert context == {}
     assert "{%" not in stripped
@@ -119,12 +101,7 @@ def test_jinja_comment_line_never_breaks_yaml_parse(tmp_path):
     """Fix 1: a bare `{# comment #}` line used to crash the WHOLE
     document's yaml.safe_load (a flow-mapping misparse) -- neither
     `_SET_LINE_RE` nor the old `_JINJA_STATEMENT_LINE_RE` recognized it."""
-    body = (
-        "{# a comment #}\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - python\n"
-    )
+    body = "{# a comment #}\nrequirements:\n  run:\n    - python\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "python"
@@ -134,11 +111,7 @@ def test_strip_jinja_statements_captures_both_set_tags_sharing_one_line():
     """Fix 3: two `{% set %}` tags on ONE line -- the old `^...$`-anchored
     regex only matched (or captured) the first, losing the second variable
     or leaving garbled leftover delimiter text. Both must be captured."""
-    text = (
-        '{% set a = "x" %}{% set b = "y" %}\n'
-        "requirements:\n"
-        "  run: []\n"
-    )
+    text = '{% set a = "x" %}{% set b = "y" %}\nrequirements:\n  run: []\n'
     stripped, context = strip_jinja_statements(text)
     assert context == {"a": "x", "b": "y"}
     assert "{%" not in stripped
@@ -184,12 +157,7 @@ def test_unquoted_brace_list_item_never_breaks_yaml_parse(tmp_path):
     misparse as flow-mapping syntax if left as-is -- neutralization must
     make the whole document parse successfully, degrading only that ONE
     entry."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - python\n"
-        "    - {{ pin_compatible('numpy') }}\n"
-    )
+    body = "requirements:\n  run:\n    - python\n    - {{ pin_compatible('numpy') }}\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     by_name = {c.name: c for c in components}
@@ -204,12 +172,7 @@ def test_unquoted_brace_list_item_never_breaks_yaml_parse(tmp_path):
 def test_unresolvable_expression_with_recoverable_name_degrades_to_name_only(
     tmp_path,
 ):
-    body = (
-        '{% set version = "1.2.3" %}\n'
-        "requirements:\n"
-        "  run:\n"
-        "    - numpy {{ version.replace('.', '_') }}\n"
-    )
+    body = "{% set version = \"1.2.3\" %}\nrequirements:\n  run:\n    - numpy {{ version.replace('.', '_') }}\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "numpy"
@@ -246,19 +209,11 @@ def test_missing_requirements_key_yields_no_components(tmp_path):
 
 
 def test_outputs_are_walked_with_indexed_provenance(tmp_path):
-    body = (
-        "outputs:\n"
-        "  - name: sub-a\n"
-        "    requirements:\n"
-        "      run:\n"
-        "        - click\n"
-    )
+    body = "outputs:\n  - name: sub-a\n    requirements:\n      run:\n        - click\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "click"
-    assert [p.section for p in component.provenance] == [
-        "outputs[0].requirements.run"
-    ]
+    assert [p.section for p in component.provenance] == ["outputs[0].requirements.run"]
 
 
 # --- NFR-S5 bounds -------------------------------------------------------------
@@ -302,9 +257,7 @@ def test_conditional_expression_set_rhs_is_never_captured_as_a_literal():
     (`1.0" if unix else "2.0`) as a "resolved literal" -- a corrupted value
     silently reported as a PARSED exact version (verified live before the
     fix). A conditional expression is not a bare literal: it must degrade."""
-    _, context = strip_jinja_statements(
-        '{% set version = "1.0" if unix else "2.0" %}\n'
-    )
+    _, context = strip_jinja_statements('{% set version = "1.0" if unix else "2.0" %}\n')
     assert context == {}
 
 
@@ -332,12 +285,7 @@ def test_a_reassigned_set_name_is_ambiguous_and_degrades_its_uses(tmp_path):
 
 
 def test_a_singly_set_name_still_resolves(tmp_path):
-    body = (
-        '{% set version = "1.2.3" %}\n'
-        "requirements:\n"
-        "  run:\n"
-        "    - otherpkg =={{ version }}\n"
-    )
+    body = '{% set version = "1.2.3" %}\nrequirements:\n  run:\n    - otherpkg =={{ version }}\n'
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.version == "1.2.3"
@@ -356,12 +304,7 @@ def test_selector_comment_on_a_templated_dep_line_never_becomes_a_version(
     its content is templated) -- correctly tagged `[sel:linux]` and
     escalated to UNION_MARKED (superseding 2.2's assumption that a
     selector comment has zero semantic effect on the component)."""
-    body = (
-        '{% set nv = "numpy" %}\n'
-        "requirements:\n"
-        "  run:\n"
-        "    - {{ nv }}  # [linux]\n"
-    )
+    body = '{% set nv = "numpy" %}\nrequirements:\n  run:\n    - {{ nv }}  # [linux]\n'
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "numpy"
@@ -374,19 +317,11 @@ def test_per_output_test_requires_is_walked(tmp_path):
     """`outputs[].test.requires` (the multi-output analog of the top-level
     singular `test.requires`) used to produce no components at all while
     its top-level twin was walked."""
-    body = (
-        "outputs:\n"
-        "  - name: sub-a\n"
-        "    test:\n"
-        "      requires:\n"
-        "        - pytest\n"
-    )
+    body = "outputs:\n  - name: sub-a\n    test:\n      requires:\n        - pytest\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "pytest"
-    assert [p.section for p in component.provenance] == [
-        "outputs[0].test.requires"
-    ]
+    assert [p.section for p in component.provenance] == ["outputs[0].test.requires"]
 
 
 # --- numeric {% set %} literals mirror jinja's own coercion (2026-07-16) -----
@@ -398,9 +333,7 @@ def test_numeric_set_literal_is_captured_as_jinja_would_render_it():
     the source spelling '2.10' (verified live against real jinja2 AND the
     conda-build renderer). Capturing the raw text used to report a
     confident exact version the real render disagrees with."""
-    _, ctx = strip_jinja_statements(
-        '{% set version = 2.10 %}{% set build = 3 %}{% set neg = -1.50 %}'
-    )
+    _, ctx = strip_jinja_statements("{% set version = 2.10 %}{% set build = 3 %}{% set neg = -1.50 %}")
     assert ctx == {"version": "2.1", "build": "3", "neg": "-1.5"}
 
 
@@ -408,19 +341,14 @@ def test_non_plain_numeric_set_rhs_is_not_captured():
     """Exponents, inf/nan (jinja NAMES, not literals), underscores, and
     leading `+` are all outside the plain-decimal shapes -- not captured,
     so their uses degrade rather than guess."""
-    _, ctx = strip_jinja_statements(
-        "{% set a = 1e3 %}{% set b = nan %}{% set c = 1_000 %}{% set d = +1.2 %}"
-    )
+    _, ctx = strip_jinja_statements("{% set a = 1e3 %}{% set b = nan %}{% set c = 1_000 %}{% set d = +1.2 %}")
     assert ctx == {}
 
 
 def test_numeric_set_version_resolves_to_the_render_value(tmp_path):
     path = write_meta(
         tmp_path,
-        "{% set version = 2.10 %}\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - otherpkg =={{ version }}\n",
+        "{% set version = 2.10 %}\nrequirements:\n  run:\n    - otherpkg =={{ version }}\n",
     )
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "otherpkg"
@@ -461,12 +389,7 @@ def test_branch_entries_inside_one_list_still_union(tmp_path):
     the fail-closed guard above is scoped to the duplicate-KEY shape only."""
     path = write_meta(
         tmp_path,
-        "requirements:\n"
-        "  run:\n"
-        "    - alwayspkg ==1.0\n"
-        "{% if win %}\n"
-        "    - winpkg ==1.0\n"
-        "{% endif %}\n",
+        "requirements:\n  run:\n    - alwayspkg ==1.0\n{% if win %}\n    - winpkg ==1.0\n{% endif %}\n",
     )
     components = _extractor().extract(path, MANIFEST)
     assert {c.name for c in components} == {"alwayspkg", "winpkg"}
@@ -476,13 +399,7 @@ def test_branch_entries_inside_one_list_still_union(tmp_path):
 
 
 def test_compiler_and_stdlib_calls_are_excluded_entirely(tmp_path):
-    body = (
-        "requirements:\n"
-        "  build:\n"
-        "    - {{ compiler('c') }}\n"
-        "    - {{ stdlib('c') }}\n"
-        "    - python\n"
-    )
+    body = "requirements:\n  build:\n    - {{ compiler('c') }}\n    - {{ stdlib('c') }}\n    - python\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "python"
@@ -507,11 +424,7 @@ def test_build_tool_call_sharing_a_line_with_unrelated_text_degrades(tmp_path):
     compiler()/stdlib()/pin_subpackage() call must NOT be swallowed whole
     by the exclude regex's `fullmatch` -- it falls through to the generic
     degrade ladder instead (kept, marked, never silently excluded)."""
-    body = (
-        "requirements:\n"
-        "  build:\n"
-        "    - {{ compiler('c') }} {{ pin_compatible('numpy') }}\n"
-    )
+    body = "requirements:\n  build:\n    - {{ compiler('c') }} {{ pin_compatible('numpy') }}\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
@@ -521,12 +434,7 @@ def test_build_tool_call_sharing_a_line_with_unrelated_text_degrades(tmp_path):
 
 
 def test_selector_comment_sibling_entries_are_unioned_and_tagged(tmp_path):
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - pywin32  # [win]\n"
-        "    - unixlib  # [unix]\n"
-    )
+    body = "requirements:\n  run:\n    - pywin32  # [win]\n    - unixlib  # [unix]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -553,9 +461,7 @@ def test_uncommented_occurrence_walked_before_commented_is_not_swapped(tmp_path)
     body = "requirements:\n  run:\n    - helper\n    - helper  # [win]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
-    entries = [
-        (c.name, c.provenance[0].section, c.extraction_mode) for c in components
-    ]
+    entries = [(c.name, c.provenance[0].section, c.extraction_mode) for c in components]
     assert entries == [
         ("helper", "requirements.run", ExtractionMode.PARSED),
         ("helper", "requirements.run[sel:win]", ExtractionMode.UNION_MARKED),
@@ -563,13 +469,7 @@ def test_uncommented_occurrence_walked_before_commented_is_not_swapped(tmp_path)
 
 
 def test_same_text_in_two_sections_is_correctly_attributed(tmp_path):
-    body = (
-        "requirements:\n"
-        "  build:\n"
-        "    - helper\n"
-        "  run:\n"
-        "    - helper  # [win]\n"
-    )
+    body = "requirements:\n  build:\n    - helper\n  run:\n    - helper  # [win]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -584,13 +484,7 @@ def test_non_conventional_section_order_still_correctly_attributed(tmp_path):
     still the fixed ``(build, host, run)`` tuple, unaffected) -- proves
     line-based correlation, unlike FIFO, doesn't depend on walk order
     matching document order at all."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - helper  # [win]\n"
-        "  build:\n"
-        "    - helper\n"
-    )
+    body = "requirements:\n  run:\n    - helper  # [win]\n  build:\n    - helper\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -607,12 +501,7 @@ def test_duplicate_pre_comment_text_different_conditions_both_attributed(
     OWN `# [cond]` comment -- both correctly attributed by line number (no
     collision, no "last-wins" needed at all, unlike the superseded
     content-keyed mechanisms)."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - helper  # [win]\n"
-        "    - helper  # [osx]\n"
-    )
+    body = "requirements:\n  run:\n    - helper  # [win]\n    - helper  # [osx]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -625,13 +514,7 @@ def test_duplicate_pre_comment_text_different_conditions_both_attributed(
 def test_selector_comment_on_a_non_list_item_line_is_never_captured(tmp_path):
     """`skip: true  # [win]` -- a non-list-item line -- must NEVER be
     captured as a selector comment (Boundaries' own "Never" clause)."""
-    body = (
-        "build:\n"
-        "  skip: true  # [win]\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - helper\n"
-    )
+    body = "build:\n  skip: true  # [win]\nrequirements:\n  run:\n    - helper\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.extraction_mode is ExtractionMode.PARSED
@@ -651,9 +534,7 @@ def test_capture_selector_comments_ignores_blank_bracket():
     be captured, since tagging it would produce a meaningless `[sel:]`
     suffix and wrongly escalate an otherwise-PARSED entry to
     UNION_MARKED for a distinction that doesn't exist."""
-    comments = capture_selector_comments(
-        "requirements:\n  run:\n    - helper  # []\n    - other  # [   ]\n"
-    )
+    comments = capture_selector_comments("requirements:\n  run:\n    - helper  # []\n    - other  # [   ]\n")
     assert comments == {}
 
 

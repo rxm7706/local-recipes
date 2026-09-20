@@ -204,7 +204,7 @@ def parse_declared_difficulty(text: str) -> str | None:
             )
         try:
             value = ast.literal_eval(raw)
-        except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+        except ValueError, SyntaxError, TypeError, MemoryError, RecursionError:
             # Not valid Python literal syntax -- the ordinary case for a
             # bare, unquoted YAML plain scalar (`difficulty: heavy`).
             # Accepted directly when it is composed only of this module's

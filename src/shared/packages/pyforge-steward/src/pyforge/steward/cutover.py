@@ -155,11 +155,7 @@ def plan_regenerate(root: Path, manifest_path: Path) -> dict[str, Any]:
 
 def plan_append(root: Path, manifest_path: Path) -> dict[str, Any]:
     existing = _load_manifest(manifest_path)
-    by_path = {
-        str(row["path"]): row
-        for row in existing.get("rows") or []
-        if isinstance(row, dict) and row.get("path")
-    }
+    by_path = {str(row["path"]): row for row in existing.get("rows") or [] if isinstance(row, dict) and row.get("path")}
     old_sha = str(existing.get("source_sha") or "")
     candidates: set[str] = set(_ls_files(root))
     if old_sha:
@@ -231,7 +227,7 @@ def loops_running(home: Path | None = None) -> bool:
     for state in base.rglob("state.json"):
         try:
             data = json.loads(state.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except OSError, json.JSONDecodeError:
             continue
         status = str(data.get("status") or data.get("state") or "").lower()
         if status in {"running", "in_progress", "active", "live"}:
@@ -264,9 +260,7 @@ def flip_root(
     atomic_write_text(flags_path, json.dumps(payload, indent=2) + "\n")
     if realization.is_file():
         stamp = f"\n- **cutover flip** — `pyforge.cutover_root` → `{target}`\n"
-        realization.write_text(
-            realization.read_text(encoding="utf-8") + stamp, encoding="utf-8"
-        )
+        realization.write_text(realization.read_text(encoding="utf-8") + stamp, encoding="utf-8")
 
 
 class CutoverDuty:
@@ -304,16 +298,11 @@ class CutoverDuty:
                         ok=False,
                         summary="cutover apply: --phase must be 1a or 1b",
                     )
-                dest = _foundry_root(
-                    Path(ns.foundry_root) if getattr(ns, "foundry_root", None) else None
-                )
+                dest = _foundry_root(Path(ns.foundry_root) if getattr(ns, "foundry_root", None) else None)
                 stats = apply_phase(root, manifest, phase, dest)
                 return DutyResult(
                     ok=True,
-                    summary=(
-                        f"cutover apply --phase {phase}: "
-                        f"copied {stats['copied']}, skipped {stats['skipped']}"
-                    ),
+                    summary=(f"cutover apply --phase {phase}: copied {stats['copied']}, skipped {stats['skipped']}"),
                     details=stats,
                 )
             target = str(getattr(ns, "to", "") or "")

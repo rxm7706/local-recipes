@@ -14,6 +14,7 @@ behavior in full.
 from __future__ import annotations
 
 import pytest
+
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.core.verdict import EXIT_USAGE
 from pyforge.marshal.seed.errors import (

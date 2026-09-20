@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from pyforge.steward.five_tier import (
-    DENOMINATOR,
     STATIONS,
     TIERS,
     FiveTierCompleteError,
@@ -161,9 +160,7 @@ def test_no_pyforge_under_src_platform():
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name == "pyforge.steward.five_tier" or alias.name.endswith(
-                        ".five_tier"
-                    ):
+                    if alias.name == "pyforge.steward.five_tier" or alias.name.endswith(".five_tier"):
                         offenders.append(f"{path.relative_to(root)}:{node.lineno}")
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""

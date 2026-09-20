@@ -14,8 +14,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pyforge.marshal.cli.dispatch as dispatch_module
 import pytest
+
+import pyforge.marshal.cli.dispatch as dispatch_module
 from pyforge.marshal.seed.detect.kit import InstrumentProbe
 from pyforge.marshal.seed.model.kit import CAVEMAN_SKILL_RELPATH
 from pyforge.marshal.seed.model.version import ModelVersion
@@ -41,9 +42,7 @@ _MODEL_VERSION = ModelVersion.parse("1.0.0")
 def test_layer_disabled_deploys_nothing(tmp_path: Path) -> None:
     fs = _FakeFs()
 
-    result = dispatch_module._seed_dispatch_output_layer(
-        fs=fs, worktree=tmp_path, context_payload=_DISABLED_OUTPUT
-    )
+    result = dispatch_module._seed_dispatch_output_layer(fs=fs, worktree=tmp_path, context_payload=_DISABLED_OUTPUT)
 
     assert result is None
     assert fs.files == {}
@@ -54,29 +53,21 @@ def test_layer_absent_from_payload_deploys_nothing(tmp_path: Path) -> None:
     declared off -- never a crash on a missing key."""
     fs = _FakeFs()
 
-    result = dispatch_module._seed_dispatch_output_layer(
-        fs=fs, worktree=tmp_path, context_payload={}
-    )
+    result = dispatch_module._seed_dispatch_output_layer(fs=fs, worktree=tmp_path, context_payload={})
 
     assert result is None
     assert fs.files == {}
 
 
-def test_instrument_unavailable_degrades_with_a_named_finding(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_instrument_unavailable_degrades_with_a_named_finding(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         dispatch_module,
         "probe_instrument",
-        lambda item: InstrumentProbe(
-            available=False, reason="caveman is not installed here"
-        ),
+        lambda item: InstrumentProbe(available=False, reason="caveman is not installed here"),
     )
     fs = _FakeFs()
 
-    result = dispatch_module._seed_dispatch_output_layer(
-        fs=fs, worktree=tmp_path, context_payload=_ENABLED_OUTPUT
-    )
+    result = dispatch_module._seed_dispatch_output_layer(fs=fs, worktree=tmp_path, context_payload=_ENABLED_OUTPUT)
 
     assert result is not None
     assert result.code == "MRS-DISP-042"
@@ -85,9 +76,7 @@ def test_instrument_unavailable_degrades_with_a_named_finding(
     assert fs.files == {}
 
 
-def test_available_instrument_deploys_the_rendered_skill(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_available_instrument_deploys_the_rendered_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     payload = tmp_path / "upstream" / "SKILL.md"
     payload.parent.mkdir(parents=True)
     payload.write_text("# caveman\n\nupstream skill body\n", encoding="utf-8")
@@ -96,15 +85,11 @@ def test_available_instrument_deploys_the_rendered_skill(
         "probe_instrument",
         lambda item: InstrumentProbe(available=True, payload=payload),
     )
-    monkeypatch.setattr(
-        dispatch_module, "packaged_seed_model_version", lambda: _MODEL_VERSION
-    )
+    monkeypatch.setattr(dispatch_module, "packaged_seed_model_version", lambda: _MODEL_VERSION)
     fs = _FakeFs()
     worktree = tmp_path / "worktree"
 
-    result = dispatch_module._seed_dispatch_output_layer(
-        fs=fs, worktree=worktree, context_payload=_ENABLED_OUTPUT
-    )
+    result = dispatch_module._seed_dispatch_output_layer(fs=fs, worktree=worktree, context_payload=_ENABLED_OUTPUT)
 
     assert result is None
     target = worktree / CAVEMAN_SKILL_RELPATH
@@ -151,9 +136,7 @@ def test_write_failure_degrades_with_a_named_finding_never_raises(
         "probe_instrument",
         lambda item: InstrumentProbe(available=True, payload=payload),
     )
-    monkeypatch.setattr(
-        dispatch_module, "packaged_seed_model_version", lambda: _MODEL_VERSION
-    )
+    monkeypatch.setattr(dispatch_module, "packaged_seed_model_version", lambda: _MODEL_VERSION)
 
     class _RefusingFs(_FakeFs):
         def write_text_atomic(self, path: Path, content: str) -> None:

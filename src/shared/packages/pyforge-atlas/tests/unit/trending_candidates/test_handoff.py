@@ -16,6 +16,7 @@ import sys
 
 import pandas as pd
 import pytest
+
 from pyforge.atlas.mcp import session as _session_mod
 from pyforge.atlas.trending_candidates import handoff, handoff_main
 
@@ -72,15 +73,12 @@ def test_happy_path_emits_one_record_never_a_recipe_or_pr(seed_catalog):
     CAP-5's literal AC: never a recipe, never a PR)."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
 
-    record = handoff.hand_off_candidate(
-        repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-    )
+    record = handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
     assert record["repo_full_name"] == "alice/libfoo"
     assert record["tier"] == "1"
@@ -101,16 +99,13 @@ def test_candidate_not_found_raises_value_error_naming_the_repo(seed_catalog):
     refused, and the message names the repo that was requested."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="bob/other", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=900),
+            _row(repo_full_name="bob/other", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=900),
         ]
     )
     seed_catalog(df)
 
     with pytest.raises(ValueError, match="alice/libfoo"):
-        handoff.hand_off_candidate(
-            repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-        )
+        handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
 
 def test_tier_skip_raises_value_error_naming_tier_and_reason(seed_catalog):
@@ -119,16 +114,15 @@ def test_tier_skip_raises_value_error_naming_tier_and_reason(seed_catalog):
     a column on this dataset), and the message names both the tier and the reason."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="skip",
-                 reason="no-pypi-artifact", stars_total=1200),
+            _row(
+                repo_full_name="alice/libfoo", period="weekly", tier="skip", reason="no-pypi-artifact", stars_total=1200
+            ),
         ]
     )
     seed_catalog(df)
 
     with pytest.raises(ValueError, match="tier='skip'") as excinfo:
-        handoff.hand_off_candidate(
-            repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-        )
+        handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
     assert "no-pypi-artifact" in str(excinfo.value)
 
 
@@ -138,9 +132,7 @@ def test_verdict_fail_raises_value_error_no_catalog_touch():
     session/catalog touch, mirroring ``query_trending_candidates``'s own
     validate-first, fail-fast contract."""
     with pytest.raises(ValueError, match="must PASS"):
-        handoff.hand_off_candidate(
-            repo_full_name="alice/libfoo", verdict="fail", **_EVIDENCE
-        )
+        handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="fail", **_EVIDENCE)
 
 
 @pytest.mark.parametrize(
@@ -170,19 +162,14 @@ def test_multi_window_duplicate_dedupes_to_one_record(seed_catalog):
     entry)."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="alice/libfoo", period="daily", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="alice/libfoo", period="monthly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="daily", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="monthly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
 
-    record = handoff.hand_off_candidate(
-        repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-    )
+    record = handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
     # All three rows tie on stars_total AND repo_full_name -- period is the third,
     # deterministic tie-break, ascending: "daily" < "monthly" < "weekly".
@@ -198,17 +185,13 @@ def test_multi_window_duplicate_with_mixed_type_stars_total_does_not_crash(seed_
     crashing, and the tie-break must still prefer the higher (numeric) star count."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total="900"),
-            _row(repo_full_name="alice/libfoo", period="daily", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total="900"),
+            _row(repo_full_name="alice/libfoo", period="daily", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
 
-    record = handoff.hand_off_candidate(
-        repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-    )
+    record = handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
     # The genuinely-higher star count (1200, the "daily" row) wins the tie-break —
     # proving the sort coerced "900" to a comparable number rather than crashing or
@@ -222,15 +205,12 @@ def test_case_insensitive_repo_match(seed_catalog):
     record reports the STORED casing, not the caller's."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
 
-    record = handoff.hand_off_candidate(
-        repo_full_name="Alice/LibFoo", verdict="pass", **_EVIDENCE
-    )
+    record = handoff.hand_off_candidate(repo_full_name="Alice/LibFoo", verdict="pass", **_EVIDENCE)
 
     assert record["repo_full_name"] == "alice/libfoo"
 
@@ -242,15 +222,12 @@ def test_case_insensitive_match_with_whitespace_padded_stored_value(seed_catalog
     failing to match an otherwise-correct, byte-clean ``--repo`` argument."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name=" alice/libfoo\n", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name=" alice/libfoo\n", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
 
-    record = handoff.hand_off_candidate(
-        repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-    )
+    record = handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
     assert record["repo_full_name"] == " alice/libfoo\n"
 
@@ -263,16 +240,20 @@ def test_reserved_envelope_key_collision_raises_value_error(seed_catalog):
     reserved key is refused instead of silently clobbered."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200, provenance="not-a-real-column"),
+            _row(
+                repo_full_name="alice/libfoo",
+                period="weekly",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=1200,
+                provenance="not-a-real-column",
+            ),
         ]
     )
     seed_catalog(df)
 
     with pytest.raises(ValueError, match="provenance"):
-        handoff.hand_off_candidate(
-            repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-        )
+        handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
 
 def test_dataset_not_yet_ingested_raises_value_error(seed_parquet_catalog):
@@ -283,9 +264,7 @@ def test_dataset_not_yet_ingested_raises_value_error(seed_parquet_catalog):
     seed_parquet_catalog(None)  # declared entry, backing file absent
 
     with pytest.raises(ValueError, match="alice/libfoo"):
-        handoff.hand_off_candidate(
-            repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-        )
+        handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
 
 def test_unexpected_bootstrap_failure_is_not_swallowed_as_policy_fail(monkeypatch):
@@ -299,9 +278,7 @@ def test_unexpected_bootstrap_failure_is_not_swallowed_as_policy_fail(monkeypatc
     monkeypatch.setattr(_session_mod, "bootstrapped_session", _bootstrap_boom)
 
     with pytest.raises(KeyError):
-        handoff.hand_off_candidate(
-            repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-        )
+        handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
 
 # ---------------------------------------------------------------------------
@@ -340,17 +317,13 @@ def _assert_conforms(record: dict, schema: dict) -> None:
             # health-screen evidence fields, but nothing checked it — this schema and
             # its own "conformance" test could drift apart on this constraint with no
             # test catching it.
-            assert len(value) >= prop["minLength"], (
-                f"{key}={value!r} shorter than minLength {prop['minLength']}"
-            )
+            assert len(value) >= prop["minLength"], f"{key}={value!r} shorter than minLength {prop['minLength']}"
         types = prop.get("type")
         if types is not None:
             types = [types] if isinstance(types, str) else types
             allowed = tuple(_PY_TYPES[t] for t in types if t in _PY_TYPES)
             if allowed:
-                assert isinstance(value, allowed), (
-                    f"{key}={value!r} ({type(value).__name__}) not in {types}"
-                )
+                assert isinstance(value, allowed), f"{key}={value!r} ({type(value).__name__}) not in {types}"
         if prop.get("type") == "object" and isinstance(value, dict):
             _assert_conforms(value, prop)
 
@@ -361,15 +334,12 @@ def test_happy_path_record_conforms_to_handoff_envelope_schema(seed_catalog):
     JSON-Schema-draft-2020-12 vocabulary, no external validator dependency)."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
 
-    record = handoff.hand_off_candidate(
-        repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE
-    )
+    record = handoff.hand_off_candidate(repo_full_name="alice/libfoo", verdict="pass", **_EVIDENCE)
 
     _assert_conforms(record, handoff.HANDOFF_ENVELOPE_SCHEMA)
     # The schema itself must also be genuinely dumpable (a documented artifact an
@@ -386,18 +356,21 @@ def test_happy_path_record_conforms_to_handoff_envelope_schema(seed_catalog):
 def test_cli_happy_path_exits_0_and_prints_one_json_record(seed_catalog, capsys):
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
 
     exit_code = handoff_main.main(
         [
-            "--repo", "alice/libfoo",
-            "--verdict", "pass",
-            "--abandonment-signal", _EVIDENCE["abandonment_signal"],
-            "--license-clarity", _EVIDENCE["license_clarity"],
+            "--repo",
+            "alice/libfoo",
+            "--verdict",
+            "pass",
+            "--abandonment-signal",
+            _EVIDENCE["abandonment_signal"],
+            "--license-clarity",
+            _EVIDENCE["license_clarity"],
         ]
     )
     captured = capsys.readouterr()
@@ -413,10 +386,14 @@ def test_cli_refusal_exits_1_with_stderr_message_naming_the_reason(capsys):
     touch, mirroring ``trending-candidates``'s own bad-filter fail-fast contract."""
     exit_code = handoff_main.main(
         [
-            "--repo", "alice/libfoo",
-            "--verdict", "fail",
-            "--abandonment-signal", _EVIDENCE["abandonment_signal"],
-            "--license-clarity", _EVIDENCE["license_clarity"],
+            "--repo",
+            "alice/libfoo",
+            "--verdict",
+            "fail",
+            "--abandonment-signal",
+            _EVIDENCE["abandonment_signal"],
+            "--license-clarity",
+            _EVIDENCE["license_clarity"],
         ]
     )
     captured = capsys.readouterr()
@@ -434,10 +411,14 @@ def test_cli_unexpected_bootstrap_failure_exits_2_not_1(monkeypatch, capsys):
 
     exit_code = handoff_main.main(
         [
-            "--repo", "alice/libfoo",
-            "--verdict", "pass",
-            "--abandonment-signal", _EVIDENCE["abandonment_signal"],
-            "--license-clarity", _EVIDENCE["license_clarity"],
+            "--repo",
+            "alice/libfoo",
+            "--verdict",
+            "pass",
+            "--abandonment-signal",
+            _EVIDENCE["abandonment_signal"],
+            "--license-clarity",
+            _EVIDENCE["license_clarity"],
         ]
     )
     captured = capsys.readouterr()
@@ -465,10 +446,14 @@ def test_cli_broken_stderr_pipe_while_reporting_a_refusal_still_exits_1(monkeypa
 
     exit_code = handoff_main.main(
         [
-            "--repo", "alice/libfoo",
-            "--verdict", "fail",
-            "--abandonment-signal", _EVIDENCE["abandonment_signal"],
-            "--license-clarity", _EVIDENCE["license_clarity"],
+            "--repo",
+            "alice/libfoo",
+            "--verdict",
+            "fail",
+            "--abandonment-signal",
+            _EVIDENCE["abandonment_signal"],
+            "--license-clarity",
+            _EVIDENCE["license_clarity"],
         ]
     )
 

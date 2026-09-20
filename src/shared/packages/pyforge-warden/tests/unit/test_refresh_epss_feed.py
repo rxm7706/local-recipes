@@ -103,19 +103,13 @@ def test_fetch_epss_scores_rejects_the_wrong_header(monkeypatch, refresh_epss_fe
         refresh_epss_feed.fetch_epss_scores()
 
 
-def test_fetch_epss_scores_skips_malformed_rows_without_aborting(
-    monkeypatch, refresh_epss_feed
-):
+def test_fetch_epss_scores_skips_malformed_rows_without_aborting(monkeypatch, refresh_epss_feed):
     rows = [
         {"cve": "CVE-1970-00003", "epss": "not-a-number", "percentile": "0.5"},
         {"cve": "CVE-1970-00004", "epss": "0.4", "percentile": "0.6"},
     ]
-    monkeypatch.setattr(
-        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows))
-    )
-    assert refresh_epss_feed.fetch_epss_scores() == [
-        {"cve": "CVE-1970-00004", "epss": 0.4, "percentile": 0.6}
-    ]
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows)))
+    assert refresh_epss_feed.fetch_epss_scores() == [{"cve": "CVE-1970-00004", "epss": 0.4, "percentile": 0.6}]
 
 
 def test_fetch_epss_scores_tolerates_an_extra_column(monkeypatch, refresh_epss_feed):
@@ -125,15 +119,12 @@ def test_fetch_epss_scores_tolerates_an_extra_column(monkeypatch, refresh_epss_f
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(
             _gzip_csv(
-                [{"cve": "CVE-1970-00001", "epss": "0.7", "percentile": "0.9",
-                  "model_version": "v1"}],
+                [{"cve": "CVE-1970-00001", "epss": "0.7", "percentile": "0.9", "model_version": "v1"}],
                 header=["cve", "epss", "percentile", "model_version"],
             )
         ),
     )
-    assert refresh_epss_feed.fetch_epss_scores() == [
-        {"cve": "CVE-1970-00001", "epss": 0.7, "percentile": 0.9}
-    ]
+    assert refresh_epss_feed.fetch_epss_scores() == [{"cve": "CVE-1970-00001", "epss": 0.7, "percentile": 0.9}]
 
 
 def test_fetch_epss_scores_skips_a_row_with_an_empty_cve(monkeypatch, refresh_epss_feed):
@@ -146,17 +137,11 @@ def test_fetch_epss_scores_skips_a_row_with_an_empty_cve(monkeypatch, refresh_ep
         {"cve": "", "epss": "0.5", "percentile": "0.5"},
         {"cve": "CVE-1970-00006", "epss": "0.4", "percentile": "0.6"},
     ]
-    monkeypatch.setattr(
-        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows))
-    )
-    assert refresh_epss_feed.fetch_epss_scores() == [
-        {"cve": "CVE-1970-00006", "epss": 0.4, "percentile": 0.6}
-    ]
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows)))
+    assert refresh_epss_feed.fetch_epss_scores() == [{"cve": "CVE-1970-00006", "epss": 0.4, "percentile": 0.6}]
 
 
-def test_fetch_epss_scores_skips_non_finite_and_out_of_domain_rows(
-    monkeypatch, refresh_epss_feed
-):
+def test_fetch_epss_scores_skips_non_finite_and_out_of_domain_rows(monkeypatch, refresh_epss_feed):
     """Review finding (follow-up pass): ``float()`` happily parses
     ``"nan"``/``"inf"``/out-of-range strings, so without a domain check the
     provisioning script caches unusable rows (inflating ``score_count``) --
@@ -172,20 +157,14 @@ def test_fetch_epss_scores_skips_non_finite_and_out_of_domain_rows(
         {"cve": "CVE-1970-00015", "epss": "0.9", "percentile": "1.5"},
         {"cve": "CVE-1970-00016", "epss": "0.0", "percentile": "1.0"},
     ]
-    monkeypatch.setattr(
-        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows))
-    )
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows)))
     # Only the boundary-valid row survives (0.0 and 1.0 are both legal).
-    assert refresh_epss_feed.fetch_epss_scores() == [
-        {"cve": "CVE-1970-00016", "epss": 0.0, "percentile": 1.0}
-    ]
+    assert refresh_epss_feed.fetch_epss_scores() == [{"cve": "CVE-1970-00016", "epss": 0.0, "percentile": 1.0}]
 
 
 def test_fetch_epss_scores_rejects_a_zero_row_result(monkeypatch, refresh_epss_feed):
     rows = [{"cve": "CVE-1970-00005", "epss": "bad", "percentile": "bad"}]
-    monkeypatch.setattr(
-        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows))
-    )
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows)))
     with pytest.raises(ValueError, match="zero usable"):
         refresh_epss_feed.fetch_epss_scores()
 
@@ -202,9 +181,7 @@ def test_fetch_epss_scores_propagates_a_network_failure(monkeypatch, refresh_eps
 # --- refresh -----------------------------------------------------------------
 
 
-def test_refresh_writes_the_cache_and_reports_stats(
-    monkeypatch, tmp_path, refresh_epss_feed
-):
+def test_refresh_writes_the_cache_and_reports_stats(monkeypatch, tmp_path, refresh_epss_feed):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(_gzip_csv(_VALID_ROWS)),
@@ -226,9 +203,7 @@ def test_refresh_writes_the_cache_and_reports_stats(
 # --- main ----------------------------------------------------------------------
 
 
-def test_main_exits_2_when_no_cache_dir_is_available(
-    monkeypatch, refresh_epss_feed, capsys
-):
+def test_main_exits_2_when_no_cache_dir_is_available(monkeypatch, refresh_epss_feed, capsys):
     monkeypatch.delenv(refresh_epss_feed.FEED_CACHE_DIR_ENV_VAR, raising=False)
     monkeypatch.setattr("sys.argv", ["refresh_epss_feed.py"])
 
@@ -244,9 +219,7 @@ def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_epss_fee
         raise urllib.error.URLError("network unreachable")
 
     monkeypatch.setattr("urllib.request.urlopen", _raise)
-    monkeypatch.setattr(
-        "sys.argv", ["refresh_epss_feed.py", "--cache-dir", str(tmp_path / "cache")]
-    )
+    monkeypatch.setattr("sys.argv", ["refresh_epss_feed.py", "--cache-dir", str(tmp_path / "cache")])
 
     with pytest.raises(SystemExit) as exc_info:
         refresh_epss_feed.main()
@@ -255,9 +228,7 @@ def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_epss_fee
     assert "refresh-epss-feed FAILED" in capsys.readouterr().err
 
 
-def test_main_rejects_a_non_positive_timeout_as_a_usage_error(
-    monkeypatch, tmp_path, refresh_epss_feed, capsys
-):
+def test_main_rejects_a_non_positive_timeout_as_a_usage_error(monkeypatch, tmp_path, refresh_epss_feed, capsys):
     """Review finding (follow-up pass): ``--timeout -5`` must be a USAGE
     error (exit 2, argparse's own channel), not a runtime ``ValueError``
     dressed up as a failed refresh (exit 1) -- the same usage-vs-runtime
@@ -280,16 +251,12 @@ def test_main_rejects_a_non_positive_timeout_as_a_usage_error(
     assert "--timeout" in capsys.readouterr().err
 
 
-def test_main_prints_stats_and_returns_on_success(
-    monkeypatch, tmp_path, refresh_epss_feed, capsys
-):
+def test_main_prints_stats_and_returns_on_success(monkeypatch, tmp_path, refresh_epss_feed, capsys):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(_gzip_csv(_VALID_ROWS)),
     )
-    monkeypatch.setattr(
-        "sys.argv", ["refresh_epss_feed.py", "--cache-dir", str(tmp_path / "cache")]
-    )
+    monkeypatch.setattr("sys.argv", ["refresh_epss_feed.py", "--cache-dir", str(tmp_path / "cache")])
 
     refresh_epss_feed.main()  # must not raise
 

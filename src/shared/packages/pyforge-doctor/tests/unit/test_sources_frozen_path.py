@@ -137,13 +137,10 @@ def test_load_capabilities_valid_yaml(tmp_path: Path) -> None:
 def test_load_capabilities_valid_json(tmp_path: Path) -> None:
     path = _write_manifest(
         tmp_path,
-        '{"capabilities": [{"capability": "x", "state": "planned", '
-        '"frozen_paths": []}]}\n',
+        '{"capabilities": [{"capability": "x", "state": "planned", "frozen_paths": []}]}\n',
         name="manifest.json",
     )
-    assert frozen_path._load_capabilities(path) == [
-        {"capability": "x", "state": "planned", "frozen_paths": []}
-    ]
+    assert frozen_path._load_capabilities(path) == [{"capability": "x", "state": "planned", "frozen_paths": []}]
 
 
 def test_load_capabilities_malformed_yaml_raises(tmp_path: Path) -> None:

@@ -17,11 +17,10 @@ from pathlib import Path
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.forge_gh import GhForge
-from .adapters.fs_local import FsError, LocalFs
+from .adapters.fs_local import LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
-from .dispatch_land_heal import try_heal_dispatch_land_merge
 from .core.dispatch_landing import (
     DispatchLandingVerdict,
     may_attempt_dispatch_landing,
@@ -34,8 +33,11 @@ from .core.identity import StoryKey, normalize, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
 from .core.verdict import compute_verdict
+from .dispatch_land_heal import try_heal_dispatch_land_merge
 from .dispatch_verify import (
     _SCOPE_BASE as _ORIGIN_MAIN,
+)
+from .dispatch_verify import (
     compose_dispatch_policy,
     run_verify_commands_only,
 )
@@ -77,9 +79,7 @@ def _dispatch_pr_title(slug: str, story_key: StoryKey) -> Redacted:
 
 
 def _dispatch_pr_body(story_key: StoryKey) -> Redacted:
-    return Redacted(
-        f"Dispatch-landed story {story_key} via marshal factory dispatch (CAP-4)."
-    )
+    return Redacted(f"Dispatch-landed story {story_key} via marshal factory dispatch (CAP-4).")
 
 
 def _tail_lines(text: str, *, limit: int = 20) -> str:
@@ -87,9 +87,7 @@ def _tail_lines(text: str, *, limit: int = 20) -> str:
     return "\n".join(lines[-limit:])
 
 
-def _describe_verify_failures(
-    reports: tuple[dict[str, object], ...], verify_findings: tuple[Finding, ...]
-) -> str:
+def _describe_verify_failures(reports: tuple[dict[str, object], ...], verify_findings: tuple[Finding, ...]) -> str:
     """Names each failing command plus the tail of its captured output, so
     a runtime exception (e.g. the 50.4/27.5 fixture's ``bare_merge.py``
     ``TypeError``) is legible directly from the ``MRS-DISP-044`` finding,
@@ -149,10 +147,7 @@ def _refuse_via_merge_tree_preview(
         return Finding(
             code="MRS-DISP-044",
             severity=Severity.ERROR,
-            message=(
-                f"cannot determine whether {head_branch!r} is behind "
-                f"{_ORIGIN_MAIN!r} before landing: {exc}"
-            ),
+            message=(f"cannot determine whether {head_branch!r} is behind {_ORIGIN_MAIN!r} before landing: {exc}"),
         )
     if behind == 0:
         return None
@@ -163,10 +158,7 @@ def _refuse_via_merge_tree_preview(
         return Finding(
             code="MRS-DISP-044",
             severity=Severity.ERROR,
-            message=(
-                f"cannot preview the merge of {head_branch!r} onto "
-                f"{_ORIGIN_MAIN!r} before landing: {exc}"
-            ),
+            message=(f"cannot preview the merge of {head_branch!r} onto {_ORIGIN_MAIN!r} before landing: {exc}"),
         )
     if tree_oid is None:
         # A real git-detected conflict -- already owned by the existing
@@ -195,15 +187,10 @@ def _refuse_via_merge_tree_preview(
             return Finding(
                 code="MRS-DISP-044",
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot materialize the merge-tree preview of "
-                    f"{head_branch!r} onto {_ORIGIN_MAIN!r}: {exc}"
-                ),
+                message=(f"cannot materialize the merge-tree preview of {head_branch!r} onto {_ORIGIN_MAIN!r}: {exc}"),
             )
 
-        reports, verify_findings = run_verify_commands_only(
-            effective, process=process, worktree=preview_home
-        )
+        reports, verify_findings = run_verify_commands_only(effective, process=process, worktree=preview_home)
     finally:
         removed = False
         try:
@@ -248,9 +235,7 @@ def execute_dispatch_land(
     fs = fs if fs is not None else LocalFs()
     vcs = vcs if vcs is not None else GitVcs()
     forge = forge if forge is not None else GhForge()
-    effective = effective if effective is not None else compose_dispatch_policy(
-        project_slug, repo_root
-    )
+    effective = effective if effective is not None else compose_dispatch_policy(project_slug, repo_root)
 
     findings: list[Finding] = []
     data: dict[str, object] = {
@@ -375,9 +360,7 @@ def execute_dispatch_land(
         # mint/fallout/fix PR merges it ready/backlog, not done. Fails
         # closed (never corroborates) on any git read failure.
         try:
-            spec_text = dispatch_core.spec_text_at_ref(
-                vcs, git_repo_root, project_slug, str(candidate_key)
-            )
+            spec_text = dispatch_core.spec_text_at_ref(vcs, git_repo_root, project_slug, str(candidate_key))
         except VcsCommandError:
             return None
         return promotion.read_spec_status(spec_text)
@@ -395,9 +378,7 @@ def execute_dispatch_land(
         )
         return DispatchLandingResult(verdict=DispatchLandingVerdict.ALREADY_LANDED), envelope
 
-    if not may_attempt_dispatch_landing(
-        verification_verdict, story_merged_on_main=False
-    ):
+    if not may_attempt_dispatch_landing(verification_verdict, story_merged_on_main=False):
         envelope = build_envelope(
             command="dispatch land",
             verdict=compute_verdict(tuple(findings)),
@@ -524,9 +505,7 @@ def execute_dispatch_land(
             findings=tuple(findings),
         )
         return (
-            DispatchLandingResult(
-                verdict=DispatchLandingVerdict.REFUSED, pr_number=pr.number, subject=subject
-            ),
+            DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED, pr_number=pr.number, subject=subject),
             envelope,
         )
 
@@ -658,10 +637,7 @@ def execute_dispatch_land(
             Finding(
                 code="MRS-DISP-020",
                 severity=Severity.ERROR,
-                message=(
-                    f"dispatch land finalize (promote + ledger) failed for "
-                    f"{key}: {exc}"
-                ),
+                message=(f"dispatch land finalize (promote + ledger) failed for {key}: {exc}"),
             )
         )
         envelope = build_envelope(

@@ -18,6 +18,7 @@ import time
 from typing import Any
 
 import pandas as pd
+
 from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS
 from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest
 
@@ -49,7 +50,7 @@ def _key(v):
     try:
         if pd.isna(v):
             return None
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
     return str(v).strip()
 
@@ -85,13 +86,14 @@ def _as_bool_series(col: pd.Series) -> pd.Series:
 # 3-entry set is exact-pinned by ``tests/pipelines/test_refresh_schedule_fixtures.py``).
 # ---------------------------------------------------------------------------
 
+
 def _ttl_cadence(ttls: dict, key: str) -> int:
     """Read a cadence (seconds) from ``params:ttls``; a missing / null / non-numeric
     value falls back to the WEEKLY default rather than crashing the node."""
     raw = (ttls or {}).get(key)
     try:
         return int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return WEEKLY_SECONDS
 
 
@@ -143,14 +145,14 @@ def refresh_vcs_registry_stores(ttls: dict):
     (``vcs_registry_versions``, weekly)."""
     cadence = _ttl_cadence(ttls, "vcs_registry_versions")
     return tuple(
-        RefreshRequest(store=f"vcs_registry_{registry}_raw", cadence_seconds=cadence)
-        for registry in _REGISTRY_INPUTS
+        RefreshRequest(store=f"vcs_registry_{registry}_raw", cadence_seconds=cadence) for registry in _REGISTRY_INPUTS
     )
 
 
 # ---------------------------------------------------------------------------
 # Phase E — maintainer enrichment  (reads core_cf_graph_raw — cross-pipeline, AD-3)
 # ---------------------------------------------------------------------------
+
 
 def enrich_maintainers(
     core_cf_graph_raw: pd.DataFrame,
@@ -189,9 +191,7 @@ def enrich_maintainers(
         for m in seq:
             rows.append((conda_name, m))
     package_maintainers = pd.DataFrame(rows, columns=pkg_cols).drop_duplicates()
-    maintainers = (
-        package_maintainers[["maintainer"]].drop_duplicates().sort_values("maintainer")
-    )
+    maintainers = package_maintainers[["maintainer"]].drop_duplicates().sort_values("maintainer")
     return (
         maintainers.reset_index(drop=True),
         package_maintainers.reset_index(drop=True),
@@ -201,6 +201,7 @@ def enrich_maintainers(
 # ---------------------------------------------------------------------------
 # Phase E.5 — archived-feedstock detection
 # ---------------------------------------------------------------------------
+
 
 def detect_archived_feedstocks(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase E.5  (phase_e5_archived_feedstocks CFA:2504)
@@ -217,6 +218,7 @@ def detect_archived_feedstocks(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame
 # ---------------------------------------------------------------------------
 # Phase K — upstream version tracking (3-RPS bucket is DATASET-owned, not here)
 # ---------------------------------------------------------------------------
+
 
 def track_upstream_versions(
     vcs_github_api_raw: pd.DataFrame,
@@ -261,7 +263,14 @@ def track_upstream_versions(
 # ---------------------------------------------------------------------------
 
 _REGISTRY_INPUTS = (
-    "npm", "cran", "cpan", "luarocks", "crates", "rubygems", "maven", "nuget",
+    "npm",
+    "cran",
+    "cpan",
+    "luarocks",
+    "crates",
+    "rubygems",
+    "maven",
+    "nuget",
 )
 
 
@@ -286,9 +295,14 @@ def track_registry_versions(
     per_registry = zip(
         _REGISTRY_INPUTS,
         (
-            vcs_registry_npm_raw, vcs_registry_cran_raw, vcs_registry_cpan_raw,
-            vcs_registry_luarocks_raw, vcs_registry_crates_raw, vcs_registry_rubygems_raw,
-            vcs_registry_maven_raw, vcs_registry_nuget_raw,
+            vcs_registry_npm_raw,
+            vcs_registry_cran_raw,
+            vcs_registry_cpan_raw,
+            vcs_registry_luarocks_raw,
+            vcs_registry_crates_raw,
+            vcs_registry_rubygems_raw,
+            vcs_registry_maven_raw,
+            vcs_registry_nuget_raw,
         ),
     )
     for registry, df in per_registry:
@@ -308,6 +322,7 @@ def track_registry_versions(
 # ---------------------------------------------------------------------------
 # Phase N — live health signals
 # ---------------------------------------------------------------------------
+
 
 def fetch_live_health(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase N  (phase_n_github_live CFA:6525)
@@ -336,6 +351,7 @@ def fetch_live_health(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
 #         dataset produced by pypi_intelligence; Kedro datasets are shared by
 #         catalog NAME, ownership = producer, so this node only READS it, AD-3.)
 # ---------------------------------------------------------------------------
+
 
 def derive_release_velocity(
     pypi_current_versions: pd.DataFrame,
@@ -403,11 +419,7 @@ def derive_release_velocity(
         )
 
     pcv = pypi_current_versions
-    if (
-        pcv is None
-        or pcv.empty
-        or not {"pypi_name", "version", "upload_time_iso_8601"} <= set(pcv.columns)
-    ):
+    if pcv is None or pcv.empty or not {"pypi_name", "version", "upload_time_iso_8601"} <= set(pcv.columns):
         return _empty()
 
     mp = pypi_conda_mapping
@@ -427,9 +439,7 @@ def derive_release_velocity(
     r["conda_name"] = r["conda_name"].map(_key)
     r["version"] = r["version"].map(_key)
     r = r.dropna(subset=["conda_name", "version"])
-    first_avail = (
-        r.groupby(["conda_name", "version"], as_index=False)["_avail_s"].min()
-    )
+    first_avail = r.groupby(["conda_name", "version"], as_index=False)["_avail_s"].min()
 
     # -- pypi side: map pypi_name → conda_name, then match on (conda_name, version).
     p = pcv[["pypi_name", "version", "upload_time_iso_8601"]].copy(deep=False)
@@ -459,11 +469,7 @@ def derive_release_velocity(
     # a "qualifying" row must carry a real lag, else it pollutes any downstream
     # aggregation over the qualifying population with a NaN (AD-13 "malformed →
     # qualifies False"; B9 review).
-    qualifies = (
-        upload_s.notna()
-        & lag_hours.notna()
-        & ((now - upload_s) <= _NINETY_DAYS_SECONDS)
-    )
+    qualifies = upload_s.notna() & lag_hours.notna() & ((now - upload_s) <= _NINETY_DAYS_SECONDS)
 
     out = pd.DataFrame(
         {
@@ -625,9 +631,7 @@ def classify_migration_readiness(
     atlas = atlas.dropna(subset=["conda_name"]).drop_duplicates("conda_name")
     if atlas.empty:
         return _empty_migration_readiness()
-    subdirs_lookup = (
-        dict(zip(atlas["conda_name"], atlas["subdirs"])) if "subdirs" in atlas.columns else {}
-    )
+    subdirs_lookup = dict(zip(atlas["conda_name"], atlas["subdirs"])) if "subdirs" in atlas.columns else {}
     feedstocks = list(atlas["conda_name"])
     noarch_flags = {name: _is_noarch(subdirs_lookup.get(name)) for name in feedstocks}
 
@@ -686,11 +690,7 @@ def classify_migration_readiness(
         um = out.loc[unmigrated_mask, ["migration", "downloads_total"]].copy()
         # a missing download row ranks as volume 0 (kept, never dropped).
         um["_vol"] = um["downloads_total"].fillna(0.0)
-        ranked = (
-            um.groupby("migration")["_vol"]
-            .rank(method="first", ascending=False)
-            .astype("Int64")
-        )
+        ranked = um.groupby("migration")["_vol"].rank(method="first", ascending=False).astype("Int64")
         rank.loc[ranked.index] = ranked
     out["unmigrated_volume_rank"] = rank
     return out[_MIGRATION_READINESS_COLS].reset_index(drop=True)

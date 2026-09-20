@@ -160,13 +160,23 @@ from packaging.version import InvalidVersion, Version
 from . import pypi_index
 from .engines import pep517, pixi, twine
 from .errors import (
-    CfeUnresolvedError, InvalidShipTargetError, MasonError, PackageProjectPathError,
-    PackageVersionMismatchError, ShipChannelCredentialMissingError,
-    ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
+    CfeUnresolvedError,
+    InvalidShipTargetError,
+    MasonError,
+    PackageProjectPathError,
+    PackageVersionMismatchError,
+    ShipChannelCredentialMissingError,
+    ShipCondaForgeRecipeLocationError,
+    ShipCondaForgeRecipeMissingError,
     ShipCredentialMissingError,
 )
 from .models import (
-    PackageBuildResult, ShipReceipt, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+    PackageBuildResult,
+    ShipReceipt,
+    ShipState,
+    ShipTarget,
+    ShipTargetKind,
+    ShipTargetResult,
 )
 from .resolve import resolve_cfe_root
 
@@ -314,11 +324,11 @@ def parse_ship_targets(value: str) -> tuple[ShipTarget, ...]:
             targets.append(ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None))
         elif stripped == "conda-forge":
             targets.append(ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None))
-        elif stripped.startswith(_CHANNEL_PREFIX) and stripped[len(_CHANNEL_PREFIX):].strip():
+        elif stripped.startswith(_CHANNEL_PREFIX) and stripped[len(_CHANNEL_PREFIX) :].strip():
             targets.append(
                 ShipTarget(
                     kind=ShipTargetKind.CHANNEL,
-                    channel_name=stripped[len(_CHANNEL_PREFIX):].strip(),
+                    channel_name=stripped[len(_CHANNEL_PREFIX) :].strip(),
                 )
             )
         else:
@@ -353,7 +363,8 @@ def _canonical_target_name(target: ShipTarget) -> str:
 
 
 def plan_ship(
-    targets: Sequence[ShipTarget], build_result: PackageBuildResult,
+    targets: Sequence[ShipTarget],
+    build_result: PackageBuildResult,
 ) -> tuple[ShipTargetResult, ...]:
     """Produce the dry-run ship plan for `targets` against an already-built
     `build_result` (Story 3.3, FR-16, FR-19, spec AC1; Story 3.9/FR-50 adds
@@ -420,7 +431,10 @@ def plan_ship(
             raise AssertionError(f"unhandled ShipTargetKind: {target.kind!r}")
         results.append(
             ShipTargetResult(
-                target=canonical, state=ShipState.NOT_ATTEMPTED, reference=None, message=message,
+                target=canonical,
+                state=ShipState.NOT_ATTEMPTED,
+                reference=None,
+                message=message,
             )
         )
     return tuple(results)
@@ -438,7 +452,10 @@ _REQUIRED_SHIP_PYPI_CREDENTIALS = ("TWINE_USERNAME", "TWINE_PASSWORD")
 
 
 def ship_pypi(
-    project_path: str, *, environ: Mapping[str, str], target: str = "library",
+    project_path: str,
+    *,
+    environ: Mapping[str, str],
+    target: str = "library",
     repository_url: str | None = None,
 ) -> ShipTargetResult:
     """Build and upload `project_path`'s wheel+sdist to PyPI -- or, with
@@ -518,11 +535,7 @@ def ship_pypi(
     raises (its own docstring), so no new exception surface is introduced by
     this story's interrogation step.
     """
-    missing = [
-        name
-        for name in _REQUIRED_SHIP_PYPI_CREDENTIALS
-        if not environ.get(name, "").strip()
-    ]
+    missing = [name for name in _REQUIRED_SHIP_PYPI_CREDENTIALS if not environ.get(name, "").strip()]
     if missing:
         raise ShipCredentialMissingError(missing)
 
@@ -545,10 +558,7 @@ def ship_pypi(
             target=canonical,
             state=ShipState.TERMINAL,
             reference=f"https://pypi.org/project/{pypi_name}/{build_result.wheel_version}/",
-            message=(
-                f"pypi already has {pypi_name} {build_result.wheel_version}; "
-                "upload was not attempted"
-            ),
+            message=(f"pypi already has {pypi_name} {build_result.wheel_version}; upload was not attempted"),
         )
     if exists is None:
         return ShipTargetResult(
@@ -563,12 +573,16 @@ def ship_pypi(
         )
 
     upload_result = twine.upload(
-        (build_result.wheel_path, build_result.sdist_path), repository_url=repository_url,
+        (build_result.wheel_path, build_result.sdist_path),
+        repository_url=repository_url,
     )
 
     if upload_result.returncode != 0:
         return ShipTargetResult(
-            target=canonical, state=ShipState.FAILED, reference=None, message=upload_result.stdout,
+            target=canonical,
+            state=ShipState.FAILED,
+            reference=None,
+            message=upload_result.stdout,
         )
 
     return ShipTargetResult(
@@ -583,7 +597,11 @@ _REQUIRED_SHIP_CHANNEL_CREDENTIALS = ("PREFIX_API_KEY",)
 
 
 def ship_channel(
-    project_path: str, channel_name: str, *, environ: Mapping[str, str], target: str = "library",
+    project_path: str,
+    channel_name: str,
+    *,
+    environ: Mapping[str, str],
+    target: str = "library",
 ) -> ShipTargetResult:
     """Build and upload `project_path`'s `.conda` package to the named
     private conda channel `channel_name` via `pixi upload prefix` (Story
@@ -656,11 +674,7 @@ def ship_channel(
     `engines.pixi.search` itself never raises (its own docstring), so no new
     exception surface is introduced by this story's interrogation step.
     """
-    missing = [
-        name
-        for name in _REQUIRED_SHIP_CHANNEL_CREDENTIALS
-        if not environ.get(name, "").strip()
-    ]
+    missing = [name for name in _REQUIRED_SHIP_CHANNEL_CREDENTIALS if not environ.get(name, "").strip()]
     if missing:
         raise ShipChannelCredentialMissingError(missing)
 
@@ -705,7 +719,10 @@ def ship_channel(
 
     if upload_result.returncode != 0:
         return ShipTargetResult(
-            target=canonical, state=ShipState.FAILED, reference=None, message=upload_result.stdout,
+            target=canonical,
+            state=ShipState.FAILED,
+            reference=None,
+            message=upload_result.stdout,
         )
 
     return ShipTargetResult(
@@ -804,7 +821,10 @@ def ship_conda_forge(
         expected_dir = (root_dir / "recipes" / recipe_dir.name).resolve()
     except (OSError, ValueError, RuntimeError) as exc:
         return ShipTargetResult(
-            target="conda-forge", state=ShipState.FAILED, reference=None, message=str(exc),
+            target="conda-forge",
+            state=ShipState.FAILED,
+            reference=None,
+            message=str(exc),
         )
 
     if recipe_dir != expected_dir:
@@ -971,7 +991,9 @@ def ship(
                 return ship_pypi(project_path, environ=environ, target=target)
             if t.kind is ShipTargetKind.PYPI_TEST:
                 return ship_pypi(
-                    project_path, environ=environ, target=target,
+                    project_path,
+                    environ=environ,
+                    target=target,
                     repository_url=_TESTPYPI_REPOSITORY_URL,
                 )
             if t.kind is ShipTargetKind.CHANNEL:

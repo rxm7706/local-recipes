@@ -32,9 +32,7 @@ except IndexError:
     _REPO_ROOT = None
 _SCAN = (_REPO_ROOT / "scripts" / "fleet_scan.py") if _REPO_ROOT else None
 
-pytestmark = pytest.mark.skipif(
-    not (_SCAN and _SCAN.is_file()), reason="scripts/fleet_scan.py required"
-)
+pytestmark = pytest.mark.skipif(not (_SCAN and _SCAN.is_file()), reason="scripts/fleet_scan.py required")
 
 
 @pytest.fixture(scope="module")
@@ -43,9 +41,7 @@ def fleet_scan():
     return board._load_foreign_module(_SCAN, "_fleet_scan_pitch_roster")
 
 
-_NON_PIPELINE_TWINS = frozenset(
-    {"_design-systems", "six-quarter-roadmap", "llm-knowledge-bases"}
-)
+_NON_PIPELINE_TWINS = frozenset({"_design-systems", "six-quarter-roadmap", "llm-knowledge-bases"})
 
 
 def test_not_a_deck_covers_every_documented_non_pipeline_twin(fleet_scan) -> None:

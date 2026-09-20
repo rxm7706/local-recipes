@@ -58,10 +58,7 @@ def test_definitions_are_loadable(defs):
 
 def test_jobs_resolve(defs):
     names = {j.name for j in defs.jobs}
-    expected = (
-        {D.BOOTSTRAP_JOB_NAME, D.PHASE_P_JOB_NAME}
-        | {job_name for job_name, *_ in D.SCHEDULED_JOBS}
-    )
+    expected = {D.BOOTSTRAP_JOB_NAME, D.PHASE_P_JOB_NAME} | {job_name for job_name, *_ in D.SCHEDULED_JOBS}
     assert expected <= names, f"missing jobs: {expected - names}"
     # each kedro op-job actually resolves into a graph of ops (not empty).
     for job in _kedro_jobs(defs):
@@ -77,9 +74,7 @@ def test_schedules_enumerate(defs):
     # Phase P is the only KEDRO job WITHOUT a schedule (the Wave-H factory adds the weekly
     # wiki_lint_schedule → wiki_lint_job, which is NOT a kedro data-pipeline job).
     scheduled_jobs = {s.job_name for s in defs.schedules}
-    assert scheduled_jobs == {D.BOOTSTRAP_JOB_NAME} | {
-        j for j, *_ in D.SCHEDULED_JOBS
-    } | {D.WIKI_LINT_JOB_NAME}
+    assert scheduled_jobs == {D.BOOTSTRAP_JOB_NAME} | {j for j, *_ in D.SCHEDULED_JOBS} | {D.WIKI_LINT_JOB_NAME}
 
 
 def test_all_cron_strings_are_well_formed(defs):
@@ -131,40 +126,26 @@ def test_every_op_has_its_own_timeout(defs):
     """Each op in every kedro job carries an independent ``dagster/max_runtime`` tag."""
     for job in _kedro_jobs(defs):
         for node in job.graph.nodes:
-            assert node.tags.get(MAX_RUNTIME_TAG), (
-                f"op {node.name} in job {job.name} has no independent timeout"
-            )
+            assert node.tags.get(MAX_RUNTIME_TAG), f"op {node.name} in job {job.name} has no independent timeout"
 
 
 def test_timeouts_are_not_a_single_monolith(defs):
     """The legacy 1800s cf_atlas_core monolith is retired: timeouts vary per op
     and live on the OPS, never as one job-level timeout wrapping the DAG."""
-    values = {
-        node.tags[MAX_RUNTIME_TAG]
-        for job in _kedro_jobs(defs)
-        for node in job.graph.nodes
-    }
+    values = {node.tags[MAX_RUNTIME_TAG] for job in _kedro_jobs(defs) for node in job.graph.nodes}
     assert len(values) > 1, "all ops share one timeout — monolith not retired"
     # no job-level monolithic timeout tag.
     for job in _kedro_jobs(defs):
-        assert MAX_RUNTIME_TAG not in job.tags, (
-            f"job {job.name} carries a monolithic job-level timeout"
-        )
+        assert MAX_RUNTIME_TAG not in job.tags, f"job {job.name} carries a monolithic job-level timeout"
 
 
 def test_phase_r_overrun_cannot_abort_phase_f_k_n(defs):
     """The whole point of AC-4: Phase R's big budget is ITS OWN; Phase F/K/N
     each carry a smaller, independent budget so an R overrun cannot abort them."""
-    budgets = {
-        node.name: int(node.tags[MAX_RUNTIME_TAG])
-        for job in _kedro_jobs(defs)
-        for node in job.graph.nodes
-    }
+    budgets = {node.name: int(node.tags[MAX_RUNTIME_TAG]) for job in _kedro_jobs(defs) for node in job.graph.nodes}
     r_budget = budgets["enrich_pypi_intelligence"]  # Phase R cold pull
     for phase_op in ("compute_downloads", "track_upstream_versions", "fetch_live_health"):
-        assert budgets[phase_op] < r_budget, (
-            f"{phase_op} shares/exceeds Phase R's budget — not independent"
-        )
+        assert budgets[phase_op] < r_budget, f"{phase_op} shares/exceeds Phase R's budget — not independent"
     # every migrated node is mapped explicitly (no silent shared default).
     assert set(D.NODE_TIMEOUTS), "NODE_TIMEOUTS is empty"
 
@@ -189,9 +170,7 @@ def test_phase_p_op_is_in_no_scheduled_job(defs):
         if job.name not in scheduled_job_names:
             continue
         ops = {n.name for n in job.graph.nodes}
-        assert "fetch_pypi_downloads" not in ops, (
-            f"Phase P leaked into scheduled job {job.name}"
-        )
+        assert "fetch_pypi_downloads" not in ops, f"Phase P leaked into scheduled job {job.name}"
 
 
 def test_phase_p_reachable_only_via_admin_profile():
@@ -247,9 +226,7 @@ def test_unknown_profile_raises():
 def test_ops_carry_retry_policy_for_observability(defs):
     for job in _kedro_jobs(defs):
         for node in job.graph.nodes:
-            assert node.retry_policy is not None, (
-                f"op {node.name} in {job.name} has no retry policy"
-            )
+            assert node.retry_policy is not None, f"op {node.name} in {job.name} has no retry policy"
 
 
 def test_jobs_carry_phase_state_observability_tags(defs):
@@ -290,9 +267,7 @@ def test_each_sensor_targets_a_real_existing_job(defs):
         assert target_job in job_names, f"sensor target {target_job} is not a real job"
     # and each SensorDefinition in defs resolves to a job present in defs.
     for sensor in defs.sensors:
-        assert sensor.job_name in job_names, (
-            f"sensor {sensor.name} targets non-existent job {sensor.job_name}"
-        )
+        assert sensor.job_name in job_names, f"sensor {sensor.name} targets non-existent job {sensor.job_name}"
 
 
 def test_sensor_targets_are_the_incremental_upstream_jobs(defs):
@@ -393,9 +368,7 @@ def test_multiple_events_one_tick_coalesce_to_one_run(defs):
         job=job,
         run_key_prefix="pypi",
         description="test",
-        event_source=_sim_source(
-            {"seq": 4, "id": "a"}, {"seq": 6, "id": "b"}, {"seq": 5, "id": "c"}
-        ),
+        event_source=_sim_source({"seq": 4, "id": "a"}, {"seq": 6, "id": "b"}, {"seq": 5, "id": "c"}),
     )
     ctx = dg.build_sensor_context()
     run_requests = [r for r in sensor(ctx) if isinstance(r, dg.RunRequest)]
@@ -520,8 +493,10 @@ def test_mix_of_new_and_already_seen_events_counts_only_the_new(defs):
         description="test",
         # seq 3,4,5 already seen (cursor 5); 6,7 are new.
         event_source=_sim_source(
-            {"seq": 3, "id": "a"}, {"seq": 5, "id": "b"},
-            {"seq": 6, "id": "c"}, {"seq": 7, "id": "d"},
+            {"seq": 3, "id": "a"},
+            {"seq": 5, "id": "b"},
+            {"seq": 6, "id": "c"},
+            {"seq": 7, "id": "d"},
         ),
     )
     ctx = dg.build_sensor_context(cursor="5")
@@ -638,12 +613,11 @@ def test_no_new_raw_file_yields_skip(defs):
 
 
 def test_already_seen_raw_files_are_deduped(defs):
-    import dagster as dg
     import json as _json
 
-    sensor = D.build_wiki_compile_sensor(
-        job=_compile_job(defs), raw_lister=lambda: ["a.md"]
-    )
+    import dagster as dg
+
+    sensor = D.build_wiki_compile_sensor(job=_compile_job(defs), raw_lister=lambda: ["a.md"])
     # cursor already records a.md as seen -> no re-trigger.
     ctx = dg.build_sensor_context(cursor=_json.dumps(["a.md"]))
     results = list(sensor(ctx))
@@ -745,9 +719,7 @@ def test_refresh_assets_job_lists_the_21_2_and_21_4_refresh_triggers(defs):
     assert _STORY_21_5_REFRESH_OPS <= set(ops), sorted(set(ops))
     job = next(j for j in defs.jobs if j.name == "refresh_assets")
     graph_ops = {n.name for n in job.graph.nodes}
-    assert (
-        _STORY_21_2_REFRESH_OPS | _STORY_21_4_REFRESH_OPS | _STORY_21_5_REFRESH_OPS <= graph_ops
-    ), sorted(graph_ops)
+    assert _STORY_21_2_REFRESH_OPS | _STORY_21_4_REFRESH_OPS | _STORY_21_5_REFRESH_OPS <= graph_ops, sorted(graph_ops)
     # and it stays the WEEKLY cadence
     _, _, _cron, cadence, label = next(row for row in D.SCHEDULED_JOBS if row[0] == "refresh_assets")
     assert cadence == "weekly"

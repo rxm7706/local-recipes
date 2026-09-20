@@ -85,29 +85,21 @@ def test_endpoint_and_design_system_constants():
 
 
 def test_get_design_prompt_maps_to_the_get_claude_design_prompt_tool(fake_caller):
-    transport, caller = _transport(
-        fake_caller, {"get_claude_design_prompt": ToolResult(text="PROMPT BODY")}
-    )
+    transport, caller = _transport(fake_caller, {"get_claude_design_prompt": ToolResult(text="PROMPT BODY")})
     prompt = transport.get_design_prompt(design_system_id=MODERNIST_DESIGN_SYSTEM_ID)
     assert prompt == "PROMPT BODY"
     assert caller.tools == ["get_claude_design_prompt"]
-    assert caller.arguments_for("get_claude_design_prompt") == {
-        "design_system_id": MODERNIST_DESIGN_SYSTEM_ID
-    }
+    assert caller.arguments_for("get_claude_design_prompt") == {"design_system_id": MODERNIST_DESIGN_SYSTEM_ID}
 
 
 def test_get_design_prompt_omits_unset_optional_arguments(fake_caller):
-    transport, caller = _transport(
-        fake_caller, {"get_claude_design_prompt": ToolResult(text="P")}
-    )
+    transport, caller = _transport(fake_caller, {"get_claude_design_prompt": ToolResult(text="P")})
     transport.get_design_prompt()
     assert caller.arguments_for("get_claude_design_prompt") == {}
 
 
 def test_get_design_prompt_passes_project_id_when_given(fake_caller):
-    transport, caller = _transport(
-        fake_caller, {"get_claude_design_prompt": ToolResult(text="P")}
-    )
+    transport, caller = _transport(fake_caller, {"get_claude_design_prompt": ToolResult(text="P")})
     transport.get_design_prompt(design_system_id="ds", project_id="proj")
     assert caller.arguments_for("get_claude_design_prompt") == {
         "design_system_id": "ds",
@@ -128,9 +120,7 @@ def test_get_design_prompt_survives_documenting_the_tokenized_host(fake_caller):
         "Never put a serve_url (or any *.claudeusercontent.com link) in "
         "user-visible text -- it carries a project-scoped token."
     )
-    transport, _ = _transport(
-        fake_caller, {"get_claude_design_prompt": ToolResult(text=prompt)}
-    )
+    transport, _ = _transport(fake_caller, {"get_claude_design_prompt": ToolResult(text=prompt)})
     returned = transport.get_design_prompt(design_system_id=MODERNIST_DESIGN_SYSTEM_ID)
     assert returned == prompt
     assert returned != REDACTED
@@ -140,9 +130,7 @@ def test_get_design_prompt_survives_documenting_the_tokenized_host(fake_caller):
 def test_create_project_returns_a_project_ref(fake_caller):
     payload = json.dumps({"project_id": "p-1", "url": "https://claude.ai/design/p/p-1"})
     transport, caller = _transport(fake_caller, {"create_project": payload})
-    ref = transport.create_project(
-        name="PyForge Herald deck", design_system_id=MODERNIST_DESIGN_SYSTEM_ID
-    )
+    ref = transport.create_project(name="PyForge Herald deck", design_system_id=MODERNIST_DESIGN_SYSTEM_ID)
     assert (ref.project_id, ref.url) == ("p-1", "https://claude.ai/design/p/p-1")
     assert caller.arguments_for("create_project") == {
         "name": "PyForge Herald deck",
@@ -151,13 +139,9 @@ def test_create_project_returns_a_project_ref(fake_caller):
 
 
 def test_finalize_plan_declares_writes_and_returns_base_etags(fake_caller):
-    payload = json.dumps(
-        {"plan_token": "tok", "base_etags": {"support.js": "0", "Deck.dc.html": "0"}}
-    )
+    payload = json.dumps({"plan_token": "tok", "base_etags": {"support.js": "0", "Deck.dc.html": "0"}})
     transport, caller = _transport(fake_caller, {"finalize_plan": payload})
-    handle = transport.finalize_plan(
-        project_id="p-1", writes=["support.js", "Deck.dc.html"]
-    )
+    handle = transport.finalize_plan(project_id="p-1", writes=["support.js", "Deck.dc.html"])
     assert handle.plan_token == "tok"
     assert dict(handle.base_etags) == {"support.js": "0", "Deck.dc.html": "0"}
     assert caller.arguments_for("finalize_plan") == {
@@ -236,9 +220,7 @@ def test_a_null_base_etag_is_not_coerced_to_the_string_none(fake_caller):
     with pytest.raises(UnconditionalWriteError):
         transport.write_files(
             project_id="p-1",
-            files=[
-                {"path": "a.html", "data": "x", "if_match": handle.base_etags["a.html"]}
-            ],
+            files=[{"path": "a.html", "data": "x", "if_match": handle.base_etags["a.html"]}],
         )
 
 
@@ -252,9 +234,7 @@ def test_create_project_null_fields_become_empty_strings(fake_caller):
 def test_create_support_js_marshals_path_and_etag(fake_caller):
     payload = json.dumps({"path": "support.js", "bytes": 12, "etags": {}})
     transport, caller = _transport(fake_caller, {"create_support_js": payload})
-    result = transport.create_support_js(
-        project_id="p-1", if_match="0", plan_token="tok"
-    )
+    result = transport.create_support_js(project_id="p-1", if_match="0", plan_token="tok")
     assert result["path"] == "support.js"
     assert caller.arguments_for("create_support_js") == {
         "project_id": "p-1",
@@ -281,9 +261,7 @@ def test_write_files_marshals_the_file_entries(fake_caller):
 
 
 def test_copy_files_marshals_a_cross_project_copy(fake_caller):
-    transport, caller = _transport(
-        fake_caller, {"copy_files": json.dumps({"copied": 1})}
-    )
+    transport, caller = _transport(fake_caller, {"copy_files": json.dumps({"copied": 1})})
     entry = {
         "src": "deck-stage.js",
         "src_project_id": "other",
@@ -298,25 +276,17 @@ def test_copy_files_marshals_a_cross_project_copy(fake_caller):
 
 
 def test_copy_files_accepts_leaf_if_match_for_a_folder_dest(fake_caller):
-    transport, caller = _transport(
-        fake_caller, {"copy_files": json.dumps({"copied": 2})}
-    )
+    transport, caller = _transport(fake_caller, {"copy_files": json.dumps({"copied": 2})})
     transport.copy_files(
         project_id="p-1",
-        files=[
-            {"src": "assets", "dest": "assets", "leaf_if_match": {"assets/a.css": "0"}}
-        ],
+        files=[{"src": "assets", "dest": "assets", "leaf_if_match": {"assets/a.css": "0"}}],
     )
     assert caller.tools == ["copy_files"]
 
 
 def test_plan_token_is_omitted_when_not_supplied(fake_caller):
-    transport, caller = _transport(
-        fake_caller, {"write_files": json.dumps({"written": 1})}
-    )
-    transport.write_files(
-        project_id="p-1", files=[{"path": "a.html", "data": "x", "if_match": "0"}]
-    )
+    transport, caller = _transport(fake_caller, {"write_files": json.dumps({"written": 1})})
+    transport.write_files(project_id="p-1", files=[{"path": "a.html", "data": "x", "if_match": "0"}])
     assert "plan_token" not in caller.arguments_for("write_files")
 
 
@@ -404,18 +374,14 @@ def test_write_files_validates_and_marshals_the_same_entries(fake_caller):
     # unconditional-write check that passed, followed by a write of
     # nothing reported as success.
     entry = {"path": "a.html", "data": "x", "if_match": "0"}
-    transport, caller = _transport(
-        fake_caller, {"write_files": json.dumps({"written": 1})}
-    )
+    transport, caller = _transport(fake_caller, {"write_files": json.dumps({"written": 1})})
     transport.write_files(project_id="p-1", files=(entry for _ in range(1)))
     assert caller.arguments_for("write_files")["files"] == [entry]
 
 
 def test_copy_files_validates_and_marshals_the_same_entries(fake_caller):
     entry = {"src": "a.js", "dest": "a.js", "if_match": "0"}
-    transport, caller = _transport(
-        fake_caller, {"copy_files": json.dumps({"copied": 1})}
-    )
+    transport, caller = _transport(fake_caller, {"copy_files": json.dumps({"copied": 1})})
     transport.copy_files(project_id="p-1", files=(entry for _ in range(1)))
     assert caller.arguments_for("copy_files")["files"] == [entry]
 
@@ -443,9 +409,7 @@ def test_render_preview_never_returns_a_serve_url(fake_caller):
 def test_render_preview_ignores_a_non_string_expiry(fake_caller):
     # PreviewRef models expires_at as `str | None`; str(123) would invent a
     # timestamp format nothing downstream can parse.
-    payload = json.dumps(
-        {"open_url": "https://claude.ai/design/p/p-1", "expires_at": 123}
-    )
+    payload = json.dumps({"open_url": "https://claude.ai/design/p/p-1", "expires_at": 123})
     transport, _ = _transport(fake_caller, {"render_preview": payload})
     preview = transport.render_preview(project_id="p-1", path="Deck.dc.html")
     assert preview.expires_at is None
@@ -518,9 +482,7 @@ def test_list_projects_returns_project_summaries(fake_caller):
             name="PyForge Warden deck",
             url="https://claude.ai/design/p/p-1",
         ),
-        ProjectSummary(
-            project_id="p-2", name="Modernist", url="https://claude.ai/design/p/p-2"
-        ),
+        ProjectSummary(project_id="p-2", name="Modernist", url="https://claude.ai/design/p/p-2"),
     ]
     assert caller.arguments_for("list_projects") == {}
 
@@ -563,9 +525,7 @@ def test_fetch_rendered_bytes_fetches_the_serve_url_and_returns_its_content(
         }
     )
     http_client = FakeHttpClient(content=b"THE-RENDERED-BYTES")
-    transport, caller = _transport(
-        fake_caller, {"render_preview": payload}, http_client=http_client
-    )
+    transport, caller = _transport(fake_caller, {"render_preview": payload}, http_client=http_client)
 
     result = transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
 
@@ -586,13 +546,9 @@ def test_fetch_rendered_bytes_uses_the_raw_answer_never_call_json(fake_caller):
     could never represent) still fetches successfully."""
     payload = json.dumps({"serve_url": _SERVE_URL})
     http_client = FakeHttpClient(content=b"X")
-    transport, _ = _transport(
-        fake_caller, {"render_preview": payload}, http_client=http_client
-    )
+    transport, _ = _transport(fake_caller, {"render_preview": payload}, http_client=http_client)
 
-    assert (
-        transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx") == b"X"
-    )
+    assert transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx") == b"X"
 
 
 def test_fetch_rendered_bytes_raises_when_render_preview_answer_has_no_serve_url(
@@ -620,13 +576,9 @@ def test_fetch_rendered_bytes_raises_on_a_non_object_render_preview_answer(fake_
 
 
 def test_fetch_rendered_bytes_wraps_a_get_failure_and_never_echoes_the_url(fake_caller):
-    payload = json.dumps(
-        {"open_url": "https://claude.ai/design/p/p-1", "serve_url": _SERVE_URL}
-    )
+    payload = json.dumps({"open_url": "https://claude.ai/design/p/p-1", "serve_url": _SERVE_URL})
     http_client = FakeHttpClient(error=RuntimeError(f"boom at {_SERVE_URL}"))
-    transport, _ = _transport(
-        fake_caller, {"render_preview": payload}, http_client=http_client
-    )
+    transport, _ = _transport(fake_caller, {"render_preview": payload}, http_client=http_client)
 
     with pytest.raises(TransportCallError) as excinfo:
         transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
@@ -648,13 +600,9 @@ def test_fetch_rendered_bytes_raises_the_servers_own_error_via_raw_text(fake_cal
 
 
 def test_a_generic_payload_is_scrubbed_before_it_crosses_the_boundary(fake_caller):
-    payload = json.dumps(
-        {"written": 1, "serve_url": _SERVE_URL, "note": f"see {_SERVE_URL}"}
-    )
+    payload = json.dumps({"written": 1, "serve_url": _SERVE_URL, "note": f"see {_SERVE_URL}"})
     transport, _ = _transport(fake_caller, {"write_files": payload})
-    result = transport.write_files(
-        project_id="p-1", files=[{"path": "a.html", "data": "x", "if_match": "0"}]
-    )
+    result = transport.write_files(project_id="p-1", files=[{"path": "a.html", "data": "x", "if_match": "0"}])
     assert "serve_url" not in result
     assert result["note"] == REDACTED
     assert TOKENIZED_PREVIEW_HOST not in repr(result)
@@ -685,9 +633,7 @@ def test_read_file_full_response(fake_caller):
 def test_read_file_unchanged_short_circuit(fake_caller):
     text = '{"unchanged":true,"etag":"E7","path":"Deck.dc.html"}'
     transport, caller = _transport(fake_caller, {"read_file": ToolResult(text=text)})
-    read = transport.read_file(
-        project_id="p-1", path="Deck.dc.html", if_none_match="E7"
-    )
+    read = transport.read_file(project_id="p-1", path="Deck.dc.html", if_none_match="E7")
     assert read.unchanged is True
     assert read.body is None
     assert read.etag == "E7"
@@ -712,11 +658,7 @@ def test_read_file_body_is_content_and_is_never_redacted(fake_caller):
     # `herald deck pull` then writes over the repo's prototype. A file body
     # is user-authored content, not an envelope that could surface a live
     # tokenized URL.
-    text = (
-        '<untrusted-project-content path="a.html" etag="E">\n'
-        f"{_SERVE_URL}\n"
-        "</untrusted-project-content>"
-    )
+    text = f'<untrusted-project-content path="a.html" etag="E">\n{_SERVE_URL}\n</untrusted-project-content>'
     transport, _ = _transport(fake_caller, {"read_file": ToolResult(text=text)})
     read = transport.read_file(project_id="p-1", path="a.html")
     assert read.body == _SERVE_URL
@@ -743,11 +685,7 @@ def test_read_file_marshals_offset_and_limit(fake_caller):
 
 
 def test_read_file_omits_offset_and_limit_when_unset(fake_caller):
-    text = (
-        '<untrusted-project-content path="a.html" etag="E">\n'
-        "body\n"
-        "</untrusted-project-content>"
-    )
+    text = '<untrusted-project-content path="a.html" etag="E">\nbody\n</untrusted-project-content>'
     transport, caller = _transport(fake_caller, {"read_file": ToolResult(text=text)})
     transport.read_file(project_id="p-1", path="a.html")
     arguments = caller.arguments_for("read_file")
@@ -767,9 +705,7 @@ def test_a_capped_read_is_reported_as_truncated(fake_caller):
         "</untrusted-project-content>"
     )
     transport, _ = _transport(fake_caller, {"read_file": ToolResult(text=text)})
-    read = transport.read_file(
-        project_id="p-1", path="Warden Infographic standalone.html"
-    )
+    read = transport.read_file(project_id="p-1", path="Warden Infographic standalone.html")
     assert read.truncated is True
     assert (read.first_line, read.last_line, read.total_lines) == (1, 208, 212)
 
@@ -789,9 +725,7 @@ def test_a_whole_file_read_is_not_truncated(fake_caller):
 
 
 def test_a_server_error_on_any_tool_raises_a_call_error(fake_caller):
-    transport, _ = _transport(
-        fake_caller, {"create_project": ToolResult(text="nope", is_error=True)}
-    )
+    transport, _ = _transport(fake_caller, {"create_project": ToolResult(text="nope", is_error=True)})
     with pytest.raises(TransportCallError):
         transport.create_project(name="x")
 
@@ -814,11 +748,7 @@ def test_a_server_error_message_is_sanitized_before_it_is_raised(fake_caller):
     # out to stderr intact (NFR-04).
     transport, _ = _transport(
         fake_caller,
-        {
-            "render_preview": ToolResult(
-                text=f"render failed; preview was at {_SERVE_URL}", is_error=True
-            )
-        },
+        {"render_preview": ToolResult(text=f"render failed; preview was at {_SERVE_URL}", is_error=True)},
     )
     with pytest.raises(TransportCallError) as excinfo:
         transport.render_preview(project_id="p-1", path="a.html")
@@ -838,12 +768,8 @@ def _raises(exc: BaseException):
 
 
 def _transport_failing_with(monkeypatch, exc: BaseException) -> McpTransport:
-    monkeypatch.setattr(
-        "pyforge.herald.transport.mcp_transport._call_tool_async", _raises(exc)
-    )
-    return McpTransport(
-        credential=DesignCredential(access_token=FAKE_TOKEN, expires_at_ms=None)
-    )
+    monkeypatch.setattr("pyforge.herald.transport.mcp_transport._call_tool_async", _raises(exc))
+    return McpTransport(credential=DesignCredential(access_token=FAKE_TOKEN, expires_at_ms=None))
 
 
 def test_sdk_failures_become_transport_unreachable_without_the_token(monkeypatch):
@@ -918,9 +844,7 @@ def test_an_http_rejection_becomes_an_auth_error_not_unreachable(monkeypatch, st
 
 
 def test_a_stringified_status_is_enough_to_raise_an_auth_error(monkeypatch):
-    transport = _transport_failing_with(
-        monkeypatch, RuntimeError("session terminated: HTTP 401 Unauthorized")
-    )
+    transport = _transport_failing_with(monkeypatch, RuntimeError("session terminated: HTTP 401 Unauthorized"))
     with pytest.raises(AuthError, match="/design-login"):
         transport.get_design_prompt()
 
@@ -935,9 +859,7 @@ def test_a_stringified_status_is_enough_to_raise_an_auth_error(monkeypatch):
         "read timed out after 401 seconds",
     ],
 )
-def test_a_bare_401_in_an_address_is_not_read_as_a_rejected_credential(
-    monkeypatch, message
-):
+def test_a_bare_401_in_an_address_is_not_read_as_a_rejected_credential(monkeypatch, message):
     # bridge-protocol.md § Watch parameters halts on an auth error and
     # never retries, so a misfiled transient outage would stop `herald deck
     # watch` for good and blame a credential that is perfectly valid.
@@ -969,9 +891,7 @@ def test_a_truncated_token_echo_is_still_scrubbed(monkeypatch):
         "pyforge.herald.transport.mcp_transport._call_tool_async",
         _raises(OSError(f"connection refused (Authorization: Bearer {token[:34]}...)")),
     )
-    transport = McpTransport(
-        credential=DesignCredential(access_token=token, expires_at_ms=None)
-    )
+    transport = McpTransport(credential=DesignCredential(access_token=token, expires_at_ms=None))
     with pytest.raises(TransportUnreachableError) as excinfo:
         transport.get_design_prompt()
     message = str(excinfo.value)
@@ -989,9 +909,7 @@ def test_a_missing_mcp_sdk_is_not_reported_as_an_outage(monkeypatch):
     # `mcp` is a declared runtime dependency, so an ImportError is a broken
     # install; calling it "endpoint unreachable" sends the operator to look
     # at the network instead.
-    transport = _transport_failing_with(
-        monkeypatch, ImportError("No module named 'mcp'")
-    )
+    transport = _transport_failing_with(monkeypatch, ImportError("No module named 'mcp'"))
     with pytest.raises(TransportError) as excinfo:
         transport.get_design_prompt()
     assert not isinstance(excinfo.value, TransportUnreachableError)
@@ -1006,9 +924,7 @@ def test_a_token_containing_an_auth_marker_does_not_fake_an_auth_error(monkeypat
         "pyforge.herald.transport.mcp_transport._call_tool_async",
         _raises(OSError(f"connection refused for Bearer {token}")),
     )
-    transport = McpTransport(
-        credential=DesignCredential(access_token=token, expires_at_ms=None)
-    )
+    transport = McpTransport(credential=DesignCredential(access_token=token, expires_at_ms=None))
     with pytest.raises(TransportUnreachableError) as excinfo:
         transport.get_design_prompt()
     assert token not in str(excinfo.value)
@@ -1017,9 +933,7 @@ def test_a_token_containing_an_auth_marker_does_not_fake_an_auth_error(monkeypat
 def test_the_sync_transport_refuses_to_run_inside_a_live_event_loop():
     # asyncio.run cannot nest; the RuntimeError it raises would otherwise
     # be reported as "could not reach the endpoint", which is a lie.
-    transport = McpTransport(
-        credential=DesignCredential(access_token=FAKE_TOKEN, expires_at_ms=None)
-    )
+    transport = McpTransport(credential=DesignCredential(access_token=FAKE_TOKEN, expires_at_ms=None))
 
     async def _drive() -> None:
         transport.get_design_prompt()

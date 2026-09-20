@@ -13,6 +13,7 @@ import textwrap
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.bootstrap import repo_root
 from pyforge.steward.catalog import (
     CATALOG_RELATIVE,
@@ -863,7 +864,11 @@ def test_catalog_and_json_flags_parse_before_or_after_the_verb(argv, verb, catal
 
 def test_cli_json_with_the_verb_omitted_runs_check(tmp_path: Path, capsys) -> None:
     catalog_dir = _write_catalog(tmp_path, "")
-    assert CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir).render(write=True).ok
+    assert (
+        CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
+        .render(write=True)
+        .ok
+    )
     rc = main(["catalog", "--catalog", str(catalog_dir), "--json"])
     assert rc == EXIT_OK
     payload = json.loads(capsys.readouterr().out)
@@ -885,9 +890,7 @@ def test_cli_slot_unbound_is_the_only_finding_and_exits_1(tmp_path: Path, capsys
     assert payload["ok"] is False
     assert [f["code"] for f in payload["findings"]] == ["slot-unbound"]
     assert payload["findings"][0]["subject"] == "sources.extra"
-    assert payload["sources"] == [
-        {"name": "extra", "plugin": "x", "state": "on", "bound": False, "listings": 0}
-    ]
+    assert payload["sources"] == [{"name": "extra", "plugin": "x", "state": "on", "bound": False, "listings": 0}]
     rc = main(["catalog", "--catalog", str(catalog_dir), "check"])
     assert rc == EXIT_FAILED
     assert "[slot-unbound] sources.extra" in capsys.readouterr().err
@@ -1088,24 +1091,18 @@ def test_real_tree_list_names_a_declared_source_on_every_listing(capsys) -> None
     assert payload["count"] == len(rows) == _WIELDED_MODULE_COUNT + EXPECTED_COUNT
     assert all(r["source"] and r["source"] in declared for r in rows)
     wielded = [r for r in rows if r["source"] == "wielded-suite"]
-    assert [r["name"] for r in wielded] == [
-        p.name for p in SUITE_PACKAGES if p.install_class == INSTALL_CLASS_MODULE
-    ]
+    assert [r["name"] for r in wielded] == [p.name for p in SUITE_PACKAGES if p.install_class == INSTALL_CLASS_MODULE]
     assert {r["trust_tier"] for r in wielded} == {TIER_BMAD_CERTIFIED}
     assert all(r["version"] and r["description"] for r in wielded)  # recipes present
     frames = [r for r in rows if r["source"] == "estate-frames"]
-    expected = sorted(
-        str(doc.fields["identifier"]).strip() for doc in preflight_frames(root).frames
-    )
+    expected = sorted(str(doc.fields["identifier"]).strip() for doc in preflight_frames(root).frames)
     assert sorted(r["name"] for r in frames) == expected
     assert len(frames) == EXPECTED_COUNT  # a tenth frame fails in frames.py first
     assert {r["kind"] for r in frames} == {KIND_FRAME}
 
 
 def test_real_tree_claude_manifest_has_the_discovery_shape() -> None:
-    manifest = json.loads(
-        (default_catalog_dir() / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8")
-    )
+    manifest = json.loads((default_catalog_dir() / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
     assert manifest["name"] == "pyforge-estate-catalog"
     assert manifest["owner"]["name"] == "rxm7706"
     assert isinstance(manifest["plugins"], list) and len(manifest["plugins"]) == _WIELDED_MODULE_COUNT
@@ -1136,7 +1133,5 @@ def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None
 def test_real_tree_estate_registry_is_empty_and_names_its_source() -> None:
     import yaml
 
-    registry = yaml.safe_load(
-        (default_catalog_dir() / "registry" / "estate.yaml").read_text(encoding="utf-8")
-    )
+    registry = yaml.safe_load((default_catalog_dir() / "registry" / "estate.yaml").read_text(encoding="utf-8"))
     assert registry == {"source": "estate-listings", "modules": []}

@@ -201,26 +201,18 @@ def load_repo_sets(path: str | Path | None = None) -> dict[str, RepoSet]:
     out: dict[str, RepoSet] = {}
     for feature, body in projects.items():
         if not isinstance(body, dict):
-            raise WorkspaceError(
-                f"{path}: projects[{feature!r}] must be a mapping"
-            )
+            raise WorkspaceError(f"{path}: projects[{feature!r}] must be a mapping")
         repos = body.get("repos") or {}
         if not isinstance(repos, dict):
-            raise WorkspaceError(
-                f"{path}: projects[{feature!r}].repos must be a mapping"
-            )
+            raise WorkspaceError(f"{path}: projects[{feature!r}].repos must be a mapping")
         members: list[RepoSetMember] = []
         for name, repo_body in repos.items():
             if not isinstance(repo_body, dict):
-                raise WorkspaceError(
-                    f"{path}: projects[{feature!r}].repos[{name!r}] must be a mapping"
-                )
+                raise WorkspaceError(f"{path}: projects[{feature!r}].repos[{name!r}] must be a mapping")
             try:
                 declared = str(repo_body["path"])
             except KeyError as exc:
-                raise WorkspaceError(
-                    f"{path}: projects[{feature!r}].repos[{name!r}] missing path"
-                ) from exc
+                raise WorkspaceError(f"{path}: projects[{feature!r}].repos[{name!r}] missing path") from exc
             members.append(RepoSetMember(name=str(name), declared_path=declared))
         out[str(feature)] = RepoSet(feature=str(feature), members=tuple(members))
     return out
@@ -267,9 +259,7 @@ def _rollback_repo_set_starts(
         if wt.exists():
             _git_ok("worktree", "remove", "--force", str(wt), cwd=wt_root)
         bookkeeping = _bookkeeping_for(wt_root)
-        remaining = tuple(
-            r for r in load_bookkeeping(bookkeeping) if r.slug != record.slug
-        )
+        remaining = tuple(r for r in load_bookkeeping(bookkeeping) if r.slug != record.slug)
         save_bookkeeping(bookkeeping, remaining)
         _git_ok("branch", "-D", record.branch, cwd=wt_root)
 
@@ -287,10 +277,7 @@ def start_repo_set(
     sets = load_repo_sets(repo_sets_path)
     repo_set = sets.get(feature)
     if repo_set is None:
-        raise WorkspaceError(
-            f"repo set {feature!r} not found in "
-            f"{repo_sets_path or default_repo_sets_path()}"
-        )
+        raise WorkspaceError(f"repo set {feature!r} not found in {repo_sets_path or default_repo_sets_path()}")
     if not repo_set.members:
         raise WorkspaceError(f"repo set {feature!r} has no registered repos")
 
@@ -306,9 +293,7 @@ def start_repo_set(
 
     if missing:
         names = ", ".join(sorted(missing))
-        raise WorkspaceError(
-            f"repo set {feature!r}: missing local repos (not guessed): {names}"
-        )
+        raise WorkspaceError(f"repo set {feature!r}: missing local repos (not guessed): {names}")
 
     started: list[WorkspaceRecord] = []
     roots_by_path: dict[str, Path] = {}
@@ -371,10 +356,7 @@ def open_repo_set_members(
     sets = load_repo_sets(repo_sets_path)
     repo_set = sets.get(feature)
     if repo_set is None:
-        raise WorkspaceError(
-            f"repo set {feature!r} not found in "
-            f"{repo_sets_path or default_repo_sets_path()}"
-        )
+        raise WorkspaceError(f"repo set {feature!r} not found in {repo_sets_path or default_repo_sets_path()}")
     branch = feature_branch_name(feature)
     opened: list[RepoSetMemberOpen] = []
     for member in repo_set.members:
@@ -384,9 +366,7 @@ def open_repo_set_members(
         bookkeeping = _bookkeeping_for(member_root)
         for record in load_bookkeeping(bookkeeping):
             if record.slug == branch or record.branch == branch:
-                opened.append(
-                    RepoSetMemberOpen(name=member.name, root=member_root, record=record)
-                )
+                opened.append(RepoSetMemberOpen(name=member.name, root=member_root, record=record))
                 break
     return tuple(opened)
 
@@ -398,9 +378,7 @@ def status_repo_set(
     anchor: Path | None = None,
 ) -> tuple[RepoSetMemberStatus, ...]:
     """Story 13.4: dirty/unpushed across every open member of a repo set."""
-    opened = open_repo_set_members(
-        feature, repo_sets_path=repo_sets_path, anchor=anchor
-    )
+    opened = open_repo_set_members(feature, repo_sets_path=repo_sets_path, anchor=anchor)
     return tuple(
         RepoSetMemberStatus(
             member=item.name,
@@ -425,9 +403,7 @@ def clean_repo_set(
     skips unmerged members per-repo. Own-worktrees-only: foreign trees ignored.
     """
     anchor = anchor if anchor is not None else repo_root()
-    opened = open_repo_set_members(
-        feature, repo_sets_path=repo_sets_path, anchor=anchor
-    )
+    opened = open_repo_set_members(feature, repo_sets_path=repo_sets_path, anchor=anchor)
     if not opened:
         return {"archived": [], "skipped": []}
 
@@ -435,16 +411,12 @@ def clean_repo_set(
     for item in opened:
         st = status_of(item.record, root=item.root)
         if st.error is not None:
-            raise WorkspaceError(
-                f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}"
-            )
+            raise WorkspaceError(f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}")
         if st.dirty:
             dirty_names.append(item.name)
     if dirty_names:
         named = ", ".join(sorted(dirty_names))
-        raise WorkspaceError(
-            f"repo set {feature!r}: refuse removal — dirty member(s): {named}"
-        )
+        raise WorkspaceError(f"repo set {feature!r}: refuse removal — dirty member(s): {named}")
 
     archived: list[dict[str, str]] = []
     skipped: list[dict[str, str]] = []
@@ -453,13 +425,9 @@ def clean_repo_set(
         # become dirty after the set-wide gate above.
         st = status_of(item.record, root=item.root)
         if st.error is not None:
-            raise WorkspaceError(
-                f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}"
-            )
+            raise WorkspaceError(f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}")
         if st.dirty:
-            raise WorkspaceError(
-                f"repo set {feature!r}: refuse removal — dirty member(s): {item.name}"
-            )
+            raise WorkspaceError(f"repo set {feature!r}: refuse removal — dirty member(s): {item.name}")
         result = clean_workspaces(
             merged_only=merged_only,
             slug=item.record.slug,
@@ -474,9 +442,7 @@ def clean_repo_set(
             skipped.append({**row, "member": item.name})
 
     # Drop the coordinated .code-workspace when nothing remains open for the set.
-    still_open = open_repo_set_members(
-        feature, repo_sets_path=repo_sets_path, anchor=anchor
-    )
+    still_open = open_repo_set_members(feature, repo_sets_path=repo_sets_path, anchor=anchor)
     if not still_open:
         branch = feature_branch_name(feature)
         ws_file = anchor / _CODE_WORKSPACE_RELATIVE_DIR / f"{branch}.code-workspace"
@@ -495,9 +461,7 @@ def scratch_path_for(slug: str, *, root: Path | None = None) -> Path:
 
 def _validate_slug(slug: str) -> None:
     if not _SLUG_PATTERN.match(slug):
-        raise WorkspaceError(
-            f"invalid slug {slug!r}: expected [A-Za-z0-9][A-Za-z0-9._/-]*"
-        )
+        raise WorkspaceError(f"invalid slug {slug!r}: expected [A-Za-z0-9][A-Za-z0-9._/-]*")
 
 
 def load_bookkeeping(path: str | Path) -> tuple[WorkspaceRecord, ...]:
@@ -621,10 +585,7 @@ def _worktree_dirty(wt: Path) -> bool:
     result = _git_ok("status", "--porcelain", cwd=wt)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
-        raise WorkspaceError(
-            f"git status --porcelain failed in {wt} "
-            f"(exit {result.returncode}): {detail}"
-        )
+        raise WorkspaceError(f"git status --porcelain failed in {wt} (exit {result.returncode}): {detail}")
     return bool((result.stdout or "").strip())
 
 
@@ -639,22 +600,17 @@ def _ahead_behind(wt: Path, source: str, branch: str) -> tuple[int, int]:
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
         raise WorkspaceError(
-            f"git rev-list --left-right --count {range_spec} failed in {wt} "
-            f"(exit {result.returncode}): {detail}"
+            f"git rev-list --left-right --count {range_spec} failed in {wt} (exit {result.returncode}): {detail}"
         )
     parts = (result.stdout or "").strip().split()
     if len(parts) != 2:
-        raise WorkspaceError(
-            f"unexpected rev-list output in {wt}: {result.stdout!r}"
-        )
+        raise WorkspaceError(f"unexpected rev-list output in {wt}: {result.stdout!r}")
     # left = commits reachable from source not in branch → behind
     # right = commits reachable from branch not in source → ahead
     try:
         behind, ahead = int(parts[0]), int(parts[1])
     except ValueError as exc:
-        raise WorkspaceError(
-            f"unexpected rev-list counts in {wt}: {parts!r}"
-        ) from exc
+        raise WorkspaceError(f"unexpected rev-list counts in {wt}: {parts!r}") from exc
     return ahead, behind
 
 
@@ -723,9 +679,7 @@ def status_workspaces(
         if not matches:
             raise WorkspaceError(f"workspace {slug!r} not in bookkeeping")
         if len(matches) > 1:
-            raise WorkspaceError(
-                f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows"
-            )
+            raise WorkspaceError(f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows")
         records = tuple(matches)
     return tuple(status_of(r, root=root) for r in records)
 
@@ -738,10 +692,7 @@ def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
     if result.returncode == 1:
         return False
     detail = (result.stderr or result.stdout or "").strip()
-    raise WorkspaceError(
-        f"git merge-base --is-ancestor {branch} {into} failed "
-        f"(exit {result.returncode}): {detail}"
-    )
+    raise WorkspaceError(f"git merge-base --is-ancestor {branch} {into} failed (exit {result.returncode}): {detail}")
 
 
 def _archive_worktree(
@@ -829,9 +780,7 @@ def clean_workspaces(
         if not matches:
             raise WorkspaceError(f"workspace {slug!r} not in bookkeeping")
         if len(matches) > 1:
-            raise WorkspaceError(
-                f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows"
-            )
+            raise WorkspaceError(f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows")
         # Keep non-matching rows in remaining; only consider the match for archive.
         others = [r for r in records if r.slug != slug]
         records = matches
@@ -906,15 +855,11 @@ def format_status(statuses: tuple[WorkspaceStatus, ...], *, as_json: bool) -> st
             continue
         dirt = "dirty" if s.dirty else "clean"
         merged = "merged" if s.merged else "unmerged"
-        lines.append(
-            f"{s.slug}\t{dirt}\tahead={s.ahead}\tbehind={s.behind}\t{merged}\t{s.path}"
-        )
+        lines.append(f"{s.slug}\t{dirt}\tahead={s.ahead}\tbehind={s.behind}\t{merged}\t{s.path}")
     return "\n".join(lines)
 
 
-def format_repo_set_status(
-    statuses: tuple[RepoSetMemberStatus, ...], *, as_json: bool
-) -> str:
+def format_repo_set_status(statuses: tuple[RepoSetMemberStatus, ...], *, as_json: bool) -> str:
     if as_json:
         return json.dumps([s.to_dict() for s in statuses], indent=2)
     if not statuses:
@@ -929,10 +874,7 @@ def format_repo_set_status(
         unpushed = (s.ahead or 0) > 0
         push = "unpushed" if unpushed else "pushed"
         merged = "merged" if s.merged else "unmerged"
-        lines.append(
-            f"{row.member}\t{s.slug}\t{dirt}\t{push}\tahead={s.ahead}\t"
-            f"behind={s.behind}\t{merged}\t{s.path}"
-        )
+        lines.append(f"{row.member}\t{s.slug}\t{dirt}\t{push}\tahead={s.ahead}\tbehind={s.behind}\t{merged}\t{s.path}")
     return "\n".join(lines)
 
 
@@ -976,16 +918,12 @@ class WorkspaceDuty:
                 feature = ns.slug
                 repo_sets = load_repo_sets()
                 if feature in repo_sets:
-                    result = start_repo_set(
-                        feature, from_ref=ns.from_ref or _DEFAULT_FROM
-                    )
+                    result = start_repo_set(feature, from_ref=ns.from_ref or _DEFAULT_FROM)
                     return DutyResult(
                         ok=True,
                         summary=format_repo_set_start(result, as_json=as_json),
                     )
-                record = start_workspace(
-                    feature, from_ref=ns.from_ref or _DEFAULT_FROM
-                )
+                record = start_workspace(feature, from_ref=ns.from_ref or _DEFAULT_FROM)
                 return DutyResult(ok=True, summary=format_start(record, as_json=as_json))
             if verb == "ls":
                 records = list_workspaces()
@@ -999,9 +937,7 @@ class WorkspaceDuty:
                         summary=format_repo_set_status(statuses, as_json=as_json),
                     )
                 statuses = status_workspaces(slug)
-                return DutyResult(
-                    ok=True, summary=format_status(statuses, as_json=as_json)
-                )
+                return DutyResult(ok=True, summary=format_status(statuses, as_json=as_json))
             # clean — optional slug targets a repo set or a single owned worktree
             slug = getattr(ns, "slug", None)
             merged_only = bool(getattr(ns, "merged_only", False))

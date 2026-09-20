@@ -12,9 +12,7 @@ from pyforge.doctor.verdict import EXIT_SIGINT, exit_code_for
 
 
 def _finding(status: DoctorStatus) -> Finding:
-    return Finding(
-        source=Source.ENV_HYGIENE, check="x", status=status, message="m", evidence={}
-    )
+    return Finding(source=Source.ENV_HYGIENE, check="x", status=status, message="m", evidence={})
 
 
 def test_exit_sigint_constant():
@@ -34,9 +32,7 @@ def test_all_warn_findings_exit_zero():
 
 
 def test_mixed_ok_and_warn_findings_exit_zero():
-    assert (
-        exit_code_for([_finding(DoctorStatus.OK), _finding(DoctorStatus.WARN)]) == 0
-    )
+    assert exit_code_for([_finding(DoctorStatus.OK), _finding(DoctorStatus.WARN)]) == 0
 
 
 def test_one_fail_present_exits_two():
@@ -54,13 +50,9 @@ def test_all_fail_exits_two():
 
 def test_warn_never_changes_the_exit_code():
     ok_only = exit_code_for([_finding(DoctorStatus.OK)])
-    ok_and_warn = exit_code_for(
-        [_finding(DoctorStatus.OK), _finding(DoctorStatus.WARN)]
-    )
+    ok_and_warn = exit_code_for([_finding(DoctorStatus.OK), _finding(DoctorStatus.WARN)])
     fail_only = exit_code_for([_finding(DoctorStatus.FAIL)])
-    fail_and_warn = exit_code_for(
-        [_finding(DoctorStatus.FAIL), _finding(DoctorStatus.WARN)]
-    )
+    fail_and_warn = exit_code_for([_finding(DoctorStatus.FAIL), _finding(DoctorStatus.WARN)])
     assert ok_only == ok_and_warn == 0
     assert fail_only == fail_and_warn == 2
 

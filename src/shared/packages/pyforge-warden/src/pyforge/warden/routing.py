@@ -89,8 +89,5 @@ class DefaultRouter:
     def route(self, manifest_kind: str, section: str) -> Ecosystem:
         ecosystem = _ROUTES.get((manifest_kind, section))
         if ecosystem is None:
-            raise ValueError(
-                f"no ecosystem route for manifest kind {manifest_kind!r}, "
-                f"section {section!r}"
-            )
+            raise ValueError(f"no ecosystem route for manifest kind {manifest_kind!r}, section {section!r}")
         return ecosystem

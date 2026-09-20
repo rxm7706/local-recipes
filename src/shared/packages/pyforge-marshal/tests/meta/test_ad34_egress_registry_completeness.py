@@ -210,29 +210,19 @@ def _is_bare_str_annotation(annotation: ast.expr | None) -> bool:
             return False
         return _is_bare_str_annotation(inner)
     if isinstance(annotation, ast.BinOp) and isinstance(annotation.op, ast.BitOr):
-        return _is_bare_str_annotation(annotation.left) or _is_bare_str_annotation(
-            annotation.right
-        )
+        return _is_bare_str_annotation(annotation.left) or _is_bare_str_annotation(annotation.right)
     if isinstance(annotation, ast.Subscript):
         base = annotation.value
         base_name = base.id if isinstance(base, ast.Name) else getattr(base, "attr", None)
         if base_name in ("Optional", "Union"):
-            elements = (
-                annotation.slice.elts
-                if isinstance(annotation.slice, ast.Tuple)
-                else [annotation.slice]
-            )
+            elements = annotation.slice.elts if isinstance(annotation.slice, ast.Tuple) else [annotation.slice]
             return any(_is_bare_str_annotation(element) for element in elements)
         if base_name == "Annotated":
             # `Annotated[str, ...]` IS a `str` at runtime -- the metadata is
             # inert to the type checker's assignability rule (follow-up
             # review finding, verified live: it produced zero violations).
             # Only the FIRST element is the type.
-            elements = (
-                annotation.slice.elts
-                if isinstance(annotation.slice, ast.Tuple)
-                else [annotation.slice]
-            )
+            elements = annotation.slice.elts if isinstance(annotation.slice, ast.Tuple) else [annotation.slice]
             return bool(elements) and _is_bare_str_annotation(elements[0])
     return False
 
@@ -255,9 +245,7 @@ def _method_defs(body: list[ast.stmt]) -> list[ast.FunctionDef | ast.AsyncFuncti
     return methods
 
 
-def _bare_str_param_violations(
-    cls: ast.ClassDef, class_map: dict[str, ast.ClassDef] | None = None
-) -> list[str]:
+def _bare_str_param_violations(cls: ast.ClassDef, class_map: dict[str, ast.ClassDef] | None = None) -> list[str]:
     """Violations on ``cls``, INCLUDING methods inherited from a base class
     defined in the same module (follow-up review finding, verified live: a
     bare-`str` method inherited from a shared base Protocol produced zero
@@ -310,9 +298,7 @@ def _token_shape_pattern_references(tree: ast.Module) -> list[tuple[int, str]]:
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             violations.extend(
-                (node.lineno, f"references {_PRIVATE_NAME}")
-                for alias in node.names
-                if alias.name == _PRIVATE_NAME
+                (node.lineno, f"references {_PRIVATE_NAME}") for alias in node.names if alias.name == _PRIVATE_NAME
             )
         elif isinstance(node, ast.Attribute) and node.attr == _PRIVATE_NAME:
             violations.append((node.lineno, f"references {_PRIVATE_NAME}"))
@@ -327,14 +313,8 @@ def _token_shape_pattern_references(tree: ast.Module) -> list[tuple[int, str]]:
         # token prefix immediately followed by a regex character class, so
         # ordinary prose mentioning `ghp_` or a test fixture containing a
         # literal token does not trip it.
-        elif (
-            isinstance(node, ast.Constant)
-            and isinstance(node.value, str)
-            and _COPIED_TOKEN_REGEX.search(node.value)
-        ):
-            violations.append(
-                (node.lineno, "embeds a hand-rolled COPY of the token-shape vocabulary")
-            )
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str) and _COPIED_TOKEN_REGEX.search(node.value):
+            violations.append((node.lineno, "embeds a hand-rolled COPY of the token-shape vocabulary"))
     return sorted(violations)
 
 
@@ -360,10 +340,7 @@ def _pane_content_methods(
         if not isinstance(node, ast.ClassDef):
             continue
         for item in node.body:
-            if (
-                isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
-                and item.name == "pane_content"
-            ):
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name == "pane_content":
                 methods.append(item)
     return methods
 
@@ -460,11 +437,7 @@ def test_no_token_shape_pattern_reference_outside_egress(module_path: Path):
 def test_pane_content_scan_surface_is_not_empty():
     modules = _adapter_modules()
     assert modules, "AD-34 pane_content redaction guard found no adapter modules to scan"
-    found = [
-        method
-        for module_path in modules
-        for method in _pane_content_methods(_parse(module_path))
-    ]
+    found = [method for module_path in modules for method in _pane_content_methods(_parse(module_path))]
     assert found, (
         "no pane_content implementation found under adapters/ -- this guard "
         "is vacuous if SessionObserverPort's sole implementation ever moves "
@@ -489,14 +462,10 @@ def test_guard_is_alive_synthetic_pane_content_missing_redaction_fires(tmp_path)
     """Runs guard (4)'s OWN scan-and-assert path over a synthetic adapters
     tree, mirroring guard (1)'s identical self-test shape."""
     (tmp_path / "fake_observer.py").write_text(
-        "class FakeObserver:\n"
-        "    def pane_content(self, session):\n"
-        "        return capture(session)\n",
+        "class FakeObserver:\n    def pane_content(self, session):\n        return capture(session)\n",
         encoding="utf-8",
     )
-    assert _unredacted_pane_content_methods(root=tmp_path) == [
-        "fake_observer.py::pane_content"
-    ]
+    assert _unredacted_pane_content_methods(root=tmp_path) == ["fake_observer.py::pane_content"]
     # ...and stays silent once the call is present -- otherwise the guard
     # would be "always fires", just as vacuous as "never fires".
     (tmp_path / "fake_observer.py").write_text(
@@ -547,18 +516,14 @@ def test_guard_is_alive_synthetic_missing_classification_fires(tmp_path):
     green if the real test's surface stopped being fed by
     `_all_protocol_class_names`)."""
     (tmp_path / "fifth.py").write_text(
-        "from typing import Protocol\n\n"
-        "class FifthPort(Protocol):\n"
-        "    def do(self) -> None: ...\n",
+        "from typing import Protocol\n\nclass FifthPort(Protocol):\n    def do(self) -> None: ...\n",
         encoding="utf-8",
     )
     assert _unclassified_ports(root=tmp_path) == ["FifthPort"]
     # ...and stays silent once the port IS classified -- otherwise the guard
     # would be "always fires", which is just as vacuous as "never fires".
     (tmp_path / "fifth.py").write_text(
-        "from typing import Protocol\n\n"
-        "class RecordPort(Protocol):\n"
-        "    def do(self) -> None: ...\n",
+        "from typing import Protocol\n\nclass RecordPort(Protocol):\n    def do(self) -> None: ...\n",
         encoding="utf-8",
     )
     assert _unclassified_ports(root=tmp_path) == []
@@ -796,9 +761,7 @@ def test_guard_is_alive_synthetic_inherited_bare_str_method_fires():
     tree = ast.parse(synthetic)
     class_map = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
     cls = next(c for c in _protocol_classes(tree) if c.name == "RecordPort")
-    assert _bare_str_param_violations(cls, class_map) == [
-        "RecordPort.write_redacted_atomic(payload)"
-    ]
+    assert _bare_str_param_violations(cls, class_map) == ["RecordPort.write_redacted_atomic(payload)"]
     # ...and stays silent when the inherited method is correctly typed.
     clean = synthetic.replace("payload: str", "payload: Redacted")
     clean_tree = ast.parse(clean)

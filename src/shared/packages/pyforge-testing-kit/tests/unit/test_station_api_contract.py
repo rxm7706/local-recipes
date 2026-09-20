@@ -8,8 +8,7 @@ import pytest
 from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
 from django_pyforge.roles import prefixed_station
 from django_pyforge.station_client import StationHttpClient
-from pyforge.core.client import API_VERSION_HEADER
-from pyforge.core.client import PyForgeStationClient
+from pyforge.core.client import API_VERSION_HEADER, PyForgeStationClient
 
 _SUB = "contract-user"
 _ROLES = [prefixed_station("warden")]
@@ -28,9 +27,7 @@ def _capture_transport(store: list[dict[str, object]]):
                 "body": body,
             }
         )
-        return json.dumps(
-            {"status": "accepted", "station": "warden", "recipe_name": "numpy"}
-        ).encode("utf-8")
+        return json.dumps({"status": "accepted", "station": "warden", "recipe_name": "numpy"}).encode("utf-8")
 
     return transport
 

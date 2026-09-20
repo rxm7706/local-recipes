@@ -99,8 +99,7 @@ def test_confirmed_iff_desired_and_target_matches():
         expected_confirmed = desired and live_target == _EXPECTED
         actual_confirmed = result.status == STATUS_LINK_TARGET_CONFIRMED
         assert actual_confirmed == expected_confirmed, (
-            f"state={state!r} produced status={result.status!r}, expected "
-            f"confirmed={expected_confirmed}"
+            f"state={state!r} produced status={result.status!r}, expected confirmed={expected_confirmed}"
         )
 
 

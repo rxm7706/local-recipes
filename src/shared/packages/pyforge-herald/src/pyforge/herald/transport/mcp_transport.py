@@ -188,15 +188,12 @@ def resolve_design_credential(
         path = Path(override) if override else _default_credentials_path()
 
     if not path.is_file():
-        raise AuthError(
-            f"no stored Claude Design credential at {path} -- {_REMEDIATION}"
-        )
+        raise AuthError(f"no stored Claude Design credential at {path} -- {_REMEDIATION}")
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise AuthError(
-            f"could not read the stored Claude Design credential at {path} "
-            f"({type(exc).__name__}) -- {_REMEDIATION}"
+            f"could not read the stored Claude Design credential at {path} ({type(exc).__name__}) -- {_REMEDIATION}"
         ) from exc
 
     block = payload.get(DESIGN_OAUTH_KEY) if isinstance(payload, Mapping) else None
@@ -204,9 +201,7 @@ def resolve_design_credential(
         raise AuthError(f"{path} has no {DESIGN_OAUTH_KEY!r} block -- {_REMEDIATION}")
     token = block.get("accessToken")
     if not isinstance(token, str) or not token:
-        raise AuthError(
-            f"{path} has no {DESIGN_OAUTH_KEY}.accessToken -- {_REMEDIATION}"
-        )
+        raise AuthError(f"{path} has no {DESIGN_OAUTH_KEY}.accessToken -- {_REMEDIATION}")
 
     # Anything that is not a finite number is treated as "no declared
     # expiry" rather than a hard failure: the server is the real authority
@@ -220,13 +215,11 @@ def resolve_design_credential(
     if isinstance(raw_expiry, (int, float)) and not isinstance(raw_expiry, bool):
         try:
             expires_at = int(raw_expiry)
-        except (ValueError, OverflowError):
+        except ValueError, OverflowError:
             expires_at = None
     credential = DesignCredential(access_token=token, expires_at_ms=expires_at)
     if credential.is_expired():
-        raise AuthError(
-            f"the stored Claude Design credential in {path} expired -- {_REMEDIATION}"
-        )
+        raise AuthError(f"the stored Claude Design credential in {path} expired -- {_REMEDIATION}")
     return credential
 
 
@@ -334,9 +327,7 @@ class McpTransport:
 
     # --- the 11 port methods --------------------------------------------
 
-    def get_design_prompt(
-        self, *, design_system_id: str | None = None, project_id: str | None = None
-    ) -> str:
+    def get_design_prompt(self, *, design_system_id: str | None = None, project_id: str | None = None) -> str:
         arguments: dict[str, Any] = {}
         if design_system_id is not None:
             arguments["design_system_id"] = design_system_id
@@ -344,9 +335,7 @@ class McpTransport:
             arguments["project_id"] = project_id
         return self._call_text(GET_DESIGN_PROMPT_TOOL, arguments)
 
-    def create_project(
-        self, *, name: str, design_system_id: str | None = None
-    ) -> ProjectRef:
+    def create_project(self, *, name: str, design_system_id: str | None = None) -> ProjectRef:
         arguments: dict[str, Any] = {"name": name}
         if design_system_id is not None:
             arguments["design_system_id"] = design_system_id
@@ -369,8 +358,7 @@ class McpTransport:
             # writes empty that authorizes nothing, and every later write
             # fails at the server with no hint that the typo was the cause.
             raise TransportCallError(
-                f"finalize_plan: unknown scope {scope!r}; expected "
-                f"{' or '.join(repr(name) for name in _PLAN_SCOPES)}"
+                f"finalize_plan: unknown scope {scope!r}; expected {' or '.join(repr(name) for name in _PLAN_SCOPES)}"
             )
         arguments: dict[str, Any] = {"project_id": project_id}
         if scope == "project":
@@ -401,8 +389,7 @@ class McpTransport:
             raw_etags = {}
         if not isinstance(raw_etags, Mapping):
             raise TransportCallError(
-                f"claude-design finalize_plan returned base_etags as "
-                f"{type(raw_etags).__name__}, expected an object"
+                f"claude-design finalize_plan returned base_etags as {type(raw_etags).__name__}, expected an object"
             )
         etags = {str(key): as_text(value) for key, value in raw_etags.items()}
         plan_token = as_text(payload.get("plan_token"))
@@ -411,9 +398,7 @@ class McpTransport:
             # explicit `plan_token: ""` on every later write rather than
             # omitted, so the grant fails at the server instead of falling
             # back to the interactive path.
-            raise TransportCallError(
-                "claude-design finalize_plan returned no plan_token"
-            )
+            raise TransportCallError("claude-design finalize_plan returned no plan_token")
         return PlanHandle(
             plan_token=plan_token,
             base_etags=MappingProxyType(etags),
@@ -503,9 +488,7 @@ class McpTransport:
         return parse_read_response(self._raw_text("read_file", arguments))
 
     def render_preview(self, *, project_id: str, path: str) -> PreviewRef:
-        payload = self._call_json(
-            "render_preview", {"project_id": project_id, "path": path}
-        )
+        payload = self._call_json("render_preview", {"project_id": project_id, "path": path})
         return PreviewRef(
             open_url=as_text(payload.get("open_url")),
             expires_at=as_optional_text(payload.get("expires_at")),
@@ -518,22 +501,16 @@ class McpTransport:
             raw_files = []
         if not isinstance(raw_files, Sequence) or isinstance(raw_files, (str, bytes)):
             raise TransportCallError(
-                f"claude-design list_files returned files as "
-                f"{type(raw_files).__name__}, expected a list"
+                f"claude-design list_files returned files as {type(raw_files).__name__}, expected a list"
             )
         files: list[ListedFile] = []
         for entry in raw_files:
             if not isinstance(entry, Mapping):
                 raise TransportCallError(
-                    f"claude-design list_files returned a non-object file "
-                    f"entry ({type(entry).__name__})"
+                    f"claude-design list_files returned a non-object file entry ({type(entry).__name__})"
                 )
             raw_size = entry.get("size")
-            size = (
-                raw_size
-                if isinstance(raw_size, int) and not isinstance(raw_size, bool)
-                else None
-            )
+            size = raw_size if isinstance(raw_size, int) and not isinstance(raw_size, bool) else None
             files.append(
                 ListedFile(
                     path=as_text(entry.get("path")),
@@ -555,21 +532,15 @@ class McpTransport:
         try:
             payload = json.loads(text)
         except json.JSONDecodeError as exc:
-            raise TransportCallError(
-                "claude-design list_projects returned an unparseable answer"
-            ) from exc
+            raise TransportCallError("claude-design list_projects returned an unparseable answer") from exc
         payload = sanitize_payload(payload)
         if not isinstance(payload, Sequence) or isinstance(payload, (str, bytes)):
-            raise TransportCallError(
-                f"claude-design list_projects returned {type(payload).__name__}, "
-                f"expected a list"
-            )
+            raise TransportCallError(f"claude-design list_projects returned {type(payload).__name__}, expected a list")
         projects: list[ProjectSummary] = []
         for entry in payload:
             if not isinstance(entry, Mapping):
                 raise TransportCallError(
-                    f"claude-design list_projects returned a non-object "
-                    f"project entry ({type(entry).__name__})"
+                    f"claude-design list_projects returned a non-object project entry ({type(entry).__name__})"
                 )
             projects.append(
                 ProjectSummary(
@@ -592,32 +563,23 @@ class McpTransport:
         -- on an unparseable ``render_preview`` answer, a missing
         ``serve_url``, or a failed GET (mirrors ``_raw_text``'s sanitized
         error path)."""
-        text = self._raw_text(
-            "render_preview", {"project_id": project_id, "path": path}
-        )
+        text = self._raw_text("render_preview", {"project_id": project_id, "path": path})
         try:
             payload = json.loads(text)
         except json.JSONDecodeError as exc:
             raise TransportCallError(
-                "claude-design render_preview returned an unparseable "
-                "answer for its raw read-back"
+                "claude-design render_preview returned an unparseable answer for its raw read-back"
             ) from exc
         if not isinstance(payload, Mapping):
             raise TransportCallError(
-                f"claude-design render_preview returned "
-                f"{type(payload).__name__}, expected an object"
+                f"claude-design render_preview returned {type(payload).__name__}, expected an object"
             )
         serve_url = payload.get("serve_url")
         if not isinstance(serve_url, str) or not serve_url:
-            raise TransportCallError(
-                f"claude-design render_preview returned no serve_url to "
-                f"read back {path!r}"
-            )
+            raise TransportCallError(f"claude-design render_preview returned no serve_url to read back {path!r}")
         client = self._http_client if self._http_client is not None else httpx2
         try:
-            response = client.get(
-                serve_url, timeout=_FETCH_TIMEOUT_SECONDS, follow_redirects=True
-            )
+            response = client.get(serve_url, timeout=_FETCH_TIMEOUT_SECONDS, follow_redirects=True)
             response.raise_for_status()
             return response.content
         except Exception as exc:  # any GET failure maps here
@@ -626,10 +588,7 @@ class McpTransport:
             # error), and keeping it as __cause__ would let a full
             # traceback or `logger.exception` surface the serve_url despite
             # this method's own "never logged ... anywhere else" guarantee.
-            raise TransportCallError(
-                f"could not fetch rendered bytes for {path!r} "
-                f"({type(exc).__name__})"
-            ) from None
+            raise TransportCallError(f"could not fetch rendered bytes for {path!r} ({type(exc).__name__})") from None
 
     # --- the call pipeline ---------------------------------------------
 
@@ -643,15 +602,9 @@ class McpTransport:
         quoting a ``serve_url`` back at us would otherwise reach stderr
         intact (NFR-04)."""
         caller = self._caller
-        result = (
-            caller.call_tool(tool, arguments)
-            if caller is not None
-            else self._call_via_mcp_sdk(tool, arguments)
-        )
+        result = caller.call_tool(tool, arguments) if caller is not None else self._call_via_mcp_sdk(tool, arguments)
         if result.is_error:
-            raise TransportCallError(
-                f"claude-design {tool} failed: {sanitize_payload(result.text)}"
-            )
+            raise TransportCallError(f"claude-design {tool} failed: {sanitize_payload(result.text)}")
         return result.text
 
     def _call_text(self, tool: str, arguments: Mapping[str, Any]) -> str:
@@ -680,14 +633,9 @@ class McpTransport:
         try:
             payload = json.loads(text)
         except json.JSONDecodeError as exc:
-            raise TransportCallError(
-                f"claude-design {tool} returned an unparseable answer"
-            ) from exc
+            raise TransportCallError(f"claude-design {tool} returned an unparseable answer") from exc
         if not isinstance(payload, Mapping):
-            raise TransportCallError(
-                f"claude-design {tool} returned {type(payload).__name__}, "
-                f"expected an object"
-            )
+            raise TransportCallError(f"claude-design {tool} returned {type(payload).__name__}, expected an object")
         return sanitize_payload(payload)
 
     def _call_via_mcp_sdk(self, tool: str, arguments: Mapping[str, Any]) -> ToolResult:
@@ -719,9 +667,7 @@ class McpTransport:
             credential = resolve_design_credential()
             self._credential = credential
         try:
-            return asyncio.run(
-                _call_tool_async(self._url, credential, tool, dict(arguments))
-            )
+            return asyncio.run(_call_tool_async(self._url, credential, tool, dict(arguments)))
         except ImportError as exc:
             # A broken install, not an outage. `mcp` is a declared runtime
             # dependency, so reporting this as "endpoint unreachable" would
@@ -735,18 +681,14 @@ class McpTransport:
             detail = _scrub_token(_describe(exc), credential.access_token)
             if _indicates_auth_failure(_flatten(exc), detail):
                 raise AuthError(
-                    f"claude-design rejected the stored credential calling "
-                    f"{tool}: {detail} -- {_REMEDIATION}"
+                    f"claude-design rejected the stored credential calling {tool}: {detail} -- {_REMEDIATION}"
                 ) from None
             raise TransportUnreachableError(
-                f"could not reach the claude-design MCP endpoint at "
-                f"{self._url} calling {tool}: {detail}"
+                f"could not reach the claude-design MCP endpoint at {self._url} calling {tool}: {detail}"
             ) from None
 
 
-async def _call_tool_async(
-    url: str, credential: DesignCredential, tool: str, arguments: dict[str, Any]
-) -> ToolResult:
+async def _call_tool_async(url: str, credential: DesignCredential, tool: str, arguments: dict[str, Any]) -> ToolResult:
     """Open a streamable-HTTP session, run one tool, close.
 
     The ``mcp`` import is lazy so importing this module costs nothing and a
@@ -774,7 +716,5 @@ async def _call_tool_async(
             async with ClientSession(read_end, write_end) as session:
                 await session.initialize()
                 result = await session.call_tool(tool, arguments)
-    text = "".join(
-        block.text for block in result.content if getattr(block, "type", "") == "text"
-    )
+    text = "".join(block.text for block in result.content if getattr(block, "type", "") == "text")
     return ToolResult(text=text, is_error=bool(result.is_error))

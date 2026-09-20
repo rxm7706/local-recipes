@@ -10,8 +10,8 @@ import argparse
 
 import pytest
 
-from pyforge.marshal.core.context import MarshalContext
 from pyforge.marshal.core import policy as policy_core
+from pyforge.marshal.core.context import MarshalContext
 from pyforge.marshal.core.policy import EffectivePolicy
 
 
@@ -39,9 +39,7 @@ def test_marshal_context_construction_does_no_io(tmp_path, monkeypatch):
     """AD-4: construction is a pure value assembly -- no filesystem probe,
     even for a ``loop_home`` path that does not exist on disk."""
     nonexistent = tmp_path / "does-not-exist"
-    context = MarshalContext(
-        slug="acme", loop_home=nonexistent, policy=_effective_policy(), story=None
-    )
+    context = MarshalContext(slug="acme", loop_home=nonexistent, policy=_effective_policy(), story=None)
     assert context.loop_home == nonexistent
     assert not nonexistent.exists()
 
@@ -70,9 +68,7 @@ def test_resolve_context_reads_the_conventional_policy_path(tmp_path, monkeypatc
     monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
     policy_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
     policy_dir.mkdir(parents=True)
-    (policy_dir / "marshal-policy.toml").write_text(
-        'verify_commands = ["true"]\n', encoding="utf-8"
-    )
+    (policy_dir / "marshal-policy.toml").write_text('verify_commands = ["true"]\n', encoding="utf-8")
 
     context = _resolve_context(_args(project="acme"))
 
@@ -83,9 +79,7 @@ def test_resolve_context_reads_the_conventional_policy_path(tmp_path, monkeypatc
     assert context.loop_home.name == "acme"
 
 
-def test_resolve_context_with_no_conventional_policy_still_composes_defaults(
-    tmp_path, monkeypatch
-):
+def test_resolve_context_with_no_conventional_policy_still_composes_defaults(tmp_path, monkeypatch):
     from pyforge.marshal.cli import config as config_module
     from pyforge.marshal.cli.main import _resolve_context
 
@@ -110,9 +104,7 @@ def test_resolve_context_malformed_slug_omits_loop_home(tmp_path, monkeypatch):
     assert context.loop_home is None
 
 
-def test_resolve_context_traversal_slug_never_reads_outside_the_project_tree(
-    tmp_path, monkeypatch
-):
+def test_resolve_context_traversal_slug_never_reads_outside_the_project_tree(tmp_path, monkeypatch):
     """Code review (2026-08-07, Edge Case Hunter, the single most severe
     finding against this story): the original version had no
     `_is_valid_project_slug` gate before touching the filesystem, letting

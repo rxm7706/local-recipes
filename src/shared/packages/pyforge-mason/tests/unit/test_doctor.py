@@ -33,8 +33,13 @@ from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.doctor import DoctorReport, build_report
 from pyforge.mason.engines import EngineStatus
 from pyforge.mason.resolve import (
-    STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND,
-    STEP_RUNNING_INTERPRETER, ResolvedCfeInterpreter, ResolvedCfeRoot,
+    STEP_CWD_WALK,
+    STEP_ENVIRONMENT,
+    STEP_FLAG,
+    STEP_NOT_FOUND,
+    STEP_RUNNING_INTERPRETER,
+    ResolvedCfeInterpreter,
+    ResolvedCfeRoot,
 )
 
 _INTERPRETER = ResolvedCfeInterpreter(path="/fake/python", step=STEP_RUNNING_INTERPRETER)
@@ -46,14 +51,17 @@ _ENGINES = (
 
 def _build(root, interpreter, missing, engines=_ENGINES):
     floor_result = ImportFloorResult(interpreter=interpreter.path, missing=missing)
-    with patch.object(doctor_module, "resolve_cfe_root", return_value=root), \
-         patch.object(doctor_module, "resolve_cfe_interpreter", return_value=interpreter), \
-         patch("pyforge.mason.cfe.probe_import_floor", return_value=floor_result), \
-         patch.object(doctor_module, "probe_known_engines", return_value=engines):
+    with (
+        patch.object(doctor_module, "resolve_cfe_root", return_value=root),
+        patch.object(doctor_module, "resolve_cfe_interpreter", return_value=interpreter),
+        patch("pyforge.mason.cfe.probe_import_floor", return_value=floor_result),
+        patch.object(doctor_module, "probe_known_engines", return_value=engines),
+    ):
         return build_report(None, None, {}, Path("/start"))
 
 
 # --- I/O & Edge-Case Matrix --------------------------------------------------
+
 
 def test_root_resolved_and_floor_satisfied_reports_no_unavailable_verbs():
     root = ResolvedCfeRoot(root=Path("/fake/cfe"), step=STEP_CWD_WALK)
@@ -103,6 +111,7 @@ def test_report_never_lists_package_or_environment_as_unavailable():
 
 # --- Story 3.6: conda_forge_ship_ready / conda_forge_ship_blockers -----------
 
+
 def test_conda_forge_ship_ready_is_false_and_blockers_non_empty_when_root_unresolved():
     root = ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND)
     report = _build(root, _INTERPRETER, missing=())
@@ -127,13 +136,12 @@ def test_conda_forge_ship_ready_is_false_when_root_resolved_but_no_recipes_dir(t
 
     assert report.conda_forge_ship_ready is False
     assert report.conda_forge_ship_blockers != ()
-    assert any(
-        str(tmp_path / "recipes") in blocker for blocker in report.conda_forge_ship_blockers
-    )
+    assert any(str(tmp_path / "recipes") in blocker for blocker in report.conda_forge_ship_blockers)
 
 
 def test_conda_forge_ship_ready_resolves_a_tilde_flag_sourced_root_before_checking(
-    tmp_path, monkeypatch,
+    tmp_path,
+    monkeypatch,
 ):
     """Review pass, 2026-08-13: `resolve_cfe_root`'s flag/environment steps
     return an UN-resolved `Path` (e.g. a literal `~`) -- this must be
@@ -178,9 +186,7 @@ def test_denied_recipes_stat_reports_the_resolved_path_not_the_raw_one(tmp_path,
         report = _build(root, _INTERPRETER, missing=())
 
     assert report.conda_forge_ship_ready is False
-    assert report.conda_forge_ship_blockers == (
-        f"{tmp_path / 'my-cfe' / 'recipes'} is not a directory",
-    )
+    assert report.conda_forge_ship_blockers == (f"{tmp_path / 'my-cfe' / 'recipes'} is not a directory",)
 
 
 def test_conda_forge_ship_ready_never_raises_when_the_root_tilde_cannot_expand():
@@ -213,9 +219,7 @@ def test_an_unresolvable_root_is_not_reported_as_a_missing_recipes_directory():
 
     report = _build(root, _INTERPRETER, missing=())
 
-    assert not any(
-        "is not a directory" in blocker for blocker in report.conda_forge_ship_blockers
-    )
+    assert not any("is not a directory" in blocker for blocker in report.conda_forge_ship_blockers)
 
 
 def test_conda_forge_ship_ready_is_false_when_the_import_floor_is_incomplete(tmp_path):
@@ -250,6 +254,7 @@ def test_conda_forge_ship_ready_never_raises_when_root_is_none_with_a_found_step
 
 
 # --- Field composition -------------------------------------------------------
+
 
 def test_report_names_mason_version_and_interpreter_step():
     from pyforge.mason import __version__
@@ -288,6 +293,7 @@ def test_doctor_report_is_frozen():
 
 
 # --- build_report never raises -----------------------------------------------
+
 
 @pytest.mark.parametrize("step", [STEP_FLAG, STEP_ENVIRONMENT, STEP_CWD_WALK, STEP_NOT_FOUND])
 @pytest.mark.parametrize("missing", [(), ("pyyaml",), tuple("abcdef")])

@@ -232,13 +232,11 @@ def _read_source(path: Path) -> str:
         return path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise AssertionError(
-            f"{path}: unreadable ({exc}); the AD-14 credential-isolation "
-            "guard cannot AST-scan this file"
+            f"{path}: unreadable ({exc}); the AD-14 credential-isolation guard cannot AST-scan this file"
         ) from exc
     except UnicodeDecodeError as exc:
         raise AssertionError(
-            f"{path}: not valid UTF-8; the AD-14 credential-isolation guard "
-            "cannot AST-scan this file"
+            f"{path}: not valid UTF-8; the AD-14 credential-isolation guard cannot AST-scan this file"
         ) from exc
 
 
@@ -247,8 +245,7 @@ def _parse_source(source: str, path: Path) -> ast.Module:
         return ast.parse(source, filename=str(path))
     except SyntaxError as exc:
         raise AssertionError(
-            f"{path}: invalid Python syntax; the AD-14 credential-isolation "
-            "guard cannot AST-scan this file"
+            f"{path}: invalid Python syntax; the AD-14 credential-isolation guard cannot AST-scan this file"
         ) from exc
 
 
@@ -258,9 +255,7 @@ def _parse_file(path: Path) -> ast.Module:
 
 # --- Guard 1: no JFROG_* environment-variable name anywhere -----------------
 
-_JFROG_ENV_VAR_PATTERN = re.compile(
-    r"(?<![0-9A-Za-z])JFROG(?:_[A-Z0-9_]*)?(?![0-9A-Za-z])", re.IGNORECASE
-)
+_JFROG_ENV_VAR_PATTERN = re.compile(r"(?<![0-9A-Za-z])JFROG(?:_[A-Z0-9_]*)?(?![0-9A-Za-z])", re.IGNORECASE)
 """Explicit alphanumeric lookbehind (excluding `_`), NOT `\\b` (review pass,
 Edge Case Hunter): `_` is a word character, so `\\b` never fires beside one
 and a prefixed name like `STAGING_JFROG_API_KEY` sailed through the original
@@ -407,9 +402,7 @@ def _folded_concatenations(
     for node_id, (node, leaves) in foldable.items():
         if node_id in nested_ids:
             continue
-        folded.append(
-            (node, "".join(_constant_text_value(leaf) or "" for leaf in leaves), leaves)
-        )
+        folded.append((node, "".join(_constant_text_value(leaf) or "" for leaf in leaves), leaves))
         consumed_ids |= {id(leaf) for leaf in leaves}
     return folded, consumed_ids
 
@@ -427,9 +420,7 @@ def _find_jfrog_env_var_references(root: Path) -> list[Violation]:
                 continue
             match = _JFROG_ENV_VAR_PATTERN.search(text)
             if match is not None:
-                violations.append(
-                    Violation(path, node.lineno, CATEGORY_ENV_VAR_NAME, match.group())
-                )
+                violations.append(Violation(path, node.lineno, CATEGORY_ENV_VAR_NAME, match.group()))
 
         for chain, text, leaves in folded:
             match = _JFROG_ENV_VAR_PATTERN.search(text)
@@ -445,18 +436,13 @@ def _find_jfrog_env_var_references(root: Path) -> list[Violation]:
                 match = next(
                     (
                         m
-                        for m in (
-                            _JFROG_ENV_VAR_PATTERN.search(_constant_text_value(leaf) or "")
-                            for leaf in leaves
-                        )
+                        for m in (_JFROG_ENV_VAR_PATTERN.search(_constant_text_value(leaf) or "") for leaf in leaves)
                         if m is not None
                     ),
                     None,
                 )
             if match is not None:
-                violations.append(
-                    Violation(path, chain.lineno, CATEGORY_ENV_VAR_NAME, match.group())
-                )
+                violations.append(Violation(path, chain.lineno, CATEGORY_ENV_VAR_NAME, match.group()))
     return violations
 
 
@@ -530,10 +516,7 @@ def _is_http_import_allowlisted(path: Path, module_name: str) -> bool:
     itself applies to the ban -- so `urllib.request.foo` is exactly as
     exempt as the bare `urllib.request` inside `pypi_index.py`."""
     allowed = _GUARD_2_HTTP_IMPORT_ALLOWLIST.get(path.name, frozenset())
-    return any(
-        module_name == allowed_name or module_name.startswith(f"{allowed_name}.")
-        for allowed_name in allowed
-    )
+    return any(module_name == allowed_name or module_name.startswith(f"{allowed_name}.") for allowed_name in allowed)
 
 
 def _is_banned_http_module(name: str) -> bool:
@@ -543,9 +526,7 @@ def _is_banned_http_module(name: str) -> bool:
     requests.sessions import Session` hands back a complete session object --
     both scanned clean under exact set membership, which made one dotted
     suffix the cheapest possible defeat of this guard."""
-    return any(
-        name == banned or name.startswith(f"{banned}.") for banned in _BANNED_HTTP_IMPORTS
-    )
+    return any(name == banned or name.startswith(f"{banned}.") for banned in _BANNED_HTTP_IMPORTS)
 
 
 def _banned_module_name_arguments(tree: ast.Module) -> list[tuple[ast.expr, str]]:
@@ -600,26 +581,19 @@ def _find_http_client_imports(root: Path) -> list[Violation]:
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     if _is_banned_http_module(alias.name) and not _is_http_import_allowlisted(
-                        path, alias.name,
+                        path,
+                        alias.name,
                     ):
-                        violations.append(
-                            Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, alias.name)
-                        )
+                        violations.append(Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, alias.name))
             # `node.level == 0` -- absolute imports only. A relative import
             # (`from .requests import helper`) names a LOCAL Mason module that
             # merely shares the name, not the banned third-party client
             # (follow-up review, both reviewers: it was a false positive, and
             # the cheapest repair under a red guard is to weaken the guard).
-            elif (
-                isinstance(node, ast.ImportFrom)
-                and node.level == 0
-                and node.module is not None
-            ):
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module is not None:
                 if _is_banned_http_module(node.module):
                     if not _is_http_import_allowlisted(path, node.module):
-                        violations.append(
-                            Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, node.module)
-                        )
+                        violations.append(Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, node.module))
                     continue
                 # The "parent, then submodule" spelling of the two dotted
                 # names -- `from urllib import request` / `from http import
@@ -630,11 +604,10 @@ def _find_http_client_imports(root: Path) -> list[Violation]:
                 for alias in node.names:
                     dotted = f"{node.module}.{alias.name}"
                     if _is_banned_http_module(dotted) and not _is_http_import_allowlisted(
-                        path, dotted,
+                        path,
+                        dotted,
                     ):
-                        violations.append(
-                            Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, dotted)
-                        )
+                        violations.append(Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, dotted))
     return violations
 
 
@@ -781,7 +754,8 @@ def _is_bare_none_literal(value: ast.expr) -> bool:
 
 
 def _named_function_def(
-    tree: ast.Module, name: str,
+    tree: ast.Module,
+    name: str,
 ) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
     """The (sync or async) function definition named `name`, anywhere in
     `tree` -- generalized (Story 2.9) from the original
@@ -797,16 +771,15 @@ def _named_function_def(
     weaken the guard is exactly the failure mode this file designs against,
     and `_docstring_string_ids` above already handles both node types."""
     for node in ast.walk(tree):
-        if (
-            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name == name
-        ):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:
             return node
     return None
 
 
 def _allowlisted_call_ids_in_named_function(
-    tree: ast.Module, function_name: str, call_name: str,
+    tree: ast.Module,
+    function_name: str,
+    call_name: str,
 ) -> set[int]:
     """One Guard-3a allowlist entry: `id()` of the one sanctioned
     `call_name` call inside `function_name`'s own body -- structural, not
@@ -1040,9 +1013,7 @@ def _is_os_environ_subscript(node: ast.expr, alias_names: frozenset[str]) -> boo
     return isinstance(node, ast.Subscript) and _is_os_environ(node.value, alias_names)
 
 
-def _mutated_env_targets(
-    node: ast.expr | None, alias_names: frozenset[str]
-) -> list[ast.expr]:
+def _mutated_env_targets(node: ast.expr | None, alias_names: frozenset[str]) -> list[ast.expr]:
     """Every `os.environ[...]` subscript reachable from a binding target,
     recursing through tuple/list/starred unpacking -- mirroring
     `test_no_recipe_knowledge.py::_bound_names_in_target`, which already
@@ -1054,9 +1025,7 @@ def _mutated_env_targets(
     if _is_os_environ_subscript(node, alias_names):
         return [node]
     if isinstance(node, (ast.Tuple, ast.List)):
-        return [
-            found for elt in node.elts for found in _mutated_env_targets(elt, alias_names)
-        ]
+        return [found for elt in node.elts for found in _mutated_env_targets(elt, alias_names)]
     if isinstance(node, ast.Starred):
         return _mutated_env_targets(node.value, alias_names)
     return []
@@ -1092,9 +1061,7 @@ def _find_env_mutation_violations(root: Path) -> list[Violation]:
                 # child process). Covers list/set/dict comprehensions and
                 # generator expressions alike, which all carry this node.
                 targets = [node.target]
-            matched = [
-                t for target in targets for t in _mutated_env_targets(target, alias_names)
-            ]
+            matched = [t for target in targets for t in _mutated_env_targets(target, alias_names)]
             if matched:
                 # The matched TARGET's lineno, not the statement's:
                 # `ast.withitem` carries no `lineno` at all, so anchoring on
@@ -1134,22 +1101,14 @@ def _find_env_mutation_violations(root: Path) -> list[Violation]:
                 and func.attr in _ENV_MUTATING_METHODS
                 and _is_os_environ(func.value, alias_names)
             ):
-                violations.append(
-                    Violation(
-                        path, node.lineno, CATEGORY_ENV_MUTATION, f"{ast.unparse(func)}()"
-                    )
-                )
+                violations.append(Violation(path, node.lineno, CATEGORY_ENV_MUTATION, f"{ast.unparse(func)}()"))
             elif _call_name(node) in _ENV_MUTATING_FUNCTIONS:
                 # Reported as its own source text, not as `os.<name>()`
                 # (third review pass, Blind Hunter): this branch matches a
                 # bare call NAME with no receiver check -- deliberately
                 # conservative, but it must not name a module it never
                 # confirmed was involved.
-                violations.append(
-                    Violation(
-                        path, node.lineno, CATEGORY_ENV_MUTATION, f"{ast.unparse(func)}()"
-                    )
-                )
+                violations.append(Violation(path, node.lineno, CATEGORY_ENV_MUTATION, f"{ast.unparse(func)}()"))
     return violations
 
 
@@ -1158,9 +1117,7 @@ def _find_env_override_violations(root: Path) -> list[Violation]:
     violations: list[Violation] = []
     for path in sorted(root.rglob("*.py")):
         tree = _parse_file(path)
-        allowlisted_ids = (
-            _allowlisted_env_override_ids(tree) if path.resolve() == cfe_path else set()
-        )
+        allowlisted_ids = _allowlisted_env_override_ids(tree) if path.resolve() == cfe_path else set()
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
@@ -1188,9 +1145,7 @@ def _find_env_override_violations(root: Path) -> list[Violation]:
             # signal distinguishing "you broke AD-14" from "you reformatted a
             # line" -- the message must name the expected expression, since
             # "the cheapest repair under a red guard is to weaken the guard".
-            violations.append(
-                Violation(path, node.lineno, CATEGORY_ENV_OVERRIDE, ast.unparse(env_value))
-            )
+            violations.append(Violation(path, node.lineno, CATEGORY_ENV_OVERRIDE, ast.unparse(env_value)))
     return violations
 
 
@@ -1200,10 +1155,7 @@ def _find_env_override_violations(root: Path) -> list[Violation]:
 def _assert_scanning_something(root: Path) -> None:
     # Guard the guard: a stale PKG_ROOT would make every real-tree assertion
     # below pass vacuously (mirrors every sibling meta-test's own check).
-    assert root.is_dir(), (
-        f"AD-14 credential-isolation guard is scanning nothing -- package "
-        f"root moved? {root}"
-    )
+    assert root.is_dir(), f"AD-14 credential-isolation guard is scanning nothing -- package root moved? {root}"
     assert list(root.rglob("*.py")), (
         f"AD-14 credential-isolation guard found zero modules under {root} "
         "-- it would pass vacuously; has the package moved or been renamed?"
@@ -1213,9 +1165,8 @@ def _assert_scanning_something(root: Path) -> None:
 def test_no_jfrog_env_var_reference_in_the_real_tree():
     _assert_scanning_something(PKG_ROOT)
     violations = _find_jfrog_env_var_references(PKG_ROOT)
-    assert not violations, (
-        "AD-14: no module may read a JFROG_* environment variable; found:\n"
-        + "\n".join(f"  {v.path}:{v.lineno} matched {v.detail!r}" for v in violations)
+    assert not violations, "AD-14: no module may read a JFROG_* environment variable; found:\n" + "\n".join(
+        f"  {v.path}:{v.lineno} matched {v.detail!r}" for v in violations
     )
 
 
@@ -1225,8 +1176,7 @@ def test_no_http_client_import_in_the_real_tree():
     assert not violations, (
         "AD-14: no module may import requests/httpx/urllib.request/http.client, "
         "nor name one as a string (which is how every dynamic import reaches "
-        "it); found:\n"
-        + "\n".join(f"  {v.path}:{v.lineno} [{v.category}] {v.detail!r}" for v in violations)
+        "it); found:\n" + "\n".join(f"  {v.path}:{v.lineno} [{v.category}] {v.detail!r}" for v in violations)
     )
 
 
@@ -1287,8 +1237,7 @@ def test_guard_2_allowlist_has_not_widened_past_its_pinned_ceiling():
         )
     extra_files = set(_GUARD_2_HTTP_IMPORT_ALLOWLIST) - set(_GUARD_2_ALLOWLIST_CEILING)
     assert not extra_files, (
-        "Guard 2's allowlist gained new file key(s) not present in its "
-        f"pinned ceiling: {sorted(extra_files)}."
+        f"Guard 2's allowlist gained new file key(s) not present in its pinned ceiling: {sorted(extra_files)}."
     )
 
 
@@ -1337,7 +1286,9 @@ def test_the_real_cfe_py_run_streamed_allowlist_entry_is_still_live():
     assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
 
     allowlisted = _allowlisted_call_ids_in_named_function(
-        _parse_file(cfe_path), "run_streamed", "Popen",
+        _parse_file(cfe_path),
+        "run_streamed",
+        "Popen",
     )
 
     assert len(allowlisted) == 1, (
@@ -1361,7 +1312,9 @@ def test_the_real_cfe_py_invoke_captured_allowlist_entry_is_still_live():
     assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
 
     allowlisted = _allowlisted_call_ids_in_named_function(
-        _parse_file(cfe_path), "_invoke_captured", "run",
+        _parse_file(cfe_path),
+        "_invoke_captured",
+        "run",
     )
 
     assert len(allowlisted) == 1, (
@@ -1386,7 +1339,9 @@ def test_the_real_cfe_py_build_native_allowlist_entry_is_still_live():
     assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
 
     allowlisted = _allowlisted_call_ids_in_named_function(
-        _parse_file(cfe_path), "build_native", "run_streamed",
+        _parse_file(cfe_path),
+        "build_native",
+        "run_streamed",
     )
 
     assert len(allowlisted) == 1, (
@@ -1408,7 +1363,9 @@ def test_the_real_cfe_py_build_docker_allowlist_entry_is_still_live():
     assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
 
     allowlisted = _allowlisted_call_ids_in_named_function(
-        _parse_file(cfe_path), "build_docker", "run_streamed",
+        _parse_file(cfe_path),
+        "build_docker",
+        "run_streamed",
     )
 
     assert len(allowlisted) == 1, (
@@ -1428,7 +1385,8 @@ def test_detector_fires_on_a_planted_jfrog_env_var_reference(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'import os\nKEY = os.environ.get("JFROG_API_KEY")\n', encoding="utf-8",
+        'import os\nKEY = os.environ.get("JFROG_API_KEY")\n',
+        encoding="utf-8",
     )
 
     violations = _find_jfrog_env_var_references(root)
@@ -1453,7 +1411,8 @@ def test_clean_module_produces_zero_jfrog_matches(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        'VALUE = os.environ.get("MASON_CFE_ROOT")\n', encoding="utf-8",
+        'VALUE = os.environ.get("MASON_CFE_ROOT")\n',
+        encoding="utf-8",
     )
 
     assert _find_jfrog_env_var_references(root) == []
@@ -1497,7 +1456,8 @@ def test_detector_fires_on_an_underscore_prefixed_jfrog_variable(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'KEY = os.environ.get("STAGING_JFROG_API_KEY")\n', encoding="utf-8",
+        'KEY = os.environ.get("STAGING_JFROG_API_KEY")\n',
+        encoding="utf-8",
     )
 
     violations = _find_jfrog_env_var_references(root)
@@ -1556,7 +1516,8 @@ def test_a_bare_string_not_preceded_by_an_assignment_is_still_flagged(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "leaky.py").write_text(
-        "print('unrelated')\n'JFROG_API_KEY'\n", encoding="utf-8",
+        "print('unrelated')\n'JFROG_API_KEY'\n",
+        encoding="utf-8",
     )
 
     assert _find_jfrog_env_var_references(root) != []
@@ -1569,7 +1530,8 @@ def test_detector_fires_on_a_concatenated_jfrog_variable_name(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'import os\nKEY = os.environ.get("JFROG" + "_API_KEY")\n', encoding="utf-8",
+        'import os\nKEY = os.environ.get("JFROG" + "_API_KEY")\n',
+        encoding="utf-8",
     )
 
     violations = _find_jfrog_env_var_references(root)
@@ -1596,8 +1558,7 @@ def test_detector_fires_on_a_bare_jfrog_prefix_filter(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os\n"
-        'CREDS = {k: v for k, v in os.environ.items() if k.startswith("JFROG")}\n',
+        'import os\nCREDS = {k: v for k, v in os.environ.items() if k.startswith("JFROG")}\n',
         encoding="utf-8",
     )
 
@@ -1627,9 +1588,7 @@ def test_detector_fires_on_a_foldable_chain_nested_in_an_unfoldable_one(tmp_path
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os\n"
-        "suffix = ''\n"
-        'KEY = os.environ.get("JFROG" + "_API_KEY" + suffix)\n',
+        'import os\nsuffix = \'\'\nKEY = os.environ.get("JFROG" + "_API_KEY" + suffix)\n',
         encoding="utf-8",
     )
 
@@ -1705,7 +1664,8 @@ def test_detector_fires_on_the_parent_plus_submodule_import_form(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from urllib import request\nfrom http import client\n", encoding="utf-8",
+        "from urllib import request\nfrom http import client\n",
+        encoding="utf-8",
     )
 
     violations = {v.detail for v in _find_http_client_imports(root)}
@@ -1717,7 +1677,8 @@ def test_clean_module_produces_zero_http_import_matches(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "import subprocess\nfrom pathlib import Path\n", encoding="utf-8",
+        "import subprocess\nfrom pathlib import Path\n",
+        encoding="utf-8",
     )
 
     assert _find_http_client_imports(root) == []
@@ -1754,7 +1715,8 @@ def test_a_submodule_import_is_reported_once_not_twice(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from requests.sessions import Session\n", encoding="utf-8",
+        "from requests.sessions import Session\n",
+        encoding="utf-8",
     )
 
     assert len(_find_http_client_imports(root)) == 1
@@ -1766,7 +1728,8 @@ def test_a_module_merely_prefixed_by_a_banned_name_is_not_flagged(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "import requestsx\nfrom httpxray import Tracer\n", encoding="utf-8",
+        "import requestsx\nfrom httpxray import Tracer\n",
+        encoding="utf-8",
     )
 
     assert _find_http_client_imports(root) == []
@@ -1780,7 +1743,8 @@ def test_a_relative_import_of_a_local_module_is_not_flagged(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "from .requests import helper\nfrom .http import client\n", encoding="utf-8",
+        "from .requests import helper\nfrom .http import client\n",
+        encoding="utf-8",
     )
 
     assert _find_http_client_imports(root) == []
@@ -1825,16 +1789,13 @@ def test_detector_fires_on_a_banned_client_named_only_as_a_string(tmp_path, name
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import importlib\n_dyn = importlib.import_module\n"
-        f'client = _dyn("{name}")\n',
+        f'import importlib\n_dyn = importlib.import_module\nclient = _dyn("{name}")\n',
         encoding="utf-8",
     )
 
     violations = _find_http_client_imports(root)
 
-    assert any(
-        v.category == CATEGORY_HTTP_MODULE_NAME and v.detail == name for v in violations
-    )
+    assert any(v.category == CATEGORY_HTTP_MODULE_NAME and v.detail == name for v in violations)
 
 
 def test_a_submodule_named_only_as_a_string_is_flagged(tmp_path):
@@ -1874,7 +1835,8 @@ def test_a_docstring_naming_a_banned_client_is_not_flagged(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "narrator.py").write_text(
-        '"""Mason imports no requests/httpx client (AD-14)."""\n', encoding="utf-8",
+        '"""Mason imports no requests/httpx client (AD-14)."""\n',
+        encoding="utf-8",
     )
 
     assert _find_http_client_imports(root) == []
@@ -1953,7 +1915,8 @@ def test_urllib_request_submodule_in_pypi_index_py_is_also_exempted(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "pypi_index.py").write_text(
-        "from urllib.request import urlopen\n", encoding="utf-8",
+        "from urllib.request import urlopen\n",
+        encoding="utf-8",
     )
 
     assert _find_http_client_imports(root) == []
@@ -1968,8 +1931,7 @@ def test_urllib_request_named_as_a_string_argument_in_pypi_index_py_is_exempted(
     root = tmp_path / "mason"
     root.mkdir()
     (root / "pypi_index.py").write_text(
-        "import importlib\n_dyn = importlib.import_module\n"
-        'client = _dyn("urllib.request")\n',
+        'import importlib\n_dyn = importlib.import_module\nclient = _dyn("urllib.request")\n',
         encoding="utf-8",
     )
 
@@ -1983,8 +1945,7 @@ def test_detector_fires_on_a_planted_subprocess_run_env_override(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import subprocess\n"
-        'subprocess.run(["x"], env={"FOO": "bar"})\n',
+        'import subprocess\nsubprocess.run(["x"], env={"FOO": "bar"})\n',
         encoding="utf-8",
     )
 
@@ -1998,8 +1959,7 @@ def test_detector_fires_on_a_planted_run_streamed_caller_env_override(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from .cfe import run_streamed\n"
-        'run_streamed(["x"], timeout=5, env={"FOO": "bar"})\n',
+        'from .cfe import run_streamed\nrun_streamed(["x"], timeout=5, env={"FOO": "bar"})\n',
         encoding="utf-8",
     )
 
@@ -2012,7 +1972,8 @@ def test_detector_permits_an_explicit_bare_none_env_literal(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "import subprocess\nsubprocess.run(['x'], env=None)\n", encoding="utf-8",
+        "import subprocess\nsubprocess.run(['x'], env=None)\n",
+        encoding="utf-8",
     )
 
     assert _find_env_override_violations(root) == []
@@ -2022,7 +1983,8 @@ def test_detector_permits_a_call_with_no_env_kwarg_at_all(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "import subprocess\nsubprocess.run(['x'], timeout=5)\n", encoding="utf-8",
+        "import subprocess\nsubprocess.run(['x'], timeout=5)\n",
+        encoding="utf-8",
     )
 
     assert _find_env_override_violations(root) == []
@@ -2150,9 +2112,7 @@ def test_every_required_env_override_call_name_is_actually_detected(tmp_path, ca
     ["{}", '{"HTTPS_PROXY": "http://evil"}', "{k: v for k, v in os.environ.items()}"],
     ids=["empty-dict", "hostile-dict", "stripping-comprehension"],
 )
-def test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_call(
-    tmp_path, env_expr
-):
+def test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_call(tmp_path, env_expr):
     """THE high-severity hole (follow-up review, both reviewers, reproduced
     against the real `cfe.py`): the allowlist keyed on the `Popen` call's
     identity and never looked at its `env=` value, so rewriting the one
@@ -2210,7 +2170,8 @@ def test_allowlist_is_revoked_when_invoke_captured_gains_a_second_run_call(tmp_p
     ids=["empty-dict", "hostile-dict", "stripping-comprehension"],
 )
 def test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_invoke_captured_call(
-    tmp_path, env_expr,
+    tmp_path,
+    env_expr,
 ):
     """Story 2.9's `_invoke_captured`-equivalent of
     `test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_call`
@@ -2267,7 +2228,8 @@ def test_an_inheriting_spawn_variant_is_not_flagged(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        'import os\nos.execv("/bin/sh", ["sh"])\n', encoding="utf-8",
+        'import os\nos.execv("/bin/sh", ["sh"])\n',
+        encoding="utf-8",
     )
 
     assert _find_env_override_violations(root) == []
@@ -2503,7 +2465,8 @@ def test_detector_fires_on_the_explicit_ior_dunder(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os\nos.environ.__ior__({'JFROG_API_KEY': 't'})\n", encoding="utf-8",
+        "import os\nos.environ.__ior__({'JFROG_API_KEY': 't'})\n",
+        encoding="utf-8",
     )
 
     violations = _find_env_mutation_violations(root)
@@ -2518,11 +2481,7 @@ def test_an_unrelated_name_is_not_treated_as_the_environment(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "import os\n"
-        "_env = dict(os.environ)\n"
-        "_env['A'] = 'b'\n"
-        "_other = {'x': 1}\n"
-        "_other.update({'y': 2})\n",
+        "import os\n_env = dict(os.environ)\n_env['A'] = 'b'\n_other = {'x': 1}\n_other.update({'y': 2})\n",
         encoding="utf-8",
     )
 

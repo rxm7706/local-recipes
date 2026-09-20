@@ -69,9 +69,7 @@ def _git_facts(*, changed_paths: tuple[str, ...] = ()) -> DispatchGitFacts:
     )
 
 
-def _seed_spec(
-    *, repo_root: Path, worktree: Path, slug: str, story_key: str, text: str
-) -> str:
+def _seed_spec(*, repo_root: Path, worktree: Path, slug: str, story_key: str, text: str) -> str:
     """Write the tracked spec at its repo-root path AND its worktree-relocated
     copy (real files on disk -- ``resolve_story_spec_path`` globs the real
     filesystem). Returns the worktree-relative path."""
@@ -122,9 +120,7 @@ def test_worktree_story_spec_no_signal_is_none_none(tmp_path: Path) -> None:
     fs = FakeFs()
     worktree = _worktree(tmp_path)
 
-    relative, text = _worktree_story_spec(
-        fs=fs, repo_root=tmp_path, slug=_SLUG, story_key="99.9", worktree=worktree
-    )
+    relative, text = _worktree_story_spec(fs=fs, repo_root=tmp_path, slug=_SLUG, story_key="99.9", worktree=worktree)
 
     assert relative is None
     assert text is None
@@ -272,9 +268,7 @@ def test_journal_dispatch_blocked_writes_intent_and_outcome(tmp_path: Path) -> N
 # --------------------------------------------------------------------------
 
 
-def test_land_or_journal_block_skips_landing_when_blocked(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_land_or_journal_block_skips_landing_when_blocked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Mutation-test shape (Story 51.4's own AC): prove the guard is
     load-bearing by making the landing call raise if it is ever reached for
     a blocked spec -- removing the guard would surface here immediately."""

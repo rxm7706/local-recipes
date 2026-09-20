@@ -157,4 +157,3 @@ class CorridorLoad(models.Model):
 
     def __str__(self) -> str:
         return f"{self.direction}:{self.waybill} ({self.batch_sha[:8]})"
-

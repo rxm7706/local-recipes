@@ -165,9 +165,7 @@ class ScribeCli:
         is "run from the repository root (never a hardcoded absolute
         path)", and its fingerprint index and derived artifacts are all
         resolved relative to that root."""
-        resolved = (
-            binary_path if binary_path is not None else self.resolve_binary(repo_root)
-        )
+        resolved = binary_path if binary_path is not None else self.resolve_binary(repo_root)
         if resolved is None:
             return ScribeRefreshOutcome(
                 ok=False,
@@ -180,9 +178,7 @@ class ScribeCli:
             )
         argv = render_scribe_refresh_argv(resolved, str(manifest_path))
         try:
-            result = self._process.run(
-                argv, cwd=Path(repo_root), timeout_s=_REFRESH_TIMEOUT_S
-            )
+            result = self._process.run(argv, cwd=Path(repo_root), timeout_s=_REFRESH_TIMEOUT_S)
         except ProcessError as exc:
             return ScribeRefreshOutcome(
                 ok=False,
@@ -220,9 +216,7 @@ class ScribeCli:
                 ),
             )
         refreshed, skipped = parsed
-        return ScribeRefreshOutcome(
-            ok=True, refreshed=refreshed, skipped=skipped, argv=argv
-        )
+        return ScribeRefreshOutcome(ok=True, refreshed=refreshed, skipped=skipped, argv=argv)
 
     def recall(
         self,
@@ -234,9 +228,7 @@ class ScribeCli:
     ) -> ScribeRecallOutcome:
         """Run the declared ``scribe recall`` grammar and return what it
         reported. Never raises."""
-        resolved = (
-            binary_path if binary_path is not None else self.resolve_binary(repo_root)
-        )
+        resolved = binary_path if binary_path is not None else self.resolve_binary(repo_root)
         if resolved is None:
             return ScribeRecallOutcome(
                 ok=False,
@@ -249,9 +241,7 @@ class ScribeCli:
             )
         argv = render_scribe_recall_argv(resolved, query, scope=scope)
         try:
-            result = self._process.run(
-                argv, cwd=Path(repo_root), timeout_s=_RECALL_TIMEOUT_S
-            )
+            result = self._process.run(argv, cwd=Path(repo_root), timeout_s=_RECALL_TIMEOUT_S)
         except ProcessError as exc:
             return ScribeRecallOutcome(
                 ok=False,

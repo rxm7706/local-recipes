@@ -47,9 +47,7 @@ def test_public_package_with_feedstock_resolves_conda_name_and_is_not_internal()
 
 def test_mock_only_package_is_flagged_internal_with_no_mapping():
     rows = [DownloadRow(name="acme-internal-tool", version="1.0.0", download_count=5)]
-    mapping = pd.DataFrame(
-        {"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]}
-    )
+    mapping = pd.DataFrame({"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]})
     universe = pd.DataFrame({"pypi_name": ["requests"], "last_serial": [123]})
 
     [result] = join_identity(rows, mapping, universe)
@@ -64,9 +62,7 @@ def test_mock_only_package_is_flagged_internal_with_no_mapping():
 
 def test_public_package_without_feedstock_is_not_internal_and_has_no_conda_name():
     rows = [DownloadRow(name="some-pure-pypi-lib", version="0.1.0", download_count=1)]
-    mapping = pd.DataFrame(
-        {"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]}
-    )
+    mapping = pd.DataFrame({"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]})
     universe = pd.DataFrame({"pypi_name": ["some-pure-pypi-lib"], "last_serial": [99]})
 
     [result] = join_identity(rows, mapping, universe)
@@ -101,9 +97,7 @@ def test_empty_universe_degrades_is_internal_to_false_for_every_row():
         DownloadRow(name="requests", version="2.31.0", download_count=100),
         DownloadRow(name="acme-internal-tool", version="1.0.0", download_count=5),
     ]
-    mapping = pd.DataFrame(
-        {"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]}
-    )
+    mapping = pd.DataFrame({"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]})
 
     for empty_universe in (pd.DataFrame(), pd.DataFrame({"last_serial": [1]})):
         result = join_identity(rows, mapping, empty_universe)
@@ -145,9 +139,7 @@ def test_duplicate_name_across_rows_resolves_each_row_independently():
         DownloadRow(name="requests", version="2.31.0", download_count=100),
         DownloadRow(name="requests", version="2.30.0", download_count=50),
     ]
-    mapping = pd.DataFrame(
-        {"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]}
-    )
+    mapping = pd.DataFrame({"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]})
     universe = pd.DataFrame({"pypi_name": ["requests"], "last_serial": [123]})
 
     result = join_identity(rows, mapping, universe)
@@ -233,9 +225,7 @@ def test_equal_tier_same_conda_name_different_match_source_is_order_independent(
 
 
 def test_none_rows_returns_empty_list_without_raising():
-    mapping = pd.DataFrame(
-        {"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]}
-    )
+    mapping = pd.DataFrame({"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]})
     universe = pd.DataFrame({"pypi_name": ["requests"], "last_serial": [123]})
 
     assert join_identity(None, mapping, universe) == []

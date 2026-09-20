@@ -77,10 +77,7 @@ def _imported_roots(tree: ast.AST) -> set[str]:
 
 def test_portal_home_uses_portal_client_only():
     root = _repo_root()
-    views = (
-        root
-        / "src/shared/packages/django-steward/src/django_steward_portal/views.py"
-    ).read_text(encoding="utf-8")
+    views = (root / "src/shared/packages/django-steward/src/django_steward_portal/views.py").read_text(encoding="utf-8")
     tree = ast.parse(views)
     assert "PortalClient" in views
     assert "provision_list" in views
@@ -159,6 +156,7 @@ def test_portal_client_provision_list_matches_duty(tmp_path):
     root = _repo_root()
     _ensure_portal_import_path(root)
     from django_pyforge.assertion.client import PortalClient
+
     from pyforge.steward.provision import load_pixi_environments
 
     (tmp_path / "pixi.toml").write_text(_sample_pixi_toml(), encoding="utf-8")
@@ -172,8 +170,9 @@ def test_portal_client_provision_list_default_cwd_uses_repo_root(monkeypatch, tm
     pytest.importorskip("django")
     root = _repo_root()
     _ensure_portal_import_path(root)
-    import pyforge.steward.provision as provision
     from django_pyforge.assertion.client import PortalClient
+
+    import pyforge.steward.provision as provision
     from pyforge.steward.provision import load_pixi_environments
 
     (tmp_path / "pixi.toml").write_text(_sample_pixi_toml(), encoding="utf-8")
@@ -206,8 +205,7 @@ def test_authenticated_steward_home_renders_provision_inventory(monkeypatch):
 
     root = _repo_root()
     _ensure_portal_import_path(root)
-    from django.template import Context
-    from django.template import Engine
+    from django.template import Context, Engine
     from django.test import RequestFactory
     from django_pyforge.assertion.client import PortalClient
     from django_pyforge.roles import prefixed_station

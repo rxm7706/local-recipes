@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.cutover_root import CutoverRootError, read_cutover_root
 
 from pyforge.steward.cutover import (
     apply_phase,
@@ -15,7 +16,6 @@ from pyforge.steward.cutover import (
     plan_append,
     plan_regenerate,
 )
-from pyforge.core.cutover_root import CutoverRootError, read_cutover_root
 
 
 def _git_repo(tmp_path: Path) -> Path:
@@ -27,9 +27,7 @@ def _git_repo(tmp_path: Path) -> Path:
     subprocess.run(["git", "config", "user.email", "t@t"], cwd=root, check=True)
     subprocess.run(["git", "config", "user.name", "t"], cwd=root, check=True)
     subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "seed"], cwd=root, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "seed"], cwd=root, check=True, capture_output=True)
     return root
 
 
@@ -55,9 +53,7 @@ def test_append_preserves_moved(tmp_path: Path) -> None:
     extra = root / "src/shared/packages/demo/extra.txt"
     extra.write_text("x", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "delta"], cwd=root, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "delta"], cwd=root, check=True, capture_output=True)
     second = plan_append(root, manifest)
     by_path = {r["path"]: r for r in second["rows"]}
     assert by_path[first["rows"][0]["path"]]["status"] == "moved"

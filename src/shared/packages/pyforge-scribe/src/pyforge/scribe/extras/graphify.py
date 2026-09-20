@@ -40,6 +40,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
+
 from pyforge.scribe.models import GraphNode
 
 #: Off by default (air-gap, AD-6) -- only a truthy value turns the extra on.
@@ -137,20 +138,14 @@ def ingest_repo(
     if target is not None:
         resolved_targets = [(repo_root / target).resolve()]
         if not resolved_targets[0].is_dir():
-            collected_warnings.append(
-                f"graphify ingest target {resolved_targets[0]} does not exist -- skipped"
-            )
+            collected_warnings.append(f"graphify ingest target {resolved_targets[0]} does not exist -- skipped")
             return []
     else:
         resolved_targets = [
-            (repo_root / rel).resolve()
-            for rel in DEFAULT_GRAPHIFY_TARGETS
-            if (repo_root / rel).is_dir()
+            (repo_root / rel).resolve() for rel in DEFAULT_GRAPHIFY_TARGETS if (repo_root / rel).is_dir()
         ]
         if not resolved_targets:
-            collected_warnings.append(
-                "graphify ingest targets do not exist -- skipped"
-            )
+            collected_warnings.append("graphify ingest targets do not exist -- skipped")
             return []
 
     graphify = _import_graphify()
@@ -178,9 +173,7 @@ def _build_graph(graphify, repo_root: Path, target: Path):
     if not files:
         extraction = {"nodes": [], "edges": [], "hyperedges": []}
     else:
-        extraction = extract(
-            files, cache_root=cache_root, root=repo_root, parallel=False
-        )
+        extraction = extract(files, cache_root=cache_root, root=repo_root, parallel=False)
     return build_from_json(extraction, root=repo_root)
 
 
@@ -251,10 +244,7 @@ def build_graph_report(
         "",
     ]
     if god:
-        lines.extend(
-            f"- {entry.get('label', entry.get('id'))} (degree={entry.get('degree')})"
-            for entry in god
-        )
+        lines.extend(f"- {entry.get('label', entry.get('id'))} (degree={entry.get('degree')})" for entry in god)
     else:
         lines.append("(none)")
     return "\n".join(lines) + "\n"

@@ -166,11 +166,7 @@ def compute_eligibility_union(
             )
         provenance.sort(key=lambda p: (p.source, p.locator))
 
-        results.append(
-            EligibilityResult(
-                identity=identity, status=status, provenance=tuple(provenance)
-            )
-        )
+        results.append(EligibilityResult(identity=identity, status=status, provenance=tuple(provenance)))
 
     results.sort(
         key=lambda r: (

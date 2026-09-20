@@ -34,13 +34,14 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.cli.main import _build_parser
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.harness_profile import load_packaged_profiles
 from pyforge.marshal.seed.detect.findings import FindingType, Severity
-from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.marshal.seed.detect.kit import (
     InstrumentProbe,
     KitStatus,
@@ -106,9 +107,7 @@ def _whole_file(entry_id: str, path: str) -> ManifestEntry:
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -142,12 +141,8 @@ def _layers(**enabled: bool) -> dict[str, dict[str, object]]:
     change to the resolved entry shape (a third key, a renamed layer) breaks
     these tests instead of leaving them asserting against a shape nothing
     produces."""
-    declared = {
-        layer.replace("_", "-"): {"enabled": value} for layer, value in enabled.items()
-    }
-    effective, _ = policy.compose(
-        project_slug="pyforge-marshal", project={"context": declared}, flags={}
-    )
+    declared = {layer.replace("_", "-"): {"enabled": value} for layer, value in enabled.items()}
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={"context": declared}, flags={})
     return policy.resolve_context_layers(effective)
 
 
@@ -316,9 +311,7 @@ def test_deployed_skill_tolerates_an_upstream_without_a_trailing_newline():
     rendered = render_deployed_skill("no trailing newline", _VERSION)
 
     assert rendered.startswith("no trailing newline\n")
-    assert [span.name for span in parse_regions(rendered, RegionFormat.HTML)] == [
-        ARTICULATE_REGION
-    ]
+    assert [span.name for span in parse_regions(rendered, RegionFormat.HTML)] == [ARTICULATE_REGION]
 
 
 # --- AC 4: layers off raise nothing ----------------------------------------
@@ -393,9 +386,7 @@ def test_a_deployed_skill_with_an_emptied_carve_out_is_not_conformant(home, skil
     spans = parse_regions(deployed, RegionFormat.HTML)
     gutted = deployed[: spans[0].body_span[0]] + "\n" + deployed[spans[0].body_span[1] :]
     # Markers survive the gutting -- that is the whole point of the case.
-    assert [span.name for span in parse_regions(gutted, RegionFormat.HTML)] == [
-        ARTICULATE_REGION
-    ]
+    assert [span.name for span in parse_regions(gutted, RegionFormat.HTML)] == [ARTICULATE_REGION]
     skill = home / ".claude" / "skills" / "caveman" / "SKILL.md"
     skill.parent.mkdir(parents=True)
     skill.write_text(gutted, encoding="utf-8")
@@ -439,9 +430,7 @@ def test_non_ascii_upstream_content_before_the_region_is_still_conformant(home, 
 
 def test_a_hand_edited_carve_out_body_is_not_conformant(home, skill_payload):
     deployed = render_deployed_skill(_UPSTREAM_SKILL, _VERSION)
-    tampered = deployed.replace(
-        "escalation context handed to a human", "escalation context (optional)"
-    )
+    tampered = deployed.replace("escalation context handed to a human", "escalation context (optional)")
     assert tampered != deployed
     skill = home / ".claude" / "skills" / "caveman" / "SKILL.md"
     skill.parent.mkdir(parents=True)
@@ -543,9 +532,7 @@ def test_no_staleness_claim_when_git_cannot_answer(tmp_path):
 
 
 def test_an_unavailable_instrument_is_named_at_info_severity(home):
-    checks = kit_checks(
-        home, _layers(**_ALL_ON), probe=_unavailable(KitItemId.CODEGRAPH_INDEX)
-    )
+    checks = kit_checks(home, _layers(**_ALL_ON), probe=_unavailable(KitItemId.CODEGRAPH_INDEX))
     findings = kit_findings(checks)
 
     degraded = [f for f in findings if f.type is FindingType.KIT_INSTRUMENT_UNAVAILABLE]
@@ -574,9 +561,7 @@ def test_probe_reports_a_missing_binary_and_a_missing_payload_differently():
     assert "not on PATH" in absent.reason
 
     # Binary present, payload not where the packaged layout puts it.
-    present_but_broken = probe_instrument(
-        caveman, which=lambda _name: "/nonexistent/bin/caveman-install"
-    )
+    present_but_broken = probe_instrument(caveman, which=lambda _name: "/nonexistent/bin/caveman-install")
     assert present_but_broken.available is False
     assert "packaged skill payload" in present_but_broken.reason
 
@@ -628,8 +613,7 @@ def test_apply_provisions_every_declared_item(home, skill_payload):
         fs=LocalFs(),
         apply=True,
         probe=_payload_probe(skill_payload),
-        index_builder=lambda root, *, stale: built.append((root, stale))
-        or _touch_index(root, stale=stale),
+        index_builder=lambda root, *, stale: built.append((root, stale)) or _touch_index(root, stale=stale),
     )
 
     assert built == [(home, False)]
@@ -681,9 +665,7 @@ def test_apply_is_idempotent(home, skill_payload):
     assert second.findings == ()
 
 
-def test_an_unavailable_instrument_skips_its_layer_and_the_rest_still_applies(
-    home, skill_payload
-):
+def test_an_unavailable_instrument_skips_its_layer_and_the_rest_still_applies(home, skill_payload):
     """AC 3, the whole sentence: the seed still applies, the layer is
     skipped, and a named finding reports exactly which instrument and why."""
     result = run_kit(
@@ -704,9 +686,7 @@ def test_an_unavailable_instrument_skips_its_layer_and_the_rest_still_applies(
     assert by_item["codegraph-index"].action is KitAction.APPLIED
     assert (home / ".marshal" / "wire").is_dir()
 
-    assert [finding.type for finding in result.findings] == [
-        FindingType.KIT_INSTRUMENT_UNAVAILABLE
-    ]
+    assert [finding.type for finding in result.findings] == [FindingType.KIT_INSTRUMENT_UNAVAILABLE]
     assert result.findings[0].severity is Severity.INFO
     assert "caveman" in result.findings[0].message
 
@@ -832,9 +812,7 @@ def test_a_successful_sync_stamps_the_index_so_drift_cannot_become_permanent(hom
         index_builder=lambda _root, *, stale: None,
     )
 
-    assert [check.status for check in result.checks if check.item_id == "codegraph-index"] == [
-        KitStatus.OK
-    ]
+    assert [check.status for check in result.checks if check.item_id == "codegraph-index"] == [KitStatus.OK]
     assert result.findings == ()
 
 
@@ -962,9 +940,7 @@ class _PortOnlyFs:
         return self.texts.get(path)
 
 
-def test_post_apply_verification_reads_the_same_port_the_writes_went_through(
-    home, skill_payload
-):
+def test_post_apply_verification_reads_the_same_port_the_writes_went_through(home, skill_payload):
     fs = _PortOnlyFs()
 
     result = run_kit(
@@ -976,9 +952,7 @@ def test_post_apply_verification_reads_the_same_port_the_writes_went_through(
         probe=_payload_probe(skill_payload),
     )
 
-    assert {o.action for o in result.outcomes if o.action is not KitAction.SKIPPED} == {
-        KitAction.APPLIED
-    }
+    assert {o.action for o in result.outcomes if o.action is not KitAction.SKIPPED} == {KitAction.APPLIED}
     # Nothing landed on the real filesystem -- so a raw-Path verification
     # would report both applies as MISSING and emit DRIFT for them.
     assert not (home / ".marshal" / "wire").exists()
@@ -998,9 +972,7 @@ def test_run_check_without_context_layers_is_byte_identical(home):
 
 
 def test_run_check_with_layers_off_reports_three_checks_and_no_kit_findings(home):
-    report = run_check(
-        home, _manifest(_whole_file("whole", "WHOLE.md")), context_layers=_layers()
-    )
+    report = run_check(home, _manifest(_whole_file("whole", "WHOLE.md")), context_layers=_layers())
 
     assert len(report.kit) == 3
     assert {check.status for check in report.kit} == {KitStatus.OFF}
@@ -1075,9 +1047,7 @@ def _kit_args(root: Path, **overrides: object) -> argparse.Namespace:
     return argparse.Namespace(**base)
 
 
-def test_cli_kit_exits_zero_even_when_nothing_could_be_provisioned(
-    home, monkeypatch, capsys
-):
+def test_cli_kit_exits_zero_even_when_nothing_could_be_provisioned(home, monkeypatch, capsys):
     """This story's own Never bullet: never block a seed on a missing
     optional instrument."""
     monkeypatch.setattr("shutil.which", lambda _name: None)
@@ -1102,9 +1072,7 @@ def test_cli_kit_json_envelope_is_schema_stable(home, capsys):
 
 
 def test_cli_kit_refuses_dry_run_and_apply_together(home, capsys):
-    exit_code = seed_cli.run_kit(
-        _kit_args(home, apply=True, dry_run=True), manifest=_manifest()
-    )
+    exit_code = seed_cli.run_kit(_kit_args(home, apply=True, dry_run=True), manifest=_manifest())
 
     assert exit_code == 2
     assert "mutually exclusive" in capsys.readouterr().out
@@ -1116,9 +1084,7 @@ def test_cli_kit_routes_through_the_real_parser(home):
     would break the CLI with every hand-built-Namespace test still green."""
     parser = _build_parser()
 
-    args = parser.parse_args(
-        ["seed", "kit", "--repo-root", str(home), "--apply", "--json", "--quiet"]
-    )
+    args = parser.parse_args(["seed", "kit", "--repo-root", str(home), "--apply", "--json", "--quiet"])
 
     assert args.handler is seed_cli.run_kit
     assert args.seed_command == "kit"
@@ -1143,9 +1109,7 @@ def test_cli_check_text_report_renders_the_three_kit_checks(home, capsys):
     """AC 1's operator-facing surface: deleting the kit section from
     `_render_check_report_text` must fail a test, not pass silently."""
     _declare_layers(home, "pyforge-marshal", wire=True)
-    args = argparse.Namespace(
-        repo_root=str(home), strict=False, project="pyforge-marshal", json=False, quiet=False
-    )
+    args = argparse.Namespace(repo_root=str(home), strict=False, project="pyforge-marshal", json=False, quiet=False)
 
     seed_cli.run_check(args, manifest=_manifest())
 
@@ -1156,9 +1120,7 @@ def test_cli_check_text_report_renders_the_three_kit_checks(home, capsys):
 
 
 def test_cli_kit_bad_repo_root_is_a_usage_error(tmp_path, capsys):
-    exit_code = seed_cli.run_kit(
-        _kit_args(tmp_path / "nope"), manifest=_manifest()
-    )
+    exit_code = seed_cli.run_kit(_kit_args(tmp_path / "nope"), manifest=_manifest())
 
     assert exit_code == 2
     capsys.readouterr()
@@ -1169,23 +1131,18 @@ def test_cli_kit_bad_repo_root_is_a_usage_error(tmp_path, capsys):
 
 def _declare_layers(root: Path, slug: str, **enabled: bool) -> None:
     body = "\n".join(
-        f'[context."{layer.replace("_", "-")}"]\nenabled = {str(value).lower()}'
-        for layer, value in enabled.items()
+        f'[context."{layer.replace("_", "-")}"]\nenabled = {str(value).lower()}' for layer, value in enabled.items()
     )
     path = root / "_bmad-output" / "projects" / slug / "planning-artifacts"
     path.mkdir(parents=True, exist_ok=True)
     (path / "marshal-policy.toml").write_text(body + "\n", encoding="utf-8")
 
 
-def test_context_layers_come_from_the_target_repo_not_the_install_location(
-    home, monkeypatch
-):
+def test_context_layers_come_from_the_target_repo_not_the_install_location(home, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _declare_layers(home, "pyforge-marshal", wire=True)
     (home / "_bmad" / "custom").mkdir(parents=True)
-    (home / "_bmad" / "custom" / ".active-project").write_text(
-        "pyforge-marshal\n", encoding="utf-8"
-    )
+    (home / "_bmad" / "custom" / ".active-project").write_text("pyforge-marshal\n", encoding="utf-8")
 
     layers = seed_cli.resolve_context_layers(home, None)
 
@@ -1216,9 +1173,7 @@ def test_repo_defaults_layer_is_read_from_the_target_repo(home, monkeypatch):
 def test_unreadable_or_malformed_policy_degrades_to_every_layer_off(home, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     (home / "_bmad-output").mkdir(parents=True, exist_ok=True)
-    (home / "_bmad-output" / "policy-defaults.toml").write_text(
-        "this is not = = toml\n", encoding="utf-8"
-    )
+    (home / "_bmad-output" / "policy-defaults.toml").write_text("this is not = = toml\n", encoding="utf-8")
 
     layers = seed_cli.resolve_context_layers(home, None)
 

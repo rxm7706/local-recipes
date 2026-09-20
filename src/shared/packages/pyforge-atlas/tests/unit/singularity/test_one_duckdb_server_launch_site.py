@@ -32,9 +32,7 @@ ATLAS_SRC = Path(importlib.import_module("pyforge.atlas").__file__).resolve().pa
 
 BOOT_MODULE = "query_plane_boot.py"
 
-_SUBPROCESS_LAUNCHERS = frozenset(
-    {"Popen", "run", "call", "check_call", "check_output"}
-)
+_SUBPROCESS_LAUNCHERS = frozenset({"Popen", "run", "call", "check_call", "check_output"})
 
 # Importing the boot module's launch machinery is a duckdb-server mention even
 # without the literal string (review finding 6c, Story 20.1: ``from
@@ -47,9 +45,7 @@ def _is_os_launcher(name: str) -> bool:
     """``os``-namespace process launchers: ``system``/``popen`` exactly, plus
     the ``exec*``/``spawn*``/``posix_spawn*`` families (review finding 6b,
     Story 20.1: ``posix_spawn`` starts with neither ``exec`` nor ``spawn``)."""
-    return name in ("system", "popen") or name.startswith(
-        ("exec", "spawn", "posix_spawn")
-    )
+    return name in ("system", "popen") or name.startswith(("exec", "spawn", "posix_spawn"))
 
 
 def _names_imported_from(tree: ast.AST, module: str) -> dict[str, str]:
@@ -93,11 +89,7 @@ def _launch_hits(tree: ast.AST) -> list[str]:
         for local, original in _names_imported_from(tree, "subprocess").items()
         if original in _SUBPROCESS_LAUNCHERS
     }
-    os_imported = {
-        local
-        for local, original in _names_imported_from(tree, "os").items()
-        if _is_os_launcher(original)
-    }
+    os_imported = {local for local, original in _names_imported_from(tree, "os").items() if _is_os_launcher(original)}
     hits: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -119,11 +111,7 @@ def _launch_hits(tree: ast.AST) -> list[str]:
 
 def _mentions_duckdb_server(tree: ast.AST) -> bool:
     for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.Constant)
-            and isinstance(node.value, str)
-            and "duckdb-server" in node.value
-        ):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and "duckdb-server" in node.value:
             return True
         if (
             isinstance(node, ast.ImportFrom)
@@ -175,8 +163,7 @@ def test_only_the_boot_module_launches_duckdb_server() -> None:
         if _mentions_duckdb_server(tree := _parse(p)) and (hits := _launch_hits(tree))
     }
     assert offenders == {BOOT_MODULE: ["subprocess.Popen"]}, (
-        "Story 20.1 violation — the ONE duckdb-server launch site is "
-        f"{BOOT_MODULE}; found: {offenders}"
+        f"Story 20.1 violation — the ONE duckdb-server launch site is {BOOT_MODULE}; found: {offenders}"
     )
 
 
@@ -188,8 +175,7 @@ def test_exactly_one_launch_call_site_in_the_boot_module() -> None:
     assert boot_path.is_file(), "the one boot script is missing"
     hits = _launch_hits(_parse(boot_path))
     assert hits == ["subprocess.Popen"], (
-        "the boot module must contain exactly one launch call site "
-        f"(subprocess.Popen); found: {hits}"
+        f"the boot module must contain exactly one launch call site (subprocess.Popen); found: {hits}"
     )
 
 

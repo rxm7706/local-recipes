@@ -25,6 +25,7 @@ import dataclasses
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.errors import NeverWriteViolation
 from pyforge.marshal.seed.fs import NeverWrite
@@ -149,18 +150,14 @@ def test_matches_a_single_star_pattern_crosses_a_directory_separator():
 def test_matches_returns_none_for_an_exempt_path_that_matches_a_pattern():
     """The Story 10.8 short-circuit: an exempt path bypasses pattern
     matching entirely, even though it would otherwise match."""
-    never_write = NeverWrite(
-        ("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"})
-    )
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
     assert fs._matches(never_write, "docs/dreams/README.md") is None
 
 
 def test_matches_still_refuses_a_different_path_matching_the_same_pattern_when_not_exempt():
     """The other half of the same guarantee: exempting ONE path must not
     widen protection for every other path the pattern still covers."""
-    never_write = NeverWrite(
-        ("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"})
-    )
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
     assert fs._matches(never_write, "docs/dreams/other.md") == "docs/dreams/*.md"
 
 
@@ -173,9 +170,7 @@ def test_matches_returns_none_for_an_exempt_path_even_when_named_by_an_exact_lit
     both ``never_write`` and as a writable artifact has authored a
     self-contradiction the manifest itself does not detect; this test pins
     the (deliberate) resolution: the writable declaration wins."""
-    never_write = NeverWrite(
-        ("docs/dreams/README.md",), exempt=frozenset({"docs/dreams/README.md"})
-    )
+    never_write = NeverWrite(("docs/dreams/README.md",), exempt=frozenset({"docs/dreams/README.md"}))
     assert fs._matches(never_write, "docs/dreams/README.md") is None
 
 
@@ -256,9 +251,7 @@ def test_write_to_an_exempt_path_succeeds_despite_a_matching_never_write_pattern
     writable artifact (``copied-managed``/``copied-seeded``) whose own path
     also matches a broader deny glob must still be writable."""
     target = tmp_path / "docs" / "dreams" / "README.md"
-    never_write = NeverWrite(
-        ("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"})
-    )
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
 
     fs.write(target, b"hi", repo_root=tmp_path, never_write=never_write)
 
@@ -269,9 +262,7 @@ def test_write_to_a_different_path_matching_the_same_pattern_is_still_refused(tm
     """The other half: exempting ``docs/dreams/README.md`` must not widen
     protection for every OTHER file ``docs/dreams/*.md`` still covers."""
     target = tmp_path / "docs" / "dreams" / "other.md"
-    never_write = NeverWrite(
-        ("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"})
-    )
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
 
     with pytest.raises(NeverWriteViolation, match=r"docs/dreams/\*\.md"):
         fs.write(target, b"hi", repo_root=tmp_path, never_write=never_write)
@@ -303,9 +294,7 @@ def test_write_symlink_indirect_hit_proves_resolution_not_raw_path_drives_the_ma
 # --- write: interrupted write propagates unchanged, I/O Matrix row 4 -------
 
 
-def test_write_propagates_atomic_write_bytes_failure_unchanged_and_original_survives(
-    tmp_path, monkeypatch
-):
+def test_write_propagates_atomic_write_bytes_failure_unchanged_and_original_survives(tmp_path, monkeypatch):
     """``atomic_write_bytes`` (Story 14.2) already has its own exhaustive
     coverage of temp-file cleanup and ``os.replace`` atomicity in
     ``pyforge-core``'s test suite -- re-deriving that here would duplicate
@@ -335,9 +324,7 @@ def test_replace_span_preserves_every_byte_outside_the_span(tmp_path):
     target = tmp_path / "region.md"
     target.write_bytes(b"AAAbodyBBB")
 
-    fs.replace_span(
-        target, 3, 7, b"NEW", repo_root=tmp_path, never_write=NeverWrite(())
-    )
+    fs.replace_span(target, 3, 7, b"NEW", repo_root=tmp_path, never_write=NeverWrite(()))
 
     result = target.read_bytes()
     assert result == b"AAANEWBBB"
@@ -379,7 +366,12 @@ def test_replace_span_rejects_a_non_bytes_new_body(tmp_path):
     target.write_bytes(b"AAAbodyBBB")
     with pytest.raises(TypeError, match="new_body must be bytes"):
         fs.replace_span(
-            target, 3, 7, "NEW", repo_root=tmp_path, never_write=NeverWrite(())  # type: ignore[arg-type]
+            target,
+            3,
+            7,
+            "NEW",
+            repo_root=tmp_path,
+            never_write=NeverWrite(()),  # type: ignore[arg-type]
         )
     assert target.read_bytes() == b"AAAbodyBBB"
 
@@ -425,9 +417,7 @@ def test_replace_span_guard_fires_before_any_read(tmp_path):
     never_write = NeverWrite(("docs/dreams/*.md",))
 
     with pytest.raises(NeverWriteViolation):
-        fs.replace_span(
-            target, 0, 0, b"new", repo_root=tmp_path, never_write=never_write
-        )
+        fs.replace_span(target, 0, 0, b"new", repo_root=tmp_path, never_write=never_write)
 
     assert not target.exists()
 
@@ -592,9 +582,7 @@ _REAL_NEVER_WRITE = NeverWrite(
         "_bmad/skf/registry.json",
     ],
 )
-def test_write_refuses_every_category_the_real_shipped_manifest_protects(
-    tmp_path, relative_target
-):
+def test_write_refuses_every_category_the_real_shipped_manifest_protects(tmp_path, relative_target):
     target = tmp_path / relative_target
     with pytest.raises(NeverWriteViolation):
         fs.write(target, b"hi", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
@@ -641,9 +629,7 @@ def test_symlink_is_idempotent_when_already_pointing_at_the_correct_target(tmp_p
     assert link_path.readlink() == Path("target")
 
 
-def test_symlink_idempotent_no_op_tolerates_an_absolute_vs_relative_spelling_difference(
-    tmp_path, monkeypatch
-):
+def test_symlink_idempotent_no_op_tolerates_an_absolute_vs_relative_spelling_difference(tmp_path, monkeypatch):
     """Design Notes' own claim: idempotence compares the RESOLVED target,
     not the raw string -- an existing absolute-spelled symlink already
     pointing at the same real location as a newly-requested RELATIVE

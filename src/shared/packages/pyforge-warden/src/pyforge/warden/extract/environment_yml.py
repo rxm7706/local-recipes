@@ -87,9 +87,7 @@ class EnvironmentYmlExtractor:
     def __init__(self, router: Router) -> None:
         self._router = router
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]:
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]:
         text = read_bounded_text(
             manifest_path,
             manifest,
@@ -104,54 +102,32 @@ class EnvironmentYmlExtractor:
             # fail closed instead of silently last-wins-dropping a subtree.
             document = yaml_safe_load_strict(text)
         except yaml.YAMLError as exc:
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {exc}"
-            ) from exc
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
         if document is None:
             return ()
         if not isinstance(document, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: top-level document "
-                "is not a mapping"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: top-level document is not a mapping")
         dependencies = document.get("dependencies")
         if dependencies is None:
             return ()
         if not isinstance(dependencies, list):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'dependencies' must "
-                "be a list"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: 'dependencies' must be a list")
         # fail-loud gate: asserted (not just called for its fail-loud side
         # effect) so a future `_ROUTES` edit is caught HERE rather than
         # silently continuing to hardcode CONDA below via
         # `_conda_component_from_entry`'s success path (`_conda_component`
         # takes no `ecosystem` param of its own) -- mirrors `extract/pixi.py`
         # `_walk_conda_table`'s identical Fix 7 (2026-07-16).
-        conda_ecosystem = self._router.route(
-            manifest.kind, ENVIRONMENT_YML_DEPENDENCIES_SECTION
-        )
+        conda_ecosystem = self._router.route(manifest.kind, ENVIRONMENT_YML_DEPENDENCIES_SECTION)
         assert conda_ecosystem is Ecosystem.CONDA
-        conda_provenance = (
-            Provenance(
-                manifest=manifest.path, section=ENVIRONMENT_YML_DEPENDENCIES_SECTION
-            ),
-        )
-        pip_provenance = (
-            Provenance(manifest=manifest.path, section=ENVIRONMENT_YML_PIP_SECTION),
-        )
+        conda_provenance = (Provenance(manifest=manifest.path, section=ENVIRONMENT_YML_DEPENDENCIES_SECTION),)
+        pip_provenance = (Provenance(manifest=manifest.path, section=ENVIRONMENT_YML_PIP_SECTION),)
         components: list[Component] = []
         for entry in dependencies:
             if isinstance(entry, str):
-                components.append(
-                    self._conda_component_from_entry(
-                        entry, conda_provenance, conda_ecosystem
-                    )
-                )
+                components.append(self._conda_component_from_entry(entry, conda_provenance, conda_ecosystem))
             elif isinstance(entry, dict) and "pip" in entry:
-                components += self._pip_components(
-                    entry.get("pip"), pip_provenance, manifest
-                )
+                components += self._pip_components(entry.get("pip"), pip_provenance, manifest)
             else:
                 # Neither a plain conda-matchspec string nor a recognized
                 # {pip: [...]} mapping: a content-level degeneracy for this
@@ -198,11 +174,6 @@ class EnvironmentYmlExtractor:
             # (fixed 2026-07-16). A pip: value of any OTHER wrong type still
             # fails structurally below.
             return []
-        if not isinstance(pip_list, list) or not all(
-            isinstance(entry, str) for entry in pip_list
-        ):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'pip' must be a "
-                "list of strings"
-            )
+        if not isinstance(pip_list, list) or not all(isinstance(entry, str) for entry in pip_list):
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: 'pip' must be a list of strings")
         return [pep508_pypi_component(entry, provenance) for entry in pip_list]

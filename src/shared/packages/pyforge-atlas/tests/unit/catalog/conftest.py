@@ -215,8 +215,8 @@ EXPECTED_OVERRIDE_POINTS = EXPECTED_LIVE_OVERRIDE_POINTS | RESERVED_OVERRIDE_POI
 # Extra overrides asserted SEPARATELY (current data access, not helper-backed).
 EXPECTED_EXTRA_OVERRIDES = {
     "ANACONDA_API_BASE_URL",  # gap A2-G2 (Phase F direct env override)
-    "OSV_VULNS_BUCKET_URL",   # § 3.4 store 2 refresh endpoint (B5)
-    "BIGQUERY_BASE_URL",      # Phase P connection base (A2-J1; B3 flips to GBQ)
+    "OSV_VULNS_BUCKET_URL",  # § 3.4 store 2 refresh endpoint (B5)
+    "BIGQUERY_BASE_URL",  # Phase P connection base (A2-J1; B3 flips to GBQ)
     "PURL_ASSOCIATOR_BASE_URL",  # Story 21.6 (CAP-3 identity join): purl_associator_mappings_raw
 }
 
@@ -304,10 +304,7 @@ STUB_CREDENTIALS = {
 # module-level os.environ.pop mutated the process env for the whole run and
 # leaked into kedro-test siblings; monkeypatch restores after every test).
 _SCRUB_ENV_VARS = sorted(
-    EXPECTED_OVERRIDE_POINTS
-    | EXPECTED_EXTRA_OVERRIDES
-    | EXPECTED_FETCHER_URLS
-    | set(PATHS_ENV_VARS.values())
+    EXPECTED_OVERRIDE_POINTS | EXPECTED_EXTRA_OVERRIDES | EXPECTED_FETCHER_URLS | set(PATHS_ENV_VARS.values())
 )
 
 if str(SRC_DIR) not in sys.path:

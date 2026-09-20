@@ -166,8 +166,7 @@ def classify_outcome(
     if result is None:
         if failure_code is None or failure_reason is None:
             raise ValueError(
-                "failure_code and failure_reason are both required when "
-                "result is None (the command never ran)"
+                "failure_code and failure_reason are both required when result is None (the command never ran)"
             )
         if status_for(classify(failure_code)) is Status.OK:
             # The LAST silent direction left in this function (review
@@ -192,9 +191,7 @@ def classify_outcome(
             "resolvable": False,
             "returncode": None,
         }
-        return report, Finding(
-            code=failure_code, severity=Severity.ERROR, message=failure_reason
-        )
+        return report, Finding(code=failure_code, severity=Severity.ERROR, message=failure_reason)
 
     if result.returncode != 0:
         # A NEGATIVE returncode is POSIX for "terminated by signal N"
@@ -207,9 +204,7 @@ def classify_outcome(
         # UNEVALUABLE would move the verdict TOWARD green, which this
         # module never does on an ambiguity.
         outcome = (
-            f"was terminated by signal {-result.returncode}"
-            if result.returncode < 0
-            else f"exited {result.returncode}"
+            f"was terminated by signal {-result.returncode}" if result.returncode < 0 else f"exited {result.returncode}"
         )
         return (
             {
@@ -251,10 +246,7 @@ def no_commands_configured_finding() -> Finding:
     return Finding(
         code="MRS-GATE-004",
         severity=Severity.WARN,
-        message=(
-            "no verify commands configured -- verify_commands composed to "
-            "the empty tuple; nothing was run"
-        ),
+        message=("no verify commands configured -- verify_commands composed to the empty tuple; nothing was run"),
     )
 
 
@@ -429,9 +421,7 @@ def resolve_policy_surface(
     return default_epic_surface(project_slug)
 
 
-def compute_effective_surface(
-    policy_surface: tuple[str, ...], spec_surface: tuple[str, ...] | None
-) -> tuple[str, ...]:
+def compute_effective_surface(policy_surface: tuple[str, ...], spec_surface: tuple[str, ...] | None) -> tuple[str, ...]:
     """The AD-27 combinator: ``policy_surface`` narrowed by
     ``spec_surface``, and ONLY narrowed -- never widened, never any other
     combinator. Pure, no I/O.
@@ -503,31 +493,22 @@ def check_scope(
 
     A path matched by neither carries no finding at all: it is squarely
     inside the effective surface and untouched by any freeze."""
-    if not isinstance(frozen_paths, tuple) or not all(
-        isinstance(item, FrozenPath) for item in frozen_paths
-    ):
+    if not isinstance(frozen_paths, tuple) or not all(isinstance(item, FrozenPath) for item in frozen_paths):
         raise TypeError(f"frozen_paths must be a tuple of FrozenPath, got {frozen_paths!r}")
-    if not isinstance(changed_files, tuple) or not all(
-        isinstance(item, str) for item in changed_files
-    ):
+    if not isinstance(changed_files, tuple) or not all(isinstance(item, str) for item in changed_files):
         raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
     _valid_glob_tuple(effective_surface, name="effective_surface")
 
     result: list[Finding] = []
     for path in changed_files:
-        frozen = next(
-            (fp for fp in frozen_paths if fnmatch.fnmatch(path, fp.path)), None
-        )
+        frozen = next((fp for fp in frozen_paths if fnmatch.fnmatch(path, fp.path)), None)
         if frozen is not None:
             owner = f"story {frozen.story_key}" if frozen.story_key is not None else "policy"
             result.append(
                 Finding(
                     code="MRS-GATE-008",
                     severity=Severity.ERROR,
-                    message=(
-                        f"changed path {path!r} touches a frozen surface "
-                        f"(frozen by {owner})"
-                    ),
+                    message=(f"changed path {path!r} touches a frozen surface (frozen by {owner})"),
                     path=path,
                 )
             )
@@ -537,10 +518,7 @@ def check_scope(
                 Finding(
                     code="MRS-GATE-007",
                     severity=Severity.ERROR,
-                    message=(
-                        f"changed path {path!r} is outside the effective "
-                        f"surface {effective_surface!r}"
-                    ),
+                    message=(f"changed path {path!r} is outside the effective surface {effective_surface!r}"),
                     path=path,
                 )
             )
@@ -616,8 +594,7 @@ def check_scope_with_mode(
     ``Finding`` for."""
     if mode not in _SCOPE_VIOLATION_MODES:
         raise ValueError(
-            f"mode {mode!r} is not one of the known scope-violation modes "
-            f"{sorted(_SCOPE_VIOLATION_MODES)}"
+            f"mode {mode!r} is not one of the known scope-violation modes {sorted(_SCOPE_VIOLATION_MODES)}"
         )
     if mode == "off":
         return ()
@@ -652,14 +629,10 @@ CROSS_SURFACE_GATE_CODE = "MRS-GATE-015"
 
 def changed_files_touch_shared_surface(changed_files: tuple[str, ...]) -> bool:
     """Return whether any changed path lies under the shared Django host."""
-    if not isinstance(changed_files, tuple) or not all(
-        isinstance(item, str) for item in changed_files
-    ):
+    if not isinstance(changed_files, tuple) or not all(isinstance(item, str) for item in changed_files):
         raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
     prefix = SHARED_SURFACE_PREFIX
-    return any(
-        path == prefix.rstrip("/") or path.startswith(prefix) for path in changed_files
-    )
+    return any(path == prefix.rstrip("/") or path.startswith(prefix) for path in changed_files)
 
 
 def shared_surface_verify_command() -> str:
@@ -759,9 +732,7 @@ _LOW_TIER_MAX_REVIEW_CYCLES = 1
 _REVIEW_TIERS = frozenset({"low", "standard"})
 
 
-def classify_review_tier(
-    *, declared_low_risk: bool, changed_files: tuple[str, ...]
-) -> dict[str, object]:
+def classify_review_tier(*, declared_low_risk: bool, changed_files: tuple[str, ...]) -> dict[str, object]:
     """Classify a story's already-established low-risk declaration against
     its already-observed diff shape (Story 2.8, FR-185). Pure, no I/O.
 
@@ -787,15 +758,9 @@ def classify_review_tier(
     ``classify_doc_only_declaration``'s own report shape -- so a future
     caller has something to fold into the run record (AC2: "recorded ...,
     never a silent choice")."""
-    if not isinstance(changed_files, tuple) or not all(
-        isinstance(item, str) for item in changed_files
-    ):
+    if not isinstance(changed_files, tuple) or not all(isinstance(item, str) for item in changed_files):
         raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
-    tier = (
-        "low"
-        if declared_low_risk and len(changed_files) <= _LOW_RISK_MAX_CHANGED_FILES
-        else "standard"
-    )
+    tier = "low" if declared_low_risk and len(changed_files) <= _LOW_RISK_MAX_CHANGED_FILES else "standard"
     return {
         "tier": tier,
         "declared_low_risk": declared_low_risk,
@@ -828,6 +793,4 @@ def resolve_review_cycles(tier: str, *, default_max_review_cycles: int) -> int:
         return max(min(default_max_review_cycles, _LOW_TIER_MAX_REVIEW_CYCLES), 1)
     if tier == "standard":
         return max(default_max_review_cycles, 1)
-    raise ValueError(
-        f"tier {tier!r} is not one of the known review tiers {sorted(_REVIEW_TIERS)}"
-    )
+    raise ValueError(f"tier {tier!r} is not one of the known review tiers {sorted(_REVIEW_TIERS)}")

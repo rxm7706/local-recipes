@@ -47,9 +47,7 @@ STATIONS: tuple[str, ...] = (
     "warden",
 )
 
-_PACKAGE_PATH_RE = re.compile(
-    r"(?:^|/)src/shared/packages/pyforge-([a-z0-9-]+)/(?:src|tests)(?:/|$)"
-)
+_PACKAGE_PATH_RE = re.compile(r"(?:^|/)src/shared/packages/pyforge-([a-z0-9-]+)/(?:src|tests)(?:/|$)")
 
 _DEFAULT_THRESHOLDS_TOML = """\
 # Per-station coverage floors for Story 19.3 / FR-131.
@@ -88,10 +86,7 @@ class ModuleFailure:
     suite: Suite
 
     def line(self) -> str:
-        return (
-            f"  - {self.module}: {self.percent:.1f}% "
-            f"(threshold {self.threshold:.0f}% {self.suite})"
-        )
+        return f"  - {self.module}: {self.percent:.1f}% (threshold {self.threshold:.0f}% {self.suite})"
 
 
 def default_thresholds_path() -> Path:
@@ -115,9 +110,7 @@ def load_thresholds(path: Path | None = None) -> dict[str, Thresholds]:
     defaults_table = data.get("defaults") or {}
     defaults = Thresholds(
         unit=float(defaults_table.get("unit", DEFAULT_UNIT_THRESHOLD)),
-        integration=float(
-            defaults_table.get("integration", DEFAULT_INTEGRATION_THRESHOLD)
-        ),
+        integration=float(defaults_table.get("integration", DEFAULT_INTEGRATION_THRESHOLD)),
     )
     stations_table = data.get("stations") or {}
     out: dict[str, Thresholds] = {"": defaults}
@@ -240,8 +233,7 @@ def format_failure_message(
     if percents:
         total = sum(percents.values()) / len(percents)
         lines.append(
-            f"aggregate mean across measured modules: {total:.1f}% "
-            f"(not a substitute for the named modules above)"
+            f"aggregate mean across measured modules: {total:.1f}% (not a substitute for the named modules above)"
         )
     return "\n".join(lines)
 
@@ -263,10 +255,7 @@ def evaluate_suite(
         measured = len(percents)
         return (
             True,
-            (
-                f"coverage gate OK for pyforge-{station} {suite}: "
-                f"{measured} module(s) ≥ {threshold:.0f}%"
-            ),
+            (f"coverage gate OK for pyforge-{station} {suite}: {measured} module(s) ≥ {threshold:.0f}%"),
         )
     return False, format_failure_message(
         failures,
@@ -331,9 +320,7 @@ def filter_percents(
         return {}
     out: dict[str, float] = {}
     for name, pct in percents.items():
-        if name in wanted or any(
-            name == m or name.startswith(m + ".") for m in wanted
-        ):
+        if name in wanted or any(name == m or name.startswith(m + ".") for m in wanted):
             out[name] = float(pct)
     return out
 
@@ -368,9 +355,7 @@ def evaluate_coverage_payload(
         # measured. Absent modules are N/A for the suite (e.g. unit-only
         # code never imported by integration) — do not zero-fill them.
         percents = filter_percents(percents, wanted)
-    return evaluate_suite(
-        percents, suite=suite, threshold=thr, station=station
-    )
+    return evaluate_suite(percents, suite=suite, threshold=thr, station=station)
 
 
 def _cmd_evaluate(args: argparse.Namespace) -> int:
@@ -382,9 +367,7 @@ def _cmd_evaluate(args: argparse.Namespace) -> int:
         else:
             only = [
                 line.strip()
-                for line in Path(args.only_modules_file)
-                .read_text(encoding="utf-8")
-                .splitlines()
+                for line in Path(args.only_modules_file).read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ]
     ok, message = evaluate_coverage_payload(
@@ -403,9 +386,7 @@ def _cmd_touched(args: argparse.Namespace) -> int:
         paths = [line.strip() for line in sys.stdin if line.strip()]
     else:
         paths = [
-            line.strip()
-            for line in Path(args.paths_file).read_text(encoding="utf-8").splitlines()
-            if line.strip()
+            line.strip() for line in Path(args.paths_file).read_text(encoding="utf-8").splitlines() if line.strip()
         ]
     stations = sorted(touched_stations(paths))
     modules = sorted(touched_source_modules(paths)) if args.modules else []
@@ -438,9 +419,7 @@ def _cmd_show_thresholds(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m pyforge.marshal.coverage_gate",
-        description=(
-            "Coverage gates that name uncovered modules (Story 19.3 / FR-131)."
-        ),
+        description=("Coverage gates that name uncovered modules (Story 19.3 / FR-131)."),
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

@@ -182,9 +182,7 @@ def test_parse_trending_html_layout_break_returns_empty_never_raises():
         (GOOD_HTML_MONTHLY, "monthly", 9001),
     ],
 )
-def test_parse_trending_html_stars_delta_matches_all_three_period_phrasings(
-    html, period, expected_stars_today
-):
+def test_parse_trending_html_stars_delta_matches_all_three_period_phrasings(html, period, expected_stars_today):
     rows = parse_trending_html(html, period=period)
     assert rows[0]["stars_today"] == expected_stars_today
 
@@ -688,7 +686,9 @@ def test_dist_both_scrape_and_seed_empty_keeps_last_good_and_marks_stale(tmp_pat
 
 def test_dist_seed_rows_accept_bare_names_and_dicts(tmp_path):
     seed = tmp_path / "seed.json"
-    seed.write_text(_json.dumps(["bare", {"conda_name": "full", "version": "1.2", "platforms": ["linux-64"]}, {"nope": 1}, 3]))
+    seed.write_text(
+        _json.dumps(["bare", {"conda_name": "full", "version": "1.2", "platforms": ["linux-64"]}, {"nope": 1}, 3])
+    )
     ds = _dist(tmp_path / "dist", fetcher=lambda url: "", seed_path=str(seed))
     ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
     out = ds.load().set_index("conda_name")
@@ -726,7 +726,9 @@ def test_parse_aoss_python_package_names_falls_back_to_heading_text_without_id()
 def test_parse_aoss_premium_doc_rows_and_layout_break():
     rows = parse_aoss_premium_doc(AOSS_HTML)
     assert [r["pypi_name"] for r in rows] == ["APScheduler", "Adafruit-Blinka", "zope.interface"]
-    assert all(r["tier"] == "premium" and r["source"] == "html_scrape" and isinstance(r["fetched_at"], int) for r in rows)
+    assert all(
+        r["tier"] == "premium" and r["source"] == "html_scrape" and isinstance(r["fetched_at"], int) for r in rows
+    )
     assert parse_aoss_premium_doc(AOSS_BROKEN_HTML) == []
     assert parse_aoss_premium_doc("") == []
     assert parse_aoss_premium_doc(None) == []
@@ -943,9 +945,7 @@ def test_parse_about_readme_empty_or_none_returns_empty(markdown):
 def test_parse_about_readme_renamed_header_degrades_that_list_to_zero_rows():
     """A single-list layout break (one header renamed/removed) degrades ONLY the
     affected list — the other list's rows are unaffected."""
-    md = ABOUT_README_MD.replace(
-        "List Of FeedStocks - As Maintainer", "List Of FeedStocks - RENAMED"
-    )
+    md = ABOUT_README_MD.replace("List Of FeedStocks - As Maintainer", "List Of FeedStocks - RENAMED")
     rows = parse_about_readme(md)
     assert {r["feedstock_slug"] for r in rows} == {
         "conda-forge/requests-feedstock",

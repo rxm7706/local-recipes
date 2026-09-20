@@ -108,10 +108,7 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
                 source=Source.DOCS_MAP_HYGIENE,
                 check=_CHECK_ID,
                 status=DoctorStatus.FAIL,
-                message=(
-                    f"docs/MAP.md links {len(missing)} .md page(s) that do not"
-                    " exist under docs/"
-                ),
+                message=(f"docs/MAP.md links {len(missing)} .md page(s) that do not exist under docs/"),
                 evidence={"class": "missing", "paths": missing},
             )
         )
@@ -121,10 +118,7 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
                 source=Source.DOCS_MAP_HYGIENE,
                 check=_CHECK_ID,
                 status=DoctorStatus.FAIL,
-                message=(
-                    f"{len(unmapped)} quadrant page(s) under docs/ are not"
-                    " linked from docs/MAP.md"
-                ),
+                message=(f"{len(unmapped)} quadrant page(s) under docs/ are not linked from docs/MAP.md"),
                 evidence={"class": "unmapped", "paths": unmapped},
             )
         )
@@ -136,10 +130,7 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
             source=Source.DOCS_MAP_HYGIENE,
             check=_CHECK_ID,
             status=DoctorStatus.OK,
-            message=(
-                "docs/MAP.md links every quadrant page and every link"
-                " resolves"
-            ),
+            message=("docs/MAP.md links every quadrant page and every link resolves"),
             evidence={"mapped_count": len(mapped), "page_count": len(pages)},
         ),
     )

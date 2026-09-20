@@ -35,9 +35,7 @@ from pyforge.marshal.cli.main import main
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -97,9 +95,7 @@ def test_init_end_to_end_provision_then_idempotent_rerun(tmp_path, monkeypatch, 
     link = home / "_bmad-output" / "planning-artifacts"
     assert marker.read_text(encoding="utf-8").strip() == slug
     assert link.is_symlink()
-    assert link.resolve() == (
-        home / "_bmad-output" / "projects" / slug / "planning-artifacts"
-    ).resolve()
+    assert link.resolve() == (home / "_bmad-output" / "projects" / slug / "planning-artifacts").resolve()
 
     # Story 1.5: the home's Tier-3 store resolves to the SAME real
     # directory as the repo's own canonical copy -- one canonical store,
@@ -225,13 +221,9 @@ def test_homes_end_to_end_two_clean_worktrees_then_a_real_desync(tmp_path, monke
     second_payload = json.loads(capsys.readouterr().out)
     codes = {finding["code"] for finding in second_payload["findings"]}
     assert "MRS-HOMES-001" in codes
-    acme_row = next(
-        row for row in second_payload["data"]["homes"] if row["slug"] == slug_one
-    )
+    acme_row = next(row for row in second_payload["data"]["homes"] if row["slug"] == slug_one)
     assert acme_row["desynced"] is True
-    beta_row = next(
-        row for row in second_payload["data"]["homes"] if row["slug"] == slug_two
-    )
+    beta_row = next(row for row in second_payload["data"]["homes"] if row["slug"] == slug_two)
     assert beta_row["desynced"] is False  # unaffected by acme's own tampering
 
 
@@ -449,9 +441,7 @@ def test_teardown_end_to_end_recognizes_a_real_squash_merge(tmp_path, monkeypatc
     _git(repo, "merge", "--squash", f"loop/{slug}")
     _git(repo, "commit", "-m", f"Merge loop/{slug} into main")
     squash_commit = _git(repo, "cat-file", "-p", "HEAD").stdout
-    assert squash_commit.count("\nparent ") + (
-        1 if squash_commit.startswith("parent ") else 0
-    ) == 1
+    assert squash_commit.count("\nparent ") + (1 if squash_commit.startswith("parent ") else 0) == 1
 
     ancestry = subprocess.run(
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", f"loop/{slug}", "main"],

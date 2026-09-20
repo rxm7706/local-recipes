@@ -74,8 +74,8 @@ here writes.
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
 from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Callable, Protocol
@@ -153,7 +153,7 @@ class _LocalReads:
     def read_text(self, path: Path) -> str | None:
         try:
             return path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             return None
 
 
@@ -252,15 +252,13 @@ def resolve_caveman_skill_source(
         return None
     try:
         installer_root = Path(binary).resolve(strict=True).parents[1]
-    except (OSError, IndexError):
+    except OSError, IndexError:
         return None
     candidate = installer_root / "skills" / "caveman" / "SKILL.md"
     return candidate if candidate.is_file() else None
 
 
-def probe_instrument(
-    item: KitItem, *, which: Callable[[str], str | None] | None = None
-) -> InstrumentProbe:
+def probe_instrument(item: KitItem, *, which: Callable[[str], str | None] | None = None) -> InstrumentProbe:
     """Whether ``item``'s instrument is installed here, and -- for the
     caveman skill -- where its deployable payload lives.
 
@@ -275,10 +273,7 @@ def probe_instrument(
     if resolver(item.probe_binary) is None:
         return InstrumentProbe(
             available=False,
-            reason=(
-                f"{item.instrument} is not installed here "
-                f"({item.probe_binary!r} is not on PATH)"
-            ),
+            reason=(f"{item.instrument} is not installed here ({item.probe_binary!r} is not on PATH)"),
         )
     if item.id is not KitItemId.CAVEMAN_SKILL:
         return InstrumentProbe(available=True)
@@ -314,18 +309,14 @@ def layer_enabled(context_layers: Mapping[str, Mapping[str, Any]] | None, layer:
     return bool(enabled)
 
 
-def head_commit_timestamp(
-    repo_root: Path, *, process: PosixProcess | None = None
-) -> int | None:
+def head_commit_timestamp(repo_root: Path, *, process: PosixProcess | None = None) -> int | None:
     """``HEAD``'s committer timestamp as a POSIX int, or ``None`` when git
     cannot answer (not a repo, no commits, no ``git``, a timeout, or
     unparseable output). ``None`` means "make no staleness claim", never
     "fresh" and never "stale"."""
     runner = process if process is not None else PosixProcess()
     try:
-        result = runner.run(
-            ["git", "log", "-1", "--format=%ct"], cwd=repo_root, timeout_s=_GIT_TIMEOUT_S
-        )
+        result = runner.run(["git", "log", "-1", "--format=%ct"], cwd=repo_root, timeout_s=_GIT_TIMEOUT_S)
     except ProcessError:
         return None
     if result.returncode != 0:
@@ -357,7 +348,7 @@ def _carve_out_state(text: str) -> str | None:
     relied on either way, which is the point of checking for it."""
     try:
         spans = parse_regions(text, RegionFormat.HTML)
-    except (RegionParseError, MarkerError, NotImplementedError):
+    except RegionParseError, MarkerError, NotImplementedError:
         return f"carries no parseable {ARTICULATE_REGION!r} managed region"
     span = next((candidate for candidate in spans if candidate.name == ARTICULATE_REGION), None)
     if span is None:
@@ -375,9 +366,7 @@ def _carve_out_state(text: str) -> str | None:
 def _caveman_check(item: KitItem, target: Path, fs: KitReads) -> tuple[KitStatus, str]:
     text = fs.read_text(target) if item_present(item, target, fs) else None
     if text is None:
-        return KitStatus.MISSING, (
-            f"the {item.instrument} skill is not deployed at {item.relpath}"
-        )
+        return KitStatus.MISSING, (f"the {item.instrument} skill is not deployed at {item.relpath}")
     problem = _carve_out_state(text)
     if problem is not None:
         return KitStatus.MISSING, (
@@ -385,9 +374,7 @@ def _caveman_check(item: KitItem, target: Path, fs: KitReads) -> tuple[KitStatus
             " session to keep verdicts, journals and escalation context fully"
             " articulated"
         )
-    return KitStatus.OK, (
-        f"deployed at {item.relpath} with the {ARTICULATE_REGION!r} carve-out"
-    )
+    return KitStatus.OK, (f"deployed at {item.relpath} with the {ARTICULATE_REGION!r} carve-out")
 
 
 def _codegraph_check(
@@ -403,8 +390,7 @@ def _codegraph_check(
     head_ts = head_commit_timestamp(repo_root, process=process)
     if head_ts is None:
         return KitStatus.OK, (
-            f"index present at {item.relpath}; freshness not evaluated"
-            " (git could not report HEAD's timestamp)"
+            f"index present at {item.relpath}; freshness not evaluated (git could not report HEAD's timestamp)"
         )
     try:
         # The one raw read left in this module: `KitReads`/`FsPort` exposes
@@ -413,14 +399,10 @@ def _codegraph_check(
         # honest answer -- never a fabricated "fresh".
         index_mtime = int(target.stat().st_mtime)
     except OSError:
-        return KitStatus.OK, (
-            f"index present at {item.relpath}; freshness not evaluated"
-            " (its mtime could not be read)"
-        )
+        return KitStatus.OK, (f"index present at {item.relpath}; freshness not evaluated (its mtime could not be read)")
     if index_mtime < head_ts:
         return KitStatus.STALE, (
-            f"the codegraph index at {item.relpath} predates HEAD"
-            f" (index mtime {index_mtime}, HEAD committed {head_ts})"
+            f"the codegraph index at {item.relpath} predates HEAD (index mtime {index_mtime}, HEAD committed {head_ts})"
         )
     return KitStatus.OK, f"index present and at or after HEAD at {item.relpath}"
 
@@ -478,15 +460,16 @@ def kit_checks(
         if item.id is KitItemId.CAVEMAN_SKILL:
             status, detail = _caveman_check(item, target, reads)
         elif item.id is KitItemId.CODEGRAPH_INDEX:
-            status, detail = _codegraph_check(
-                item, repo_root, target, fs=reads, process=process
-            )
+            status, detail = _codegraph_check(item, repo_root, target, fs=reads, process=process)
         elif item_present(item, target, reads):
             status, detail = KitStatus.OK, f"store directory present at {item.relpath}"
         else:
-            status, detail = KitStatus.MISSING, (
-                f"no CCR store directory at {item.relpath} -- the wire wrapper has"
-                " nowhere loop-home-scoped to keep retrievable originals"
+            status, detail = (
+                KitStatus.MISSING,
+                (
+                    f"no CCR store directory at {item.relpath} -- the wire wrapper has"
+                    " nowhere loop-home-scoped to keep retrievable originals"
+                ),
             )
         checks.append(
             KitCheck(

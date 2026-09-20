@@ -15,9 +15,7 @@ _DEFAULT_PG_DSN = "postgres://postgres:scribe@127.0.0.1:5433/scribe_graph"
 # Story 41.3 / CAP-9: the driver no longer creates its own relations, so the
 # test database is provisioned the way production is -- from the governed
 # Liquibase changesets, which are the one source of this DDL.
-_CHANGELOG_DIR = (
-    Path(__file__).resolve().parents[5] / "platform" / "db" / "changelog" / "changes"
-)
+_CHANGELOG_DIR = Path(__file__).resolve().parents[5] / "platform" / "db" / "changelog" / "changes"
 _SCRIBE_CHANGESETS = "pyforge-scribe-*.sql"
 # The header may carry Liquibase attributes after the id -- db/README.md's
 # `runInTransaction:false` exception process mandates exactly that -- so the
@@ -37,9 +35,7 @@ def _seq(path: Path) -> int:
 def _statements_in(path: Path) -> list[str]:
     """Forward SQL of one formatted-SQL changeset (``--rollback`` is a comment)."""
     body = "\n".join(
-        line
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if not line.lstrip().startswith("--")
+        line for line in path.read_text(encoding="utf-8").splitlines() if not line.lstrip().startswith("--")
     )
     return [statement.strip() for statement in body.split(";") if statement.strip()]
 
@@ -57,11 +53,7 @@ def scribe_changeset_paths() -> list[Path]:
             f"scribe's Liquibase changesets are missing from {_CHANGELOG_DIR}; "
             "the durable GraphStore has no other source of DDL (Story 41.3)"
         )
-    return [
-        path
-        for path in paths
-        if "--preconditions" not in path.read_text(encoding="utf-8")
-    ]
+    return [path for path in paths if "--preconditions" not in path.read_text(encoding="utf-8")]
 
 
 def apply_scribe_changesets(dsn: str) -> None:
@@ -89,13 +81,9 @@ def require_pg_dsn() -> str:
 
         with psycopg.connect(dsn) as conn:
             conn.execute("SELECT 1")
-            row = conn.execute(
-                "SELECT 1 FROM pg_available_extensions WHERE name = 'vector'"
-            ).fetchone()
+            row = conn.execute("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'").fetchone()
     except Exception as exc:  # noqa: BLE001
-        pytest.fail(
-            f"durable GraphStore requires PostgreSQL with pgvector at {dsn}: {exc}"
-        )
+        pytest.fail(f"durable GraphStore requires PostgreSQL with pgvector at {dsn}: {exc}")
     if row is None:
         pytest.fail(f"durable GraphStore requires CREATE EXTENSION vector at {dsn}")
     _provision(dsn)

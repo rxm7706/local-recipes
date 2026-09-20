@@ -43,9 +43,7 @@ def test_default_scripts_dir_resolves_to_the_real_skill_scripts():
 
 
 def test_call_query_happy_path(atlas_db_path, monkeypatch):
-    module = cli_bridge.load_cli_module(
-        "staleness_report", scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module("staleness_report", scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", atlas_db_path)
 
     rows = cli_bridge.call_query(module, **_STALENESS_KWARGS)
@@ -63,9 +61,7 @@ def test_call_query_happy_path(atlas_db_path, monkeypatch):
 
 
 def test_call_query_empty_result(empty_atlas_db_path, monkeypatch):
-    module = cli_bridge.load_cli_module(
-        "staleness_report", scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module("staleness_report", scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", empty_atlas_db_path)
 
     rows = cli_bridge.call_query(module, **_STALENESS_KWARGS)
@@ -73,26 +69,18 @@ def test_call_query_empty_result(empty_atlas_db_path, monkeypatch):
     assert rows == []
 
 
-def test_call_query_db_missing_raises_a_catchable_error_not_a_killed_process(
-    tmp_path, monkeypatch
-):
-    module = cli_bridge.load_cli_module(
-        "staleness_report", scripts_dir=cli_bridge.default_scripts_dir()
-    )
+def test_call_query_db_missing_raises_a_catchable_error_not_a_killed_process(tmp_path, monkeypatch):
+    module = cli_bridge.load_cli_module("staleness_report", scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", tmp_path / "does-not-exist.db")
 
     with pytest.raises(cli_bridge.CfAtlasDbUnavailableError):
         cli_bridge.call_query(module, **_STALENESS_KWARGS)
 
 
-def test_call_query_unwraps_the_rows_meta_tuple_cve_watcher_returns(
-    atlas_db_path, monkeypatch
-):
+def test_call_query_unwraps_the_rows_meta_tuple_cve_watcher_returns(atlas_db_path, monkeypatch):
     """cve-watcher's query() returns (rows, meta) — call_query normalizes every caller to a
     plain list[dict], dropping meta, so the registry/render layers never special-case it."""
-    module = cli_bridge.load_cli_module(
-        "cve_watcher", scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module("cve_watcher", scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", atlas_db_path)
 
     rows = cli_bridge.call_query(module, **_CVE_WATCHER_KWARGS)

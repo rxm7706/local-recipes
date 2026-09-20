@@ -110,9 +110,7 @@ def repo_root() -> Path:
 _DEFAULT_BUILD_CMD: tuple[str, ...] = ("true",)
 
 
-def build_dashboard(
-    *, cwd: str | Path, cmd: Sequence[str] | None = None
-) -> subprocess.CompletedProcess[str]:
+def build_dashboard(*, cwd: str | Path, cmd: Sequence[str] | None = None) -> subprocess.CompletedProcess[str]:
     """Run a no-op build (Kedro-Viz is staged by atlas `viz-publish-stage`).
 
     Story 30.2 retired `dashboard-gen`. `steward deploy dashboard` still
@@ -202,24 +200,45 @@ def commit_and_push_dashboard(*, cwd: str | Path) -> str:
     """
     branch = subprocess.run(
         ["git", "symbolic-ref", "--short", "HEAD"],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
     subprocess.run(
         ["git", "add", "--", str(_DASHBOARD_RELATIVE_PATH)],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     )
     subprocess.run(
-        ["git", "commit", "-m", "dashboard: refresh status (steward deploy dashboard)",
-         "--", str(_DASHBOARD_RELATIVE_PATH)],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        [
+            "git",
+            "commit",
+            "-m",
+            "dashboard: refresh status (steward deploy dashboard)",
+            "--",
+            str(_DASHBOARD_RELATIVE_PATH),
+        ],
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     )
     sha = subprocess.run(
         ["git", "rev-parse", "HEAD"],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
     subprocess.run(
         ["git", "push", "origin", branch],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     )
     return sha
 
@@ -245,7 +264,9 @@ def _push_pending_commit_if_ahead(*, cwd: str | Path) -> str | None:
     """
     ahead = subprocess.run(
         ["git", "rev-list", "--count", "@{u}..HEAD"],
-        cwd=str(cwd), capture_output=True, text=True,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
     )
     if ahead.returncode != 0:
         return None
@@ -254,15 +275,24 @@ def _push_pending_commit_if_ahead(*, cwd: str | Path) -> str | None:
         return None
     branch = subprocess.run(
         ["git", "symbolic-ref", "--short", "HEAD"],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
     subprocess.run(
         ["git", "push", "origin", branch],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     )
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 
@@ -295,7 +325,10 @@ def last_deploy_commit(*, cwd: str | Path) -> DeployRecord | None:
     """
     result = subprocess.run(
         ["git", "log", "-1", f"--format={_LOG_FORMAT}", "--", str(_DASHBOARD_RELATIVE_PATH)],
-        cwd=str(cwd), check=True, capture_output=True, text=True,
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
     )
     output = result.stdout.strip()
     if not output:
@@ -451,12 +484,8 @@ class UnshareableStateError(ValueError):
 # sanctioned layer backend" — widening it to `channels_redis`'s other
 # shipped layer class was deliberately not done, to avoid allowlisting
 # something neither the Spec nor the architecture actually named.
-_SHAREABLE_CACHE_BACKENDS: tuple[str, ...] = (
-    "django.core.cache.backends.redis.RedisCache",
-)
-_SHAREABLE_CHANNEL_LAYER_BACKENDS: tuple[str, ...] = (
-    "channels_redis.core.RedisChannelLayer",
-)
+_SHAREABLE_CACHE_BACKENDS: tuple[str, ...] = ("django.core.cache.backends.redis.RedisCache",)
+_SHAREABLE_CHANNEL_LAYER_BACKENDS: tuple[str, ...] = ("channels_redis.core.RedisChannelLayer",)
 
 
 def check_shareable_state(topology: DeploymentTopology) -> None:
@@ -859,9 +888,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
                 tmp.unlink(missing_ok=True)
             except OSError:
                 pass
-        return DutyResult(
-            ok=False, summary=f"deploy perimeter: refused — could not write to {output_path}: {exc}"
-        )
+        return DutyResult(ok=False, summary=f"deploy perimeter: refused — could not write to {output_path}: {exc}")
     try:
         unit_tmp.rename(unit_path)
         edge_tmp.rename(edge_path)
@@ -936,9 +963,7 @@ class StaticPanel:
         if not self.label.strip():
             raise ValueError("StaticPanel.label must not be empty or whitespace-only")
         if self.label != self.label.strip():
-            raise ValueError(
-                f"StaticPanel.label {self.label!r} carries leading/trailing whitespace"
-            )
+            raise ValueError(f"StaticPanel.label {self.label!r} carries leading/trailing whitespace")
 
 
 def render_static_index(panels: Sequence[StaticPanel], *, board: str) -> str:
@@ -973,10 +998,7 @@ def render_static_index(panels: Sequence[StaticPanel], *, board: str) -> str:
         seen_labels.add(panel.label)
 
     sections = "\n".join(
-        f'    <section class="panel">\n'
-        f"      <h2>{html.escape(panel.label)}</h2>\n"
-        f"{panel.html}\n"
-        f"    </section>"
+        f'    <section class="panel">\n      <h2>{html.escape(panel.label)}</h2>\n{panel.html}\n    </section>'
         for panel in panels
     )
     return f"""<!DOCTYPE html>
@@ -1009,9 +1031,7 @@ def render_static_index(panels: Sequence[StaticPanel], *, board: str) -> str:
 # banned in this module (`test_deploy_has_no_story_status_derivation`, Story
 # 5.2/AD-71/AD-1), so this replicates the same character-set semantics by
 # hand rather than reaching for the toolkit that ban exists to keep out.
-_VALID_BOARD_SLUG_CHARS = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
-)
+_VALID_BOARD_SLUG_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
 
 
 def _is_valid_board_slug(value: str) -> bool:
@@ -1188,9 +1208,7 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
         access_column = getattr(ns, "access_column", None)
         access_column_declared = access_column is not None and bool(access_column.strip())
     except (TypeError, AttributeError) as exc:
-        return DutyResult(
-            ok=False, summary=f"deploy static: refused — malformed --access-column: {exc}"
-        )
+        return DutyResult(ok=False, summary=f"deploy static: refused — malformed --access-column: {exc}")
     if access_column_declared:
         return DutyResult(
             ok=False,
@@ -1229,30 +1247,22 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
             label, _, path_str = raw.partition("=")
             label = label.strip()
         except (TypeError, AttributeError) as exc:
-            return DutyResult(
-                ok=False, summary=f"deploy static: refused — malformed --panel entry: {exc}"
-            )
+            return DutyResult(ok=False, summary=f"deploy static: refused — malformed --panel entry: {exc}")
         if not has_separator:
             return DutyResult(
                 ok=False,
                 summary=f"deploy static: refused — --panel {raw!r} is malformed (expected LABEL=PATH)",
             )
         if not label:
-            return DutyResult(
-                ok=False, summary=f"deploy static: refused — --panel {raw!r} has an empty label"
-            )
+            return DutyResult(ok=False, summary=f"deploy static: refused — --panel {raw!r} has an empty label")
         try:
             panel_html = Path(path_str).read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:
-            return DutyResult(
-                ok=False, summary=f"deploy static: refused — could not read --panel {raw!r}: {exc}"
-            )
+            return DutyResult(ok=False, summary=f"deploy static: refused — could not read --panel {raw!r}: {exc}")
         try:
             panels.append(StaticPanel(label=label, html=panel_html))
         except (TypeError, ValueError) as exc:
-            return DutyResult(
-                ok=False, summary=f"deploy static: refused — invalid --panel {raw!r}: {exc}"
-            )
+            return DutyResult(ok=False, summary=f"deploy static: refused — invalid --panel {raw!r}: {exc}")
 
     try:
         index_html = render_static_index(panels, board=board)
@@ -1263,9 +1273,7 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
     try:
         safe = _is_board_output_dir_safe_to_write(output_dir)
     except OSError as exc:
-        return DutyResult(
-            ok=False, summary=f"deploy static: refused — could not inspect {output_dir}: {exc}"
-        )
+        return DutyResult(ok=False, summary=f"deploy static: refused — could not inspect {output_dir}: {exc}")
     if not safe:
         return DutyResult(
             ok=False,
@@ -1324,9 +1332,7 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
                 directory.rmdir()
             except OSError:
                 pass
-        return DutyResult(
-            ok=False, summary=f"deploy static: refused — could not write to {output_dir}: {exc}"
-        )
+        return DutyResult(ok=False, summary=f"deploy static: refused — could not write to {output_dir}: {exc}")
 
     return DutyResult(ok=True, summary=f"deploy static: wrote {final_path}")
 
@@ -1412,7 +1418,9 @@ def _run_status(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
         return DutyResult(ok=True, summary="deploy status: no dashboard deploy commit found in git history")
     ahead = subprocess.run(
         ["git", "rev-list", "--count", "@{u}..HEAD"],
-        cwd=str(root), capture_output=True, text=True,
+        cwd=str(root),
+        capture_output=True,
+        text=True,
     )
     unpushed_note = ""
     if ahead.returncode == 0:

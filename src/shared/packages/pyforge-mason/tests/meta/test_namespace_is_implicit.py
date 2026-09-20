@@ -36,18 +36,15 @@ def test_no_cli_framework_dependency():
     """
     try:
         import tomllib
-    except ImportError:                       # pragma: no cover
-        import tomli as tomllib               # type: ignore[no-redef]
+    except ImportError:  # pragma: no cover
+        import tomli as tomllib  # type: ignore[no-redef]
 
-    manifest = tomllib.loads(
-        (PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    manifest = tomllib.loads((PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
     project = manifest.get("project", {})
     declared = list(project.get("dependencies", []))
     for extras in (project.get("optional-dependencies") or {}).values():
         declared += list(extras)
 
     banned = {"click", "typer"}
-    found = [d for d in declared
-             if d.split("[")[0].split(">")[0].split("=")[0].strip().lower() in banned]
+    found = [d for d in declared if d.split("[")[0].split(">")[0].split("=")[0].strip().lower() in banned]
     assert not found, f"CLI framework forbidden by FR-41: {found}"
-

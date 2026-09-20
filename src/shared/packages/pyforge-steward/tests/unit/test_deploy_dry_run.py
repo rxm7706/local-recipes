@@ -57,9 +57,9 @@ def test_dry_run_prints_the_diff_and_leaves_git_untouched(tmp_path, monkeypatch,
     monkeypatch.setattr(
         "pyforge.steward.deploy._DEFAULT_BUILD_CMD",
         (
-            sys.executable, "-c",
-            "from pathlib import Path; "
-            "Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 2};\\n')",
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 2};\\n')",
         ),
     )
 
@@ -89,9 +89,9 @@ def test_dry_run_with_no_diff_reports_no_diff_and_exits_ok(tmp_path, monkeypatch
     monkeypatch.setattr(
         "pyforge.steward.deploy._DEFAULT_BUILD_CMD",
         (
-            sys.executable, "-c",
-            "from pathlib import Path; "
-            "Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 1};\\n')",
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 1};\\n')",
         ),
     )
 
@@ -110,9 +110,9 @@ def test_build_wins_over_dry_run_when_both_passed(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "pyforge.steward.deploy._DEFAULT_BUILD_CMD",
         (
-            sys.executable, "-c",
-            "from pathlib import Path; "
-            "Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 9};\\n')",
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 9};\\n')",
         ),
     )
 
@@ -122,7 +122,5 @@ def test_build_wins_over_dry_run_when_both_passed(tmp_path, monkeypatch):
     assert rc == EXIT_OK
     # --build wins: the file WAS rewritten, but nothing was diffed/printed
     # as a dry-run report and no commit happened either.
-    assert (work / "docs" / "dashboard" / "data.js").read_text().strip() == (
-        "window.DASHBOARD_DATA = {v: 9};"
-    )
+    assert (work / "docs" / "dashboard" / "data.js").read_text().strip() == ("window.DASHBOARD_DATA = {v: 9};")
     assert _snapshot(work)[0] == before[0]

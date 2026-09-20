@@ -101,9 +101,7 @@ def capture(
 
         base_slug = _slugify(slug) if slug is not None else _slugify(text)
         final_slug = _unique_slug(type_dir, base_slug)
-        final_description = _truncate(
-            description if description is not None else text, _DESCRIPTION_MAX_LEN
-        )
+        final_description = _truncate(description if description is not None else text, _DESCRIPTION_MAX_LEN)
         record = CaptureRecord(
             type=capture_type,
             name=final_slug,

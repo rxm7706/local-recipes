@@ -112,9 +112,7 @@ def test_harness_version_parses_the_token_after_the_last_space(harness, monkeypa
     import pyforge.marshal.adapters.harness_bmadloop as module
 
     def _fake_run(args, **kwargs):
-        return subprocess.CompletedProcess(
-            args=args, returncode=0, stdout="bmad-loop 0.10.2\n", stderr=""
-        )
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="bmad-loop 0.10.2\n", stderr="")
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     assert harness.harness_version() == "0.10.2"
@@ -129,9 +127,7 @@ def test_multiplexer_backend_available_returns_a_real_selected_backend(harness):
     assert isinstance(available, bool)
 
 
-def test_multiplexer_backend_available_raises_harness_error_when_bmad_loop_unimportable(
-    harness, monkeypatch
-):
+def test_multiplexer_backend_available_raises_harness_error_when_bmad_loop_unimportable(harness, monkeypatch):
     # sys.modules[name] = None is the documented way to force ImportError for
     # ONE submodule without disturbing the (already-imported, cached) parent
     # package other tests in this session depend on.
@@ -140,9 +136,7 @@ def test_multiplexer_backend_available_raises_harness_error_when_bmad_loop_unimp
         harness.multiplexer_backend_available()
 
 
-def test_multiplexer_backend_available_returns_empty_when_no_row_is_selected(
-    harness, monkeypatch
-):
+def test_multiplexer_backend_available_returns_empty_when_no_row_is_selected(harness, monkeypatch):
     """No installed multiplexer matches this platform (or all detection
     failed): ``detect_multiplexers()`` can legitimately return rows where
     none has ``selected=True`` -- the empty-sentinel branch, distinct from
@@ -166,9 +160,7 @@ def test_multiplexer_backend_available_returns_empty_when_no_row_is_selected(
     assert harness.multiplexer_backend_available() == ("", False)
 
 
-def test_multiplexer_backend_available_raises_harness_error_not_raw_on_multiplexer_error(
-    harness, monkeypatch
-):
+def test_multiplexer_backend_available_raises_harness_error_not_raw_on_multiplexer_error(harness, monkeypatch):
     """Review finding: ``HarnessError``'s docstring named ``MultiplexerError``
     as caught-and-re-raised while nothing actually caught it --
     ``detect_multiplexers`` documents "never raises", but this module's own
@@ -218,31 +210,23 @@ def test_adapter_skill_trees_includes_a_project_local_overlay(harness, tmp_path)
     profiles_dir = tmp_path / ".bmad-loop" / "profiles"
     profiles_dir.mkdir(parents=True)
     (profiles_dir / "custom.toml").write_text(
-        'name = "custom"\n'
-        'binary = "custom-cli"\n'
-        'skill_tree = ".custom/skills"\n'
-        "[hooks]\n"
-        'dialect = "none"\n',
+        'name = "custom"\nbinary = "custom-cli"\nskill_tree = ".custom/skills"\n[hooks]\ndialect = "none"\n',
         encoding="utf-8",
     )
     skill_trees = harness.adapter_skill_trees(tmp_path)
     assert skill_trees["custom"] == ".custom/skills"
 
 
-def test_adapter_skill_trees_raises_harness_error_when_bmad_loop_unimportable(
-    harness, tmp_path, monkeypatch
-):
+def test_adapter_skill_trees_raises_harness_error_when_bmad_loop_unimportable(harness, tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "bmad_loop.adapters.profile", None)
     with pytest.raises(HarnessError, match="not importable"):
         harness.adapter_skill_trees(tmp_path)
 
 
-def test_adapter_skill_trees_raises_harness_error_not_raw_when_profile_overlay_is_not_utf8(
-    harness, tmp_path
-):
+def test_adapter_skill_trees_raises_harness_error_not_raw_when_profile_overlay_is_not_utf8(harness, tmp_path):
     profiles_dir = tmp_path / ".bmad-loop" / "profiles"
     profiles_dir.mkdir(parents=True)
-    (profiles_dir / "broken.toml").write_bytes(b"name = \"broken\"\nbinary = \"\xff\xfe\"\n")
+    (profiles_dir / "broken.toml").write_bytes(b'name = "broken"\nbinary = "\xff\xfe"\n')
 
     with pytest.raises(HarnessError):
         harness.adapter_skill_trees(tmp_path)
@@ -271,9 +255,7 @@ def test_adapter_binary_raises_harness_error_when_bmad_loop_unimportable(harness
         harness.adapter_binary("claude", tmp_path)
 
 
-def test_adapter_binary_raises_harness_error_not_raw_when_profile_overlay_is_not_utf8(
-    harness, tmp_path
-):
+def test_adapter_binary_raises_harness_error_not_raw_when_profile_overlay_is_not_utf8(harness, tmp_path):
     """Review finding: ``get_profile`` reads EVERY ``.bmad-loop/profiles/
     *.toml`` overlay file (via ``load_profiles``) before looking up the
     requested name, via plain ``Path.read_text(encoding="utf-8")`` -- a
@@ -282,15 +264,13 @@ def test_adapter_binary_raises_harness_error_not_raw_when_profile_overlay_is_not
     (``claude``, never mentioned in the broken file)."""
     profiles_dir = tmp_path / ".bmad-loop" / "profiles"
     profiles_dir.mkdir(parents=True)
-    (profiles_dir / "broken.toml").write_bytes(b"name = \"broken\"\nbinary = \"\xff\xfe\"\n")
+    (profiles_dir / "broken.toml").write_bytes(b'name = "broken"\nbinary = "\xff\xfe"\n')
 
     with pytest.raises(HarnessError):
         harness.adapter_binary("claude", tmp_path)
 
 
-def test_adapter_binary_raises_harness_error_when_profile_overlay_field_is_wrong_typed(
-    harness, tmp_path
-):
+def test_adapter_binary_raises_harness_error_when_profile_overlay_field_is_wrong_typed(harness, tmp_path):
     """Same gap as the non-UTF-8 case above, one layer up (second review
     pass): a VALID-TOML overlay with a wrong-typed field
     (``usage_grace_s = "boom"``) must surface as ``HarnessError``, never a
@@ -304,11 +284,7 @@ def test_adapter_binary_raises_harness_error_when_profile_overlay_field_is_wrong
     profiles_dir = tmp_path / ".bmad-loop" / "profiles"
     profiles_dir.mkdir(parents=True)
     (profiles_dir / "broken.toml").write_text(
-        'name = "broken"\n'
-        'binary = "broken"\n'
-        'usage_grace_s = "boom"\n'
-        "[hooks]\n"
-        'dialect = "none"\n',
+        'name = "broken"\nbinary = "broken"\nusage_grace_s = "boom"\n[hooks]\ndialect = "none"\n',
         encoding="utf-8",
     )
 

@@ -20,11 +20,12 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from pyforge.atlas.mcp import session as _session
+from pyforge.core.errors import PyforgeError
+
 from pyforge.atlas import nl as _nl
 from pyforge.atlas import provenance as _provenance
+from pyforge.atlas.mcp import session as _session
 from pyforge.atlas.trending_candidates import query as _trending
-from pyforge.core.errors import PyforgeError
 
 # FR-155 inventory registry (Story 25.3): one entry per MCP tool registered on
 # ``server.build_server``. ``cli`` is the argv template AFTER the program name;

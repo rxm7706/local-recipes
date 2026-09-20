@@ -92,7 +92,11 @@ from pathlib import Path
 from . import __version__, doctor, environment, package, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
-    EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
+    EXIT_CFE_UNAVAILABLE,
+    EXIT_FAILED,
+    EXIT_INTERRUPTED,
+    EXIT_OK,
+    EXIT_USAGE,
 )
 from .models import ShipState
 
@@ -112,9 +116,7 @@ _RECIPE_VALIDATE_HELP = (
     "validate a recipe against conda-forge policy via CFE's validator (process exit code "
     "reflects the pass/fail outcome)"
 )
-_RECIPE_BUILD_HELP = (
-    "build a recipe (native by default; --docker + --config for CI-parity)"
-)
+_RECIPE_BUILD_HELP = "build a recipe (native by default; --docker + --config for CI-parity)"
 _RECIPE_DIAGNOSE_HELP = "diagnose a build-failure log via CFE's failure analyzer"
 _RECIPE_OPTIMIZE_HELP = "lint a recipe for quality findings via CFE's recipe optimizer"
 _RECIPE_SCAN_HELP = (
@@ -230,9 +232,7 @@ def _parse_finite_float(raw: str) -> float:
             f"invalid --cfe-timeout value: {raw!r} (must be a number of seconds)"
         ) from None
     if not math.isfinite(value) or value <= 0:
-        raise argparse.ArgumentTypeError(
-            f"invalid --cfe-timeout value: {raw!r} (must be a finite, positive number)"
-        )
+        raise argparse.ArgumentTypeError(f"invalid --cfe-timeout value: {raw!r} (must be a finite, positive number)")
     return value
 
 
@@ -395,27 +395,40 @@ def _build_global_flags_parser() -> argparse.ArgumentParser:
     """
     parent = argparse.ArgumentParser(add_help=False)
     parent.add_argument(
-        "--cfe-root", default=argparse.SUPPRESS, metavar="PATH",
+        "--cfe-root",
+        default=argparse.SUPPRESS,
+        metavar="PATH",
         help=f"conda-forge-expert skill root (flag -> {_ENV_CFE_ROOT} -> auto-discovery)",
     )
     parent.add_argument(
-        "--cfe-python", default=argparse.SUPPRESS, metavar="PATH",
+        "--cfe-python",
+        default=argparse.SUPPRESS,
+        metavar="PATH",
         help=f"interpreter used to run CFE scripts (flag -> {_ENV_CFE_PYTHON} -> running interpreter)",
     )
     parent.add_argument(
-        "--cfe-timeout", type=_parse_finite_float, default=argparse.SUPPRESS, metavar="SECONDS",
+        "--cfe-timeout",
+        type=_parse_finite_float,
+        default=argparse.SUPPRESS,
+        metavar="SECONDS",
         help=f"per-operation CFE subprocess timeout in seconds (flag -> {_ENV_CFE_TIMEOUT} -> none)",
     )
     parent.add_argument(
-        "--format", choices=("text", "json"), default=argparse.SUPPRESS,
+        "--format",
+        choices=("text", "json"),
+        default=argparse.SUPPRESS,
         help=f'output format (flag -> {_ENV_FORMAT} -> "text")',
     )
     parent.add_argument(
-        "--verbose", action="store_true", default=argparse.SUPPRESS,
+        "--verbose",
+        action="store_true",
+        default=argparse.SUPPRESS,
         help=f"increase log verbosity (flag -> {_ENV_VERBOSE} -> off)",
     )
     parent.add_argument(
-        "--quiet", action="store_true", default=argparse.SUPPRESS,
+        "--quiet",
+        action="store_true",
+        default=argparse.SUPPRESS,
         help=f"decrease log verbosity (flag -> {_ENV_QUIET} -> off)",
     )
     return parent
@@ -472,29 +485,38 @@ def _add_ship_flags(parser: argparse.ArgumentParser, *, targets_flag: str) -> No
     registration for its `default=None` to ever disagree with.
     """
     parser.add_argument(
-        "--target", choices=("library",), default=argparse.SUPPRESS,
+        "--target",
+        choices=("library",),
+        default=argparse.SUPPRESS,
         help="what to build (v1 scope: library only)",
     )
     parser.add_argument(
-        "--yes", action="store_true", default=argparse.SUPPRESS,
+        "--yes",
+        action="store_true",
+        default=argparse.SUPPRESS,
         help="confirm a real ship (default: dry run -- prints the plan, ships nothing)",
     )
     parser.add_argument(
-        "--recipe-path", default=argparse.SUPPRESS, metavar="RECIPE_PATH",
+        "--recipe-path",
+        default=argparse.SUPPRESS,
+        metavar="RECIPE_PATH",
         help="recipe directory for the conda-forge target (inert for every other target; "
         "omitting it while targeting conda-forge is not a usage error -- ship_conda_forge's "
         "own precondition error reports it per-target instead)",
     )
     if targets_flag == "--to":
         parser.add_argument(
-            "--to", required=True, metavar="TARGETS",
+            "--to",
+            required=True,
+            metavar="TARGETS",
             help="comma-separated ship targets: pypi, pypi-test, conda-forge, channel:<name>",
         )
     else:
         parser.add_argument(
-            targets_flag, default=None, metavar="TARGETS",
-            help="comma-separated ship targets -- same vocabulary as `package ship --to` "
-            "(D-12 bare-noun alias)",
+            targets_flag,
+            default=None,
+            metavar="TARGETS",
+            help="comma-separated ship targets -- same vocabulary as `package ship --to` (D-12 bare-noun alias)",
         )
 
 
@@ -532,7 +554,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     for name, help_text in _NOUNS.items():
         noun_parser = nouns.add_parser(
-            name, help=help_text, description=help_text, parents=[global_flags],
+            name,
+            help=help_text,
+            description=help_text,
+            parents=[global_flags],
         )
         _noun_verbs[name] = noun_parser.add_subparsers(dest="verb", metavar="{}")
         _noun_parsers[name] = noun_parser
@@ -541,7 +566,10 @@ def build_parser() -> argparse.ArgumentParser:
         noun_parser.set_defaults(_noun_parser=noun_parser)
 
     doctor_parser = nouns.add_parser(
-        "doctor", help=_DOCTOR_HELP, description=_DOCTOR_HELP, parents=[global_flags],
+        "doctor",
+        help=_DOCTOR_HELP,
+        description=_DOCTOR_HELP,
+        parents=[global_flags],
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
 
@@ -553,21 +581,31 @@ def build_parser() -> argparse.ArgumentParser:
     # per-source flags (GitHub's --version, npm's various modes, ...) are in
     # this story's AC scope (spec Never boundary).
     new_parser = _noun_verbs["recipe"].add_parser(
-        "new", help=_RECIPE_NEW_HELP, description=_RECIPE_NEW_HELP, parents=[global_flags],
+        "new",
+        help=_RECIPE_NEW_HELP,
+        description=_RECIPE_NEW_HELP,
+        parents=[global_flags],
     )
     source_group = new_parser.add_mutually_exclusive_group(required=True)
     source_group.add_argument(
-        "--from-pypi", metavar="PACKAGE",
+        "--from-pypi",
+        metavar="PACKAGE",
         help="generate from a PyPI package, optionally with an embedded version spec",
     )
     source_group.add_argument(
-        "--from-github", metavar="OWNER/REPO", help="generate from a GitHub repository",
+        "--from-github",
+        metavar="OWNER/REPO",
+        help="generate from a GitHub repository",
     )
     source_group.add_argument(
-        "--from-cran", metavar="PACKAGE", help="generate from a CRAN package",
+        "--from-cran",
+        metavar="PACKAGE",
+        help="generate from a CRAN package",
     )
     source_group.add_argument(
-        "--from-npm", metavar="PACKAGE", help="generate from an npm package",
+        "--from-npm",
+        metavar="PACKAGE",
+        help="generate from an npm package",
     )
     # Required, not defaulted to CFE's own omitted-`--output` behavior (spec
     # Design Notes): FR-7 frames this feature as output "at a user-specified
@@ -575,7 +613,10 @@ def build_parser() -> argparse.ArgumentParser:
     # would make Mason's CLI contract depend on a policy that could change
     # independently.
     new_parser.add_argument(
-        "--output", "-o", required=True, metavar="PATH",
+        "--output",
+        "-o",
+        required=True,
+        metavar="PATH",
         help="path to write the generated recipe to (required)",
     )
 
@@ -592,11 +633,14 @@ def build_parser() -> argparse.ArgumentParser:
     # unrecognized, for the same reason `build`'s own comment (next) spells
     # out.
     validate_parser = _noun_verbs["recipe"].add_parser(
-        "validate", help=_RECIPE_VALIDATE_HELP, description=_RECIPE_VALIDATE_HELP,
+        "validate",
+        help=_RECIPE_VALIDATE_HELP,
+        description=_RECIPE_VALIDATE_HELP,
         parents=[global_flags],
     )
     validate_parser.add_argument(
-        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+        "recipe_path",
+        help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
     )
 
     # Story 2.6: mason recipe build <recipe_path> [--docker --config] — the
@@ -609,18 +653,24 @@ def build_parser() -> argparse.ArgumentParser:
     # as unrecognized, since argparse hands the tokens following `build` to
     # THIS parser, not an ancestor one.
     recipe_build_parser = _noun_verbs["recipe"].add_parser(
-        "build", help=_RECIPE_BUILD_HELP, description=_RECIPE_BUILD_HELP,
+        "build",
+        help=_RECIPE_BUILD_HELP,
+        description=_RECIPE_BUILD_HELP,
         parents=[global_flags],
     )
     recipe_build_parser.add_argument(
-        "recipe_path", metavar="RECIPE_PATH", help="path to the recipe (file or directory)",
+        "recipe_path",
+        metavar="RECIPE_PATH",
+        help="path to the recipe (file or directory)",
     )
     recipe_build_parser.add_argument(
-        "--docker", action="store_true",
+        "--docker",
+        action="store_true",
         help="run the Docker/CI-parity build instead of the native default (requires --config)",
     )
     recipe_build_parser.add_argument(
-        "--config", metavar="CONFIG",
+        "--config",
+        metavar="CONFIG",
         help="platform-variant config name for --docker (e.g. linux64)",
     )
 
@@ -645,7 +695,8 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[global_flags],
     )
     optimize_parser.add_argument(
-        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+        "recipe_path",
+        help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
     )
 
     scan_parser = _noun_verbs["recipe"].add_parser(
@@ -655,7 +706,8 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[global_flags],
     )
     scan_parser.add_argument(
-        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+        "recipe_path",
+        help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
     )
 
     # Story 2.9: mason recipe submit <recipe_path> [--yes] [--prepare-only]
@@ -678,11 +730,13 @@ def build_parser() -> argparse.ArgumentParser:
         "not a recipe.yaml/meta.yaml file)",
     )
     submit_parser.add_argument(
-        "--yes", action="store_true",
+        "--yes",
+        action="store_true",
         help="confirm a real submission (default: dry run -- --dry-run forwarded to CFE)",
     )
     submit_parser.add_argument(
-        "--prepare-only", action="store_true",
+        "--prepare-only",
+        action="store_true",
         help="stop after pushing the branch to the fork; do not open a PR (still a no-op "
         "dry run unless --yes is also given)",
     )
@@ -709,22 +763,25 @@ def build_parser() -> argparse.ArgumentParser:
         "not parse); with --github, a directory is also accepted",
     )
     update_parser.add_argument(
-        "--dry-run", action="store_true",
-        help="compute and show the plan without writing (default: writes the "
-        "field-scoped update for real)",
+        "--dry-run",
+        action="store_true",
+        help="compute and show the plan without writing (default: writes the field-scoped update for real)",
     )
     update_parser.add_argument(
-        "--github", action="store_true",
+        "--github",
+        action="store_true",
         help="use CFE's GitHub Releases autotick bot instead of the default PyPI one",
     )
     update_parser.add_argument(
-        "--repo", default=None, metavar="OWNER/REPO",
+        "--repo",
+        default=None,
+        metavar="OWNER/REPO",
         help="GitHub repo override (only forwarded to CFE with --github; inert otherwise)",
     )
     update_parser.add_argument(
-        "--pre", action="store_true",
-        help="include pre-release versions (only forwarded to CFE with --github; inert "
-        "otherwise)",
+        "--pre",
+        action="store_true",
+        help="include pre-release versions (only forwarded to CFE with --github; inert otherwise)",
     )
 
     # Review pass (2026-08-12): `metavar="{}"` was never updated once a verb
@@ -748,15 +805,20 @@ def build_parser() -> argparse.ArgumentParser:
     # docstring), never a verb-own flag like `--docker`/`--yes`/`--dry-run`
     # above.
     package_build_parser = _noun_verbs["package"].add_parser(
-        "build", help=_PACKAGE_BUILD_HELP, description=_PACKAGE_BUILD_HELP,
+        "build",
+        help=_PACKAGE_BUILD_HELP,
+        description=_PACKAGE_BUILD_HELP,
         parents=[global_flags],
     )
     package_build_parser.add_argument(
-        "project_path", metavar="PROJECT_PATH",
+        "project_path",
+        metavar="PROJECT_PATH",
         help="path to the project to build (its own pyproject.toml/pixi.toml)",
     )
     package_build_parser.add_argument(
-        "--target", choices=("library",), default="library",
+        "--target",
+        choices=("library",),
+        default="library",
         help="what to build (v1 scope: library only)",
     )
 
@@ -767,7 +829,9 @@ def build_parser() -> argparse.ArgumentParser:
     # registration this verb shares with the bare-noun `--ship` alias
     # immediately below, so the `add_argument` bodies are not duplicated.
     ship_parser = _noun_verbs["package"].add_parser(
-        "ship", help=_PACKAGE_SHIP_HELP, description=_PACKAGE_SHIP_HELP,
+        "ship",
+        help=_PACKAGE_SHIP_HELP,
+        description=_PACKAGE_SHIP_HELP,
         parents=[global_flags],
     )
     _add_ship_flags(ship_parser, targets_flag="--to")
@@ -804,19 +868,29 @@ def build_parser() -> argparse.ArgumentParser:
     # discover_manifests(Path.cwd())` and uses the result, so omitting
     # `manifest_path` is no longer a usage error.
     environment_lock_parser = _noun_verbs["environment"].add_parser(
-        "lock", help=_ENVIRONMENT_LOCK_HELP, description=_ENVIRONMENT_LOCK_HELP,
+        "lock",
+        help=_ENVIRONMENT_LOCK_HELP,
+        description=_ENVIRONMENT_LOCK_HELP,
         parents=[global_flags],
     )
     environment_lock_parser.add_argument(
-        "manifest_path", metavar="MANIFEST_PATH", nargs="*",
+        "manifest_path",
+        metavar="MANIFEST_PATH",
+        nargs="*",
         help="dependency manifest paths (pyproject.toml, environment.yml, "
         "requirements*.txt, pixi.toml); omit to auto-discover them in the current directory",
     )
     environment_lock_parser.add_argument(
-        "--output", "-o", required=True, metavar="PATH", help="path to write the lockfile to",
+        "--output",
+        "-o",
+        required=True,
+        metavar="PATH",
+        help="path to write the lockfile to",
     )
     environment_lock_parser.add_argument(
-        "--platform", metavar="PLATFORMS", default=None,
+        "--platform",
+        metavar="PLATFORMS",
+        default=None,
         help="comma-separated platforms to lock for (e.g. linux-64,osx-arm64); omit to let "
         "conda-lock apply its own default",
     )
@@ -839,20 +913,29 @@ def build_parser() -> argparse.ArgumentParser:
     # Story 4.2: `manifest_path` is `nargs="*"`, same discovery fallback as
     # `lock` above -- see that registration's comment for the rationale.
     environment_check_parser = _noun_verbs["environment"].add_parser(
-        "check", help=_ENVIRONMENT_CHECK_HELP, description=_ENVIRONMENT_CHECK_HELP,
+        "check",
+        help=_ENVIRONMENT_CHECK_HELP,
+        description=_ENVIRONMENT_CHECK_HELP,
         parents=[global_flags],
     )
     environment_check_parser.add_argument(
-        "manifest_path", metavar="MANIFEST_PATH", nargs="*",
+        "manifest_path",
+        metavar="MANIFEST_PATH",
+        nargs="*",
         help="dependency manifest paths (pyproject.toml, environment.yml, "
         "requirements*.txt, pixi.toml); omit to auto-discover them in the current directory",
     )
     environment_check_parser.add_argument(
-        "--lockfile", "-l", required=True, metavar="PATH",
+        "--lockfile",
+        "-l",
+        required=True,
+        metavar="PATH",
         help="path to the EXISTING lockfile to verify (not written to)",
     )
     environment_check_parser.add_argument(
-        "--platform", metavar="PLATFORMS", default=None,
+        "--platform",
+        metavar="PLATFORMS",
+        default=None,
         help="comma-separated platforms to check (e.g. linux-64,osx-arm64); pass the same "
         "platforms the lockfile was locked with -- omitting this delegates to conda-lock's "
         "own default (linux-64,osx-arm64,osx-64,win-64 when the manifests name none), which "
@@ -861,9 +944,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Same `.choices`-derived metavar fixup as `recipe`/`package` above, now
     # that `environment` has two real verbs registered (`lock`, `check`).
-    _noun_verbs["environment"].metavar = (
-        "{" + ",".join(_noun_verbs["environment"].choices) + "}"
-    )
+    _noun_verbs["environment"].metavar = "{" + ",".join(_noun_verbs["environment"].choices) + "}"
 
     return parser
 
@@ -954,13 +1035,18 @@ def _dispatch_package_ship(ns: argparse.Namespace, *, raw_targets: str) -> int:
         cfe_root_arg=getattr(ns, "cfe_root", None),
         cfe_python_arg=getattr(ns, "cfe_python", None),
         cfe_timeout_arg=_resolve_optional_float(
-            getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT,
+            getattr(ns, "cfe_timeout", None),
+            _ENV_CFE_TIMEOUT,
         ),
         start_directory=Path.cwd(),
     )
     render.write(
-        fmt, sys.stdout, "package ship", "ok",
-        {"targets": [{**dataclasses.asdict(r), "state": r.state.value} for r in results]}, [],
+        fmt,
+        sys.stdout,
+        "package ship",
+        "ok",
+        {"targets": [{**dataclasses.asdict(r), "state": r.state.value} for r in results]},
+        [],
     )
     return EXIT_FAILED if any(r.state == ShipState.FAILED for r in results) else EXIT_OK
 
@@ -1012,11 +1098,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             render.write(fmt, sys.stdout, "doctor", "ok", dataclasses.asdict(report), [])
             return EXIT_OK
 
-        if (
-            ns.noun == "package"
-            and getattr(ns, "ship", None) is not None
-            and getattr(ns, "verb", None)
-        ):
+        if ns.noun == "package" and getattr(ns, "ship", None) is not None and getattr(ns, "verb", None):
             # Review pass 3: `--ship <targets>` is registered on the `package`
             # NOUN parser (needed for D-12's bare-noun alias below), so it
             # parses successfully even when an explicit verb is ALSO given --
@@ -1039,11 +1121,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_USAGE
 
-        if (
-            ns.noun == "package"
-            and not getattr(ns, "verb", None)
-            and getattr(ns, "ship", None) is not None
-        ):
+        if ns.noun == "package" and not getattr(ns, "verb", None) and getattr(ns, "ship", None) is not None:
             # D-12/FR-30: the ONE documented bare-noun exception to "a noun
             # with no verb is a usage error" (the generic check immediately
             # below) -- `mason package --target library --ship
@@ -1096,12 +1174,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             result = recipe.new(
-                source, package_name, ns.output,
+                source,
+                package_name,
+                ns.output,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
-                cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
-                ),
+                cfe_timeout_arg=_resolve_optional_float(getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT),
                 environ=os.environ,
                 start_directory=Path.cwd(),
             )
@@ -1131,14 +1209,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ns.recipe_path,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
-                cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
-                ),
+                cfe_timeout_arg=_resolve_optional_float(getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT),
                 environ=os.environ,
                 start_directory=Path.cwd(),
             )
             render.write(
-                fmt, sys.stdout, "recipe validate", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "recipe validate",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
@@ -1174,7 +1255,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
                 cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT,
+                    getattr(ns, "cfe_timeout", None),
+                    _ENV_CFE_TIMEOUT,
                 ),
                 environ=os.environ,
                 start_directory=Path.cwd(),
@@ -1209,8 +1291,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             # makes that boundary loud instead of silent).
             if ns.log_path.strip() == "-":
                 print(
-                    "mason recipe diagnose: '-' (stdin) is not supported -- pass a real "
-                    "log file path",
+                    "mason recipe diagnose: '-' (stdin) is not supported -- pass a real log file path",
                     file=sys.stderr,
                 )
                 return EXIT_USAGE
@@ -1219,14 +1300,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ns.log_path,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
-                cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
-                ),
+                cfe_timeout_arg=_resolve_optional_float(getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT),
                 environ=os.environ,
                 start_directory=Path.cwd(),
             )
             render.write(
-                fmt, sys.stdout, "recipe diagnose", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "recipe diagnose",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK
 
@@ -1242,14 +1326,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ns.recipe_path,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
-                cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
-                ),
+                cfe_timeout_arg=_resolve_optional_float(getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT),
                 environ=os.environ,
                 start_directory=Path.cwd(),
             )
             render.write(
-                fmt, sys.stdout, "recipe optimize", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "recipe optimize",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK
 
@@ -1262,14 +1349,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ns.recipe_path,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
-                cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
-                ),
+                cfe_timeout_arg=_resolve_optional_float(getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT),
                 environ=os.environ,
                 start_directory=Path.cwd(),
             )
             render.write(
-                fmt, sys.stdout, "recipe scan", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "recipe scan",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK
 
@@ -1291,14 +1381,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 prepare_only=ns.prepare_only,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
-                cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
-                ),
+                cfe_timeout_arg=_resolve_optional_float(getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT),
                 environ=os.environ,
                 start_directory=Path.cwd(),
             )
             render.write(
-                fmt, sys.stdout, "recipe submit", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "recipe submit",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK
 
@@ -1322,10 +1415,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             # uses) makes that silence loud rather than changing the
             # underlying inert-not-rejected contract.
             if (ns.repo or ns.pre) and not ns.github:
-                logging.warning(
-                    "mason recipe update: --repo/--pre have no effect without --github "
-                    "-- ignored"
-                )
+                logging.warning("mason recipe update: --repo/--pre have no effect without --github -- ignored")
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             result = recipe.update(
                 ns.recipe_path,
@@ -1335,14 +1425,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 allow_prerelease=ns.pre,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
-                cfe_timeout_arg=_resolve_optional_float(
-                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
-                ),
+                cfe_timeout_arg=_resolve_optional_float(getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT),
                 environ=os.environ,
                 start_directory=Path.cwd(),
             )
             render.write(
-                fmt, sys.stdout, "recipe update", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "recipe update",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK
 
@@ -1400,7 +1493,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             # exceptions `environment.lock()` can still raise, propagating
             # to main()'s existing `except MasonError` handler below.
             render.write(
-                fmt, sys.stdout, "environment lock", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "environment lock",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK
 
@@ -1442,7 +1540,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
             result = environment.check(ns.lockfile, manifest_paths, platforms=ns.platform)
             render.write(
-                fmt, sys.stdout, "environment check", "ok", dataclasses.asdict(result), [],
+                fmt,
+                sys.stdout,
+                "environment check",
+                "ok",
+                dataclasses.asdict(result),
+                [],
             )
             return EXIT_OK if not result.stale and result.returncode == 0 else EXIT_FAILED
 
@@ -1482,11 +1585,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         # below, since MasonError is a subclass of it.
         print(str(exc), file=sys.stderr)
         return EXIT_FAILED
-    except Exception:                              # noqa: BLE001 — deliberate boundary
+    except Exception:  # noqa: BLE001 — deliberate boundary
         import traceback
+
         traceback.print_exc()
         return EXIT_FAILED
 
 
-if __name__ == "__main__":                          # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())

@@ -56,7 +56,11 @@ def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+        ["git", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return result.stdout
 
@@ -136,9 +140,7 @@ def test_parse_catalog_extracts_rows_and_glob_tokens() -> None:
     assert herald.station == "herald"
     assert herald.surface == "Claude Design MCP bridge"
     assert herald.how_to_prove == _HERALD_PROOF
-    assert herald.surface_globs == (
-        "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/**",
-    )
+    assert herald.surface_globs == ("src/shared/packages/pyforge-herald/src/pyforge/herald/transport/**",)
     assert atlas.surface_globs == ("src/shared/packages/pyforge-atlas/wasm/**",)
     assert "named gap" in atlas.how_to_prove
 
@@ -204,18 +206,14 @@ def test_row_match_never_matches_via_keyword_or_substring() -> None:
         surface="Postgres+pgvector cluster",
         how_to_prove="scribe-pg-up",
         cost="a real local Postgres process",
-        surface_globs=(
-            "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py",
-        ),
+        surface_globs=("src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py",),
     )
     matched = lps._row_match(row, ["docs/how-to/ocp-cluster-bringup.md"])
     assert matched == ()
 
 
 def test_row_match_empty_globs_never_matches() -> None:
-    row = lps.CatalogRow(
-        station="x", surface="y", how_to_prove="z", cost="w", surface_globs=()
-    )
+    row = lps.CatalogRow(station="x", surface="y", how_to_prove="z", cost="w", surface_globs=())
     assert lps._row_match(row, ["any/path/at/all.py"]) == ()
 
 
@@ -477,7 +475,11 @@ def test_zero_false_positives_against_the_live_tracked_tree() -> None:
     tracked = sorted(
         line.strip()
         for line in subprocess.run(
-            ["git", "ls-files"], cwd=repo_root, capture_output=True, text=True, check=True,
+            ["git", "ls-files"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.splitlines()
         if line.strip()
     )
@@ -498,11 +500,7 @@ def test_zero_false_positives_against_the_live_tracked_tree() -> None:
         # cannot reproduce is a false positive.
         expected: set[str] = set()
         for pattern in row.surface_globs:
-            expected.update(
-                p.relative_to(repo_root).as_posix()
-                for p in repo_root.glob(pattern)
-                if p.is_file()
-            )
+            expected.update(p.relative_to(repo_root).as_posix() for p in repo_root.glob(pattern) if p.is_file())
         extra = matched - expected
         if extra:
             violations.append(
@@ -511,10 +509,7 @@ def test_zero_false_positives_against_the_live_tracked_tree() -> None:
             )
         for false_positive in _FIRST_ATTEMPT_FALSE_POSITIVES:
             if false_positive in matched:
-                violations.append(
-                    f"{row.station}/{row.surface}: matched known false "
-                    f"positive {false_positive!r}"
-                )
+                violations.append(f"{row.station}/{row.surface}: matched known false positive {false_positive!r}")
 
         # Station attribution: every hit sits under the row's own station,
         # or the container row's named cross-station paths, or herald's two
@@ -528,14 +523,9 @@ def test_zero_false_positives_against_the_live_tracked_tree() -> None:
                     )
         else:
             expected_prefix = f"src/shared/packages/pyforge-{row.station}/"
-            named_exceptions = (
-                _HERALD_NAMED_NON_PACKAGE_PATHS if row.station == "herald" else ()
-            )
+            named_exceptions = _HERALD_NAMED_NON_PACKAGE_PATHS if row.station == "herald" else ()
             for path in matched:
                 if not path.startswith(expected_prefix) and path not in named_exceptions:
-                    violations.append(
-                        f"{row.station}/{row.surface}: {path!r} does not "
-                        f"sit under {expected_prefix!r}"
-                    )
+                    violations.append(f"{row.station}/{row.surface}: {path!r} does not sit under {expected_prefix!r}")
 
     assert not violations, "\n".join(violations)

@@ -7,8 +7,7 @@ import os
 from typing import Any
 
 from pyforge.core.assertion import HostMintClient
-from pyforge.core.client import PyForgeStationClient
-from pyforge.core.client import Transport
+from pyforge.core.client import PyForgeStationClient, Transport
 
 _DEFAULT_HOST = "http://127.0.0.1:8000"
 _BEARER_ENV = "PYFORGE_IDP_BEARER_FILE"

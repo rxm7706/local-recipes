@@ -16,6 +16,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward import bootstrap
 from pyforge.steward.bootstrap import (
     InitDuty,
@@ -71,12 +72,11 @@ def test_setup_without_pixi_toml_stops_at_pixi_install_with_remedy(tmp_path: Pat
     assert steps[1].remedy == "pixi-install: checkout must contain pixi.toml"
 
 
-def test_setup_pixi_install_failure_names_the_last_stderr_line(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_setup_pixi_install_failure_names_the_last_stderr_line(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "pixi.toml").write_text("[workspace]\nname='x'\n", encoding="utf-8")
     monkeypatch.setattr(
-        bootstrap, "materialize_environment",
+        bootstrap,
+        "materialize_environment",
         _raise(_called("pixi install", stderr="first line\nsolve failed: conflict\n")),
     )
     steps = setup_steps(dest=tmp_path, url=None, env="pyforge-guild")
@@ -86,14 +86,13 @@ def test_setup_pixi_install_failure_names_the_last_stderr_line(
     assert steps[-1].remedy == f"pixi-install: from {tmp_path} run `pixi install -e pyforge-guild`"
 
 
-def test_setup_hooks_failure_is_a_step_not_a_stop(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_setup_hooks_failure_is_a_step_not_a_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "pixi.toml").write_text("[workspace]\nname='x'\n", encoding="utf-8")
     (tmp_path / bootstrap._PRE_COMMIT_CONFIG_RELATIVE_PATH).write_text("repos: []\n", encoding="utf-8")
     monkeypatch.setattr(bootstrap, "materialize_environment", lambda *_a, **_k: None)
     monkeypatch.setattr(
-        bootstrap, "_run_pre_commit_install",
+        bootstrap,
+        "_run_pre_commit_install",
         _raise(_called("pre-commit install", stdout="hook install failed\n")),
     )
     steps = setup_steps(dest=tmp_path, url=None, env="pyforge-guild")
@@ -105,9 +104,7 @@ def test_setup_hooks_failure_is_a_step_not_a_stop(
     assert next(s for s in steps if s.name == "pixi-install").ok
 
 
-def test_setup_without_pre_commit_config_skips_hooks(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_setup_without_pre_commit_config_skips_hooks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "pixi.toml").write_text("[workspace]\nname='x'\n", encoding="utf-8")
     monkeypatch.setattr(bootstrap, "materialize_environment", lambda *_a, **_k: None)
     steps = setup_steps(dest=tmp_path, url=None, env="pyforge-guild")
@@ -122,11 +119,10 @@ def _prereq(name: str, ok: bool, remedy: str | None = None) -> bootstrap.PrereqR
     return bootstrap.PrereqResult(name=name, ok=ok, found=None, required=None, remedy=remedy)
 
 
-def test_validate_fast_unmet_prereqs_name_the_first_remedy(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_validate_fast_unmet_prereqs_name_the_first_remedy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        bootstrap, "gather_prereqs",
+        bootstrap,
+        "gather_prereqs",
         lambda **_k: (_prereq("git", True), _prereq("pixi", False, "pixi: install it"), _prereq("gh", False)),
     )
     steps = validate_fast_steps(root=tmp_path, env="pyforge-guild")
@@ -157,9 +153,7 @@ def test_validate_fast_env_sync_export_failure_names_the_export_command(
     assert "pixi project export conda-environment -e build" in (steps[1].remedy or "")
 
 
-def test_validate_fast_env_sync_drift_stops_the_sequence(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_validate_fast_env_sync_drift_stops_the_sequence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(bootstrap, "gather_prereqs", lambda **_k: (_prereq("git", True),))
     (tmp_path / "environment.yaml").write_text("name: x\n", encoding="utf-8")
     monkeypatch.setattr(bootstrap, "check_environment_sync", lambda **_k: (False, "-a\n+b\n"))
@@ -169,9 +163,7 @@ def test_validate_fast_env_sync_drift_stops_the_sequence(
     assert steps[-1].detail == "environment.yaml drift"
 
 
-def test_validate_fast_without_environment_yaml_skips_env_sync(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_validate_fast_without_environment_yaml_skips_env_sync(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(bootstrap, "gather_prereqs", lambda **_k: (_prereq("git", True),))
     monkeypatch.setattr(bootstrap, "_run_steward_version", lambda **_k: "steward 0.1.0")
     steps = validate_fast_steps(root=tmp_path, env="pyforge-guild")
@@ -182,12 +174,11 @@ def test_validate_fast_without_environment_yaml_skips_env_sync(
 # ── initrepo_steps remedies ─────────────────────────────────────────────────
 
 
-def test_initrepo_pixi_install_failure_names_remedy(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_initrepo_pixi_install_failure_names_remedy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "pixi.toml").write_text("[workspace]\nname='x'\n", encoding="utf-8")
     monkeypatch.setattr(
-        bootstrap, "materialize_environment",
+        bootstrap,
+        "materialize_environment",
         _raise(_called("pixi install", stderr="no candidates\n")),
     )
     steps = initrepo_steps(root=tmp_path, env="pyforge-guild")
@@ -212,9 +203,7 @@ def test_init_duty_reports_a_missing_repo_root(monkeypatch: pytest.MonkeyPatch, 
 
 
 @pytest.mark.parametrize("as_json", [False, True])
-def test_shell_init_duty_reports_a_missing_repo_root(
-    monkeypatch: pytest.MonkeyPatch, as_json: bool
-) -> None:
+def test_shell_init_duty_reports_a_missing_repo_root(monkeypatch: pytest.MonkeyPatch, as_json: bool) -> None:
     monkeypatch.setattr(bootstrap, "format_shell_init", _raise(RuntimeError("repo root not found")))
     result = ShellInitDuty().run(_ns(as_json=as_json))
     assert result.ok is False

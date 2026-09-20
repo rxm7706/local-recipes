@@ -75,13 +75,10 @@ def test_no_sqlite_in_the_migrated_surface():
     """FR-5 / AD-4: DuckDB is the sole engine — the migrated ``pyforge/atlas`` src package
     contains NO sqlite3 read/write path (import, from-import, or dynamic import)."""
     offenders = {
-        str(p.relative_to(ATLAS_SRC)): hits
-        for p in sorted(ATLAS_SRC.rglob("*.py"))
-        if (hits := _sqlite_hits(p))
+        str(p.relative_to(ATLAS_SRC)): hits for p in sorted(ATLAS_SRC.rglob("*.py")) if (hits := _sqlite_hits(p))
     }
     assert not offenders, (
-        "FR-5 violation — the DuckDB-singularity surface must have NO sqlite3 path; "
-        f"found: {offenders}"
+        f"FR-5 violation — the DuckDB-singularity surface must have NO sqlite3 path; found: {offenders}"
     )
 
 

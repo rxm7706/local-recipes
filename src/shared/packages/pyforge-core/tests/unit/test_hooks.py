@@ -11,6 +11,7 @@ from __future__ import annotations
 from importlib.metadata import entry_points
 
 import pytest
+
 from pyforge.core.errors import PyforgeError
 from pyforge.core.hooks import (
     ENTRY_POINT_GROUP,
@@ -124,9 +125,7 @@ def test_plugin_error_is_a_pyforge_error():
 
 def test_load_entry_points_registers_the_installed_dummy():
     discovered = list(entry_points(group=ENTRY_POINT_GROUP))
-    assert discovered, (
-        f"installed distribution must declare group {ENTRY_POINT_GROUP!r}"
-    )
+    assert discovered, f"installed distribution must declare group {ENTRY_POINT_GROUP!r}"
     registry = PluginRegistry()
     registry.load_entry_points()
     assert any(isinstance(p, DummyPlugin) for p in registry.plugins)

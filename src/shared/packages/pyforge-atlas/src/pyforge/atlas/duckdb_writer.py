@@ -27,10 +27,7 @@ class SecondWriterRefused(PyforgeError, RuntimeError):
 def _require_atlas_path(path: Path | str) -> Path:
     resolved = Path(path)
     if resolved.name != ATLAS_DUCKDB_NAME:
-        msg = (
-            f"only {ATLAS_DUCKDB_NAME} is the analytical store; "
-            f"got {resolved.name!r}"
-        )
+        msg = f"only {ATLAS_DUCKDB_NAME} is the analytical store; got {resolved.name!r}"
         raise ValueError(msg)
     return resolved
 
@@ -47,9 +44,7 @@ def connect_writer(path: Path | str) -> LockedDuckDB:
     try:
         lock.acquire(timeout=0)
     except filelock.Timeout as exc:
-        raise SecondWriterRefused(
-            f"another writer already holds {db_path}"
-        ) from exc
+        raise SecondWriterRefused(f"another writer already holds {db_path}") from exc
     con = duckdb.connect(str(db_path), read_only=False)
     return LockedDuckDB(con, lock)
 

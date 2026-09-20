@@ -136,9 +136,7 @@ def _looks_like_temp_path_name(name: str) -> bool:
     return any(hint in lowered for hint in _TEMP_PATH_NAME_HINTS)
 
 
-def _calls_os_replace(
-    func: ast.AST, os_names: frozenset[str], replace_bare_names: frozenset[str]
-) -> bool:
+def _calls_os_replace(func: ast.AST, os_names: frozenset[str], replace_bare_names: frozenset[str]) -> bool:
     for node in ast.walk(func):
         if not isinstance(node, ast.Call):
             continue
@@ -162,11 +160,7 @@ def _is_write_mode_arg(node: ast.Call) -> bool:
     for keyword in node.keywords:
         if keyword.arg == "mode":
             mode_arg = keyword.value
-    return (
-        isinstance(mode_arg, ast.Constant)
-        and isinstance(mode_arg.value, str)
-        and mode_arg.value.startswith("w")
-    )
+    return isinstance(mode_arg, ast.Constant) and isinstance(mode_arg.value, str) and mode_arg.value.startswith("w")
 
 
 def _calls_temp_write_open(
@@ -217,9 +211,9 @@ def _functions_with_both_signals(tree: ast.Module) -> list[tuple[str, int]]:
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        if _calls_temp_write_open(
-            node, os_names, tempfile_names, write_open_bare_names
-        ) and _calls_os_replace(node, os_names, replace_bare_names):
+        if _calls_temp_write_open(node, os_names, tempfile_names, write_open_bare_names) and _calls_os_replace(
+            node, os_names, replace_bare_names
+        ):
             violations.append((node.name, node.lineno))
     return violations
 
@@ -345,12 +339,7 @@ def test_guard_does_not_fire_on_a_synthetic_replace_only_function():
     (the ``repoint_symlink_atomic`` shape: a symlink repoint, not a content
     write) must not be flagged -- proves the guard requires BOTH signals,
     not either alone."""
-    synthetic = (
-        "import os\n"
-        "def repoint(path, target, tmp):\n"
-        "    os.symlink(target, tmp)\n"
-        "    os.replace(tmp, path)\n"
-    )
+    synthetic = "import os\ndef repoint(path, target, tmp):\n    os.symlink(target, tmp)\n    os.replace(tmp, path)\n"
     assert _functions_with_both_signals(ast.parse(synthetic)) == []
 
 
@@ -377,18 +366,10 @@ def test_guard_does_not_fire_on_repoint_symlink_atomics_real_body():
     violation, because that function never opens a file for writing (only
     ``os.symlink``). CAP-2's Boundaries name this function explicitly out of
     scope for the atomic-write extraction."""
-    fs_local_path = (
-        PACKAGES_ROOT / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "adapters" / "fs_local.py"
-    )
+    fs_local_path = PACKAGES_ROOT / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "adapters" / "fs_local.py"
     assert fs_local_path.is_file(), f"expected {fs_local_path} to exist"
     tree = _parse(fs_local_path)
-    function_names = {
-        node.name
-        for node in ast.walk(tree)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-    }
+    function_names = {node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
     assert "repoint_symlink_atomic" in function_names
     violations = _functions_with_both_signals(tree)
-    assert violations == [], (
-        f"fs_local.py has unexpected sole-ownership violation(s): {violations}"
-    )
+    assert violations == [], f"fs_local.py has unexpected sole-ownership violation(s): {violations}"

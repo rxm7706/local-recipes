@@ -41,8 +41,7 @@ def build_application(view: View) -> Application:
     widget = get_widget(view.widget)
     if widget.websocket_renderer is None:
         raise ValueError(
-            f"view {view.name!r}'s widget {view.widget!r} has no websocket_renderer "
-            "(static-only widget type)"
+            f"view {view.name!r}'s widget {view.widget!r} has no websocket_renderer (static-only widget type)"
         )
     modify_doc = widget.websocket_renderer(view)
     return Application(FunctionHandler(modify_doc))

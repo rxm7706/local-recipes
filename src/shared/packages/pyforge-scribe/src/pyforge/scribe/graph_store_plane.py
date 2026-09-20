@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from pyforge.core.hooks import PluginError
+
 from pyforge.scribe.embeddings import EMBEDDING_DIM, embed_text
 from pyforge.scribe.graph_store import GRAPHSTORE_HOOK_SPEC
 from pyforge.scribe.models import GraphNode as GraphNodeModel
@@ -25,9 +26,7 @@ def _import_duckdb():
     try:
         import duckdb
     except ImportError as exc:
-        raise PluginError(
-            "plane graph-store requires duckdb (query plane / CAP-19)"
-        ) from exc
+        raise PluginError("plane graph-store requires duckdb (query plane / CAP-19)") from exc
     return duckdb
 
 
@@ -61,8 +60,7 @@ class PlaneGraphStore:
                 from pyforge.atlas.duckdb_writer import connect_writer
             except ImportError as exc:
                 raise PluginError(
-                    "plane graph-store writes require pyforge-atlas "
-                    "(duckdb_writer.connect_writer)"
+                    "plane graph-store writes require pyforge-atlas (duckdb_writer.connect_writer)"
                 ) from exc
             return connect_writer(path)
         duckdb = _import_duckdb()
@@ -82,14 +80,12 @@ class PlaneGraphStore:
         # precedent.
         self._con.execute("ALTER TABLE scribe_nodes ADD COLUMN IF NOT EXISTS stale BOOLEAN")
         self._con.execute(
-            f"CREATE TABLE IF NOT EXISTS scribe_embeddings ("
-            f"id VARCHAR PRIMARY KEY, emb FLOAT[{EMBEDDING_DIM}])"
+            f"CREATE TABLE IF NOT EXISTS scribe_embeddings (id VARCHAR PRIMARY KEY, emb FLOAT[{EMBEDDING_DIM}])"
         )
 
     def _load(self) -> None:
         rows = self._con.execute(
-            "SELECT id, kind, title, text, citation, valid_from, valid_until, superseded_by, "
-            "stale FROM scribe_nodes"
+            "SELECT id, kind, title, text, citation, valid_from, valid_until, superseded_by, stale FROM scribe_nodes"
         ).fetchall()
         loaded: dict[str, GraphNodeModel] = {}
         for row in rows:
@@ -117,9 +113,7 @@ class PlaneGraphStore:
         existing = self._nodes.get(node_id)
         if existing is None:
             raise ValueError(f"cannot invalidate unknown node id {node_id!r}")
-        self._nodes[node_id] = existing.model_copy(
-            update={"valid_until": ended_at, "superseded_by": superseded_by}
-        )
+        self._nodes[node_id] = existing.model_copy(update={"valid_until": ended_at, "superseded_by": superseded_by})
 
     def query_by_citation(self, citation: str) -> list[GraphNodeModel]:
         return [node for node in self._nodes.values() if node.citation == citation]

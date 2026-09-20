@@ -49,8 +49,7 @@ FORBIDDEN_STATUS_WORDS = re.compile(
 )
 
 REGISTER_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-lifecycle/adoption-register.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md"
 )
 
 
@@ -103,9 +102,7 @@ def _skill_dir_exists(skills_dir: Path, name: str) -> bool:
     """`name` may be an exact dir name or a `<prefix>-*` glob shape."""
     if name.endswith("-*"):
         prefix = name[:-1]
-        return skills_dir.is_dir() and any(
-            p.is_dir() and p.name.startswith(prefix) for p in skills_dir.iterdir()
-        )
+        return skills_dir.is_dir() and any(p.is_dir() and p.name.startswith(prefix) for p in skills_dir.iterdir())
     return (skills_dir / name).is_dir()
 
 
@@ -225,18 +222,21 @@ def test_status_hygiene_regex_word_boundary_does_not_false_positive():
 
 
 ALL_STATIONS = (
-    "herald", "doctor", "warden", "scribe", "marshal", "steward", "atlas", "mason",
+    "herald",
+    "doctor",
+    "warden",
+    "scribe",
+    "marshal",
+    "steward",
+    "atlas",
+    "mason",
 )
 
 
 def _other_personas_silent(root: Path, station: str, name: str) -> list[str]:
     """Every `bmad-agent-<other>` that also mentions `name` -- AD-2's 'exactly
     one' half, not just 'the named one does'."""
-    return [
-        other
-        for other in ALL_STATIONS
-        if other != station and _persona_mentions(root, other, name)
-    ]
+    return [other for other in ALL_STATIONS if other != station and _persona_mentions(root, other, name)]
 
 
 # Story 46.5 landed all four consented `bmad-labs-skills` directories
@@ -287,9 +287,7 @@ def test_skill_routing_matches_ad2_for_every_currently_provisioned_row():
                 # Edge-Case Matrix).
                 continue
             checked_names.append(name)
-            assert not _claude_md_mentions(claude_md, name), (
-                f"CLAUDE.md must never route {name!r} (AD-2)"
-            )
+            assert not _claude_md_mentions(claude_md, name), f"CLAUDE.md must never route {name!r} (AD-2)"
             if shape == "single":
                 # Story 46.5 review finding: the carve-out must skip ONLY
                 # the positive "the owning station mentions it" assertion
@@ -316,12 +314,10 @@ def test_skill_routing_matches_ad2_for_every_currently_provisioned_row():
     # actually exercised (bmad-cis-* and skf-*, both currently multi/all
     # -station, per this story's own live finding).
     assert any(n.startswith("bmad-cis") for n in checked_names), (
-        "expected the bmad-cis-* row to be checked -- register or skill "
-        "tree shape changed"
+        "expected the bmad-cis-* row to be checked -- register or skill tree shape changed"
     )
     assert any(n.startswith("skf-") for n in checked_names), (
-        "expected the skf-* row to be checked -- register or skill tree "
-        "shape changed"
+        "expected the skf-* row to be checked -- register or skill tree shape changed"
     )
 
 
@@ -363,7 +359,7 @@ def test_wired_column_agrees_with_live_pipeline_truth_for_every_row():
     offline-safe as the rest of the suite; a one-time hand-run of the full
     live CLI (all stages) is recorded in this story's `.memlog.md` instead.
     """
-    from pyforge.steward.suite import ProbeHooks, SUITE_PACKAGES, build_pipeline_truth_report
+    from pyforge.steward.suite import SUITE_PACKAGES, ProbeHooks, build_pipeline_truth_report
 
     root = _repo_root()
     rows = _table_rows(_section(_register_text(root), 1))[1:]
@@ -430,9 +426,7 @@ def test_single_station_branch_is_not_dead_code(tmp_path):
     )
     (skills_dir / "bmad-os-fixture-skill").mkdir(parents=True)
     (skills_dir / "bmad-os-other-fixture").mkdir(parents=True)
-    (fake_root / "CLAUDE.md").write_text(
-        "# CLAUDE.md\n\nNo skill routing here.\n", encoding="utf-8"
-    )
+    (fake_root / "CLAUDE.md").write_text("# CLAUDE.md\n\nNo skill routing here.\n", encoding="utf-8")
 
     shape, station = _station_shape("herald (studio only)")
     assert (shape, station) == ("single", "herald")
@@ -440,21 +434,15 @@ def test_single_station_branch_is_not_dead_code(tmp_path):
     # Positive case: on disk, persona mentions it, CLAUDE.md does not.
     assert _skill_dir_exists(skills_dir, "bmad-os-fixture-skill")
     assert _persona_mentions(fake_root, station, "bmad-os-fixture-skill")
-    assert not _claude_md_mentions(
-        (fake_root / "CLAUDE.md").read_text(encoding="utf-8"), "bmad-os-fixture-skill"
-    )
+    assert not _claude_md_mentions((fake_root / "CLAUDE.md").read_text(encoding="utf-8"), "bmad-os-fixture-skill")
 
     # Negative case: on disk, but the persona does NOT mention this one.
     assert _skill_dir_exists(skills_dir, "bmad-os-other-fixture")
     assert not _persona_mentions(fake_root, station, "bmad-os-other-fixture")
 
     # CLAUDE.md hit is caught too.
-    (fake_root / "CLAUDE.md").write_text(
-        "# CLAUDE.md\n\nSee `bmad-os-fixture-skill` for details.\n", encoding="utf-8"
-    )
-    assert _claude_md_mentions(
-        (fake_root / "CLAUDE.md").read_text(encoding="utf-8"), "bmad-os-fixture-skill"
-    )
+    (fake_root / "CLAUDE.md").write_text("# CLAUDE.md\n\nSee `bmad-os-fixture-skill` for details.\n", encoding="utf-8")
+    assert _claude_md_mentions((fake_root / "CLAUDE.md").read_text(encoding="utf-8"), "bmad-os-fixture-skill")
 
     # Not-yet-provisioned: skipped, not asserted either way.
     assert not _skill_dir_exists(skills_dir, "bmad-os-never-provisioned")
@@ -474,9 +462,7 @@ def _labs_share_skill_names(root: Path) -> set[str] | None:
     return {p.name for p in share.iterdir() if p.is_dir()}
 
 
-def _labs_consent_violations(
-    skills_dir: Path, share_skill_names: set[str], consent: tuple[str, ...]
-) -> list[str]:
+def _labs_consent_violations(skills_dir: Path, share_skill_names: set[str], consent: tuple[str, ...]) -> list[str]:
     """Non-consented labs skill names that exist under `.claude/skills/` --
     the CAP-6 consent-boundary invariant (Story 46.5). Only names the SHARE
     TREE actually ships are checked -- a name absent from the share tree
@@ -499,9 +485,7 @@ def test_no_labs_skill_outside_the_consent_list_is_present():
     if share_names is None:
         pytest.skip("bmad-labs-skills share tree not present in this environment")
 
-    violations = _labs_consent_violations(
-        root / ".claude" / "skills", share_names, _LABS_CONSENT_SKILLS
-    )
+    violations = _labs_consent_violations(root / ".claude" / "skills", share_names, _LABS_CONSENT_SKILLS)
     assert not violations, (
         "non-consented bmad-labs-skills director(ies) present under "
         f".claude/skills/: {violations} -- only {_LABS_CONSENT_SKILLS} are "
@@ -527,6 +511,4 @@ def test_labs_consent_violation_check_is_not_vacuous(tmp_path):
     # Stage a fifth, non-consented (but real, share-tree-present) directory
     # -- must red.
     (skills_dir / "software-research").mkdir()
-    assert _labs_consent_violations(skills_dir, share_names, consent) == [
-        "software-research"
-    ]
+    assert _labs_consent_violations(skills_dir, share_names, consent) == ["software-research"]

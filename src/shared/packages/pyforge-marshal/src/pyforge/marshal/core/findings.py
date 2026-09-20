@@ -1853,11 +1853,7 @@ def require_registered(code: str) -> str:
     ``UnregisteredFindingCodeError`` otherwise. Format is checked first -- a
     malformed code fails before the membership check ever runs."""
     if not CODE_PATTERN.fullmatch(code):
-        raise UnregisteredFindingCodeError(
-            f"malformed finding code {code!r} -- expected MRS-<AREA>-<NNN>"
-        )
+        raise UnregisteredFindingCodeError(f"malformed finding code {code!r} -- expected MRS-<AREA>-<NNN>")
     if code not in REGISTERED_CODES:
-        raise UnregisteredFindingCodeError(
-            f"unregistered finding code {code!r} -- not in REGISTERED_CODES"
-        )
+        raise UnregisteredFindingCodeError(f"unregistered finding code {code!r} -- not in REGISTERED_CODES")
     return code

@@ -36,6 +36,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.derive.adapters import (
     ADAPTER_COMPOSITION,
     AdapterSpec,
@@ -82,13 +83,11 @@ def template_root(tmp_path: Path) -> Path:
     )
     _write(
         files_dir / "gemini-md.md.j2",
-        "GEMINI-WRAPPER-PREAMBLE\n"
-        "{{ tiers }}\n{{ portability-contract }}\n{{ dream-first-workflow }}\n",
+        "GEMINI-WRAPPER-PREAMBLE\n{{ tiers }}\n{{ portability-contract }}\n{{ dream-first-workflow }}\n",
     )
     _write(
         files_dir / "copilot-instructions.md.j2",
-        "COPILOT-WRAPPER-PREAMBLE\n"
-        "{{ tiers }}\n{{ portability-contract }}\n{{ dream-first-workflow }}\n",
+        "COPILOT-WRAPPER-PREAMBLE\n{{ tiers }}\n{{ portability-contract }}\n{{ dream-first-workflow }}\n",
     )
     return root
 
@@ -146,19 +145,13 @@ def test_mutating_the_shared_tiers_fragment_changes_all_three_whole_file_adapter
     The other two fragments (``portability-contract``/``dream-first-
     workflow``) stay unchanged across the mutation -- proving the change is
     surgical, not an incidental full re-render of unrelated content."""
-    before = {
-        adapter_id: render_adapter(adapter_id, template_path=template_root)
-        for adapter_id in ADAPTER_COMPOSITION
-    }
+    before = {adapter_id: render_adapter(adapter_id, template_path=template_root) for adapter_id in ADAPTER_COMPOSITION}
     before_region = _region_body_from_template(template_root, "tiers")
     assert before_region == "TIERS-FRAGMENT-V1\n"
 
     (template_root / "files" / "tiers.md.j2").write_text("TIERS-FRAGMENT-V2\n", encoding="utf-8")
 
-    after = {
-        adapter_id: render_adapter(adapter_id, template_path=template_root)
-        for adapter_id in ADAPTER_COMPOSITION
-    }
+    after = {adapter_id: render_adapter(adapter_id, template_path=template_root) for adapter_id in ADAPTER_COMPOSITION}
     after_region = _region_body_from_template(template_root, "tiers")
 
     for adapter_id in ADAPTER_COMPOSITION:
@@ -326,9 +319,7 @@ def test_every_adapter_composition_key_is_a_real_generated_derived_manifest_entr
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -355,9 +346,7 @@ def _manifest(*entries: ManifestEntry) -> Manifest:
     return Manifest(model_version=_VERSION, never_write=(), entries=tuple(entries))
 
 
-def test_run_adopt_writes_a_derive_composed_whole_file_and_a_managed_region_in_the_same_run(
-    tmp_path, template_root
-):
+def test_run_adopt_writes_a_derive_composed_whole_file_and_a_managed_region_in_the_same_run(tmp_path, template_root):
     """End-to-end proof of the AC's own explicit contrast: a ``generated-
     derived`` entry whose id is derive-composed (``cursor-rules``) gets its
     whole file OVERWRITTEN with composed content, while a
@@ -368,9 +357,7 @@ def test_run_adopt_writes_a_derive_composed_whole_file_and_a_managed_region_in_t
     repo = tmp_path / "repo"
     repo.mkdir()
     _init_git_repo(repo)
-    (repo / "AGENTS.md").write_text(
-        "# My project\n\nSome existing repo-specific guidance.\n", encoding="utf-8"
-    )
+    (repo / "AGENTS.md").write_text("# My project\n\nSome existing repo-specific guidance.\n", encoding="utf-8")
     _commit_all(repo)
 
     manifest = _manifest(

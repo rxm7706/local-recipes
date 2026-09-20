@@ -125,9 +125,7 @@ def test_filter_by_role_uses_exact_equality_with_no_normalization():
 
 
 def test_search_returns_only_rows_matching_the_predicate():
-    frame = RoleFilteredRows(
-        rows=({"region": "east", "value": 1}, {"region": "east", "value": 2})
-    )
+    frame = RoleFilteredRows(rows=({"region": "east", "value": 1}, {"region": "east", "value": 2}))
 
     result = search(frame, lambda row: row["value"] > 1)
 

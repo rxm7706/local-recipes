@@ -48,10 +48,7 @@ def mint_vendor_passport(
     if not vendor_id or not vendor_id.strip():
         raise PassportMintError("vendor_id is required")
     if not (jira_key or "").strip() and not (github_item_id or "").strip():
-        raise PassportMintError(
-            "a vendor passport must carry at least one nickname "
-            "(--jira-key or --github-item-id)"
-        )
+        raise PassportMintError("a vendor passport must carry at least one nickname (--jira-key or --github-item-id)")
 
     import importlib
 

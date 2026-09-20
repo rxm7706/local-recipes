@@ -26,9 +26,9 @@ import json
 import re
 import shutil
 import uuid
-from datetime import datetime, timezone
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, Protocol
 
@@ -222,11 +222,7 @@ def find_orphans(root: Path, project: str) -> tuple[OrphanRef, ...]:
             missing = sid not in present_spec_ids
             is_orphan_spec = sid in orphan_spec_ids
             if missing or is_orphan_spec:
-                reason = (
-                    f"references orphaned spec {sid}"
-                    if is_orphan_spec
-                    else f"references missing spec {sid}"
-                )
+                reason = f"references orphaned spec {sid}" if is_orphan_spec else f"references missing spec {sid}"
                 orphans.append(
                     OrphanRef(
                         kind="epic",
@@ -252,9 +248,7 @@ def run_regeneration(
     root: Path,
     project: str,
     runner: PhaseRunner,
-    regressions_fn: Callable[
-        [Mapping[str, str], Mapping[str, str]], Sequence[tuple[str, str, str]]
-    ],
+    regressions_fn: Callable[[Mapping[str, str], Mapping[str, str]], Sequence[tuple[str, str, str]]],
     apply: bool,
     statuses_before: Mapping[str, str] | None = None,
     write_ledger: Callable[[Path, Mapping[str, str]], None] | None = None,
@@ -285,9 +279,7 @@ def run_regeneration(
                 apply=apply,
             )
 
-    proposed = runner.propose_statuses(
-        root=root, project=project, statuses_before=before
-    )
+    proposed = runner.propose_statuses(root=root, project=project, statuses_before=before)
     safe, blocked = apply_status_guard(before, proposed, regressions_fn)
     wrote = False
     after = dict(before)
@@ -417,6 +409,7 @@ def _rel(root: Path, path: Path) -> str:
         return str(path.resolve().relative_to(root.resolve()))
     except ValueError:
         return str(path)
+
 
 # ---------------------------------------------------------------------------
 # Story 21.2 — orchestrated Full / minimal chain (FR-192 CAP-1)
@@ -583,9 +576,7 @@ def write_orphan_manifest(
     run_dir.mkdir(parents=True, exist_ok=True)
     json_path = run_dir / "orphans.json"
     md_path = run_dir / "orphans.md"
-    payload = [
-        {"kind": o.kind, "path": o.path, "reason": o.reason} for o in orphans
-    ]
+    payload = [{"kind": o.kind, "path": o.path, "reason": o.reason} for o in orphans]
     json_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -653,11 +644,7 @@ def save_journal(run_dir: Path, journal: ChainJournal) -> Path:
         f"dream: {_yaml_quote(journal.dream)}",
         f"mode: {journal.mode}",
         f"status: {journal.status}",
-        (
-            f"current_phase: {journal.current_phase}"
-            if journal.current_phase
-            else "current_phase: null"
-        ),
+        (f"current_phase: {journal.current_phase}" if journal.current_phase else "current_phase: null"),
         "auto_commit: false",
         f"preserve_code_status: {'true' if journal.preserve_code_status else 'false'}",
         f"apply_orphans: {'true' if journal.apply_orphans else 'false'}",
@@ -718,18 +705,13 @@ def verify_code_linkage(root: Path, project: str) -> OrchestratedPhaseOutcome:
             detail=f"cannot read epics.md: {exc}",
             attempts=1,
         )
-    cites = sorted(
-        {f"spec-{m.group(1).lower()}" for m in _SPEC_CITE_RE.finditer(text)}
-    )
+    cites = sorted({f"spec-{m.group(1).lower()}" for m in _SPEC_CITE_RE.finditer(text)})
     present = _present_spec_ids(planning / "specs")
     missing = [c for c in cites if c not in present]
     return OrchestratedPhaseOutcome(
         name="code_linkage",
         status="complete",
-        detail=(
-            f"read-only verify: {len(cites)} spec cite(s); "
-            f"{len(missing)} missing"
-        ),
+        detail=(f"read-only verify: {len(cites)} spec cite(s); {len(missing)} missing"),
         attempts=1,
     )
 
@@ -858,11 +840,7 @@ def orphan_delete_units(root: Path, orphans: Sequence[OrphanRef]) -> tuple[Path,
             except ValueError:
                 continue
             parts = rel.parts
-            if (
-                len(parts) >= 2
-                and parts[-1].startswith("spec-")
-                and parts[-2] == "specs"
-            ):
+            if len(parts) >= 2 and parts[-1].startswith("spec-") and parts[-2] == "specs":
                 collapsed = candidate
                 break
         units.add(collapsed if collapsed is not None else resolved)
@@ -992,9 +970,7 @@ def run_orchestrated_chain(
     memlog-derived artifacts — skill phases go through ``invoker``.
     """
     if auto_commit:
-        raise ValueError(
-            "auto_commit is not offered; regeneration output stays unstaged"
-        )
+        raise ValueError("auto_commit is not offered; regeneration output stays unstaged")
 
     planning = planning_dir(root, project)
     if not planning.is_dir():
@@ -1006,23 +982,15 @@ def run_orchestrated_chain(
     if resume:
         existing = find_latest_incomplete_run(root, project)
         if existing is None:
-            raise FileNotFoundError(
-                "no incomplete chain-regen journal under "
-                f"{chain_regen_root(root, project)}"
-            )
+            raise FileNotFoundError(f"no incomplete chain-regen journal under {chain_regen_root(root, project)}")
         loaded = load_journal(existing)
         if loaded is None:
             raise FileNotFoundError(f"state.yaml missing in {existing}")
         if loaded.project and loaded.project != project:
-            raise ValueError(
-                f"journal project {loaded.project!r} does not match "
-                f"--project {project!r}"
-            )
+            raise ValueError(f"journal project {loaded.project!r} does not match --project {project!r}")
         run_dir = existing
         journal = loaded
-        phase_state: dict[str, dict[str, object]] = {
-            k: dict(v) for k, v in loaded.phases.items()
-        }
+        phase_state: dict[str, dict[str, object]] = {k: dict(v) for k, v in loaded.phases.items()}
         mode = journal.mode
         preserve_code_status = journal.preserve_code_status
         apply_orphans = journal.apply_orphans
@@ -1282,8 +1250,7 @@ def _execute_orchestrated_phase(
     return OrchestratedPhaseOutcome(
         name=phase,
         status="failed",
-        detail=last_detail
-        or f"phase {phase} failed after {attempts} attempt(s)",
+        detail=last_detail or f"phase {phase} failed after {attempts} attempt(s)",
         skill=skill,
         attempts=attempts,
     )
@@ -1314,7 +1281,7 @@ def _journal_replace(
 def _safe_int(value: object, *, default: int = 0) -> int:
     try:
         return int(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
 
 
@@ -1353,12 +1320,7 @@ def _parse_simple_yaml(text: str) -> dict[str, object]:
             current_phase_key = line[:-1].strip()
             phases[current_phase_key] = {}
             continue
-        if (
-            in_phases
-            and indent >= 4
-            and current_phase_key is not None
-            and ":" in line
-        ):
+        if in_phases and indent >= 4 and current_phase_key is not None and ":" in line:
             key, _, val = line.partition(":")
             phases[current_phase_key][key.strip()] = _yaml_scalar(val.strip())
             continue

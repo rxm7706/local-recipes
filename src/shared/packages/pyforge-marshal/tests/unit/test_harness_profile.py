@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.core.harness_profile import (
     BMADLOOP_ADAPTER_BY_PROFILE,
     WIRE_LAYER_NAME,
@@ -171,9 +172,7 @@ def test_packaged_claude_argv_shape_and_verbatim_tiers():
     assert argv[6:] == ("--model", "opus", "do the story")
     settings = json.loads(argv[5])
     assert settings == {
-        "pluginConfigs": {
-            "agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}
-        }
+        "pluginConfigs": {"agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}}
     }
     assert argv.count("do the story") == 1
     assert model == "opus"
@@ -239,8 +238,7 @@ def test_every_packaged_profile_with_no_authcheck_documents_why():
     documented reason none exists -- never a silent absence."""
     for name, profile in load_packaged_profiles().items():
         assert profile.authcheck_args or profile.authcheck_note, (
-            f"packaged profile {name!r} declares neither an authcheck nor "
-            "an authcheck_note"
+            f"packaged profile {name!r} declares neither an authcheck nor an authcheck_note"
         )
 
 
@@ -281,9 +279,7 @@ def test_malformed_overlay_degrades_to_a_recorded_error(tmp_path: Path):
 
 
 def test_overlay_name_stem_mismatch_is_a_recorded_error(tmp_path: Path):
-    _write_overlay(
-        tmp_path, "aname", 'name = "bname"\nbinary = "x"\nargv = ["{prompt}"]\n'
-    )
+    _write_overlay(tmp_path, "aname", 'name = "bname"\nbinary = "x"\nargv = ["{prompt}"]\n')
     profiles, errors = load_profiles(tmp_path)
     assert "aname" not in profiles and "bname" not in profiles
     assert len(errors) == 1 and "file stem" in errors[0]
@@ -350,9 +346,7 @@ def test_translate_model_none_is_silent():
 
 
 def test_render_omits_model_args_token_when_no_model_renders():
-    profile = _profile(
-        argv=["--a", "{model_args}", "{prompt}"], model_args=["-m", "{model}"]
-    )
+    profile = _profile(argv=["--a", "{model_args}", "{prompt}"], model_args=["-m", "{model}"])
     argv, model, reason = render_dispatch_argv(
         profile, binary_path="fakecli", worktree=Path("/w"), prompt="p", model=None
     )
@@ -366,9 +360,7 @@ def test_render_substitution_is_literal_never_format():
     ``{prompt}``, so prompt text can never be re-substituted."""
     profile = _profile(argv=["--dir", "{worktree}", "{prompt}"])
     prompt = "story about {worktree} and {model_args}"
-    argv, _, _ = render_dispatch_argv(
-        profile, binary_path="fakecli", worktree=Path("/w t"), prompt=prompt, model=None
-    )
+    argv, _, _ = render_dispatch_argv(profile, binary_path="fakecli", worktree=Path("/w t"), prompt=prompt, model=None)
     assert argv == ("fakecli", "--dir", "/w t", prompt)
 
 
@@ -394,9 +386,7 @@ def test_profile_without_a_wrapper_declares_none():
 
 
 def test_wrapper_parses_every_declared_field():
-    wrapper = _wrapped_profile(
-        env={"WRAP_MODE": "cache"}, fallback_bin_dirs=["envbin"], notes="n"
-    ).wrapper
+    wrapper = _wrapped_profile(env={"WRAP_MODE": "cache"}, fallback_bin_dirs=["envbin"], notes="n").wrapper
     assert wrapper is not None
     assert wrapper.binary == "wrapcli"
     assert wrapper.argv == ("wrap", "fakecli", "--")
@@ -423,9 +413,7 @@ def test_wrapper_binary_must_be_non_empty():
         _wrapped_profile(binary="")
 
 
-@pytest.mark.parametrize(
-    "token", ["{prompt}", "{model_args}", "{worktree}", "{model}", "--dir={worktree}"]
-)
+@pytest.mark.parametrize("token", ["{prompt}", "{model_args}", "{worktree}", "{model}", "--dir={worktree}"])
 def test_wrapper_argv_carrying_a_launch_placeholder_is_rejected(token):
     """The NFR-14 admission requirement made STRUCTURAL, not conventional
     (SPEC-marshal-token-economy § Constraints, "never break the provider
@@ -442,7 +430,7 @@ def test_wrapper_argv_carrying_a_launch_placeholder_is_rejected(token):
 
 @pytest.mark.parametrize("declared", [{}, {"reversible": False}])
 def test_wrapper_must_declare_reversible_true(declared):
-    """"Reversible or absent" (spec § Constraints) as a schema rule: a
+    """ "Reversible or absent" (spec § Constraints) as a schema rule: a
     wrapper whose compression cannot be retrieved byte-exact is
     silently-lossy, and there is no admissible way to declare one -- an
     UNDECLARED ``reversible`` is refused exactly as a false one is."""
@@ -584,17 +572,13 @@ def test_wire_layer_name_is_a_real_declared_context_layer():
     assert WIRE_LAYER_NAME in policy.CONTEXT_LAYER_NAMES
 
 
-@pytest.mark.parametrize(
-    "layer", [None, {}, {"enabled": False, "aggressiveness": "medium"}]
-)
+@pytest.mark.parametrize("layer", [None, {}, {"enabled": False, "aggressiveness": "medium"}])
 def test_disabled_wire_layer_is_off_and_silent(layer, tmp_path: Path):
-    """"Absent block = today's behavior byte-identical" (CAP-1) reaching
+    """ "Absent block = today's behavior byte-identical" (CAP-1) reaching
     this seam: a disabled layer yields no argv prefix, no env, no store --
     and NO reason, because a layer nobody enabled has no degradation worth
     reporting."""
-    wire = resolve_wire_wrap(
-        _wrapped_profile(), wire_layer=layer, home=tmp_path, wrapper_binary_path="/w"
-    )
+    wire = resolve_wire_wrap(_wrapped_profile(), wire_layer=layer, home=tmp_path, wrapper_binary_path="/w")
     assert bool(wire) is False
     assert wire.reason is None
     assert wire.argv_prefix == () and dict(wire.env) == {} and wire.store_dir is None
@@ -647,10 +631,8 @@ def test_enabled_layer_with_an_unresolved_wrapper_binary_degrades(tmp_path: Path
 
 
 @pytest.mark.parametrize("wrapper_kwargs", [{}, {"reversible": False}])
-def test_an_irreversible_wrapper_never_applies_however_it_was_built(
-    wrapper_kwargs, tmp_path: Path
-):
-    """"Reversible or absent" must hold for the value actually launched
+def test_an_irreversible_wrapper_never_applies_however_it_was_built(wrapper_kwargs, tmp_path: Path):
+    """ "Reversible or absent" must hold for the value actually launched
     with, not only for the TOML that declared it. ``parse_wrapper`` refuses
     an irreversible DECLARATION -- but a ``HarnessWrapper`` constructed by
     any other route (a future loader, Story 28.3's provisioning shim, a test
@@ -795,7 +777,7 @@ def test_resolve_wire_wrap_auto_with_a_declared_wrapper_applies(tmp_path: Path):
 def test_resolve_wire_wrap_auto_without_a_declared_wrapper_is_a_clean_skip(
     tmp_path: Path,
 ):
-    """"auto" against a profile with no ``[wrapper]`` at all resolves off
+    """ "auto" against a profile with no ``[wrapper]`` at all resolves off
     BEFORE the wrapper-is-None degraded path is even reached -- a clean,
     silent skip (``WireWrap(applied=False, reason=None)``), never a
     journaled attempt (matching Story 28.29's Cursor precedent)."""
@@ -889,18 +871,14 @@ def test_wrapped_argv_is_the_unwrapped_argv_with_only_a_prefix_prepended(
         "prompt": "story text with {prompt} and a ünicode — dash",
         "model": "opus",
     }
-    unwrapped, unwrapped_model, unwrapped_reason = render_dispatch_argv(
-        profile, wire=None, **kwargs
-    )
+    unwrapped, unwrapped_model, unwrapped_reason = render_dispatch_argv(profile, wire=None, **kwargs)
     wire = resolve_wire_wrap(
         profile,
         wire_layer={"enabled": True, "aggressiveness": "medium"},
         home=tmp_path,
         wrapper_binary_path="/opt/bin/wrapcli",
     )
-    wrapped, wrapped_model, wrapped_reason = render_dispatch_argv(
-        profile, wire=wire, **kwargs
-    )
+    wrapped, wrapped_model, wrapped_reason = render_dispatch_argv(profile, wire=wire, **kwargs)
 
     assert wrapped[: len(wire.argv_prefix)] == wire.argv_prefix
     # BYTES, not just str equality -- the AC says byte-identical.
@@ -927,9 +905,7 @@ def test_an_off_or_degraded_wire_leaves_the_argv_exactly_as_before(tmp_path: Pat
         ({"enabled": False}, "/opt/bin/wrapcli"),  # off
         ({"enabled": True}, None),  # enabled but the instrument is absent
     ):
-        wire = resolve_wire_wrap(
-            profile, wire_layer=layer, home=tmp_path, wrapper_binary_path=wrapper_path
-        )
+        wire = resolve_wire_wrap(profile, wire_layer=layer, home=tmp_path, wrapper_binary_path=wrapper_path)
         argv, _, _ = render_dispatch_argv(
             profile,
             binary_path="/usr/bin/fakecli",
@@ -970,9 +946,7 @@ def test_substitute_wire_port_replaces_the_literal_token(tmp_path: Path) -> None
 def test_substitute_wire_port_honors_an_explicit_port(tmp_path: Path) -> None:
     worktree = tmp_path / "loop-home"
 
-    substituted = substitute_wire_port(
-        ("--port", "{wire_port}"), worktree=worktree, wire_port=9001
-    )
+    substituted = substitute_wire_port(("--port", "{wire_port}"), worktree=worktree, wire_port=9001)
 
     assert substituted == ("--port", "9001")
 

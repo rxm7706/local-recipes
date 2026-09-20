@@ -108,9 +108,7 @@ _FRONTMATTER_FENCE = "---"
 # duplicated deliberately (pyforge.doctor cannot import scripts/).
 _SKILL_RE = re.compile(r"`((?:bmad|skf)-[a-z0-9][a-z0-9-]*)`")
 _SCRIPT_RE = re.compile(r"`((?:scripts|_bmad)/[A-Za-z0-9._/-]+\.py)`")
-_PATH_RE = re.compile(
-    r"`((?:docs|src|recipes|_bmad-output|\.github|\.claude)/[A-Za-z0-9._/-]+)`"
-)
+_PATH_RE = re.compile(r"`((?:docs|src|recipes|_bmad-output|\.github|\.claude)/[A-Za-z0-9._/-]+)`")
 
 # Same escape hatch as scripts/governance_currency_check.py, reused verbatim
 # (one marker convention repo-wide, not a second `docs-currency:ignore-*`
@@ -137,11 +135,7 @@ def load_map_yaml(target: Path) -> dict:
     if not path.is_file():
         raise ValueError(f"{_MAP_YAML_REL} does not exist")
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    schema_text = (
-        resources.files("pyforge.doctor")
-        .joinpath("data", "docs-map-schema.json")
-        .read_text(encoding="utf-8")
-    )
+    schema_text = resources.files("pyforge.doctor").joinpath("data", "docs-map-schema.json").read_text(encoding="utf-8")
     schema = json.loads(schema_text)
     jsonschema.Draft202012Validator(schema).validate(data)
     return data
@@ -225,10 +219,7 @@ def _check_map_render(target: Path, pages: list[dict]) -> Finding | None:
             source=Source.DOCS_CURRENCY,
             check=_CHECK_MAP_RENDER,
             status=DoctorStatus.WARN,
-            message=(
-                f"{_MAP_MD_REL} is missing -- cannot compare against "
-                f"{_MAP_YAML_REL}'s render"
-            ),
+            message=(f"{_MAP_MD_REL} is missing -- cannot compare against {_MAP_YAML_REL}'s render"),
             evidence={"path": _MAP_MD_REL},
         )
     current = _extract_registry_section(map_md_path.read_text(encoding="utf-8"))
@@ -300,9 +291,7 @@ def _stale_sources(target: Path, frontmatter: dict) -> list[dict]:
                 }
             )
         elif touched > verified_s:
-            stale.append(
-                {"source": source, "source_touched": touched, "verified": verified_s}
-            )
+            stale.append({"source": source, "source_touched": touched, "verified": verified_s})
     return stale
 
 
@@ -314,9 +303,7 @@ def _pixi_identifiers(target: Path) -> frozenset[str]:
     if not toml_path.is_file():
         return frozenset()
     text = toml_path.read_text(encoding="utf-8", errors="replace")
-    tasks = re.findall(
-        r"^\[(?:feature\.[^.]+\.)?tasks\.([A-Za-z0-9._-]+)\]", text, re.M
-    )
+    tasks = re.findall(r"^\[(?:feature\.[^.]+\.)?tasks\.([A-Za-z0-9._-]+)\]", text, re.M)
     deps = re.findall(r"^([A-Za-z0-9][A-Za-z0-9._-]*)\s*=", text, re.M)
     return frozenset(tasks) | frozenset(deps)
 
@@ -446,10 +433,7 @@ def _check_skill_dir_hygiene(target: Path) -> Finding | None:
         source=Source.DOCS_CURRENCY,
         check=_CHECK_SKILL_DIR_HYGIENE,
         status=DoctorStatus.WARN,
-        message=(
-            f"{len(stray)} stray non-layout file(s) inside managed "
-            "bmad-*/pyforge-*/skf-* skill directories"
-        ),
+        message=(f"{len(stray)} stray non-layout file(s) inside managed bmad-*/pyforge-*/skf-* skill directories"),
         evidence={"paths": stray},
     )
 

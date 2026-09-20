@@ -12,11 +12,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 
 import jsonschema
-import subprocess
-
 import pytest
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
@@ -29,15 +28,7 @@ from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 from pyforge.marshal.seed.verbs.kit import INDEX_TIMEOUT_S
 
-_SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "marshal"
-    / "schemas"
-    / "envelope.v1.json"
-)
-
+_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "envelope.v1.json"
 
 
 def _seed_real_home_scope(
@@ -167,9 +158,7 @@ class FakeVcs:
         self.worktree_dirs.add(home)
         if self.populate_home_project_dir:
             slug = branch.removeprefix("loop/")
-            self.worktree_dirs.add(
-                home / "_bmad-output" / "projects" / slug / "planning-artifacts"
-            )
+            self.worktree_dirs.add(home / "_bmad-output" / "projects" / slug / "planning-artifacts")
 
     def list_worktrees(self, repo_root: Path) -> tuple[WorktreeEntry, ...]:
         self.calls.append("list_worktrees")
@@ -278,12 +267,7 @@ class FakeFs:
         pre-seeded sources) -- run_preflight's seed-file loop is this
         method's other caller."""
         self.calls.append("exists")
-        return (
-            path in self.dirs
-            or path in self.texts
-            or path in self.symlinks
-            or path in self.files
-        )
+        return path in self.dirs or path in self.texts or path in self.symlinks or path in self.files
 
     def read_text(self, path: Path) -> str | None:
         self.calls.append("read_text")
@@ -649,9 +633,7 @@ def test_init_renders_mcp_json_when_declared(repo_root, tmp_path, monkeypatch, c
     assert rendered["mcpServers"]["atlas"]["args"] == ["--stdio"]
 
 
-def test_init_second_run_does_not_overwrite_hand_edited_mcp_json(
-    repo_root, tmp_path, monkeypatch, capsys
-):
+def test_init_second_run_does_not_overwrite_hand_edited_mcp_json(repo_root, tmp_path, monkeypatch, capsys):
     """Seed-not-overwrite (AC): a second ``marshal init`` run against an
     already-rendered ``.mcp.json`` -- including one an operator hand-edited
     -- leaves it byte-for-byte untouched, identical to Story 1.7's adapter
@@ -708,9 +690,7 @@ def test_init_mcp_json_write_failure_reports_finding(repo_root, tmp_path, monkey
 # --- malformed slug: MRS-INIT-001, no I/O at all --------------------------------
 
 
-@pytest.mark.parametrize(
-    "bad_slug", ["", "../evil", "a/b", ".", "..", "has space", "a\\b"]
-)
+@pytest.mark.parametrize("bad_slug", ["", "../evil", "a/b", ".", "..", "has space", "a\\b"])
 def test_malformed_slug_reports_finding_with_zero_io(repo_root, bad_slug, capsys):
     vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs()
@@ -815,17 +795,13 @@ def test_marker_symlink_desync_blocks_before_any_write(repo_root, tmp_path, caps
     vcs = FakeVcs(repo_root=repo_root)
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme"))
     # Pre-converge the (independent) tier3_backlink step so its own write
     # doesn't land in the same fs.repoint_calls list this test inspects --
     # this test's own concern is the planning-artifacts marker/symlink pair.
     _converge_tier3(fs, repo_root, home, "acme")
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "other-project\n"
-    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
-        "projects/yet-another/planning-artifacts"
-    )
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path("projects/yet-another/planning-artifacts")
     _seed_real_home_scope(
         home,
         marker="other-project",
@@ -840,22 +816,16 @@ def test_marker_symlink_desync_blocks_before_any_write(repo_root, tmp_path, caps
     assert fs.repoint_calls == []
 
 
-
-
 def test_home_agreeing_on_wrong_project_is_refused(repo_root, tmp_path, capsys):
     """DW-1-4-2 blind spot (2) / Story 20.7 CAP-3: marker+planning agree on a
     different project than requested — refuse, do not silently reconcile."""
     vcs = FakeVcs(repo_root=repo_root)
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme"))
     _converge_tier3(fs, repo_root, home, "acme")
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "other-project\n"
-    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
-        "projects/other-project/planning-artifacts"
-    )
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path("projects/other-project/planning-artifacts")
     _seed_real_home_scope(
         home,
         marker="other-project",
@@ -869,15 +839,14 @@ def test_home_agreeing_on_wrong_project_is_refused(repo_root, tmp_path, capsys):
     assert fs.write_calls == []
     assert fs.repoint_calls == []
 
+
 def test_marker_alone_with_no_symlink_is_not_a_desync(repo_root, tmp_path):
     """Only ONE of marker/symlink present is a partial (not-yet-converged)
     state, not a desync -- the blocking check requires BOTH to disagree."""
     vcs = FakeVcs(repo_root=repo_root)
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme"))
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "some-stale-value\n"
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
@@ -942,9 +911,7 @@ def test_json_format_emits_a_schema_valid_envelope(repo_root):
     jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, schema))
     assert payload["command"] == "init"
     assert payload["status"] == "ok"
-    assert payload["data"]["launch_line"] == (
-        f"cd {vcs.worktrees['loop/acme']} && export BMAD_ACTIVE_PROJECT=acme"
-    )
+    assert payload["data"]["launch_line"] == (f"cd {vcs.worktrees['loop/acme']} && export BMAD_ACTIVE_PROJECT=acme")
 
 
 def test_json_format_error_path_has_no_launch_line(repo_root):
@@ -1012,15 +979,11 @@ def test_unparseable_symlink_target_blocks_as_desync(repo_root, tmp_path, capsys
     vcs = FakeVcs(repo_root=repo_root)
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme"))
     # Pre-converge the independent tier3_backlink step -- see the comment in
     # test_marker_symlink_desync_blocks_before_any_write.
     _converge_tier3(fs, repo_root, home, "acme")
-    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
-        "/somewhere/else/planning-artifacts"
-    )
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path("/somewhere/else/planning-artifacts")
     _seed_real_home_scope(
         home,
         planning_target="/somewhere/else/planning-artifacts",
@@ -1137,9 +1100,7 @@ def test_tier3_backlink_self_heal_recreates_missing_canonical_dir(repo_root, tmp
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
     canonical, local = _tier3_paths(repo_root, home, "acme")
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme"))
     fs.symlinks[local] = canonical  # matches, but canonical dir absent from fs.dirs
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
@@ -1172,11 +1133,7 @@ def test_tier3_backlink_real_nonempty_local_dir_reports_mrs_init_005(repo_root, 
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
     canonical, local = _tier3_paths(repo_root, home, "acme")
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme")
-        | _home_with_project(home, "acme")
-        | {local}
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme") | {local})
     fs.non_empty_dirs.add(local)
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
@@ -1195,9 +1152,7 @@ def test_tier3_backlink_wrong_target_symlink_is_repointed_silently(repo_root, tm
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
     canonical, local = _tier3_paths(repo_root, home, "acme")
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme"))
     fs.symlinks[local] = Path("/somewhere/else/implementation-artifacts")
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
@@ -1222,11 +1177,7 @@ def test_tier3_backlink_remove_empty_dir_failure_reports_mrs_init_004(repo_root,
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
     _, local = _tier3_paths(repo_root, home, "acme")
-    fs = FakeFs(
-        project_dirs=_provisioned_project(repo_root, "acme")
-        | _home_with_project(home, "acme")
-        | {local}
-    )
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme") | {local})
     fs.fail_remove_empty_dir = FsError("permission denied")
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
@@ -1629,9 +1580,7 @@ def test_homes_reports_a_real_directory_at_planning_artifacts(repo_root, tmp_pat
     assert "occupied" in out
 
 
-def test_homes_reports_a_real_directory_at_main_checkout_planning_artifacts(
-    repo_root, capsys
-):
+def test_homes_reports_a_real_directory_at_main_checkout_planning_artifacts(repo_root, capsys):
     """Same occupancy blind spot on the main checkout's own link (review
     finding): the two-way rule must name a real-directory occupant, not
     read it as 'symlink absent'."""
@@ -1658,9 +1607,7 @@ def test_homes_reports_a_plain_file_occupying_tier3(repo_root, tmp_path, capsys)
     vcs.worktrees["loop/acme"] = home
     fs.dirs.add(home)
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "acme\n"
-    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
-        "projects/acme/planning-artifacts"
-    )
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path("projects/acme/planning-artifacts")
     _, local = _tier3_paths(repo_root, home, "acme")
     # A plain file (in fs.texts), neither a symlink nor a directory.
     fs.texts[local] = "stray content\n"
@@ -1671,9 +1618,7 @@ def test_homes_reports_a_plain_file_occupying_tier3(repo_root, tmp_path, capsys)
     assert "MRS-HOMES-002" in out
 
 
-def test_homes_reports_a_backlink_dangling_at_the_canonical_path(
-    repo_root, tmp_path, capsys
-):
+def test_homes_reports_a_backlink_dangling_at_the_canonical_path(repo_root, tmp_path, capsys):
     """A backlink that resolves to the RIGHT canonical path whose store was
     deleted after provisioning previously reported clean (review finding),
     though every write through it would fail and marshal init's own
@@ -1684,9 +1629,7 @@ def test_homes_reports_a_backlink_dangling_at_the_canonical_path(
     vcs.worktrees["loop/acme"] = home
     fs.dirs.add(home)
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "acme\n"
-    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
-        "projects/acme/planning-artifacts"
-    )
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path("projects/acme/planning-artifacts")
     canonical, local = _tier3_paths(repo_root, home, "acme")
     fs.symlinks[local] = canonical
     # canonical deliberately NOT in fs.dirs -- the store is gone.
@@ -1719,9 +1662,7 @@ def test_homes_reports_a_backlink_dangling_at_the_canonical_path(
 # =====================================================================
 
 
-def _preflight_namespace(
-    slug: str, *, acknowledge: str | None = None, fmt: str = "text"
-) -> argparse.Namespace:
+def _preflight_namespace(slug: str, *, acknowledge: str | None = None, fmt: str = "text") -> argparse.Namespace:
     return argparse.Namespace(slug=slug, acknowledge=acknowledge, format=fmt)
 
 
@@ -1768,9 +1709,7 @@ def _write_exclude(repo_root, body: str) -> None:
     (d / "exclude").write_text(body, encoding="utf-8")
 
 
-def test_preflight_reports_a_shared_exclude_rule_that_shadows_tracked_files(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_reports_a_shared_exclude_rule_that_shadows_tracked_files(repo_root, tmp_path, capsys):
     """S-1.11 / FR-178, replaying the live incident. `/.claude/skills` was
     re-added to .git/info/exclude THREE times on 2026-08-09, once while a run
     was live. info/exclude is shared by every loop home and story worktree
@@ -1791,16 +1730,14 @@ def test_preflight_reports_a_shared_exclude_rule_that_shadows_tracked_files(
     assert "12 tracked path(s)" in out
 
 
-def test_preflight_is_silent_on_an_exclude_rule_shadowing_nothing_tracked(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_is_silent_on_an_exclude_rule_shadowing_nothing_tracked(repo_root, tmp_path, capsys):
     """A rule matching nothing tracked is ordinary local hygiene. The check
     must not turn every developer's scratch ignore into a finding, or it is
     noise and stops being read."""
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
-    vcs = FakeVcs(repo_root=repo_root)          # tracked_matches empty
+    vcs = FakeVcs(repo_root=repo_root)  # tracked_matches empty
     _write_exclude(repo_root, "*.swp\n/scratch/\n")
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
@@ -1809,9 +1746,7 @@ def test_preflight_is_silent_on_an_exclude_rule_shadowing_nothing_tracked(
     assert "MRS-PREFLIGHT-013" not in out, out
 
 
-def test_preflight_ignores_comments_and_negations_in_the_shared_exclude(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_ignores_comments_and_negations_in_the_shared_exclude(repo_root, tmp_path, capsys):
     """A commented-out rule suppresses nothing, and a `!` negation UN-ignores
     -- treating either as a shadowing rule would report a file that is in fact
     visible."""
@@ -1851,11 +1786,10 @@ def test_preflight_refuses_a_loop_home_that_is_behind_main(repo_root, tmp_path, 
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
     vcs.refs = {"main": "mainsha1234", "HEAD": "oldsha56789"}
-    vcs.merge_base_result = "oldsha56789"        # HEAD is an ancestor => behind
+    vcs.merge_base_result = "oldsha56789"  # HEAD is an ancestor => behind
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
-    code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs,
-                         harness=_converged_harness())
+    code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=_converged_harness())
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-014" in out, out
     assert "BEHIND main" in out
@@ -1873,8 +1807,7 @@ def test_preflight_passes_a_home_that_matches_main(repo_root, tmp_path, capsys):
     vcs.refs = {"main": "samesha", "HEAD": "samesha"}
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
-    code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs,
-                         harness=_converged_harness())
+    code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=_converged_harness())
     assert "MRS-PREFLIGHT-014" not in capsys.readouterr().out
     assert code == EXIT_OK
 
@@ -1888,11 +1821,10 @@ def test_preflight_does_not_refuse_a_home_that_is_merely_ahead(repo_root, tmp_pa
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
     vcs.refs = {"main": "mainsha", "HEAD": "aheadsha"}
-    vcs.merge_base_result = "mainsha"            # main is the ancestor => ahead
+    vcs.merge_base_result = "mainsha"  # main is the ancestor => ahead
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
-    run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs,
-                  harness=_converged_harness())
+    run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=_converged_harness())
     assert "MRS-PREFLIGHT-014" not in capsys.readouterr().out
 
 
@@ -1913,8 +1845,10 @@ def test_home_currency_uses_port_methods_that_actually_resolve(tmp_path):
 
     repo = tmp_path / "repo"
     repo.mkdir()
-    run = lambda *a: subprocess.run(["git", "-C", str(repo), *a],
-                                    capture_output=True, text=True, check=True)
+
+    def run(*a):
+        return subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True, check=True)
+
     subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
     run("config", "user.email", "t@example.com")
     run("config", "user.name", "t")
@@ -1944,9 +1878,7 @@ def test_preflight_fully_converged_json_matches_schema(repo_root, tmp_path):
     old_stdout = sys.stdout
     sys.stdout = captured
     try:
-        exit_code = run_preflight(
-            _preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness
-        )
+        exit_code = run_preflight(_preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness)
     finally:
         sys.stdout = old_stdout
     assert exit_code == EXIT_OK
@@ -1963,9 +1895,7 @@ def test_preflight_fully_converged_json_matches_schema(repo_root, tmp_path):
 # --- loop home not provisioned: MRS-PREFLIGHT-009, no further checks ------
 
 
-def test_preflight_loop_home_not_provisioned_reports_finding_with_no_further_checks(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_loop_home_not_provisioned_reports_finding_with_no_further_checks(repo_root, tmp_path, capsys):
     fs = FakeFs()  # home NOT registered as a dir
     vcs = FakeVcs(repo_root=repo_root)
     harness = FakeHarness()
@@ -2026,9 +1956,7 @@ def test_preflight_harness_binary_absent_reports_finding(repo_root, tmp_path, ca
 # Story 1.9's graduated tier) ------------------------------------------------
 
 
-def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_block(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_block(repo_root, tmp_path, capsys):
     """Story 1.9: a same-major (0.x), out-of-minor-range harness version used
     to share MRS-PREFLIGHT-002's blocking tier with the undeterminable/
     major-mismatch case -- it now reports the new MRS-PREFLIGHT-011 at warn
@@ -2051,9 +1979,7 @@ def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_b
     assert ">=0.11.0,<0.12" in out
 
 
-def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(repo_root, tmp_path, capsys):
     """Story 1.9: a genuine major-version mismatch (e.g. a future bmad-loop
     2.0.0) still blocks via MRS-PREFLIGHT-002, unchanged tier -- only the
     same-major-out-of-minor-range case above moved to the new warn-only
@@ -2094,9 +2020,7 @@ def test_preflight_harness_version_undetermined_reports_finding(repo_root, tmp_p
     assert "could not be determined" in out
 
 
-def test_preflight_harness_version_unparseable_string_reports_finding_and_blocks(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_harness_version_unparseable_string_reports_finding_and_blocks(repo_root, tmp_path, capsys):
     """A harness ``--version`` that prints a non-version string (e.g.
     ``"dev"``) is undeterminable-in-substance: still MRS-PREFLIGHT-002,
     still blocking -- and the message says "could not be parsed", not
@@ -2194,9 +2118,7 @@ def test_preflight_adapter_resolution_harness_error_reports_finding(repo_root, t
 # --- unacknowledged adapter: MRS-PREFLIGHT-008 ------------------------------
 
 
-def test_preflight_unacknowledged_adapter_reports_finding_naming_note_and_caveat(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_unacknowledged_adapter_reports_finding_naming_note_and_caveat(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -2216,18 +2138,14 @@ def test_preflight_unacknowledged_adapter_reports_finding_naming_note_and_caveat
 # --- --acknowledge records first, then passes in the SAME invocation ------
 
 
-def test_preflight_acknowledge_flag_records_and_passes_same_invocation(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_acknowledge_flag_records_and_passes_same_invocation(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
 
-    exit_code = run_preflight(
-        _preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness
-    )
+    exit_code = run_preflight(_preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness)
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-008" not in out
@@ -2247,9 +2165,7 @@ def test_preflight_acknowledge_is_idempotent_on_a_rerun(repo_root, tmp_path, cap
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
 
-    first_exit = run_preflight(
-        _preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness
-    )
+    first_exit = run_preflight(_preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness)
     assert first_exit == EXIT_OK
     capsys.readouterr()
     writes_after_first = list(fs.write_calls)
@@ -2262,18 +2178,14 @@ def test_preflight_acknowledge_is_idempotent_on_a_rerun(repo_root, tmp_path, cap
     assert fs.write_calls == writes_after_first
 
 
-def test_preflight_acknowledging_a_different_adapter_does_not_satisfy_the_configured_one(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_acknowledging_a_different_adapter_does_not_satisfy_the_configured_one(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
 
-    exit_code = run_preflight(
-        _preflight_namespace(slug, acknowledge="codex"), vcs=vcs, fs=fs, harness=harness
-    )
+    exit_code = run_preflight(_preflight_namespace(slug, acknowledge="codex"), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-008" in out
@@ -2282,9 +2194,7 @@ def test_preflight_acknowledging_a_different_adapter_does_not_satisfy_the_config
     assert json.loads(fs.texts[ack_path]) == ["codex"]  # recorded, but for a different adapter
 
 
-def test_preflight_acknowledge_write_failure_does_not_report_acknowledged(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_acknowledge_write_failure_does_not_report_acknowledged(repo_root, tmp_path, capsys):
     """Review finding: the in-memory acknowledged set was previously unioned
     BEFORE the persisting write was attempted, so a failed write still left
     data.first_run_acknowledged reading True -- self-contradicting the
@@ -2296,9 +2206,7 @@ def test_preflight_acknowledge_write_failure_does_not_report_acknowledged(
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
 
-    exit_code = run_preflight(
-        _preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness
-    )
+    exit_code = run_preflight(_preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-008" in out
@@ -2309,9 +2217,7 @@ def test_preflight_acknowledge_write_failure_does_not_report_acknowledged(
 # --- MARSHAL_STATE_HOME anchoring -------------------------------------------
 
 
-def test_ack_state_path_anchors_a_relative_marshal_state_home_to_cwd(
-    tmp_path, monkeypatch
-):
+def test_ack_state_path_anchors_a_relative_marshal_state_home_to_cwd(tmp_path, monkeypatch):
     """Review finding: unlike BMAD_LOOP_HOME_ROOT's own anchoring, a
     relative MARSHAL_STATE_HOME previously resolved against whatever the
     OS's own CWD-relative Path() construction did -- different on every
@@ -2376,9 +2282,7 @@ def test_preflight_seed_file_absent_is_copied_from_main_checkout(repo_root, tmp_
     assert fs.copy_file_calls == [(repo_root / ".mcp.json", home / ".mcp.json")]
 
 
-def test_preflight_seed_file_absent_in_both_home_and_main_is_skipped_not_failed(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_seed_file_absent_in_both_home_and_main_is_skipped_not_failed(repo_root, tmp_path, capsys):
     """Mirrors bmad_loop.install.provision_worktree's own copy-when-absent
     semantics: nothing to seed is not a failure -- an operator who never
     made a given optional config file must not fail preflight over it."""
@@ -2443,9 +2347,7 @@ def _kit_available(_item):
 def _kit_unavailable(_item):
     from pyforge.marshal.seed.detect.kit import InstrumentProbe
 
-    return InstrumentProbe(
-        available=False, reason=f"{_item.instrument} is not installed here (test)"
-    )
+    return InstrumentProbe(available=False, reason=f"{_item.instrument} is not installed here (test)")
 
 
 def _declare_context(home: Path, **layers: bool) -> None:
@@ -2453,17 +2355,12 @@ def _declare_context(home: Path, **layers: bool) -> None:
     `run_preflight` resolves `[context]` from."""
     (home / "_bmad-output").mkdir(parents=True, exist_ok=True)
     body = "\n".join(
-        f'[context."{name.replace("_", "-")}"]\nenabled = {str(value).lower()}'
-        for name, value in layers.items()
+        f'[context."{name.replace("_", "-")}"]\nenabled = {str(value).lower()}' for name, value in layers.items()
     )
-    (home / "_bmad-output" / "policy-defaults.toml").write_text(
-        body + "\n", encoding="utf-8"
-    )
+    (home / "_bmad-output" / "policy-defaults.toml").write_text(body + "\n", encoding="utf-8")
 
 
-def test_preflight_provisions_nothing_when_every_context_layer_is_off(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_provisions_nothing_when_every_context_layer_is_off(repo_root, tmp_path, capsys):
     """AC 4 at the provisioning seam: a home with no `[context]` block --
     every home today -- does exactly nothing here and raises nothing. This
     is also what keeps every OTHER preflight test in this file unchanged."""
@@ -2488,9 +2385,7 @@ def test_preflight_provisions_nothing_when_every_context_layer_is_off(
     assert home / ".marshal" / "wire" not in fs.ensure_dir_calls
 
 
-def test_preflight_provisions_a_declared_kit_item_through_the_injected_fs_port(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_provisions_a_declared_kit_item_through_the_injected_fs_port(repo_root, tmp_path, capsys):
     """Story 28.3: Genesis owns provisioning -- a declared `[context]` layer
     means preflight PUTS the item in the home, through the same `FsPort`
     AD-11's write-boundary guard observes, and the post-apply verification
@@ -2524,9 +2419,7 @@ def test_preflight_provisions_a_declared_kit_item_through_the_injected_fs_port(
     assert [f for f in payload["findings"] if f["code"] == "MRS-PREFLIGHT-015"] == []
 
 
-def test_preflight_reports_an_unavailable_instrument_and_still_exits_ok(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_reports_an_unavailable_instrument_and_still_exits_ok(repo_root, tmp_path, capsys):
     """AC 3 at this seam, and the property that makes the kit safe to enable:
     a declared layer whose instrument is absent emits MRS-PREFLIGHT-015 AND
     exits EXIT_OK. Mirrors the assertions Story 28.2's two sibling codes
@@ -2630,9 +2523,7 @@ def test_preflight_skips_the_kit_when_seeding_halted(repo_root, tmp_path, capsys
 # --- main checked out twice: MRS-PREFLIGHT-007 ------------------------------
 
 
-def test_preflight_main_checked_out_twice_reports_finding_naming_both_paths(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_main_checked_out_twice_reports_finding_naming_both_paths(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     other = tmp_path / "elsewhere-main"
@@ -2651,9 +2542,7 @@ def test_preflight_main_checked_out_twice_reports_finding_naming_both_paths(
     assert "main_checked_out_once: False" in out
 
 
-def test_preflight_main_checked_out_twice_list_worktrees_failure_reports_finding(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_main_checked_out_twice_list_worktrees_failure_reports_finding(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -2669,9 +2558,7 @@ def test_preflight_main_checked_out_twice_list_worktrees_failure_reports_finding
     assert "main_checked_out_once: False" in out
 
 
-def test_preflight_main_checked_out_once_resolve_path_failure_reports_finding(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_main_checked_out_once_resolve_path_failure_reports_finding(repo_root, tmp_path, capsys):
     """Review finding: this block previously called fs.resolve_path
     unguarded, unlike run_homes's own identical try/except around the SAME
     call in this same module -- an FsError (e.g. a permission-denied
@@ -2696,9 +2583,7 @@ def test_preflight_main_checked_out_once_resolve_path_failure_reports_finding(
 # --- story feed missing/unparseable: MRS-PREFLIGHT-005 ----------------------
 
 
-def test_preflight_story_feed_error_reports_the_harnesss_own_error_text(
-    repo_root, tmp_path, capsys
-):
+def test_preflight_story_feed_error_reports_the_harnesss_own_error_text(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -2718,9 +2603,7 @@ def test_preflight_story_feed_error_reports_the_harnesss_own_error_text(
 # --- verify command unresolvable: MRS-PREFLIGHT-006 -------------------------
 
 
-def test_preflight_verify_command_unresolvable_reports_finding(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_preflight_verify_command_unresolvable_reports_finding(repo_root, tmp_path, capsys, monkeypatch):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -2729,12 +2612,8 @@ def test_preflight_verify_command_unresolvable_reports_finding(
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
     policy_path = tmp_path / "marshal-policy.toml"
-    policy_path.write_text(
-        'verify_commands = ["definitely-not-a-real-binary-xyz --flag"]\n', encoding="utf-8"
-    )
-    monkeypatch.setattr(
-        init_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    policy_path.write_text('verify_commands = ["definitely-not-a-real-binary-xyz --flag"]\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
@@ -2743,9 +2622,7 @@ def test_preflight_verify_command_unresolvable_reports_finding(
     assert "definitely-not-a-real-binary-xyz --flag" in out
 
 
-def test_preflight_verify_command_resolvable_reports_no_finding(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_preflight_verify_command_resolvable_reports_no_finding(repo_root, tmp_path, capsys, monkeypatch):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -2756,9 +2633,7 @@ def test_preflight_verify_command_resolvable_reports_no_finding(
 
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text('verify_commands = ["pytest -q"]\n', encoding="utf-8")
-    monkeypatch.setattr(
-        init_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
     assert exit_code == EXIT_OK
@@ -2780,9 +2655,7 @@ def test_preflight_merges_policy_composition_findings(repo_root, tmp_path, capsy
 
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text('not_a_real_policy_key = "x"\n', encoding="utf-8")
-    monkeypatch.setattr(
-        init_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
@@ -2791,9 +2664,7 @@ def test_preflight_merges_policy_composition_findings(repo_root, tmp_path, capsy
     assert "not_a_real_policy_key" in out
 
 
-def test_preflight_adapter_resolution_render_failure_reports_finding(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_preflight_adapter_resolution_render_failure_reports_finding(repo_root, tmp_path, capsys, monkeypatch):
     """``render_policy_toml`` raises ``ValueError`` when a seed attempt-count
     is 0 (Marshal permits it; bmad-loop 0.9.0's loader does not) -- folded
     into the adapter check's own code since resolving the adapter NAME is
@@ -2807,9 +2678,7 @@ def test_preflight_adapter_resolution_render_failure_reports_finding(
 
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text("max_dev_attempts = 0\n", encoding="utf-8")
-    monkeypatch.setattr(
-        init_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
@@ -2820,9 +2689,7 @@ def test_preflight_adapter_resolution_render_failure_reports_finding(
     assert "MRS-PREFLIGHT-008" not in out
 
 
-def test_preflight_adapter_name_missing_from_rendered_policy_fails_loud(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_preflight_adapter_name_missing_from_rendered_policy_fails_loud(repo_root, tmp_path, capsys, monkeypatch):
     """Second review pass: a rendered policy with no ``[adapter].name``
     previously left ``adapter_name`` None with NO finding, so the adapter
     check, seeding, and the first-run gate all silently skipped and preflight
@@ -2836,9 +2703,7 @@ def test_preflight_adapter_name_missing_from_rendered_policy_fails_loud(
     harness = _converged_harness()
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
-    monkeypatch.setattr(
-        init_module, "render_policy_toml", lambda effective: "[gates]\nmode = 'none'\n"
-    )
+    monkeypatch.setattr(init_module, "render_policy_toml", lambda effective: "[gates]\nmode = 'none'\n")
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
@@ -2848,9 +2713,7 @@ def test_preflight_adapter_name_missing_from_rendered_policy_fails_loud(
     assert "adapter: name=None" in out
 
 
-def test_preflight_policy_path_is_file_oserror_degrades_to_typed_finding(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_preflight_policy_path_is_file_oserror_degrades_to_typed_finding(repo_root, tmp_path, capsys, monkeypatch):
     """Second review pass: ``policy_path.is_file()`` was unguarded -- on the
     3.12 floor, pathlib raises ``PermissionError`` for an unreadable ancestor
     (3.13+ suppresses it), crashing the whole command. The guard treats the
@@ -2870,9 +2733,7 @@ def test_preflight_policy_path_is_file_oserror_degrades_to_typed_finding(
     # Points at a nonexistent file: is_file() raises, the guard degrades to
     # "present", and _read_project_policy's open() then fails typed.
     raising_path = _IsFileRaises(tmp_path / "unreadable" / "marshal-policy.toml")
-    monkeypatch.setattr(
-        init_module, "conventional_project_policy_path", lambda slug: raising_path
-    )
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: raising_path)
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
@@ -2941,9 +2802,7 @@ def test_preflight_mcp_json_malformed_reports_finding(repo_root, tmp_path, monke
     assert "not valid JSON" in out
 
 
-def test_preflight_mcp_server_command_unresolvable_reports_finding(
-    repo_root, tmp_path, monkeypatch, capsys
-):
+def test_preflight_mcp_server_command_unresolvable_reports_finding(repo_root, tmp_path, monkeypatch, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -2955,9 +2814,7 @@ def test_preflight_mcp_server_command_unresolvable_reports_finding(
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
     policy_path = tmp_path / "marshal-policy.toml"
-    policy_path.write_text(
-        '[mcp_servers.atlas]\ncommand = "definitely-not-a-real-binary-xyz"\n', encoding="utf-8"
-    )
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "definitely-not-a-real-binary-xyz"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
@@ -2981,9 +2838,7 @@ def test_preflight_mcp_server_relative_command_with_separator_never_resolvable(
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
-    fs.texts[home / ".mcp.json"] = json.dumps(
-        {"mcpServers": {"atlas": {"command": "bin/atlas-mcp"}}}
-    )
+    fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"atlas": {"command": "bin/atlas-mcp"}}})
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
     # Even if the harness/shutil.which would (incorrectly, cwd-dependently)
@@ -3003,9 +2858,7 @@ def test_preflight_mcp_server_relative_command_with_separator_never_resolvable(
     assert "'atlas' ('bin/atlas-mcp'): resolvable=False" in out
 
 
-def test_preflight_mcp_server_resolvable_reports_no_finding(
-    repo_root, tmp_path, monkeypatch, capsys
-):
+def test_preflight_mcp_server_resolvable_reports_no_finding(repo_root, tmp_path, monkeypatch, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -3026,9 +2879,7 @@ def test_preflight_mcp_server_resolvable_reports_no_finding(
     assert "'atlas' ('atlas-mcp'): resolvable=True" in out
 
 
-def test_preflight_mcp_probe_never_touches_user_scoped_registry(
-    repo_root, tmp_path, monkeypatch, capsys
-):
+def test_preflight_mcp_probe_never_touches_user_scoped_registry(repo_root, tmp_path, monkeypatch, capsys):
     """AD-43's hardest constraint: the resolvability probe reads ONLY the
     home's own rendered ``.mcp.json`` -- never anything path-shaped like
     ``~/.claude.json``. Asserted by inspecting every path FakeFs was ever
@@ -3286,9 +3137,7 @@ def test_teardown_unmerged_with_force_removes_and_reports_forced(repo_root, tmp_
     assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
 
 
-def test_teardown_force_on_an_already_clean_home_does_not_report_forced(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_force_on_an_already_clean_home_does_not_report_forced(repo_root, tmp_path, capsys):
     """--force is only "used" when a real refusal condition existed --
     passing it redundantly to an already-safe home is a no-op flag."""
     home = tmp_path / "loop-homes" / "acme"
@@ -3323,9 +3172,7 @@ def test_teardown_branch_only_no_worktree_deletes_just_the_branch(repo_root, tmp
 # --- malformed slug: MRS-TEARDOWN-001, no I/O at all -------------------------
 
 
-@pytest.mark.parametrize(
-    "bad_slug", ["", "../evil", "a/b", ".", "..", "has space", "a\\b"]
-)
+@pytest.mark.parametrize("bad_slug", ["", "../evil", "a/b", ".", "..", "has space", "a\\b"])
 def test_teardown_malformed_slug_reports_finding_with_zero_io(repo_root, bad_slug, capsys):
     vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs()
@@ -3338,9 +3185,7 @@ def test_teardown_malformed_slug_reports_finding_with_zero_io(repo_root, bad_slu
 
 
 @pytest.mark.parametrize("bad_slug", ["x.lock", ".foo", "foo.", "a..b"])
-def test_teardown_git_ref_invalid_slug_shapes_report_mrs_teardown_001(
-    repo_root, bad_slug, capsys
-):
+def test_teardown_git_ref_invalid_slug_shapes_report_mrs_teardown_001(repo_root, bad_slug, capsys):
     vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs()
     exit_code = run_teardown(_teardown_namespace(bad_slug), vcs=vcs, fs=fs)
@@ -3365,9 +3210,7 @@ def test_teardown_repo_root_resolution_failure_reports_mrs_teardown_002(repo_roo
     assert "MRS-TEARDOWN-002" in out
 
 
-def test_teardown_worktree_path_for_branch_failure_reports_mrs_teardown_002(
-    repo_root, capsys
-):
+def test_teardown_worktree_path_for_branch_failure_reports_mrs_teardown_002(repo_root, capsys):
     vcs = FakeVcs(repo_root=repo_root)
     vcs.fail_worktree_path_for_branch = VcsCommandError("git worktree list failed")
     fs = FakeFs()
@@ -3393,9 +3236,7 @@ def test_teardown_branch_exists_failure_reports_mrs_teardown_002(repo_root, caps
     assert "MRS-TEARDOWN-002" in out
 
 
-def test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002(repo_root, tmp_path, capsys):
     home = tmp_path / "loop-homes" / "acme"
     vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
     vcs.fail_has_uncommitted_changes = VcsCommandError("git status failed")
@@ -3407,9 +3248,7 @@ def test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002(
     assert vcs.remove_worktree_calls == []
 
 
-def test_teardown_is_branch_merged_failure_reports_mrs_teardown_002(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_is_branch_merged_failure_reports_mrs_teardown_002(repo_root, tmp_path, capsys):
     home = tmp_path / "loop-homes" / "acme"
     vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
     vcs.fail_is_branch_merged = VcsCommandError("cannot build virtual commit")
@@ -3421,9 +3260,7 @@ def test_teardown_is_branch_merged_failure_reports_mrs_teardown_002(
     assert vcs.remove_worktree_calls == []
 
 
-def test_teardown_remove_worktree_failure_reports_mrs_teardown_002(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_remove_worktree_failure_reports_mrs_teardown_002(repo_root, tmp_path, capsys):
     home = tmp_path / "loop-homes" / "acme"
     vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
     vcs.fail_remove_worktree = VcsCommandError("worktree remove failed")
@@ -3436,9 +3273,7 @@ def test_teardown_remove_worktree_failure_reports_mrs_teardown_002(
     assert vcs.delete_branch_calls == []
 
 
-def test_teardown_delete_branch_failure_reports_mrs_teardown_002(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_delete_branch_failure_reports_mrs_teardown_002(repo_root, tmp_path, capsys):
     home = tmp_path / "loop-homes" / "acme"
     vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
     vcs.fail_delete_branch = VcsCommandError("branch delete failed")
@@ -3454,9 +3289,7 @@ def test_teardown_delete_branch_failure_reports_mrs_teardown_002(
     assert vcs.remove_worktree_calls == [(repo_root, home, False)]
 
 
-def test_teardown_remove_worktree_uses_the_git_registered_path_not_the_computed_home(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_remove_worktree_uses_the_git_registered_path_not_the_computed_home(repo_root, tmp_path, capsys):
     """Review finding: git's OWN registered location can disagree with the
     merely COMPUTED ``home`` (e.g. ``BMAD_LOOP_HOME_ROOT`` changed since
     provisioning) -- removal must target git's truth, mirroring
@@ -3469,9 +3302,7 @@ def test_teardown_remove_worktree_uses_the_git_registered_path_not_the_computed_
     assert vcs.remove_worktree_calls == [(repo_root, registered_path, False)]
 
 
-def test_teardown_worktree_directory_missing_skips_dirty_check_and_removes(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_worktree_directory_missing_skips_dirty_check_and_removes(repo_root, tmp_path, capsys):
     """git still registers the worktree, but its directory was deleted by
     hand (mirrors run_init's/run_homes's own stale/prunable guard). Review
     finding: this previously called ``has_uncommitted_changes`` against the
@@ -3487,9 +3318,7 @@ def test_teardown_worktree_directory_missing_skips_dirty_check_and_removes(
     assert vcs.remove_worktree_calls == [(repo_root, home, False)]
 
 
-def test_teardown_leftover_directory_with_nothing_registered_is_not_already_removed(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_leftover_directory_with_nothing_registered_is_not_already_removed(repo_root, tmp_path, capsys):
     """Review finding: a prior partial/failed removal (or manual git
     surgery) can deregister a worktree while leaving real, possibly
     uncommitted files behind -- this repo's own history has hit exactly
@@ -3506,9 +3335,7 @@ def test_teardown_leftover_directory_with_nothing_registered_is_not_already_remo
     assert "still exists on disk" in out
 
 
-def test_teardown_leftover_plain_file_with_nothing_registered_is_not_already_removed(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_leftover_plain_file_with_nothing_registered_is_not_already_removed(repo_root, tmp_path, capsys):
     """Follow-up review finding: the leftover guard probed ``fs.is_dir``,
     so a leftover regular FILE at the home path slipped through as
     ``already_removed: True`` -- the same silently-claimed-cleanup defect
@@ -3526,9 +3353,7 @@ def test_teardown_leftover_plain_file_with_nothing_registered_is_not_already_rem
     assert "still exists on disk" in out
 
 
-def test_teardown_branch_only_with_leftover_on_disk_refuses_instead_of_deleting_the_branch(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_branch_only_with_leftover_on_disk_refuses_instead_of_deleting_the_branch(repo_root, tmp_path, capsys):
     """Follow-up review finding: the leftover-on-disk guard ran only in
     the NOTHING-registered arm -- in the branch-only state (a prior
     partial removal deregistered the worktree but left real files AND the
@@ -3548,9 +3373,7 @@ def test_teardown_branch_only_with_leftover_on_disk_refuses_instead_of_deleting_
     assert vcs.delete_branch_calls == []
 
 
-def test_teardown_dirty_probe_error_with_force_is_absorbed_and_removal_proceeds(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_dirty_probe_error_with_force_is_absorbed_and_removal_proceeds(repo_root, tmp_path, capsys):
     """Follow-up review finding: a ``VcsCommandError`` from the dirty
     probe previously returned MRS-TEARDOWN-002 BEFORE the ``--force``
     branch was ever reached, so ``--force`` could not carry past a
@@ -3574,9 +3397,7 @@ def test_teardown_dirty_probe_error_with_force_is_absorbed_and_removal_proceeds(
     assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
 
 
-def test_teardown_merged_probe_error_with_force_is_absorbed_and_removal_proceeds(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_merged_probe_error_with_force_is_absorbed_and_removal_proceeds(repo_root, tmp_path, capsys):
     """Same follow-up finding as the dirty-probe variant above, for the
     merged check: e.g. ``refs/heads/main`` unresolvable makes
     ``is_branch_merged`` raise, which previously dead-ended ``--force``
@@ -3594,9 +3415,7 @@ def test_teardown_merged_probe_error_with_force_is_absorbed_and_removal_proceeds
     assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
 
 
-def test_teardown_refusal_message_names_the_git_registered_path(
-    repo_root, tmp_path, capsys
-):
+def test_teardown_refusal_message_names_the_git_registered_path(repo_root, tmp_path, capsys):
     """Follow-up review finding: the MRS-TEARDOWN-003 headline named the
     merely COMPUTED ``home`` even though the dirty check and the removal
     both operate on git's REGISTERED path -- in the moved-home case the
@@ -3624,9 +3443,7 @@ def _patch_unreachable_promotions(monkeypatch, keys: tuple[str, ...]) -> None:
     )
 
 
-def test_teardown_ad29_unreachable_promotion_blocks_without_force(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_teardown_ad29_unreachable_promotion_blocks_without_force(repo_root, tmp_path, capsys, monkeypatch):
     """The AD-29 promotion-reachability check is real as of Story 4.2 --
     covered here by monkeypatching ``_unreachable_promotions`` itself
     (proving the refusal-message wiring, independent of
@@ -3655,9 +3472,7 @@ def test_teardown_ad29_unreachable_promotion_blocks_without_force(
 
     # --force --abandon naming a DIFFERENT key than the real unreachable
     # set is refused too -- no vacuous/partial abandonment.
-    exit_code = run_teardown(
-        _teardown_namespace("acme", force=True, abandon=["1.2"]), vcs=vcs, fs=fs
-    )
+    exit_code = run_teardown(_teardown_namespace("acme", force=True, abandon=["1.2"]), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-TEARDOWN-004" in out
@@ -3665,9 +3480,7 @@ def test_teardown_ad29_unreachable_promotion_blocks_without_force(
 
     # --force --abandon naming EXACTLY the unreachable set proceeds, and
     # journals one abandonment entry per key.
-    exit_code = run_teardown(
-        _teardown_namespace("acme", force=True, abandon=["1.2", "1.3"]), vcs=vcs, fs=fs
-    )
+    exit_code = run_teardown(_teardown_namespace("acme", force=True, abandon=["1.2", "1.3"]), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
     assert vcs.remove_worktree_calls == [(repo_root, home, True)]
     assert len(fs.appended_lines) == 2
@@ -3681,9 +3494,7 @@ def test_teardown_ad29_unreachable_promotion_blocks_without_force(
     assert all(fsync is True for _, _, fsync in fs.appended_lines)
 
 
-def test_teardown_ad29_unreachable_message_does_not_imply_branch_causation(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_teardown_ad29_unreachable_message_does_not_imply_branch_causation(repo_root, tmp_path, capsys, monkeypatch):
     """P2 (HIGH, Blind Hunter, code review 2026-08-06): the check is
     project-slug-wide, not scoped to the branch being torn down -- the
     refusal message must not imply a causal link between `branch` and the
@@ -3700,9 +3511,7 @@ def test_teardown_ad29_unreachable_message_does_not_imply_branch_causation(
     assert "2 unreachable" in out
 
 
-def test_teardown_ad29_undetermined_reachability_blocks_even_with_plain_force(
-    repo_root, tmp_path, capsys, monkeypatch
-):
+def test_teardown_ad29_undetermined_reachability_blocks_even_with_plain_force(repo_root, tmp_path, capsys, monkeypatch):
     """P1 (CRITICAL, code review 2026-08-06, both reviewers' independent
     top finding): when the AD-29 reachability check itself could not run
     (``_unreachable_promotions`` returns ``None``, mirroring
@@ -3735,17 +3544,13 @@ def test_teardown_ad29_undetermined_reachability_blocks_even_with_plain_force(
 
     # --force together with a REAL story key (not the sentinel) still
     # refuses -- a guess must never satisfy this gate.
-    exit_code = run_teardown(
-        _teardown_namespace("acme", force=True, abandon=["1.2"]), vcs=vcs, fs=fs
-    )
+    exit_code = run_teardown(_teardown_namespace("acme", force=True, abandon=["1.2"]), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
     assert vcs.remove_worktree_calls == []
 
     # --force together with the literal UNDETERMINED sentinel proceeds, and
     # journals one abandonment entry recording it.
-    exit_code = run_teardown(
-        _teardown_namespace("acme", force=True, abandon=["UNDETERMINED"]), vcs=vcs, fs=fs
-    )
+    exit_code = run_teardown(_teardown_namespace("acme", force=True, abandon=["UNDETERMINED"]), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
     assert vcs.remove_worktree_calls == [(repo_root, home, True)]
     assert len(fs.appended_lines) == 1

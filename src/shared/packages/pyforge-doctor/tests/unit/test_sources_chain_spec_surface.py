@@ -27,8 +27,12 @@ from pyforge.doctor.sources import chain
 # test file -- a contributor's own git config must not decide whether this
 # suite passes (see that file's own docstring for the full rationale).
 _LEAKY_GIT_VARS = (
-    "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
-    "GIT_CEILING_DIRECTORIES", "GIT_COMMON_DIR",
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
 )
 
 
@@ -40,7 +44,11 @@ def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+        ["git", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return result.stdout
 
@@ -60,10 +68,7 @@ def _add_commit(repo: Path, message: str = "commit") -> None:
 
 
 def _spec_dir(repo: Path, project: str, spec: str) -> Path:
-    return (
-        repo / "_bmad-output" / "projects" / project
-        / "planning-artifacts" / "specs" / spec
-    )
+    return repo / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / spec
 
 
 def _write_spec(
@@ -214,11 +219,15 @@ def test_governed_file_changed_without_memlog_moving_reports_drift_fail(
     # --write-baseline would have written -- this gather never mutates it,
     # Boundaries).
     import hashlib
+
     memlog_hash = hashlib.sha1((sd / ".memlog.md").read_bytes()).hexdigest()
     file_hash = hashlib.sha1((repo / "governed.py").read_bytes()).hexdigest()
-    _write_baseline(repo, {
-        "pyforge-x/spec-foo": {"memlog": memlog_hash, "files": {"governed.py": file_hash}},
-    })
+    _write_baseline(
+        repo,
+        {
+            "pyforge-x/spec-foo": {"memlog": memlog_hash, "files": {"governed.py": file_hash}},
+        },
+    )
 
     (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")  # drift, memlog untouched
     _add_commit(repo, "change governed.py without touching the memlog")
@@ -244,15 +253,20 @@ def test_governed_file_changed_after_memlog_moves_and_names_it_is_clean(
     _add_commit(repo)
 
     import hashlib
+
     memlog_hash = hashlib.sha1((sd / ".memlog.md").read_bytes()).hexdigest()
     file_hash = hashlib.sha1((repo / "governed.py").read_bytes()).hexdigest()
-    _write_baseline(repo, {
-        "pyforge-x/spec-foo": {"memlog": memlog_hash, "files": {"governed.py": file_hash}},
-    })
+    _write_baseline(
+        repo,
+        {
+            "pyforge-x/spec-foo": {"memlog": memlog_hash, "files": {"governed.py": file_hash}},
+        },
+    )
 
     (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
     (sd / ".memlog.md").write_text(
-        "initial entry\nreconciled governed.py on 2026-08-09\n", encoding="utf-8",
+        "initial entry\nreconciled governed.py on 2026-08-09\n",
+        encoding="utf-8",
     )
     _add_commit(repo, "reconcile: move the memlog and name the changed file")
 
@@ -275,7 +289,11 @@ def test_governed_file_changed_after_memlog_moves_without_naming_it_reports_drif
     # to pin.
     memlog_rel = "_bmad-output/projects/pyforge-x/planning-artifacts/specs/spec-foo/.memlog.md"
     sd = _write_spec(
-        repo, "pyforge-x", "spec-foo", surface=["**"], exclude=[memlog_rel],
+        repo,
+        "pyforge-x",
+        "spec-foo",
+        surface=["**"],
+        exclude=[memlog_rel],
     )
     (sd / ".memlog.md").write_text("initial entry\n", encoding="utf-8")
     (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
@@ -283,19 +301,24 @@ def test_governed_file_changed_after_memlog_moves_without_naming_it_reports_drif
     _add_commit(repo)
 
     import hashlib
+
     spec_md_rel = str((sd / "SPEC.md").relative_to(repo))
     files = {
         rel: hashlib.sha1((repo / rel).read_bytes()).hexdigest()
         for rel in ("governed.py", spec_md_rel, "scripts/spec_surface_allowlist.txt")
     }
     memlog_hash = hashlib.sha1((sd / ".memlog.md").read_bytes()).hexdigest()
-    _write_baseline(repo, {
-        "pyforge-x/spec-foo": {"memlog": memlog_hash, "files": files},
-    })
+    _write_baseline(
+        repo,
+        {
+            "pyforge-x/spec-foo": {"memlog": memlog_hash, "files": files},
+        },
+    )
 
     (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
     (sd / ".memlog.md").write_text(
-        "initial entry\nunrelated activity, never names the path\n", encoding="utf-8",
+        "initial entry\nunrelated activity, never names the path\n",
+        encoding="utf-8",
     )
     _add_commit(repo, "unrelated memlog note")
 
@@ -366,7 +389,8 @@ def test_non_repository_target_reports_spec_surface_unevaluable_warn(
 
 
 def test_non_utf8_tracked_filename_reports_spec_surface_unevaluable_warn(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """``run_git`` decodes ``git ls-files`` with ``text=True``, so a tracked
     path containing a non-UTF-8 byte raises ``UnicodeDecodeError`` --
@@ -417,9 +441,7 @@ def test_tracked_files_is_fetched_once_and_reused(tmp_path: Path, monkeypatch) -
     chain.gather_spec_surface(repo)
 
     ls_files_calls = [c for c in calls if c == ["ls-files"]]
-    assert len(ls_files_calls) == 1, (
-        f"git ls-files was called {len(ls_files_calls)} times, expected 1: {calls}"
-    )
+    assert len(ls_files_calls) == 1, f"git ls-files was called {len(ls_files_calls)} times, expected 1: {calls}"
 
 
 # --- Clean chain: one OK Finding -------------------------------------------------
@@ -545,9 +567,7 @@ def test_non_object_baseline_entry_does_not_hide_other_specs_findings(
     findings = chain.gather_spec_surface(repo)
 
     checks = {f.check for f in findings}
-    assert "drift-blind" in checks, (
-        f"a malformed baseline entry collapsed every real finding: {findings}"
-    )
+    assert "drift-blind" in checks, f"a malformed baseline entry collapsed every real finding: {findings}"
     # The malformed entry is treated as "no usable baseline for this spec".
     no_baseline = {f.evidence["path"] for f in findings if f.check == "no-baseline"}
     assert "pyforge-x/spec-foo" in no_baseline
@@ -566,8 +586,11 @@ def test_sentinel_drift_mode_moves_the_contract_hash_with_the_sentinel_file(
     repo = tmp_path / "repo"
     _init_repo(repo)
     _write_spec(
-        repo, "pyforge-x", "spec-foo",
-        surface=["governed.py"], drift="sentinel:contract.json",
+        repo,
+        "pyforge-x",
+        "spec-foo",
+        surface=["governed.py"],
+        drift="sentinel:contract.json",
     )
     (repo / "contract.json").write_text('{"v": 1}\n', encoding="utf-8")
     (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
@@ -575,9 +598,7 @@ def test_sentinel_drift_mode_moves_the_contract_hash_with_the_sentinel_file(
     _add_commit(repo)
 
     before = chain._check_spec_surface(repo, chain._tracked_files(repo))
-    state, _, _ = chain._spec_current_state(
-        repo, *_specs_and_governed(repo)
-    )
+    state, _, _ = chain._spec_current_state(repo, *_specs_and_governed(repo))
     _write_baseline(repo, state)
     _add_commit(repo)
 
@@ -585,9 +606,7 @@ def test_sentinel_drift_mode_moves_the_contract_hash_with_the_sentinel_file(
     (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
     _add_commit(repo)
     drifted = chain.gather_spec_surface(repo)
-    assert "drift" in {f.check for f in drifted}, (
-        f"sentinel mode did not gate an unreconciled change: {drifted}"
-    )
+    assert "drift" in {f.check for f in drifted}, f"sentinel mode did not gate an unreconciled change: {drifted}"
 
     # Sentinel moves too -> the contract hash moves, so the change is not
     # `drift` any more (it becomes the non-gating `drift-presumed` unless the
@@ -595,9 +614,7 @@ def test_sentinel_drift_mode_moves_the_contract_hash_with_the_sentinel_file(
     (repo / "contract.json").write_text('{"v": 2}\n', encoding="utf-8")
     _add_commit(repo)
     reconciled = chain.gather_spec_surface(repo)
-    assert "drift" not in {f.check for f in reconciled}, (
-        f"the sentinel moved but drift still gated: {reconciled}"
-    )
+    assert "drift" not in {f.check for f in reconciled}, f"the sentinel moved but drift still gated: {reconciled}"
     assert before is not None  # the pre-baseline call ran without raising
 
 
@@ -614,9 +631,7 @@ def test_exempt_drift_mode_silences_drift_blind(tmp_path: Path) -> None:
     findings = chain.gather_spec_surface(repo)
 
     blind = {f.evidence["path"] for f in findings if f.check == "drift-blind"}
-    assert "pyforge-x/spec-foo" not in blind, (
-        f"an exempt spec was reported drift-blind: {findings}"
-    )
+    assert "pyforge-x/spec-foo" not in blind, f"an exempt spec was reported drift-blind: {findings}"
 
 
 def test_spec_governing_no_files_is_not_drift_blind(tmp_path: Path) -> None:
@@ -651,8 +666,11 @@ def test_surface_drift_exclude_keeps_a_governed_file_out_of_the_drift_hash(
     repo = tmp_path / "repo"
     _init_repo(repo)
     sd = _write_spec(
-        repo, "pyforge-x", "spec-foo",
-        surface=["governed.py", "generated.lock"], exclude=["generated.lock"],
+        repo,
+        "pyforge-x",
+        "spec-foo",
+        surface=["governed.py", "generated.lock"],
+        exclude=["generated.lock"],
     )
     (sd / ".memlog.md").write_text("# memlog\n", encoding="utf-8")
     (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
@@ -672,12 +690,8 @@ def test_surface_drift_exclude_keeps_a_governed_file_out_of_the_drift_hash(
 
     findings = chain.gather_spec_surface(repo)
 
-    assert "drift" not in {f.check for f in findings}, (
-        f"an excluded path gated on drift: {findings}"
-    )
-    assert "generated.lock" not in {
-        f.evidence["path"] for f in findings if f.check == "ungoverned"
-    }
+    assert "drift" not in {f.check for f in findings}, f"an excluded path gated on drift: {findings}"
+    assert "generated.lock" not in {f.evidence["path"] for f in findings if f.check == "ungoverned"}
 
 
 def _specs_and_governed(repo: Path) -> tuple[dict, dict]:
@@ -698,7 +712,8 @@ def _specs_and_governed(repo: Path) -> tuple[dict, dict]:
 
 
 def test_one_unevaluable_spec_does_not_hide_another_specs_real_finding(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """One spec's unreadable memlog/governed file must not discard a
     DIFFERENT spec's already-computed real finding -- isolation structured in
@@ -756,13 +771,10 @@ def test_unlistable_specs_dir_is_unevaluable_not_silently_ungoverned(
         dark.chmod(0o755)
 
     warns = [f for f in findings if f.check == "spec-surface-unevaluable"]
-    assert any("pyforge-dark" in f.message for f in warns), (
-        f"an unlistable specs/ dir went unreported: {findings}"
+    assert any("pyforge-dark" in f.message for f in warns), f"an unlistable specs/ dir went unreported: {findings}"
+    assert not any(f.check == "ungoverned" and f.evidence.get("path") == "owned.py" for f in findings), (
+        f"a governed file was silently un-governed: {findings}"
     )
-    assert not any(
-        f.check == "ungoverned" and f.evidence.get("path") == "owned.py"
-        for f in findings
-    ), f"a governed file was silently un-governed: {findings}"
 
 
 def test_unreadable_spec_does_not_suppress_stale_allowlist(tmp_path: Path) -> None:
@@ -782,10 +794,9 @@ def test_unreadable_spec_does_not_suppress_stale_allowlist(tmp_path: Path) -> No
 
     by_check = {f.check for f in findings}
     assert "spec-surface-unevaluable" in by_check
-    assert any(
-        f.check == "stale-allowlist" and f.evidence.get("path") == "gone/**"
-        for f in findings
-    ), f"an unrelated spec's unreadable SPEC.md discarded a real FAIL: {findings}"
+    assert any(f.check == "stale-allowlist" and f.evidence.get("path") == "gone/**" for f in findings), (
+        f"an unrelated spec's unreadable SPEC.md discarded a real FAIL: {findings}"
+    )
 
 
 def test_suppressed_coverage_is_reported_not_silent(tmp_path: Path) -> None:
@@ -803,10 +814,9 @@ def test_suppressed_coverage_is_reported_not_silent(tmp_path: Path) -> None:
 
     findings = chain.gather_spec_surface(repo)
 
-    assert any(
-        f.check == "spec-surface-unevaluable" and "coverage suppressed" in f.message
-        for f in findings
-    ), f"coverage was suppressed silently: {[f.message for f in findings]}"
+    assert any(f.check == "spec-surface-unevaluable" and "coverage suppressed" in f.message for f in findings), (
+        f"coverage was suppressed silently: {[f.message for f in findings]}"
+    )
 
 
 def test_present_but_unreadable_governed_file_is_unevaluable_not_removed(
@@ -825,13 +835,16 @@ def test_present_but_unreadable_governed_file_is_unevaluable_not_removed(
     _write_allowlist(repo, [])
     _add_commit(repo)
     specs, gov = _specs_and_governed(repo)
-    _write_baseline(repo, {
-        n: {
-            "memlog": chain._contract_hash(repo, s),
-            "files": {f: chain._sha1(repo / f) for f in gov.get(n, [])},
-        }
-        for n, s in specs.items()
-    })
+    _write_baseline(
+        repo,
+        {
+            n: {
+                "memlog": chain._contract_hash(repo, s),
+                "files": {f: chain._sha1(repo / f) for f in gov.get(n, [])},
+            }
+            for n, s in specs.items()
+        },
+    )
     _add_commit(repo, "baseline")
     governed.chmod(0o000)
     try:
@@ -842,10 +855,9 @@ def test_present_but_unreadable_governed_file_is_unevaluable_not_removed(
     assert not any("removed" in f.message for f in findings), (
         f"a present-but-unreadable file was reported removed: {findings}"
     )
-    assert any(
-        f.check == "spec-surface-unevaluable" and "pyforge-x/spec-x" in f.message
-        for f in findings
-    ), f"the unreadable governed file went unreported: {findings}"
+    assert any(f.check == "spec-surface-unevaluable" and "pyforge-x/spec-x" in f.message for f in findings), (
+        f"the unreadable governed file went unreported: {findings}"
+    )
 
 
 def test_unreadable_memlog_is_unevaluable_not_downgraded_drift(tmp_path: Path) -> None:
@@ -863,13 +875,16 @@ def test_unreadable_memlog_is_unevaluable_not_downgraded_drift(tmp_path: Path) -
     _write_allowlist(repo, [])
     _add_commit(repo)
     specs, gov = _specs_and_governed(repo)
-    _write_baseline(repo, {
-        n: {
-            "memlog": chain._contract_hash(repo, s),
-            "files": {f: chain._sha1(repo / f) for f in gov.get(n, [])},
-        }
-        for n, s in specs.items()
-    })
+    _write_baseline(
+        repo,
+        {
+            n: {
+                "memlog": chain._contract_hash(repo, s),
+                "files": {f: chain._sha1(repo / f) for f in gov.get(n, [])},
+            }
+            for n, s in specs.items()
+        },
+    )
     _add_commit(repo, "baseline")
     governed.write_text("x = 2  # real, unreconciled drift\n", encoding="utf-8")
     _add_commit(repo, "drift")
@@ -880,9 +895,7 @@ def test_unreadable_memlog_is_unevaluable_not_downgraded_drift(tmp_path: Path) -
         memlog.chmod(0o644)
 
     checks = {f.check for f in findings}
-    assert "drift-presumed" not in checks, (
-        f"a gating drift FAIL was silently downgraded: {findings}"
-    )
+    assert "drift-presumed" not in checks, f"a gating drift FAIL was silently downgraded: {findings}"
     assert not any(f.status is DoctorStatus.OK for f in findings)
     assert "spec-surface-unevaluable" in checks
 
@@ -907,9 +920,7 @@ def test_baseline_entry_with_wrong_shaped_memlog_falls_back_to_no_baseline(
     findings = chain.gather_spec_surface(repo)
 
     by_check = {f.check for f in findings}
-    assert "no-baseline" in by_check, (
-        f"a wrong-shaped baseline entry was treated as usable: {findings}"
-    )
+    assert "no-baseline" in by_check, f"a wrong-shaped baseline entry was treated as usable: {findings}"
     assert "drift-presumed" not in by_check
 
 
@@ -936,13 +947,7 @@ def test_a_comment_or_blank_line_inside_a_surface_block_does_not_end_it(
     sd = _spec_dir(repo, "pyforge-x", "spec-foo")
     sd.mkdir(parents=True)
     (sd / "SPEC.md").write_text(
-        "---\n"
-        "surface:\n"
-        "  - first.py\n"
-        "\n"
-        "  # a note about the second entry\n"
-        "  - second.py\n"
-        "---\n\nbody\n",
+        "---\nsurface:\n  - first.py\n\n  # a note about the second entry\n  - second.py\n---\n\nbody\n",
         encoding="utf-8",
     )
     (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
@@ -954,11 +959,8 @@ def test_a_comment_or_blank_line_inside_a_surface_block_does_not_end_it(
     globs, _, _ = chain._parse_surface(sd / "SPEC.md")
     assert globs == ["first.py", "second.py"], globs
 
-    ungoverned = {f.evidence["path"] for f in chain.gather_spec_surface(repo)
-                  if f.check == "ungoverned"}
-    assert "second.py" not in ungoverned, (
-        f"an entry after a comment/blank line was silently un-governed: {ungoverned}"
-    )
+    ungoverned = {f.evidence["path"] for f in chain.gather_spec_surface(repo) if f.check == "ungoverned"}
+    assert "second.py" not in ungoverned, f"an entry after a comment/blank line was silently un-governed: {ungoverned}"
 
 
 def test_single_star_does_not_span_a_path_separator_but_double_star_does(
@@ -991,19 +993,16 @@ def test_a_non_spec_prefixed_directory_is_not_treated_as_a_surface(
     ``SPEC.md``."""
     repo = tmp_path / "repo"
     _init_repo(repo)
-    notaspec = (repo / "_bmad-output" / "projects" / "pyforge-x"
-                / "planning-artifacts" / "specs" / "README")
+    notaspec = repo / "_bmad-output" / "projects" / "pyforge-x" / "planning-artifacts" / "specs" / "README"
     notaspec.mkdir(parents=True)
-    (notaspec / "SPEC.md").write_text(
-        "---\nsurface:\n  - governed.py\n---\n", encoding="utf-8")
+    (notaspec / "SPEC.md").write_text("---\nsurface:\n  - governed.py\n---\n", encoding="utf-8")
     (repo / "governed.py").write_text("a\n", encoding="utf-8")
     _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
     _add_commit(repo)
 
     specs, unsound = chain._collect_surfaces(repo)
     assert specs == {} and unsound == [], (specs, unsound)
-    assert "governed.py" in {f.evidence["path"] for f in chain.gather_spec_surface(repo)
-                             if f.check == "ungoverned"}
+    assert "governed.py" in {f.evidence["path"] for f in chain.gather_spec_surface(repo) if f.check == "ungoverned"}
 
 
 def test_one_file_governed_by_two_specs_is_recorded_under_both(
@@ -1049,8 +1048,7 @@ def test_drift_labels_distinguish_added_from_removed(tmp_path: Path) -> None:
     (repo / "g" / "fresh.py").write_text("b\n", encoding="utf-8")
     _add_commit(repo)
 
-    messages = {f.evidence["path"]: f.message for f in chain.gather_spec_surface(repo)
-                if f.check == "drift"}
+    messages = {f.evidence["path"]: f.message for f in chain.gather_spec_surface(repo) if f.check == "drift"}
     assert "removed" in messages["g/gone.py"], messages["g/gone.py"]
     assert "added" in messages["g/fresh.py"], messages["g/fresh.py"]
 
@@ -1106,9 +1104,7 @@ def test_one_unhashable_governed_file_does_not_discard_the_specs_other_drift(
         (repo / "g" / "b.py").chmod(0o644)
 
     drifted = {f.evidence["path"] for f in findings if f.check == "drift"}
-    assert drifted == {"g/a.py", "g/c.py"}, (
-        f"one unreadable file discarded its siblings' real drift FAILs: {findings}"
-    )
+    assert drifted == {"g/a.py", "g/c.py"}, f"one unreadable file discarded its siblings' real drift FAILs: {findings}"
     warn = next(f for f in findings if f.check == "spec-surface-unevaluable")
     assert warn.status is DoctorStatus.WARN
     assert warn.evidence["path"] == "g/b.py"
@@ -1216,11 +1212,9 @@ def test_unreadable_planning_artifacts_names_the_project_that_went_dark(
     assert not any(f.check == "ungoverned" for f in findings), (
         f"a dark project's files were reported ungoverned: {findings}"
     )
-    named = [f for f in findings
-             if f.check == "spec-surface-unevaluable" and "pyforge-x" in f.message]
+    named = [f for f in findings if f.check == "spec-surface-unevaluable" and "pyforge-x" in f.message]
     assert named, f"nothing named the project that went dark: {findings}"
     assert named[0].status is DoctorStatus.WARN
-
 
 
 # --- Story 42.1 / 42.2: overlap tolerance ---------------------------------------
@@ -1229,6 +1223,7 @@ def test_unreadable_planning_artifacts_names_the_project_that_went_dark(
 def _two_specs_same_file(repo: Path):
     """Two specs both govern governed.py. Returns (sd_a, sd_b)."""
     import hashlib
+
     sd_a = _write_spec(repo, "pyforge-x", "spec-narrow", surface=["governed.py"])
     sd_b = _write_spec(repo, "pyforge-x", "spec-kernel", surface=["governed.py"])
     (sd_a / ".memlog.md").write_text("initial a\n", encoding="utf-8")
@@ -1237,16 +1232,19 @@ def _two_specs_same_file(repo: Path):
     _write_allowlist(repo, [])
     _add_commit(repo)
     file_hash = hashlib.sha1((repo / "governed.py").read_bytes()).hexdigest()
-    _write_baseline(repo, {
-        "pyforge-x/spec-narrow": {
-            "memlog": hashlib.sha1((sd_a / ".memlog.md").read_bytes()).hexdigest(),
-            "files": {"governed.py": file_hash},
+    _write_baseline(
+        repo,
+        {
+            "pyforge-x/spec-narrow": {
+                "memlog": hashlib.sha1((sd_a / ".memlog.md").read_bytes()).hexdigest(),
+                "files": {"governed.py": file_hash},
+            },
+            "pyforge-x/spec-kernel": {
+                "memlog": hashlib.sha1((sd_b / ".memlog.md").read_bytes()).hexdigest(),
+                "files": {"governed.py": file_hash},
+            },
         },
-        "pyforge-x/spec-kernel": {
-            "memlog": hashlib.sha1((sd_b / ".memlog.md").read_bytes()).hexdigest(),
-            "files": {"governed.py": file_hash},
-        },
-    })
+    )
     return sd_a, sd_b
 
 
@@ -1258,14 +1256,16 @@ def test_co_governed_file_is_clean_when_one_spec_reconciles_it(tmp_path: Path) -
 
     (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
     (sd_a / ".memlog.md").write_text(
-        "initial a\nreconciled governed.py\n", encoding="utf-8",
+        "initial a\nreconciled governed.py\n",
+        encoding="utf-8",
     )
     # kernel memlog does not move
     _add_commit(repo, "narrow spec reconciles the shared file")
 
     findings = chain.gather_spec_surface(repo)
-    drifted = [f for f in findings if f.check in ("drift", "drift-presumed")
-               and f.evidence.get("path") == "governed.py"]
+    drifted = [
+        f for f in findings if f.check in ("drift", "drift-presumed") and f.evidence.get("path") == "governed.py"
+    ]
     assert drifted == [], drifted
 
 
@@ -1279,8 +1279,9 @@ def test_co_governed_file_still_finds_when_neither_spec_names_it(tmp_path: Path)
     _add_commit(repo, "change file, no memlog")
 
     findings = chain.gather_spec_surface(repo)
-    drifted = [f for f in findings if f.check in ("drift", "drift-presumed")
-               and f.evidence.get("path") == "governed.py"]
+    drifted = [
+        f for f in findings if f.check in ("drift", "drift-presumed") and f.evidence.get("path") == "governed.py"
+    ]
     assert drifted, "unreconciled shared file produced no finding"
     assert drifted[0].check == "drift"
     assert drifted[0].status is DoctorStatus.FAIL
@@ -1294,13 +1295,15 @@ def test_overlap_keeps_strongest_severity_when_one_spec_never_moved(tmp_path: Pa
 
     (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
     (sd_a / ".memlog.md").write_text(
-        "initial a\nunrelated note, never names the path\n", encoding="utf-8",
+        "initial a\nunrelated note, never names the path\n",
+        encoding="utf-8",
     )
     _add_commit(repo, "one memlog moved without naming")
 
     findings = chain.gather_spec_surface(repo)
-    drifted = [f for f in findings if f.check in ("drift", "drift-presumed")
-               and f.evidence.get("path") == "governed.py"]
+    drifted = [
+        f for f in findings if f.check in ("drift", "drift-presumed") and f.evidence.get("path") == "governed.py"
+    ]
     assert len(drifted) == 1, drifted
     assert drifted[0].check == "drift"
     assert drifted[0].status is DoctorStatus.FAIL

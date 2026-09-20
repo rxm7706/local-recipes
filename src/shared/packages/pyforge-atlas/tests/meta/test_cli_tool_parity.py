@@ -57,11 +57,7 @@ def test_discover_cli_verbs_matches_known_surface():
 def test_fixture_cli_on_surface_missing_tool_fails():
     """Deliberate FR-155 miss: on-surface CLI verb with no tool."""
     # Drop every tool that claims ``run``; keep tool-only entries only.
-    broken = {
-        name: dict(spec)
-        for name, spec in TOOL_SPECS.items()
-        if spec.get("cli") is None
-    }
+    broken = {name: dict(spec) for name, spec in TOOL_SPECS.items() if spec.get("cli") is None}
     findings = parity_findings(tool_specs=broken)
     codes = {f.code for f in findings}
     assert "cli_missing_tool" in codes
@@ -115,14 +111,10 @@ def test_fixture_tool_only_missing_fails():
 
 def test_fixture_tool_only_has_cli_fails():
     """Deliberate FR-155 miss: tool-only allowlist entry that also claims a CLI."""
-    findings = parity_findings(
-        tool_only=TOOL_ONLY_NAMES | frozenset({"run_core_pipeline"})
-    )
+    findings = parity_findings(tool_only=TOOL_ONLY_NAMES | frozenset({"run_core_pipeline"}))
     assert any(f.code == "tool_only_has_cli" for f in findings)
     with pytest.raises(AssertionError, match="tool_only_has_cli"):
-        assert_cli_tool_parity(
-            tool_only=TOOL_ONLY_NAMES | frozenset({"run_core_pipeline"})
-        )
+        assert_cli_tool_parity(tool_only=TOOL_ONLY_NAMES | frozenset({"run_core_pipeline"}))
 
 
 def test_fixture_tool_cli_malformed_fails():

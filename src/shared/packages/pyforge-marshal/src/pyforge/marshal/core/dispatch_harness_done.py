@@ -100,7 +100,7 @@ def _frontmatter_scalar(text: str, key: str) -> str | None:
             return None
         try:
             value = ast.literal_eval(raw)
-        except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+        except ValueError, SyntaxError, TypeError, MemoryError, RecursionError:
             return raw if _BARE_TOKEN_RE.fullmatch(raw) else None
         if isinstance(value, bool):
             return "true" if value else "false"

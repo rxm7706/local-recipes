@@ -77,9 +77,7 @@ def test_plan_projection_source_change_moves_old_tree_to_removal():
     # A project-local overlay used to declare .other/skills for "codex";
     # it now declares .agents/skills instead.
     skill_trees = {"codex": ".agents/skills"}
-    plan = plan_projection(
-        skill_trees, previously_projected={".other/skills"}, platform_name="posix"
-    )
+    plan = plan_projection(skill_trees, previously_projected={".other/skills"}, platform_name="posix")
     assert [action.tree for action in plan.to_project] == [".agents/skills"]
     assert plan.to_remove == (".other/skills",)
 
@@ -90,18 +88,14 @@ def test_plan_projection_converged_state_is_still_reported_as_desired():
     # by cli/adapters.py comparing live symlink state, not by this pure
     # function -- see this module's own docstring).
     skill_trees = {"codex": ".agents/skills"}
-    plan = plan_projection(
-        skill_trees, previously_projected={".agents/skills"}, platform_name="posix"
-    )
+    plan = plan_projection(skill_trees, previously_projected={".agents/skills"}, platform_name="posix")
     assert [action.tree for action in plan.to_project] == [".agents/skills"]
     assert plan.to_remove == ()
 
 
 def test_plan_projection_unsupported_platform_takes_no_action():
     skill_trees = {"codex": ".agents/skills"}
-    plan = plan_projection(
-        skill_trees, previously_projected={".stale/skills"}, platform_name="nt"
-    )
+    plan = plan_projection(skill_trees, previously_projected={".stale/skills"}, platform_name="nt")
     assert plan.platform_mechanism is None
     assert plan.to_project == ()
     assert plan.to_remove == ()  # conservative: removal is skipped too
@@ -121,7 +115,5 @@ def test_plan_projection_desired_trees_sorted_deterministically():
 
 
 def test_plan_projection_removal_set_sorted_deterministically():
-    plan = plan_projection(
-        {}, previously_projected={".z/skills", ".a/skills"}, platform_name="posix"
-    )
+    plan = plan_projection({}, previously_projected={".z/skills", ".a/skills"}, platform_name="posix")
     assert plan.to_remove == (".a/skills", ".z/skills")

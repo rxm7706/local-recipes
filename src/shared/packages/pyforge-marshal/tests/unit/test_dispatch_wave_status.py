@@ -11,10 +11,7 @@ from pyforge.marshal.core import status
 
 def test_latest_dispatch_wave_id_returns_most_recent(tmp_path: Path) -> None:
     slug = "pyforge-marshal"
-    waves = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/waves"
-    )
+    waves = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/waves"
     (waves / "wave-aaa").mkdir(parents=True)
     (waves / "wave-bbb").mkdir(parents=True)
 
@@ -30,19 +27,14 @@ def test_latest_dispatch_run_dir_skips_waves_container(tmp_path: Path) -> None:
     STOPPED while Claude/headroom was still building.
     """
     slug = "pyforge-marshal"
-    runs = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     story_run = runs / "pyforge-marshal-20260918T074634825Z-6f4a14f0"
     story_run.mkdir(parents=True)
     (story_run / "journal.jsonl").write_text("{}\n", encoding="utf-8")
     (runs / "waves" / "wave-bbb").mkdir(parents=True)
 
     assert dispatch_cli.latest_dispatch_run_dir(tmp_path, slug) == story_run
-    assert "waves" not in {
-        p.name for p in dispatch_cli.iter_dispatch_run_dirs(tmp_path, slug)
-    }
+    assert "waves" not in {p.name for p in dispatch_cli.iter_dispatch_run_dirs(tmp_path, slug)}
 
 
 def test_fleet_row_surfaces_wave_id_and_in_flight_stories() -> None:

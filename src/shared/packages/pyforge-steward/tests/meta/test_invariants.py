@@ -27,20 +27,19 @@ def test_no_cli_framework_dependency():
     """
     try:
         import tomllib
-    except ImportError:                       # pragma: no cover
-        import tomli as tomllib               # type: ignore[no-redef]
+    except ImportError:  # pragma: no cover
+        import tomli as tomllib  # type: ignore[no-redef]
 
-    manifest = tomllib.loads(
-        (PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    manifest = tomllib.loads((PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
     project = manifest.get("project", {})
     declared = list(project.get("dependencies", []))
     for extras in (project.get("optional-dependencies") or {}).values():
         declared += list(extras)
 
     banned = {"click", "typer"}
-    found = [d for d in declared
-             if d.split("[")[0].split(">")[0].split("=")[0].strip().lower() in banned]
+    found = [d for d in declared if d.split("[")[0].split(">")[0].split("=")[0].strip().lower() in banned]
     assert not found, f"CLI framework forbidden by FR-41: {found}"
+
 
 def test_no_duty_module_calls_sys_exit():
     """AD-8: main() is the SOLE owner of the exit code.
@@ -65,8 +64,12 @@ def test_no_duty_module_calls_sys_exit():
             if not isinstance(node, ast.Call):
                 continue
             fn = node.func
-            if isinstance(fn, ast.Attribute) and fn.attr == "exit" and \
-               isinstance(fn.value, ast.Name) and fn.value.id == "sys":
+            if (
+                isinstance(fn, ast.Attribute)
+                and fn.attr == "exit"
+                and isinstance(fn.value, ast.Name)
+                and fn.value.id == "sys"
+            ):
                 offenders.append(f"{path.name}:{node.lineno}")
     assert not offenders, f"sys.exit() call outside cli.py: {offenders}"
 
@@ -147,9 +150,19 @@ def test_no_third_party_provider_api_client_imported():
     import ast
 
     banned_modules = {
-        "requests", "httpx", "urllib3", "github", "pygithub", "gitlab",
-        "python-gitlab", "anthropic", "boto3", "google", "artifactory",
-        "dohq_artifactory", "pyjfrog",
+        "requests",
+        "httpx",
+        "urllib3",
+        "github",
+        "pygithub",
+        "gitlab",
+        "python-gitlab",
+        "anthropic",
+        "boto3",
+        "google",
+        "artifactory",
+        "dohq_artifactory",
+        "pyjfrog",
     }
     offenders: list[str] = []
     for path in (PKG_ROOT / "steward").rglob("*.py"):
@@ -189,7 +202,13 @@ def test_deploy_has_no_story_status_derivation():
 
     banned_modules = {"re", "yaml"}
     status_vocabulary = {
-        "done", "in-progress", "backlog", "blocked", "pending", "active", "gated",
+        "done",
+        "in-progress",
+        "backlog",
+        "blocked",
+        "pending",
+        "active",
+        "gated",
     }
     offenders: list[str] = []
 
@@ -204,12 +223,12 @@ def test_deploy_has_no_story_status_derivation():
         elif isinstance(node, ast.Compare):
             operands = [node.left, *node.comparators]
             for operand in operands:
-                if isinstance(operand, ast.Constant) and isinstance(operand.value, str) \
-                        and operand.value in status_vocabulary:
-                    offenders.append(
-                        f"deploy.py:{node.lineno} compares against status literal "
-                        f"{operand.value!r}"
-                    )
+                if (
+                    isinstance(operand, ast.Constant)
+                    and isinstance(operand.value, str)
+                    and operand.value in status_vocabulary
+                ):
+                    offenders.append(f"deploy.py:{node.lineno} compares against status literal {operand.value!r}")
 
     assert not offenders, f"story-status derivation found in deploy.py: {offenders}"
 
@@ -232,9 +251,20 @@ def test_no_cost_integration_sdk_imported_in_budget():
     import ast
 
     banned_modules = {
-        "kubecost", "opencost", "infracost", "boto3", "google", "azure",
-        "stripe", "awscostexplorer", "cloudability", "cloudhealth",
-        "cloudcheckr", "vantage", "kubecostgrpc", "kubecost_client",
+        "kubecost",
+        "opencost",
+        "infracost",
+        "boto3",
+        "google",
+        "azure",
+        "stripe",
+        "awscostexplorer",
+        "cloudability",
+        "cloudhealth",
+        "cloudcheckr",
+        "vantage",
+        "kubecostgrpc",
+        "kubecost_client",
     }
     offenders: list[str] = []
     for path in (PKG_ROOT / "steward").rglob("*.py"):
@@ -259,9 +289,7 @@ _DASHBOARD_UNRESOLVABLE_RELATIVE = "<unresolvable-relative-import>"
 
 
 def _is_banned_dashboard_dotted(name: str) -> bool:
-    return name == _DASHBOARD_BANNED_DOTTED_PREFIX or name.startswith(
-        _DASHBOARD_BANNED_DOTTED_PREFIX + "."
-    )
+    return name == _DASHBOARD_BANNED_DOTTED_PREFIX or name.startswith(_DASHBOARD_BANNED_DOTTED_PREFIX + ".")
 
 
 def _find_banned_dashboard_imports(
@@ -400,9 +428,7 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         # in `steward/sub/` would have resolved to `pyforge.dashboard` and
         # gone unflagged, which is the failure mode a guard must never have.
         own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
-        offenders += _find_banned_dashboard_imports(
-            path.read_text(encoding="utf-8"), own_package_parts, path.name
-        )
+        offenders += _find_banned_dashboard_imports(path.read_text(encoding="utf-8"), own_package_parts, path.name)
     assert not offenders, f"dashboard/django/channels import found outside dashboard/: {offenders}"
 
     # The sanctioned dynamic reach (docstring above) stays a lazy, in-function
@@ -419,7 +445,8 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         elif isinstance(node, ast.ImportFrom) and node.module:
             top_level.append(node.module)
     banned_top_level = [
-        name for name in top_level
+        name
+        for name in top_level
         if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
     ]
     assert not banned_top_level, (
@@ -440,16 +467,17 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         elif isinstance(node, ast.ImportFrom) and node.module:
             corridor_top_level.append(node.module)
     banned_corridor_top_level = [
-        name for name in corridor_top_level
+        name
+        for name in corridor_top_level
         if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
     ]
     assert not banned_corridor_top_level, (
         f"corridor.py imports {banned_corridor_top_level} at module level -- the "
         f"dashboard extra may only be reached lazily, inside load_extract"
     )
-    assert "pyforge.steward.dashboard.corridor_load" in (steward_dir / "corridor.py").read_text(
-        encoding="utf-8"
-    ), "the sanctioned lazy reach into corridor_load is expected to exist"
+    assert "pyforge.steward.dashboard.corridor_load" in (steward_dir / "corridor.py").read_text(encoding="utf-8"), (
+        "the sanctioned lazy reach into corridor_load is expected to exist"
+    )
 
     # Story 61.2's passport.py added a third sanctioned lazy reach, into
     # dashboard/passport_mint.py — same shape, same narrower claim pinned.
@@ -461,16 +489,17 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         elif isinstance(node, ast.ImportFrom) and node.module:
             passport_top_level.append(node.module)
     banned_passport_top_level = [
-        name for name in passport_top_level
+        name
+        for name in passport_top_level
         if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
     ]
     assert not banned_passport_top_level, (
         f"passport.py imports {banned_passport_top_level} at module level -- the "
         f"dashboard extra may only be reached lazily, inside mint_vendor_passport"
     )
-    assert "pyforge.steward.dashboard.passport_mint" in (steward_dir / "passport.py").read_text(
-        encoding="utf-8"
-    ), "the sanctioned lazy reach into passport_mint is expected to exist"
+    assert "pyforge.steward.dashboard.passport_mint" in (steward_dir / "passport.py").read_text(encoding="utf-8"), (
+        "the sanctioned lazy reach into passport_mint is expected to exist"
+    )
 
     # Story 61.3's glass.py added a fourth sanctioned lazy reach, into
     # dashboard/glass_query.py — same shape, same narrower claim pinned.
@@ -482,16 +511,17 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         elif isinstance(node, ast.ImportFrom) and node.module:
             glass_top_level.append(node.module)
     banned_glass_top_level = [
-        name for name in glass_top_level
+        name
+        for name in glass_top_level
         if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
     ]
     assert not banned_glass_top_level, (
         f"glass.py imports {banned_glass_top_level} at module level -- the "
         f"dashboard extra may only be reached lazily, inside compute_glass_reading"
     )
-    assert "pyforge.steward.dashboard.glass_query" in (steward_dir / "glass.py").read_text(
-        encoding="utf-8"
-    ), "the sanctioned lazy reach into glass_query is expected to exist"
+    assert "pyforge.steward.dashboard.glass_query" in (steward_dir / "glass.py").read_text(encoding="utf-8"), (
+        "the sanctioned lazy reach into glass_query is expected to exist"
+    )
 
 
 def test_dashboard_middleware_and_declarations_stay_django_free():
@@ -530,8 +560,12 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
     offenders: list[str] = []
     for name in (
-        "__init__.py", "middleware.py", "declarations.py", "export.py",
-        "navigation.py", "filtering.py",
+        "__init__.py",
+        "middleware.py",
+        "declarations.py",
+        "export.py",
+        "navigation.py",
+        "filtering.py",
     ):
         path = dashboard_dir / name
         assert path.exists(), f"{name} is missing from {dashboard_dir}"
@@ -626,14 +660,9 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
     )
     # And the docstring really does name each one, so the two cannot agree
     # here while disagreeing there.
-    init_docstring = ast.get_docstring(
-        ast.parse((dashboard_dir / "__init__.py").read_text(encoding="utf-8"))
-    )
+    init_docstring = ast.get_docstring(ast.parse((dashboard_dir / "__init__.py").read_text(encoding="utf-8")))
     missing = [name for name in sorted(documented) if name not in init_docstring]
-    assert not missing, (
-        f"`dashboard/__init__.py`'s docstring does not name these "
-        f"django-importing modules: {missing}"
-    )
+    assert not missing, f"`dashboard/__init__.py`'s docstring does not name these django-importing modules: {missing}"
 
 
 def test_dashboard_import_guard_flags_a_relative_import_past_the_top_package():
@@ -687,16 +716,16 @@ def test_dashboard_import_guard_resolves_relative_imports_from_a_subpackage():
     # `from ..dashboard import cache` inside `steward/sub/` IS the banned
     # import (`..` -> pyforge.steward). Previously resolved to
     # `pyforge.dashboard` and sailed through.
-    assert _find_banned_dashboard_imports(
-        "from ..dashboard import cache\n", from_subpackage, "sub/mod.py"
-    ), "a genuine relative dashboard import from a subpackage must be flagged"
+    assert _find_banned_dashboard_imports("from ..dashboard import cache\n", from_subpackage, "sub/mod.py"), (
+        "a genuine relative dashboard import from a subpackage must be flagged"
+    )
 
     # `from . import dashboard` inside `steward/sub/` means
     # `pyforge.steward.sub.dashboard` -- a DIFFERENT module that is not
     # banned. Previously flagged as a false positive.
-    assert not _find_banned_dashboard_imports(
-        "from . import dashboard\n", from_subpackage, "sub/mod.py"
-    ), "a sibling module that merely shares the name must not be flagged"
+    assert not _find_banned_dashboard_imports("from . import dashboard\n", from_subpackage, "sub/mod.py"), (
+        "a sibling module that merely shares the name must not be flagged"
+    )
 
 
 def test_dashboard_appconfig_is_ad13_compliant():
@@ -723,7 +752,13 @@ def test_dashboard_appconfig_is_ad13_compliant():
     # this package would be the very common "dashboard".
     assert DashboardConfig.label == "pyforge_steward_dashboard"
     assert DashboardConfig.label not in {
-        "admin", "auth", "contenttypes", "sessions", "messages", "staticfiles", "dashboard",
+        "admin",
+        "auth",
+        "contenttypes",
+        "sessions",
+        "messages",
+        "staticfiles",
+        "dashboard",
     }
 
 
@@ -755,13 +790,13 @@ def test_dashboard_extra_pins_match_pixi_feature_pins():
     name) since `_` is itself an excluded continuation character.
     """
     import re
+
     try:
         import tomllib
-    except ImportError:                       # pragma: no cover
-        import tomli as tomllib               # type: ignore[no-redef]
+    except ImportError:  # pragma: no cover
+        import tomli as tomllib  # type: ignore[no-redef]
 
-    manifest = tomllib.loads(
-        (PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    manifest = tomllib.loads((PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
     extra = (manifest["project"]["optional-dependencies"])["dashboard"]
 
     # PKG_ROOT is <repo>/src/shared/packages/pyforge-steward/src/pyforge, so
@@ -802,9 +837,7 @@ def test_dashboard_extra_pins_match_pixi_feature_pins():
         # another name char, so e.g. `django-htmx` never matches `django`.
         name_re = re.compile(rf"^{re.escape(pkg_name)}(?![0-9A-Za-z._-])", re.IGNORECASE)
         extra_pins = [spec for spec in extra if name_re.match(spec.replace(" ", ""))]
-        assert len(extra_pins) == 1, (
-            f"expected exactly one {pkg_name} pin in the [dashboard] extra, got {extra_pins!r}"
-        )
+        assert len(extra_pins) == 1, f"expected exactly one {pkg_name} pin in the [dashboard] extra, got {extra_pins!r}"
         extra_pin = extra_pins[0].replace(" ", "")
 
         # Guard the lookup itself (review pass): a package present in the

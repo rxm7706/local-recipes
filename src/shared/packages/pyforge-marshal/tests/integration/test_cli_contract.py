@@ -13,6 +13,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed.errors import (
     ConformanceFailure,
@@ -56,9 +57,7 @@ def _whole_file(entry_id: str, path: str) -> ManifestEntry:
 
 
 def _git(repo: Path, *args: str) -> None:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -147,27 +146,19 @@ def test_json_success_envelope_keys_match_across_verbs(tmp_path, capsys):
         manifest=_manifest(_whole_file("whole", "WHOLE.md")),
     )
     seed_cli.run_adopt(
-        parser.parse_args(
-            ["seed", "adopt", "--repo-root", str(repo), "--dry-run", "--json"]
-        ),
+        parser.parse_args(["seed", "adopt", "--repo-root", str(repo), "--dry-run", "--json"]),
         manifest=manifest,
     )
     seed_cli.run_init(
-        parser.parse_args(
-            ["seed", "init", str(tmp_path / "fresh"), "--dry-run", "--json"]
-        ),
+        parser.parse_args(["seed", "init", str(tmp_path / "fresh"), "--dry-run", "--json"]),
         manifest=manifest,
     )
     seed_cli.run_update(
-        parser.parse_args(
-            ["seed", "update", "--repo-root", str(repo), "--dry-run", "--json"]
-        ),
+        parser.parse_args(["seed", "update", "--repo-root", str(repo), "--dry-run", "--json"]),
         manifest=manifest,
     )
     seed_cli.run_kit(
-        parser.parse_args(
-            ["seed", "kit", "--repo-root", str(repo), "--dry-run", "--json"]
-        ),
+        parser.parse_args(["seed", "kit", "--repo-root", str(repo), "--dry-run", "--json"]),
         manifest=manifest,
     )
 
@@ -186,18 +177,14 @@ def test_quiet_suppresses_text_but_json_still_emits(tmp_path, capsys):
     parser = _build_parser()
 
     code = seed_cli.run_check(
-        parser.parse_args(
-            ["seed", "check", "--repo-root", str(repo), "--quiet"]
-        ),
+        parser.parse_args(["seed", "check", "--repo-root", str(repo), "--quiet"]),
         manifest=manifest,
     )
     assert code == 0
     assert capsys.readouterr().out == ""
 
     code = seed_cli.run_check(
-        parser.parse_args(
-            ["seed", "check", "--repo-root", str(repo), "--json", "--quiet"]
-        ),
+        parser.parse_args(["seed", "check", "--repo-root", str(repo), "--json", "--quiet"]),
         manifest=manifest,
     )
     assert code == 0
@@ -228,9 +215,7 @@ def test_exit_codes_match_s72_taxonomy_case_by_case(tmp_path, capsys):
 
     # 2 usage
     code = seed_cli.run_check(
-        parser.parse_args(
-            ["seed", "check", "--repo-root", str(tmp_path / "missing"), "--json"]
-        ),
+        parser.parse_args(["seed", "check", "--repo-root", str(tmp_path / "missing"), "--json"]),
         manifest=_manifest(),
     )
     assert code == UsageError.exit_code == 2
@@ -268,9 +253,7 @@ def test_exit_codes_match_s72_taxonomy_case_by_case(tmp_path, capsys):
 def test_adopt_dry_run_and_apply_are_mutually_exclusive(tmp_path, capsys):
     repo = _init_git_repo(tmp_path / "repo")
     parser = _build_parser()
-    args = parser.parse_args(
-        ["seed", "adopt", "--repo-root", str(repo), "--dry-run", "--apply", "--json"]
-    )
+    args = parser.parse_args(["seed", "adopt", "--repo-root", str(repo), "--dry-run", "--apply", "--json"])
     code = seed_cli.run_adopt(args, manifest=_manifest())
     assert code == UsageError.exit_code
     payload = json.loads(capsys.readouterr().out)

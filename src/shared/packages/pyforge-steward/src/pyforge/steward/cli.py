@@ -17,10 +17,10 @@ from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
 
 EXIT_OK = 0
-EXIT_FAILED = 1          # a duty ran and reported ok=False — the ONLY legitimate 1
-EXIT_USAGE = 2           # argparse convention
-EXIT_INTERRUPTED = 130   # 128 + SIGINT
-EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
+EXIT_FAILED = 1  # a duty ran and reported ok=False — the ONLY legitimate 1
+EXIT_USAGE = 2  # argparse convention
+EXIT_INTERRUPTED = 130  # 128 + SIGINT
+EXIT_INTERNAL = 70  # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 
 # budget's own triad (AD-6, FR-18): "no metered spend source configured" is
 # the ONLY one implemented in v1 (no metering source exists — see budget.py's
@@ -131,29 +131,18 @@ _HELP = {
         "machine bootstrap — report pixi/git/gh/podman prereqs with named "
         "remedies; pixi floor from pixi_version_registry (Story 17.1)"
     ),
-    "shell-init": (
-        "emit idempotent PATH/completions/env shell snippet to stdout for eval "
-        "(Story 17.1)"
-    ),
-    "setup": (
-        "machine bootstrap — clone (when missing), pixi install, and pre-commit hooks "
-        "(Story 17.2)"
-    ),
+    "shell-init": ("emit idempotent PATH/completions/env shell snippet to stdout for eval (Story 17.1)"),
+    "setup": ("machine bootstrap — clone (when missing), pixi install, and pre-commit hooks (Story 17.2)"),
     "initrepo": (
-        "onboard a pixi checkout — scaffold pyforge.toml when absent, materialize env, "
-        "run validate-fast (Story 17.2)"
+        "onboard a pixi checkout — scaffold pyforge.toml when absent, materialize env, run validate-fast (Story 17.2)"
     ),
-    "validate-fast": (
-        "fast green gate — prereqs, environment.yaml sync, steward CLI smoke "
-        "(Story 17.2)"
-    ),
+    "validate-fast": ("fast green gate — prereqs, environment.yaml sync, steward CLI smoke (Story 17.2)"),
     "restore": (
         "PostgreSQL restore drill — scratch DB + manifest count assertions "
         "(Story 41.1; operator full restore is deploy/restore.md)"
     ),
     "revoke": (
-        "stop one runaway subject — revoke its queued Celery tasks and cancel "
-        "its live supervisor runs (Story 42.2)"
+        "stop one runaway subject — revoke its queued Celery tasks and cancel its live supervisor runs (Story 42.2)"
     ),
     "track": (
         "assemble one tracked track.json per run from journal/gate-record/state "
@@ -163,10 +152,7 @@ _HELP = {
         "Hub Guard library — catalog, spec lacking, source-ground (AD-8 copy); "
         "never a PR verdict (Story 53.4 / hub:CAP-4)"
     ),
-    "cutover": (
-        "flag-gated cutover plan/apply/flip (Story 44.12 / fnd:CAP-8); "
-        "default root stays local-recipes"
-    ),
+    "cutover": ("flag-gated cutover plan/apply/flip (Story 44.12 / fnd:CAP-8); default root stays local-recipes"),
 }
 
 
@@ -278,9 +264,7 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
-    keys_subs = keys_parser.add_subparsers(
-        dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit,revoke}"
-    )
+    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit,revoke}")
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
     encrypt.add_argument("file", help="the plaintext file to encrypt")
@@ -292,13 +276,9 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     decrypt.add_argument("--identity", "-i", required=True, help="the age identity (secret key) file")
     decrypt.add_argument("--output", "-o", required=True, help="path to write the decrypted file")
 
-    rotate = keys_subs.add_parser(
-        "rotate", help="rotate an issued identity, re-encrypting every secret it protects"
-    )
+    rotate = keys_subs.add_parser("rotate", help="rotate an issued identity, re-encrypting every secret it protects")
     rotate.add_argument("--scope", required=True, help="the credential scope to rotate")
-    rotate.add_argument(
-        "--new-identity", required=True, help="path to write the newly generated age identity"
-    )
+    rotate.add_argument("--new-identity", required=True, help="path to write the newly generated age identity")
     rotate.add_argument(
         "--inventory",
         default=None,
@@ -313,12 +293,8 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     )
     list_.add_argument("--json", action="store_true", help="emit JSON instead of a text table")
 
-    audit = keys_subs.add_parser(
-        "audit", help="scan for host-unscoped credential attachment and/or plaintext secrets"
-    )
-    audit.add_argument(
-        "--drift", action="store_true", help="scan for the historical host-unscoped-attachment shape"
-    )
+    audit = keys_subs.add_parser("audit", help="scan for host-unscoped credential attachment and/or plaintext secrets")
+    audit.add_argument("--drift", action="store_true", help="scan for the historical host-unscoped-attachment shape")
     audit.add_argument(
         "--path",
         default=None,
@@ -331,9 +307,7 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
         help="file or directory to scan for plaintext-secret-shaped content",
     )
 
-    revoke = keys_subs.add_parser(
-        "revoke", help="mark a credential retired and print manual remediation guidance"
-    )
+    revoke = keys_subs.add_parser("revoke", help="mark a credential retired and print manual remediation guidance")
     revoke.add_argument("--scope", required=True, help="the credential scope to revoke")
     revoke.add_argument(
         "--inventory",
@@ -374,18 +348,13 @@ def _add_revoke_arguments(revoke_parser: argparse.ArgumentParser) -> None:
         "--python",
         default=None,
         metavar="BIN",
-        help=(
-            "interpreter that can import the platform's Django "
-            "(default: the one running steward)"
-        ),
+        help=("interpreter that can import the platform's Django (default: the one running steward)"),
     )
 
 
 def _add_cutover_subparsers(cutover_parser: argparse.ArgumentParser) -> None:
     """Story 44.12: plan / apply / flip."""
-    cutover_subs = cutover_parser.add_subparsers(
-        dest="cutover_verb", metavar="{plan,apply,flip}"
-    )
+    cutover_subs = cutover_parser.add_subparsers(dest="cutover_verb", metavar="{plan,apply,flip}")
     plan = cutover_subs.add_parser("plan", help="regenerate or append the move-list")
     plan.add_argument("--regenerate", action="store_true")
     plan.add_argument("--append", action="store_true")
@@ -406,12 +375,8 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
     """
     from .sprint_ledger_query import KNOWN_STATUSES, default_formatter_names
 
-    parser.add_argument(
-        "--unimplemented", action="store_true", help="filter to stories whose status is not done"
-    )
-    parser.add_argument(
-        "--unlinked", action="store_true", help="filter to stories missing Jira key or GitHub item ID"
-    )
+    parser.add_argument("--unimplemented", action="store_true", help="filter to stories whose status is not done")
+    parser.add_argument("--unlinked", action="store_true", help="filter to stories missing Jira key or GitHub item ID")
     parser.add_argument(
         "--ready",
         action="store_true",
@@ -431,9 +396,7 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
             "exclusive with --ready"
         ),
     )
-    parser.add_argument(
-        "--station", default=None, metavar="NAME", help="filter by station name (e.g. pyforge-steward)"
-    )
+    parser.add_argument("--station", default=None, metavar="NAME", help="filter by station name (e.g. pyforge-steward)")
     parser.add_argument(
         "--status",
         default=None,
@@ -443,9 +406,7 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--epic", default=None, metavar="ID", help="filter by epic id within the scanned station(s) (e.g. 65)"
     )
-    parser.add_argument(
-        "--search", default=None, metavar="TERM", help="search term across title, story_id, jira_key"
-    )
+    parser.add_argument("--search", default=None, metavar="TERM", help="search term across title, story_id, jira_key")
     parser.add_argument(
         "--format",
         default="markdown",
@@ -487,9 +448,7 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     json_help = "emit JSON instead of human-readable text"
     catalog_parser.add_argument("--catalog", default=None, metavar="DIR", help=catalog_help)
     catalog_parser.add_argument("--json", action="store_true", default=False, help=json_help)
-    catalog_subs = catalog_parser.add_subparsers(
-        dest="catalog_verb", metavar="{check,list,render,pointers}"
-    )
+    catalog_subs = catalog_parser.add_subparsers(dest="catalog_verb", metavar="{check,list,render,pointers}")
     check = catalog_subs.add_parser(
         "check",
         help="bind declared backends/sources to plugins, validate listings, detect manifest drift (default)",
@@ -509,12 +468,8 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
         help="print how the installer, Claude and Codex point at this catalog (edits nothing)",
     )
     for sub in (check, listing, render, pointers):
-        sub.add_argument(
-            "--catalog", default=argparse.SUPPRESS, metavar="DIR", help=catalog_help
-        )
-        sub.add_argument(
-            "--json", action="store_true", default=argparse.SUPPRESS, help=json_help
-        )
+        sub.add_argument("--catalog", default=argparse.SUPPRESS, metavar="DIR", help=catalog_help)
+        sub.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=json_help)
 
 
 def _add_load_subparsers(load_parser: argparse.ArgumentParser) -> None:
@@ -547,9 +502,7 @@ def _add_load_subparsers(load_parser: argparse.ArgumentParser) -> None:
             help_text += " -- requires --slice + --signer (default deny, Story 61.4)"
         sub = load_subs.add_parser(verb, help=help_text)
         sub.add_argument("--file", required=True, metavar="PATH", help="the extract file to load")
-        sub.add_argument(
-            "--waybill", required=True, metavar="LABEL", help="caller-supplied waybill label"
-        )
+        sub.add_argument("--waybill", required=True, metavar="LABEL", help="caller-supplied waybill label")
         sub.add_argument(
             "--transport",
             default="app-upload",
@@ -584,16 +537,10 @@ def _add_passport_subparsers(passport_parser: argparse.ArgumentParser) -> None:
         "--json", action="store_true", default=False, help="emit JSON instead of human-readable text"
     )
     passport_subs = passport_parser.add_subparsers(dest="passport_verb", metavar="{mint}")
-    mint = passport_subs.add_parser(
-        "mint", help="mint a fresh vendor Work Passport UUID -- never merges by key"
-    )
+    mint = passport_subs.add_parser("mint", help="mint a fresh vendor Work Passport UUID -- never merges by key")
     mint.add_argument("--vendor-id", required=True, metavar="NAME", help="the vendor this row belongs to")
-    mint.add_argument(
-        "--jira-key", default=None, metavar="KEY", help="Jira issue key nickname (optional)"
-    )
-    mint.add_argument(
-        "--github-item-id", default=None, metavar="ID", help="GitHub item ID nickname (optional)"
-    )
+    mint.add_argument("--jira-key", default=None, metavar="KEY", help="Jira issue key nickname (optional)")
+    mint.add_argument("--github-item-id", default=None, metavar="ID", help="GitHub item ID nickname (optional)")
     mint.add_argument("--title", default="", metavar="TEXT", help="a human-readable title (optional)")
 
 
@@ -649,9 +596,7 @@ def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
 
 def _add_guards_subparsers(guards_parser: argparse.ArgumentParser) -> None:
     """Story 53.4: catalog / lacking / source-ground (not a detector)."""
-    guards_subs = guards_parser.add_subparsers(
-        dest="guards_verb", metavar="{catalog,lacking,source-ground}"
-    )
+    guards_subs = guards_parser.add_subparsers(dest="guards_verb", metavar="{catalog,lacking,source-ground}")
     guards_subs.add_parser("catalog", help="print the seven-category library")
     lacking = guards_subs.add_parser(
         "lacking",
@@ -687,23 +632,15 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
     `docs/dashboard/<board>/index.html`, which the pre-existing `dashboard`
     verb then commits/pushes unchanged — a fourth, also-unrelated surface.
     """
-    deploy_subs = deploy_parser.add_subparsers(
-        dest="deploy_verb", metavar="{dashboard,status,perimeter,static}"
-    )
+    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard,status,perimeter,static}")
 
-    dashboard = deploy_subs.add_parser(
-        "dashboard", help="build/reconcile the GitHub Pages program-console dashboard"
-    )
+    dashboard = deploy_subs.add_parser("dashboard", help="build/reconcile the GitHub Pages program-console dashboard")
     dashboard.add_argument(
         "--build", action="store_true", help="build only — refresh docs/dashboard/, no diff/commit/push"
     )
-    dashboard.add_argument(
-        "--dry-run", action="store_true", help="build + diff and print — no commit/push"
-    )
+    dashboard.add_argument("--dry-run", action="store_true", help="build + diff and print — no commit/push")
 
-    deploy_subs.add_parser(
-        "status", help="report the last commit that touched docs/dashboard/ (SHA, timestamp)"
-    )
+    deploy_subs.add_parser("status", help="report the last commit that touched docs/dashboard/ (SHA, timestamp)")
 
     perimeter = deploy_subs.add_parser(
         "perimeter",
@@ -757,10 +694,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
     static = deploy_subs.add_parser(
         "static",
-        help=(
-            "publish a board as a self-contained static export "
-            "(docs/dashboard/<board>/index.html) — CAP-8/AD-10"
-        ),
+        help=("publish a board as a self-contained static export (docs/dashboard/<board>/index.html) — CAP-8/AD-10"),
     )
     static.add_argument(
         "--board",
@@ -856,10 +790,7 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
     provision_parser.add_argument(
         "--json",
         action="store_true",
-        help=(
-            "with --list, --module, --list-modules, --plugin, or "
-            "--prove-class-path, emit JSON instead of text"
-        ),
+        help=("with --list, --module, --list-modules, --plugin, or --prove-class-path, emit JSON instead of text"),
     )
     provision_parser.add_argument(
         "--verify", action="store_true", help="check environment.yaml against pixi.toml (the PR CI sync gate)"
@@ -871,9 +802,7 @@ def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
     budget_subs = budget_parser.add_subparsers(dest="budget_verb", metavar="{set,show,check}")
 
     set_ = budget_subs.add_parser("set", help="declare a machine-readable budget ceiling")
-    set_.add_argument(
-        "--cap", required=True, help="<amount><currency>/<period>, e.g. '1500usd/month'"
-    )
+    set_.add_argument("--cap", required=True, help="<amount><currency>/<period>, e.g. '1500usd/month'")
 
     show = budget_subs.add_parser("show", help="print the currently declared ceiling(s)")
     show.add_argument("--json", action="store_true", help="emit JSON instead of human-readable text")
@@ -895,13 +824,9 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
     """
     sync_subs = sync_parser.add_subparsers(dest="sync_verb", metavar="{reconcile}")
 
-    reconcile_ = sync_subs.add_parser(
-        "reconcile", help="re-read both linked items and converge the divergent side"
-    )
+    reconcile_ = sync_subs.add_parser("reconcile", help="re-read both linked items and converge the divergent side")
     identifier_group = reconcile_.add_mutually_exclusive_group(required=True)
-    identifier_group.add_argument(
-        "--github-item", metavar="ID", help="GitHub Projects V2 item node ID"
-    )
+    identifier_group.add_argument("--github-item", metavar="ID", help="GitHub Projects V2 item node ID")
     identifier_group.add_argument("--jira-issue", metavar="KEY", help="Jira issue key")
     identifier_group.add_argument(
         "--schedule",
@@ -924,13 +849,9 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
 
 def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None:
     """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.4 / CAP-1..4 + set teardown)."""
-    workspace_subs = workspace_parser.add_subparsers(
-        dest="workspace_verb", metavar="{start,ls,status,clean}"
-    )
+    workspace_subs = workspace_parser.add_subparsers(dest="workspace_verb", metavar="{start,ls,status,clean}")
 
-    start = workspace_subs.add_parser(
-        "start", help="create a scratch worktree and record it in bookkeeping"
-    )
+    start = workspace_subs.add_parser("start", help="create a scratch worktree and record it in bookkeeping")
     start.add_argument(
         "slug",
         help=(
@@ -947,9 +868,7 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     )
     start.add_argument("--json", action="store_true", help="emit JSON instead of the path")
 
-    ls = workspace_subs.add_parser(
-        "ls", help="list tool-created scratch worktrees (bookkeeping only; cheap)"
-    )
+    ls = workspace_subs.add_parser("ls", help="list tool-created scratch worktrees (bookkeeping only; cheap)")
     ls.add_argument("--json", action="store_true", help="emit JSON instead of a text table")
 
     status = workspace_subs.add_parser(
@@ -964,8 +883,7 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
         nargs="?",
         default=None,
         help=(
-            "optional slug — owned worktree, or a repo-set feature "
-            "(reports dirty/unpushed across every open member)"
+            "optional slug — owned worktree, or a repo-set feature (reports dirty/unpushed across every open member)"
         ),
     )
     status.add_argument("--json", action="store_true", help="emit JSON instead of text")
@@ -1026,10 +944,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         "--branch",
         default=None,
         metavar="NAME",
-        help=(
-            "review branch for --apply "
-            "(default: steward/bmad-core-upgrade-<target>)"
-        ),
+        help=("review branch for --apply (default: steward/bmad-core-upgrade-<target>)"),
     )
     bmad_core.add_argument(
         "--installer",
@@ -1177,9 +1092,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
 
     verify = upgrade_subs.add_parser(
         "verify",
-        help=(
-            "alias for prove-landed (CAP-5 post-apply single-verdict gate)"
-        ),
+        help=("alias for prove-landed (CAP-5 post-apply single-verdict gate)"),
     )
     verify.add_argument(
         "--repo-root",
@@ -1210,9 +1123,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
 
 def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
     """Add ``pipeline-truth`` (15.1) and ``advance`` (15.2). Story 15.3+ stay out."""
-    suite_subs = suite_parser.add_subparsers(
-        dest="suite_verb", metavar="{pipeline-truth,advance}"
-    )
+    suite_subs = suite_parser.add_subparsers(dest="suite_verb", metavar="{pipeline-truth,advance}")
     truth = suite_subs.add_parser(
         "pipeline-truth",
         help=(
@@ -1264,8 +1175,7 @@ def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
         "--baseline",
         action="store_true",
         help=(
-            "resolve staleness from the recorded 2026-08-22 research matrix "
-            "instead of live probes (offline / fixtures)"
+            "resolve staleness from the recorded 2026-08-22 research matrix instead of live probes (offline / fixtures)"
         ),
     )
     advance.add_argument(
@@ -1427,11 +1337,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if code is None:
             return EXIT_OK
         return code if isinstance(code, int) else EXIT_USAGE
-    except Exception:                              # noqa: BLE001 — deliberate boundary
+    except Exception:  # noqa: BLE001 — deliberate boundary
         import traceback
+
         traceback.print_exc()
         return EXIT_INTERNAL
 
 
-if __name__ == "__main__":                          # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())

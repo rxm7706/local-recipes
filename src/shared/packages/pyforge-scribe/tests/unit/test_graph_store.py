@@ -154,9 +154,7 @@ def test_commit_output_is_sorted_and_deterministic(tmp_path: Path) -> None:
 # --- offline conformance (AD-6) ----------------------------------------------
 
 
-def test_flat_file_graph_store_makes_zero_network_calls(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_flat_file_graph_store_makes_zero_network_calls(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AD-6 offline-conformance: block every socket construction for the
     duration of a full reset/upsert/invalidate/commit/reopen/iter cycle --
     any attempted network call raises immediately instead of silently

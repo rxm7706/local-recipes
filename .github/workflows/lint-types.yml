@@ -1,0 +1,51 @@
+# The ten pyforge-* packages' lint / type gate (steward Story 66.1, spec-pyforge-steward
+# CAP-153) and the pre-commit set's existence check (Story 66.2, CAP-154).
+#
+# ONE invocation, shared with the local twin: this job runs `pixi run --frozen -e pyforge-guild
+# lint-types`, the same task `pr-preflight` runs as its first leg, so what the runner measures is
+# exactly what a contributor measured before pushing. The task fans out to `ruff`, `ruff-format`,
+# `mypy`, `target-version-check` and `precommit-config-check`; each package's own [tool.ruff] /
+# [tool.mypy] is what the tools read. src/platform keeps its own platform-ci lane.
+#
+# The setup-pixi pin below is a registered site of scripts/pixi_version_registry.py
+# (`lint-types.yml setup-pixi`); bump it with `pixi run -e local-recipes bump-pixi-version`.
+name: Lint and types
+
+on:
+  pull_request:
+    paths:
+      - "src/shared/packages/**"
+      - "pixi.toml"
+      - "pixi.lock"
+      - "scripts/lint_types.py"
+      - "scripts/target_version_check.py"
+      - "scripts/precommit_config_check.py"
+      - "scripts/commit_msg_hook.py"
+      - "scripts/pre_push_preflight.sh"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/lint-types.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-types-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.80.0
+          environments: pyforge-guild
+          locked: true
+          cache: true
+      - name: lint-types (ruff, ruff-format, mypy, target-version-check, precommit-config-check)
+        run: pixi run --frozen -e pyforge-guild lint-types

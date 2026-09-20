@@ -17,8 +17,9 @@ finding also closes)."""
 
 from __future__ import annotations
 
-import pyforge.marshal.adapters.harness_bmadloop as module
 import pytest
+
+import pyforge.marshal.adapters.harness_bmadloop as module
 from pyforge.marshal.core.harness_profile import wire_port_for_worktree
 
 
@@ -44,15 +45,11 @@ def test_attempt_spin_wire_layer_never_writes_the_raw_wire_port_token(
     overlay_path = loop_home / ".bmad-loop" / "profiles" / "claude.toml"
     assert overlay_path.is_file()
     text = overlay_path.read_text(encoding="utf-8")
-    assert "{wire_port}" not in text, (
-        "the raw template token reached the written overlay"
-    )
+    assert "{wire_port}" not in text, "the raw template token reached the written overlay"
     assert "--port" in text
 
 
-def test_attempt_spin_wire_layer_writes_a_real_deterministic_port(
-    tmp_path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_attempt_spin_wire_layer_writes_a_real_deterministic_port(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The substituted port must be the SAME deterministic derivation
     dispatch's own ``render_dispatch_argv`` uses (Story 33.8) -- not an
     arbitrary or random value."""

@@ -87,10 +87,9 @@ from __future__ import annotations
 
 import os
 import re
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-
-import tomllib
 
 from .. import fs
 from ..errors import PreconditionFailure
@@ -131,13 +130,7 @@ def _escape_cell(value: str) -> str:
     uniform escaping rule this module applies to every column (slug,
     status, AND description) -- a malformed value in any of them must never
     be able to corrupt the table's row/column structure."""
-    return (
-        value.replace("\r\n", " ")
-        .replace("\r", " ")
-        .replace("\n", " ")
-        .replace("|", "\\|")
-        .replace("`", "\\`")
-    )
+    return value.replace("\r\n", " ").replace("\r", " ").replace("\n", " ").replace("|", "\\|").replace("`", "\\`")
 
 
 def _project_row(project_dir: Path) -> tuple[str, str, str] | None:
@@ -160,7 +153,7 @@ def _project_row(project_dir: Path) -> tuple[str, str, str] | None:
     try:
         with config_path.open("rb") as handle:
             document = tomllib.load(handle)
-    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+    except OSError, UnicodeDecodeError, tomllib.TOMLDecodeError:
         return None
     project_table = document.get("project") if isinstance(document, dict) else None
     if not isinstance(project_table, dict):
@@ -221,8 +214,7 @@ def derive_projects_table(projects_dir: Path) -> str:
             slug = row[0]
             if slug in seen_slugs:
                 raise PreconditionFailure(
-                    f"duplicate project slug {slug!r}: both {seen_slugs[slug]} and"
-                    f" {project_dir} resolve to it",
+                    f"duplicate project slug {slug!r}: both {seen_slugs[slug]} and {project_dir} resolve to it",
                     remedy=(
                         "give each project directory's .bmad-config.toml a distinct"
                         " [project].slug (or rename the directory)"
@@ -234,9 +226,7 @@ def derive_projects_table(projects_dir: Path) -> str:
 
     lines = ["| Slug | Status | Description |", "|------|--------|-------------|"]
     for slug, status, description in rows:
-        lines.append(
-            f"| `{_escape_cell(slug)}` | {_escape_cell(status)} | {_escape_cell(description)} |"
-        )
+        lines.append(f"| `{_escape_cell(slug)}` | {_escape_cell(status)} | {_escape_cell(description)} |")
     return "\n".join(lines) + "\n"
 
 
@@ -302,7 +292,7 @@ def resolve_active_project(repo_root: Path, *, project: str | None = None) -> st
     if marker_path.is_file():
         try:
             marker_value = marker_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             # An unreadable or non-UTF-8 marker is treated the same as a
             # missing one (falls through to the next source, or the final
             # "no source" report) -- never an uncaught exception (review
@@ -329,10 +319,7 @@ def resolve_active_project(repo_root: Path, *, project: str | None = None) -> st
     # not a second, independently-worded message.
     return _validate_slug(
         "",
-        source=(
-            f"no source (--project, BMAD_ACTIVE_PROJECT, and {marker_path} were all"
-            " absent or blank)"
-        ),
+        source=(f"no source (--project, BMAD_ACTIVE_PROJECT, and {marker_path} were all absent or blank)"),
     )
 
 

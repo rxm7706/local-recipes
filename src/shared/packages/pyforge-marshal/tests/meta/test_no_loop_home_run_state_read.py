@@ -12,15 +12,7 @@ _PACKAGE_FILE = pyforge.marshal.__file__
 if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 MARSHAL_SRC = Path(_PACKAGE_FILE).resolve().parent
-DOCTOR_MARSHAL = (
-    MARSHAL_SRC.parents[3]
-    / "pyforge-doctor"
-    / "src"
-    / "pyforge"
-    / "doctor"
-    / "sources"
-    / "marshal.py"
-)
+DOCTOR_MARSHAL = MARSHAL_SRC.parents[3] / "pyforge-doctor" / "src" / "pyforge" / "doctor" / "sources" / "marshal.py"
 PUBLISHER_ADAPTER = MARSHAL_SRC / "adapters" / "publisher_host.py"
 CAP4_TAG = "CAP-4: loop-home FILE read"
 _FORBIDDEN = (

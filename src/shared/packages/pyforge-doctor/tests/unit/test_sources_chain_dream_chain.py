@@ -54,9 +54,7 @@ def _write_roster(target: Path) -> None:
     )
 
 
-def _write_dream(
-    target: Path, slug: str, owner: str, *, status: str = "draft", title: str = ""
-) -> Path:
+def _write_dream(target: Path, slug: str, owner: str, *, status: str = "draft", title: str = "") -> Path:
     path = target / "docs" / "dreams" / f"{slug}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["---", f"owner: {owner}", f"status: {status}"]
@@ -76,10 +74,7 @@ def _write_spec(
     covers: list[str] | None = None,
     satellite: str | None = None,
 ) -> Path:
-    path = (
-        target / "_bmad-output" / "projects" / project / "planning-artifacts"
-        / "specs" / spec_dir / "SPEC.md"
-    )
+    path = target / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / spec_dir / "SPEC.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["---"]
     if owner_dream:
@@ -184,8 +179,11 @@ def test_satellite_consolidation_via_covers_dreams_frontmatter_covers_the_dream(
     _write_dream(tmp_path, "satellite-a", "doctor")
     _write_dream(tmp_path, "host", "doctor")
     _write_spec(
-        tmp_path, "pyforge-doctor", "spec-host",
-        owner_dream="host", covers=["satellite-a"],
+        tmp_path,
+        "pyforge-doctor",
+        "spec-host",
+        owner_dream="host",
+        covers=["satellite-a"],
     )
 
     findings = chain.gather_dream_chain(tmp_path)
@@ -200,8 +198,11 @@ def test_satellite_consolidation_via_heading_covers_the_dream(tmp_path: Path) ->
     _write_dream(tmp_path, "satellite-b", "doctor", title="The Satellite Dream")
     _write_dream(tmp_path, "host2", "doctor")
     _write_spec(
-        tmp_path, "pyforge-doctor", "spec-host2",
-        owner_dream="host2", satellite="The Satellite Dream",
+        tmp_path,
+        "pyforge-doctor",
+        "spec-host2",
+        owner_dream="host2",
+        satellite="The Satellite Dream",
     )
 
     findings = chain.gather_dream_chain(tmp_path)
@@ -228,8 +229,7 @@ def test_owner_unassigned_guild_dream_reports_fail(tmp_path: Path) -> None:
 def test_constitutive_guild_dream_is_exempt(tmp_path: Path) -> None:
     """``pyforge-charter`` is the one Dream ``guild`` is terminal for."""
     _write_dream(tmp_path, "pyforge-charter", "guild")
-    _write_spec(tmp_path, "docs/governance", "spec-pyforge-charter",
-                owner_dream="pyforge-charter")
+    _write_spec(tmp_path, "docs/governance", "spec-pyforge-charter", owner_dream="pyforge-charter")
 
     findings = chain.gather_dream_chain(tmp_path)
 
@@ -264,8 +264,7 @@ def test_spec_in_owners_project_reports_no_location_mismatch(tmp_path: Path) -> 
 
 def test_guild_owned_spec_lives_in_docs_governance(tmp_path: Path) -> None:
     _write_dream(tmp_path, "pyforge-charter", "guild")
-    _write_spec(tmp_path, "docs/governance", "spec-pyforge-charter",
-                owner_dream="pyforge-charter")
+    _write_spec(tmp_path, "docs/governance", "spec-pyforge-charter", owner_dream="pyforge-charter")
 
     findings = chain.gather_dream_chain(tmp_path)
 
@@ -279,6 +278,7 @@ def test_flat_prd_reports_prd_not_sharded_fail(tmp_path: Path) -> None:
     _clean_chain(tmp_path)
     pa = tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts"
     import shutil
+
     shutil.rmtree(pa / "prds")
     (pa / "prd.md").write_text("flat\n", encoding="utf-8")
 
@@ -295,10 +295,8 @@ def test_flat_prd_reports_prd_not_sharded_fail(tmp_path: Path) -> None:
 def test_absent_prd_reports_prd_not_sharded_fail(tmp_path: Path) -> None:
     _clean_chain(tmp_path)
     import shutil
-    shutil.rmtree(
-        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor"
-        / "planning-artifacts" / "prds"
-    )
+
+    shutil.rmtree(tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts" / "prds")
 
     findings = chain.gather_dream_chain(tmp_path)
 
@@ -310,6 +308,7 @@ def test_flat_architecture_reports_fail(tmp_path: Path) -> None:
     _clean_chain(tmp_path)
     pa = tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts"
     import shutil
+
     shutil.rmtree(pa / "architecture")
     (pa / "architecture.md").write_text("flat\n", encoding="utf-8")
 
@@ -325,10 +324,7 @@ def test_flat_architecture_reports_fail(tmp_path: Path) -> None:
 
 def test_missing_epics_reports_fail(tmp_path: Path) -> None:
     _clean_chain(tmp_path)
-    (
-        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor"
-        / "planning-artifacts" / "epics.md"
-    ).unlink()
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts" / "epics.md").unlink()
 
     findings = chain.gather_dream_chain(tmp_path)
 
@@ -432,12 +428,14 @@ def test_multiple_projects_inv3_findings_are_all_reported_independently(
 
     epics_findings = [f for f in findings if f.check == "epics-missing"]
     assert {f.evidence["subject"] for f in epics_findings} == {
-        "pyforge-alpha", "pyforge-beta",
+        "pyforge-alpha",
+        "pyforge-beta",
     }
 
 
 def test_one_unevaluable_project_does_not_hide_another_projects_real_fail(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """One project's ``planning-artifacts`` directory that cannot be listed
     must not discard a DIFFERENT, well-formed project's real INV-3 FAIL --
@@ -446,10 +444,9 @@ def test_one_unevaluable_project_does_not_hide_another_projects_real_fail(
     ``sources/board.py``'s own ``test_a_project_that_cannot_be_evaluated_at_all_
     warns_without_hiding_others``)."""
     _write_sharded_project(tmp_path, "pyforge-good", epics=False)  # real epics-missing
-    (
-        tmp_path / "_bmad-output" / "projects" / "pyforge-zbroken"
-        / "planning-artifacts"
-    ).mkdir(parents=True, exist_ok=True)
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-zbroken" / "planning-artifacts").mkdir(
+        parents=True, exist_ok=True
+    )
 
     real = chain._check_project_sharded
 
@@ -463,9 +460,7 @@ def test_one_unevaluable_project_does_not_hide_another_projects_real_fail(
     findings = chain.gather_dream_chain(tmp_path)
 
     by_check = {f.check: f for f in findings}
-    assert "epics-missing" in by_check, (
-        f"one project's failure hid another's real FAIL: {[f.check for f in findings]}"
-    )
+    assert "epics-missing" in by_check, f"one project's failure hid another's real FAIL: {[f.check for f in findings]}"
     assert by_check["epics-missing"].status is DoctorStatus.FAIL
     warn = by_check["dream-chain-unevaluable"]
     assert warn.status is DoctorStatus.WARN
@@ -494,8 +489,11 @@ def test_non_string_dream_title_does_not_hide_another_dreams_real_fail(
     )
     _write_dream(tmp_path, "host", "doctor")
     _write_spec(
-        tmp_path, "pyforge-doctor", "spec-host",
-        owner_dream="host", satellite="Some Other Dream",
+        tmp_path,
+        "pyforge-doctor",
+        "spec-host",
+        owner_dream="host",
+        satellite="Some Other Dream",
     )
     _write_sharded_project(tmp_path, "pyforge-doctor")
 
@@ -503,8 +501,7 @@ def test_non_string_dream_title_does_not_hide_another_dreams_real_fail(
 
     subjects = {f.evidence["subject"] for f in findings if f.check == "dream-without-spec"}
     assert "orphan" in subjects, (
-        f"a non-string Dream title collapsed every real finding: "
-        f"{[(f.check, f.status) for f in findings]}"
+        f"a non-string Dream title collapsed every real finding: {[(f.check, f.status) for f in findings]}"
     )
     # The two malformed-title Dreams are themselves spec-less, so they FAIL
     # on their own merits -- what matters is that they FAIL rather than crash.
@@ -525,20 +522,23 @@ def test_one_malformed_spec_does_not_hide_another_specs_real_fail(
     _write_dream(tmp_path, "orphan", "doctor")  # real dream-without-spec FAIL
     _write_sharded_project(tmp_path, "pyforge-doctor")
     bad_spec = (
-        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor"
-        / "planning-artifacts" / "specs" / "spec-malformed" / "SPEC.md"
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "specs"
+        / "spec-malformed"
+        / "SPEC.md"
     )
     bad_spec.parent.mkdir(parents=True, exist_ok=True)
-    bad_spec.write_text(
-        "---\nowner-dream:\n  - docs/dreams/foo.md\n---\nbody\n", encoding="utf-8"
-    )
+    bad_spec.write_text("---\nowner-dream:\n  - docs/dreams/foo.md\n---\nbody\n", encoding="utf-8")
 
     findings = chain.gather_dream_chain(tmp_path)
 
     by_check = {f.check: f for f in findings}
     assert "dream-without-spec" in by_check, (
-        f"the malformed spec hid the unrelated dream's real FAIL: "
-        f"{[f.check for f in findings]}"
+        f"the malformed spec hid the unrelated dream's real FAIL: {[f.check for f in findings]}"
     )
     assert by_check["dream-without-spec"].status is DoctorStatus.FAIL
     assert by_check["dream-without-spec"].evidence["subject"] == "orphan"
@@ -589,10 +589,7 @@ def test_one_projects_unlistable_specs_dir_does_not_hide_another_projects_findin
     _write_dream(tmp_path, "orphan", "doctor")
     _write_sharded_project(tmp_path, "pyforge-doctor")
     _write_sharded_project(tmp_path, "pyforge-mason")
-    blind = (
-        tmp_path / "_bmad-output" / "projects" / "pyforge-mason"
-        / "planning-artifacts" / "specs"
-    )
+    blind = tmp_path / "_bmad-output" / "projects" / "pyforge-mason" / "planning-artifacts" / "specs"
     blind.mkdir(parents=True, exist_ok=True)
     blind.chmod(0o000)
     try:
@@ -602,8 +599,7 @@ def test_one_projects_unlistable_specs_dir_does_not_hide_another_projects_findin
 
     by_check = {f.check: f for f in findings}
     assert "dream-without-spec" in by_check, (
-        f"one project's unreadable specs/ hid an unrelated real FAIL: "
-        f"{[f.check for f in findings]}"
+        f"one project's unreadable specs/ hid an unrelated real FAIL: {[f.check for f in findings]}"
     )
     warn = by_check["dream-chain-unevaluable"]
     assert warn.status is DoctorStatus.WARN
@@ -650,8 +646,7 @@ def test_guild_spec_is_collected_from_docs_governance(tmp_path: Path) -> None:
     _write_dream(tmp_path, "pyforge-charter", "guild")
     sd = tmp_path / "docs" / "governance" / "spec-pyforge-charter"
     sd.mkdir(parents=True)
-    (sd / "SPEC.md").write_text(
-        "---\nowner-dream: docs/dreams/pyforge-charter.md\n---\n", encoding="utf-8")
+    (sd / "SPEC.md").write_text("---\nowner-dream: docs/dreams/pyforge-charter.md\n---\n", encoding="utf-8")
 
     findings = chain.gather_dream_chain(tmp_path)
 
@@ -681,7 +676,7 @@ def test_unlinked_spec_matching_a_dream_slug_is_not_also_dream_without_spec(
     ``spec-without-dream-link`` (correct) and again as its Dream being
     spec-less (wrong; the Spec is right there)."""
     _write_dream(tmp_path, "foo", "doctor")
-    _write_spec(tmp_path, "pyforge-doctor", "spec-foo")   # no owner-dream
+    _write_spec(tmp_path, "pyforge-doctor", "spec-foo")  # no owner-dream
 
     checks = [f.check for f in chain.gather_dream_chain(tmp_path)]
 
@@ -705,15 +700,11 @@ def test_satellite_heading_matches_across_punctuation_drift(tmp_path: Path) -> N
     one."""
     _write_dream(tmp_path, "sat", "doctor", title="The Seed (Part 1)")
     _write_dream(tmp_path, "host", "doctor")
-    _write_spec(tmp_path, "pyforge-doctor", "spec-host",
-                owner_dream="host", satellite="the SEED part 1")
+    _write_spec(tmp_path, "pyforge-doctor", "spec-host", owner_dream="host", satellite="the SEED part 1")
 
-    subjects = {f.evidence["subject"] for f in chain.gather_dream_chain(tmp_path)
-                if f.check == "dream-without-spec"}
+    subjects = {f.evidence["subject"] for f in chain.gather_dream_chain(tmp_path) if f.check == "dream-without-spec"}
 
-    assert "sat" not in subjects, (
-        f"punctuation drift broke satellite matching: {subjects}"
-    )
+    assert "sat" not in subjects, f"punctuation drift broke satellite matching: {subjects}"
 
 
 def test_markdown_without_a_leading_frontmatter_fence_is_absent_not_unparseable(
@@ -740,11 +731,7 @@ def test_markdown_without_a_leading_frontmatter_fence_is_absent_not_unparseable(
     path = tmp_path / "docs" / "dreams" / "nofence.md"
     path.parent.mkdir(parents=True)
     path.write_text(
-        "Prose that precedes the fence.\n"
-        "---\n"
-        "owner: marshal\n"
-        "status: shipped\n"
-        "---\n",
+        "Prose that precedes the fence.\n---\nowner: marshal\nstatus: shipped\n---\n",
         encoding="utf-8",
     )
 
@@ -765,8 +752,14 @@ def test_spec_unparseable_frontmatter_does_not_report_spec_without_owner_dream(
     masquerade as a missing ``owner-dream:`` HARD finding."""
     _write_dream(tmp_path, "host", "doctor")
     spec = (
-        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor"
-        / "planning-artifacts" / "specs" / "spec-broken" / "SPEC.md"
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "specs"
+        / "spec-broken"
+        / "SPEC.md"
     )
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("---\n- not\n- a\n- mapping\n---\n", encoding="utf-8")
@@ -795,8 +788,7 @@ def test_unreadable_dreams_dir_does_not_discard_unrelated_inv3_findings(
     plus a ``dream-without-spec`` FAIL collapsed into one vacuous WARN. That
     is the story's own AC inverted."""
     _write_dream(tmp_path, "orphan", "doctor")
-    _write_sharded_project(tmp_path, "pyforge-mason",
-                           prd=False, architecture=False, epics=False)
+    _write_sharded_project(tmp_path, "pyforge-mason", prd=False, architecture=False, epics=False)
 
     dreams_dir = tmp_path / "docs" / "dreams"
     dreams_dir.chmod(0o000)
@@ -855,9 +847,7 @@ def test_unreadable_spec_dir_names_the_project_not_the_literal_specs_dir(
         findings = chain.gather_dream_chain(tmp_path)
     finally:
         for project in ("pyforge-doctor", "pyforge-mason"):
-            (tmp_path / "_bmad-output" / "projects" / project
-             / "planning-artifacts" / "specs").chmod(0o755)
+            (tmp_path / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs").chmod(0o755)
 
-    subjects = {f.evidence["subject"] for f in findings
-                if f.check == "dream-chain-unevaluable"}
+    subjects = {f.evidence["subject"] for f in findings if f.check == "dream-chain-unevaluable"}
     assert subjects == {"pyforge-doctor", "pyforge-mason"}, subjects

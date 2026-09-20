@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import state as state_module
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.state import DEFAULT_STATE_PATH, DeckState, read, write
@@ -56,12 +57,8 @@ def test_write_creates_the_parent_directory(tmp_path: Path):
 
 def test_overwriting_the_same_slug_replaces_its_entry(tmp_path: Path):
     state_path = tmp_path / "bridge-state.json"
-    write(
-        state_path, "x", DeckState(project_id="p1", etags={"a": "E1"}, last_pull=None)
-    )
-    updated = DeckState(
-        project_id="p1", etags={"a": "E2"}, last_pull="2026-07-30T00:00:00Z"
-    )
+    write(state_path, "x", DeckState(project_id="p1", etags={"a": "E1"}, last_pull=None))
+    updated = DeckState(project_id="p1", etags={"a": "E2"}, last_pull="2026-07-30T00:00:00Z")
     write(state_path, "x", updated)
     assert read(state_path, "x") == updated
 
@@ -264,10 +261,7 @@ def test_read_of_a_document_with_duplicate_keys_raises_herald_error(tmp_path: Pa
     blocks on read and erase it permanently on the next ``write``. An
     ambiguous hand-edit must fail structurally like every other one."""
     state_path = tmp_path / "bridge-state.json"
-    state_path.write_text(
-        '{"x": {"project_id": "OLD", "etags": {}},'
-        ' "x": {"project_id": "NEW", "etags": {}}}'
-    )
+    state_path.write_text('{"x": {"project_id": "OLD", "etags": {}}, "x": {"project_id": "NEW", "etags": {}}}')
     with pytest.raises(HeraldError, match="duplicate"):
         read(state_path, "x")
 
@@ -282,9 +276,7 @@ def test_write_refuses_a_state_that_is_not_a_deck_state(tmp_path: Path):
     assert not state_path.exists()
 
 
-def test_two_concurrent_writers_for_different_slugs_both_land(
-    tmp_path: Path, monkeypatch
-):
+def test_two_concurrent_writers_for_different_slugs_both_land(tmp_path: Path, monkeypatch):
     """Story 13.1 regression: two ``write`` calls for different slugs
     racing the same file must both survive -- forced, deterministic
     interleaving (not a timing-dependent sleep race). A monkeypatched delay

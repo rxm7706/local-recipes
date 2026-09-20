@@ -187,16 +187,12 @@ def test_update_a_second_time_same_day_replaces_not_appends(capsys, monkeypatch)
     assert payload["unblock_narrative"] == "updated"
 
 
-def test_update_with_no_unblock_narrative_flag_prompts_interactively(
-    capsys, monkeypatch
-):
+def test_update_with_no_unblock_narrative_flag_prompts_interactively(capsys, monkeypatch):
     """No ``--unblock-narrative`` flag -- ``_run_progress_update`` must
     call ``_prompt_unblock_narrative`` (Story 8.2's scaled-down "operator
     prompted" AC) rather than silently defaulting to an empty narrative."""
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
-    monkeypatch.setattr(
-        cli, "_prompt_unblock_narrative", lambda *_a, **_k: "typed narrative"
-    )
+    monkeypatch.setattr(cli, "_prompt_unblock_narrative", lambda *_a, **_k: "typed narrative")
     assert cli.main(["progress", "warden", "--update"]) == 0
     capsys.readouterr()
     assert cli.main(["progress", "warden", "--json"]) == 0
@@ -266,18 +262,11 @@ def test_bare_progress_defaults_to_list_mode(capsys, monkeypatch):
 
 
 def test_prompt_unblock_narrative_returns_the_stripped_answer():
-    assert (
-        cli._prompt_unblock_narrative(
-            "warden", "2026-08-08", reader=lambda _p: "  all clear  "
-        )
-        == "all clear"
-    )
+    assert cli._prompt_unblock_narrative("warden", "2026-08-08", reader=lambda _p: "  all clear  ") == "all clear"
 
 
 def test_prompt_unblock_narrative_on_eof_returns_empty_string():
     def _raise_eof(_prompt: str) -> str:
         raise EOFError
 
-    assert (
-        cli._prompt_unblock_narrative("warden", "2026-08-08", reader=_raise_eof) == ""
-    )
+    assert cli._prompt_unblock_narrative("warden", "2026-08-08", reader=_raise_eof) == ""

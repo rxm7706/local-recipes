@@ -116,7 +116,7 @@ def _pypi_json_fanout_limit() -> int:
         return _DEFAULT_PYPI_JSON_FANOUT_LIMIT
     try:
         limit = int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         logger.warning(
             "PYPI_JSON_FANOUT_LIMIT=%r is not a valid int — using default %s",
             raw,
@@ -231,9 +231,7 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
         return self._inner.load()
 
     def save(self, data: Any) -> None:
-        raise NotImplementedError(
-            f"{type(self).__name__} is a read-only request source; it is never saved to."
-        )
+        raise NotImplementedError(f"{type(self).__name__} is a read-only request source; it is never saved to.")
 
     def _describe(self) -> dict[str, Any]:
         return {
@@ -598,9 +596,7 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
             "load(). Credentialed live fan-out is attended-only (NFR-2/AD-11)."
         )
 
-    def load_many(
-        self, names: list[str], *, fetcher: Callable[[str], Any] | None = None
-    ) -> dict[str, Any]:
+    def load_many(self, names: list[str], *, fetcher: Callable[[str], Any] | None = None) -> dict[str, Any]:
         """Concrete per-project fan-out (Phase H/R): issue ONE request per project
         name, acquiring a rate-limit token before each (DW-B1-2). Returns a mapping
         ``name -> resolved payload``. ``fetcher`` is injectable for fixtures; the
@@ -694,9 +690,7 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         # review fix #12: filter BOTH key and value to real strings (matches
         # ParselmouthMappingDataset's filter) — a malformed entry must not crash the
         # fan-out or surface a non-string conda_name downstream.
-        names = sorted(
-            k for k, v in mapping.items() if isinstance(k, str) and k and isinstance(v, str)
-        )
+        names = sorted(k for k, v in mapping.items() if isinstance(k, str) and k and isinstance(v, str))
         return names, mapping
 
     def fetch_candidates(self, *, fetcher: Callable[[str], Any] | None = None) -> pd.DataFrame:
@@ -806,7 +800,7 @@ def _env_float(key: str, default: float) -> float:
         return default
     try:
         return float(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         logger.warning("%s=%r is not a valid float — using default %s", key, raw, default)
         return default
 
@@ -817,9 +811,10 @@ def _env_int(key: str, default: int) -> int:
         return default
     try:
         return int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         logger.warning("%s=%r is not a valid int — using default %s", key, raw, default)
         return default
+
 
 # AD-6 admin-opt-in defaults (env-overridable). Phase P NEVER runs on a default
 # schedule; unless PHASE_P_ENABLED=1 the dataset no-ops (mode-machine _phase_p_skip).
@@ -911,7 +906,9 @@ class BigQueryDownloadsDataset(AbstractDataset):
             else _env_float("PHASE_P_MAX_COST_FIRST_PULL_USD", _DEFAULT_MAX_COST_FIRST_PULL_USD)
         )
         self._job_timeout_ms = (
-            job_timeout_ms if job_timeout_ms is not None else _env_int("PHASE_P_JOB_TIMEOUT_MS", _DEFAULT_JOB_TIMEOUT_MS)
+            job_timeout_ms
+            if job_timeout_ms is not None
+            else _env_int("PHASE_P_JOB_TIMEOUT_MS", _DEFAULT_JOB_TIMEOUT_MS)
         )
 
     # -- helpers (pure) ------------------------------------------------------
@@ -1017,9 +1014,7 @@ class BigQueryDownloadsDataset(AbstractDataset):
         )
 
     def save(self, data: Any) -> None:
-        raise NotImplementedError(
-            f"{type(self).__name__} is a read-only BigQuery source; it is never saved to."
-        )
+        raise NotImplementedError(f"{type(self).__name__} is a read-only BigQuery source; it is never saved to.")
 
     def _describe(self) -> dict[str, Any]:
         return {

@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 import vizro.models as vm
 
-from pyforge.atlas.dashboard import app, data as dash_data
+from pyforge.atlas.dashboard import data as dash_data
 from pyforge.atlas.semantic import models
 from pyforge.atlas.semantic.query_helpers import bsl_query
 

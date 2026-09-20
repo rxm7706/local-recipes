@@ -163,9 +163,7 @@ class LocalFs:
             # the guard ran before the try and escaped as a raw traceback
             # (review finding).
             if not path.is_symlink() and path.exists():
-                raise FsError(
-                    f"{path} is a real file/directory, not a symlink -- refusing to replace it"
-                )
+                raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to replace it")
             path.parent.mkdir(parents=True, exist_ok=True)
             if tmp_path.is_symlink() or tmp_path.exists():
                 tmp_path.unlink()
@@ -189,9 +187,7 @@ class LocalFs:
         try:
             if not path.is_symlink():
                 if path.exists():
-                    raise FsError(
-                        f"{path} is a real file/directory, not a symlink -- refusing to remove it"
-                    )
+                    raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to remove it")
                 return False
             path.unlink()
             return True
@@ -292,9 +288,7 @@ class LocalFs:
             # this port exists to refuse, and an exception message escapes as
             # a raw traceback (`cli/main.py` catches only SystemExit /
             # KeyboardInterrupt) into the harness log. Review finding.
-            raise TypeError(
-                f"payload must be a Redacted instance, got {type(payload).__name__}"
-            )
+            raise TypeError(f"payload must be a Redacted instance, got {type(payload).__name__}")
         if not path.name:
             raise FsError(f"cannot write {path}: path has no file name")
         self.write_text_atomic(path, payload.text)
@@ -392,9 +386,7 @@ class LocalFs:
                     raise FsError(f"cannot acquire lock on {lock_path}: {exc}") from exc
                 if time.monotonic() >= deadline:
                     os.close(fd)
-                    raise FsError(
-                        f"timed out acquiring lock on {lock_path} after {timeout_s}s"
-                    )
+                    raise FsError(f"timed out acquiring lock on {lock_path} after {timeout_s}s")
                 time.sleep(_ADVISORY_LOCK_POLL_INTERVAL_S)
             else:
                 return AdvisoryLock(path=lock_path, handle=fd)

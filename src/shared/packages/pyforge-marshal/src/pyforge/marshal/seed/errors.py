@@ -87,15 +87,9 @@ class SeedError(PyforgeError, Exception):
 
     def __init__(self, message: str, *, remedy: str) -> None:
         if not isinstance(message, str) or not message.strip():
-            raise ValueError(
-                "SeedError message must be a non-empty string: it must state "
-                "what failed"
-            )
+            raise ValueError("SeedError message must be a non-empty string: it must state what failed")
         if not isinstance(remedy, str) or not remedy.strip():
-            raise ValueError(
-                "SeedError remedy must be a non-empty string: it must state "
-                "what to do next (NFR-M3)"
-            )
+            raise ValueError("SeedError remedy must be a non-empty string: it must state what to do next (NFR-M3)")
         self.message = message
         self.remedy = remedy
         super().__init__(message, remedy)

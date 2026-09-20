@@ -114,9 +114,7 @@ def test_golden_transcript_is_grammar_and_mcp_only():
 
 def test_freelance_filesystem_in_transcript_fails():
     root = _repo_root()
-    events = json.loads(
-        (_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8")
-    )
+    events = json.loads((_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8"))
     events.append({"kind": "filesystem", "path": "src/platform/Containerfile"})
     try:
         validate_transcript(events)
@@ -128,9 +126,7 @@ def test_freelance_filesystem_in_transcript_fails():
 
 def test_adhoc_http_in_transcript_fails():
     root = _repo_root()
-    events = json.loads(
-        (_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8")
-    )
+    events = json.loads((_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8"))
     events.append({"kind": "http", "method": "GET", "url": "https://example.com"})
     try:
         validate_transcript(events)
@@ -142,9 +138,7 @@ def test_adhoc_http_in_transcript_fails():
 
 def test_second_pr_gate_verdict_in_transcript_fails():
     root = _repo_root()
-    events = json.loads(
-        (_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8")
-    )
+    events = json.loads((_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8"))
     events.append({"kind": "verdict", "status": "FAIL", "exit_code": 1})
     try:
         validate_transcript(events)

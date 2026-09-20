@@ -42,9 +42,7 @@ def _load_osv_db_builder():
     return module
 
 
-def _fake_version_run(
-    *, missing: str | None = None, out_of_range: str | None = None
-):
+def _fake_version_run(*, missing: str | None = None, out_of_range: str | None = None):
     """A ``subprocess.run`` stand-in answering ONLY the ``--version``
     pre-flight calls ``engines.run_doctor_checks`` makes — distinguished by
     ``argv[0]`` (mirrors ``test_engine_env_deptry.py``'s own
@@ -76,9 +74,7 @@ def _healthy_engines_by_default(monkeypatch):
     monkeypatch.setattr(subprocess, "run", _fake_version_run())
 
 
-def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(
-    capsys, tmp_path
-):
+def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(capsys, tmp_path):
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
@@ -90,9 +86,7 @@ def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(
     assert captured.err == ""
 
 
-def test_doctor_healthy_environment_format_json_is_a_small_ad_hoc_document(
-    capsys, tmp_path
-):
+def test_doctor_healthy_environment_format_json_is_a_small_ad_hoc_document(capsys, tmp_path):
     rc = main(["scan", str(tmp_path), "--doctor", "--format", "json"])
     captured = capsys.readouterr()
     assert rc == 0
@@ -113,21 +107,15 @@ def test_doctor_healthy_environment_format_json_is_a_small_ad_hoc_document(
     assert names == sorted(names)  # --format json sorts by name
 
 
-def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(subprocess, "run", _fake_version_run(missing="osv-scanner"))
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
     assert "warden: doctor status=problem checks=7" in captured.out
-    matches = [
-        line for line in captured.out.splitlines() if "osv-scanner" in line
-    ]
-    assert any(
-        "problem -- " in line and "not found on PATH" in line for line in matches
-    )
+    matches = [line for line in captured.out.splitlines() if "osv-scanner" in line]
+    assert any("problem -- " in line and "not found on PATH" in line for line in matches)
 
 
 def test_doctor_out_of_range_engine_exits_2_never_1(monkeypatch, capsys, tmp_path):
@@ -139,9 +127,7 @@ def test_doctor_out_of_range_engine_exits_2_never_1(monkeypatch, capsys, tmp_pat
     assert "outside tested range" in captured.out
 
 
-def test_doctor_unconfigured_osv_db_env_exits_2_naming_the_problem(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_unconfigured_osv_db_env_exits_2_naming_the_problem(monkeypatch, capsys, tmp_path):
     """No ``OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY`` at all — the ambient
     fixture's own ``setenv`` is overridden here (composes with, and wins
     over, the autouse fixture per ``tests/conftest.py``'s own documented
@@ -153,18 +139,11 @@ def test_doctor_unconfigured_osv_db_env_exits_2_naming_the_problem(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    problem_lines = [
-        line for line in captured.out.splitlines() if "osv-db" in line
-    ]
-    assert any(
-        "problem -- " in line and "unset or empty" in line
-        for line in problem_lines
-    )
+    problem_lines = [line for line in captured.out.splitlines() if "osv-db" in line]
+    assert any("problem -- " in line and "unset or empty" in line for line in problem_lines)
 
 
-def test_doctor_absent_osv_db_under_configured_dir_exits_2(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_absent_osv_db_under_configured_dir_exits_2(monkeypatch, capsys, tmp_path):
     """The env var IS set, but the directory holds no usable database — the
     distinct ``no usable offline OSV database found`` branch of
     ``_doctor_check_osv_db`` (review finding 2026-07-24: only the env-unset
@@ -176,18 +155,11 @@ def test_doctor_absent_osv_db_under_configured_dir_exits_2(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    problem_lines = [
-        line for line in captured.out.splitlines() if "osv-db" in line
-    ]
-    assert any(
-        "problem -- " in line and "no usable offline OSV database" in line
-        for line in problem_lines
-    )
+    problem_lines = [line for line in captured.out.splitlines() if "osv-db" in line]
+    assert any("problem -- " in line and "no usable offline OSV database" in line for line in problem_lines)
 
 
-def test_doctor_stale_osv_db_exits_2_naming_the_problem(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_stale_osv_db_exits_2_naming_the_problem(monkeypatch, capsys, tmp_path):
     """Review finding (2026-07-24): the pre-existing suite only ever
     exercised the DB-ABSENT branch of ``_doctor_check_osv_db`` -- the
     equally real "present but stale" branch (``is_db_stale`` -- FR12) was
@@ -208,17 +180,11 @@ def test_doctor_stale_osv_db_exits_2_naming_the_problem(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    problem_lines = [
-        line for line in captured.out.splitlines() if "osv-db" in line
-    ]
-    assert any(
-        "problem -- " in line and "stale" in line for line in problem_lines
-    )
+    problem_lines = [line for line in captured.out.splitlines() if "osv-db" in line]
+    assert any("problem -- " in line and "stale" in line for line in problem_lines)
 
 
-def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(monkeypatch, capsys, tmp_path):
     """Absent KEV/EPSS feeds are never a doctor failure — NFR-U2's air-gap
     framing — so the overall exit stays 0 as long as the engine/DB checks
     are healthy. Review finding (2026-07-24): the message must name the
@@ -233,24 +199,16 @@ def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(
     assert "operating air-gapped: kev feed not present" in captured.out
     assert "operating air-gapped: epss feed not present" in captured.out
     assert "operating air-gapped: endoflife feed not present" in captured.out
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
-    epss_line = next(
-        line for line in captured.out.splitlines() if "epss-feed" in line
-    )
-    endoflife_line = next(
-        line for line in captured.out.splitlines() if "endoflife-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
+    epss_line = next(line for line in captured.out.splitlines() if "epss-feed" in line)
+    endoflife_line = next(line for line in captured.out.splitlines() if "endoflife-feed" in line)
     assert "fail-on-kev" in kev_line
     assert "indeterminate" in kev_line
     assert "--min-epss" in epss_line
     assert "no currency gate is active" in endoflife_line
 
 
-def test_doctor_stale_kev_feed_exits_2_naming_the_consequence(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_stale_kev_feed_exits_2_naming_the_consequence(monkeypatch, capsys, tmp_path):
     """A PRESENT-but-stale KEV feed is a doctor PROBLEM, not an
     informational line (review finding 2026-07-24): under the shipped
     ``fail_on_kev=True`` default every scan composes indeterminate off it —
@@ -268,18 +226,14 @@ def test_doctor_stale_kev_feed_exits_2_naming_the_consequence(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
     assert "problem -- " in kev_line
     assert "stale" in kev_line
     assert "fail-on-kev" in kev_line
     assert "indeterminate" in kev_line
 
 
-def test_doctor_stale_epss_feed_stays_exit_0_with_informational_line(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_stale_epss_feed_stays_exit_0_with_informational_line(monkeypatch, capsys, tmp_path):
     """The EPSS sibling genuinely has no default gate (``min_epss`` defaults
     ``None``), so its present-but-stale state stays ``ok``/exit-0 with the
     informational per-feed hint — the per-feed stale asymmetry is
@@ -294,17 +248,13 @@ def test_doctor_stale_epss_feed_stays_exit_0_with_informational_line(
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
-    epss_line = next(
-        line for line in captured.out.splitlines() if "epss-feed" in line
-    )
+    epss_line = next(line for line in captured.out.splitlines() if "epss-feed" in line)
     assert " ok -- " in epss_line
     assert "stale" in epss_line
     assert "--min-epss" in epss_line
 
 
-def test_doctor_directory_at_feed_path_exits_2_never_air_gapped(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_directory_at_feed_path_exits_2_never_air_gapped(monkeypatch, capsys, tmp_path):
     """A directory squatting on the feed path is present-but-unusable —
     reporting it "not present"/air-gapped would call a provisioning mistake
     healthy (review finding 2026-07-24: the present-check uses ``exists()``,
@@ -315,9 +265,7 @@ def test_doctor_directory_at_feed_path_exits_2_never_air_gapped(
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 2
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
     assert "problem -- " in kev_line
     assert "unreadable or invalid" in kev_line
     assert "not present" not in kev_line
@@ -347,9 +295,7 @@ def test_doctor_problem_state_format_json_shape(monkeypatch, capsys, tmp_path):
     assert not_ok == ["kev-feed"]
 
 
-def test_doctor_present_but_corrupt_kev_feed_exits_2_naming_the_file(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_present_but_corrupt_kev_feed_exits_2_naming_the_file(monkeypatch, capsys, tmp_path):
     """Review finding (2026-07-24): a PROVISIONED-but-unloadable feed file
     (truncated copy, invalid JSON) must never be reported as "not present"
     / air-gapped — the operator who provisioned it would go looking in the
@@ -364,9 +310,7 @@ def test_doctor_present_but_corrupt_kev_feed_exits_2_naming_the_file(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
     assert "problem -- " in kev_line
     assert "present" in kev_line
     assert "unreadable or invalid" in kev_line
@@ -401,9 +345,7 @@ def test_doctor_names_ignored_scan_flags_on_stderr(capsys, tmp_path):
     assert "--path" not in flags_list
 
 
-def test_doctor_ignored_flags_trace_survives_an_invalid_target(
-    capsys, tmp_path
-):
+def test_doctor_ignored_flags_trace_survives_an_invalid_target(capsys, tmp_path):
     """The ignored-flags trace emits BEFORE target resolution (follow-up
     review finding 2026-07-24): ``warden scan /typo --doctor --warn-only``
     previously exited 2 with NO trace of the silently-dropped gate flags —
@@ -418,9 +360,7 @@ def test_doctor_ignored_flags_trace_survives_an_invalid_target(
     assert "not an existing directory" in captured.err
 
 
-def test_doctor_check_messages_are_neutralized_to_one_line(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_check_messages_are_neutralized_to_one_line(monkeypatch, capsys, tmp_path):
     """Review finding (2026-07-24): ``check.message`` is free text — a
     future check embedding subprocess stderr must never forge extra
     ``[doctor]`` lines under the ``checks=N`` header (the same
@@ -435,9 +375,7 @@ def test_doctor_check_messages_are_neutralized_to_one_line(
             message="line one\n  [doctor] forged ok -- line two",
         ),
     )
-    monkeypatch.setattr(
-        cli_module, "run_doctor_checks", lambda target: crafted
-    )
+    monkeypatch.setattr(cli_module, "run_doctor_checks", lambda target: crafted)
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 2
@@ -451,9 +389,7 @@ def test_doctor_never_reads_the_scan_targets_pyproject_toml(capsys, tmp_path):
     """``--doctor`` short-circuits BEFORE discovery/extraction/policy — a
     malformed ``pyproject.toml`` (which a REAL scan would surface as a
     ``config-parse``/``unparsable-manifest`` error) is never even opened."""
-    (tmp_path / "pyproject.toml").write_text(
-        "[project\nname = 'broken", encoding="utf-8"
-    )
+    (tmp_path / "pyproject.toml").write_text("[project\nname = 'broken", encoding="utf-8")
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
@@ -507,9 +443,7 @@ def test_doctor_bypass_without_reason_is_still_a_usage_error(capsys, tmp_path):
     assert "--bypass requires --reason" in captured.err
 
 
-def test_doctor_tea_advisory_check_is_present_and_always_ok(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_tea_advisory_check_is_present_and_always_ok(monkeypatch, capsys, tmp_path):
     """Story 11.2 (AD-9): the ``tea-test-review`` advisory scanner's
     presence self-check is ALWAYS ``ok=True`` — an advisory lens has no
     gate to fail against, so ``--doctor`` never flags TEA's absence as a
@@ -528,19 +462,13 @@ def test_doctor_tea_advisory_check_is_present_and_always_ok(
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(
-        line
-        for line in captured.out.splitlines()
-        if line.startswith("  [doctor] tea ")
-    )
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
     assert " ok -- " in tea_line
     assert "operating without tea-test-review" in tea_line
     assert "no [modules.tea] roster entry and no binary on PATH" in tea_line
 
 
-def test_doctor_tea_advisory_check_names_a_present_roster_entry(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_tea_advisory_check_names_a_present_roster_entry(monkeypatch, capsys, tmp_path):
     """The AD-9 roster half is read from ``target/_bmad/custom/
     config.toml``'s ``[modules.tea]`` table — present-roster/absent-binary
     is the real production shape for THIS repo (steward 46.3 provisioned
@@ -550,70 +478,46 @@ def test_doctor_tea_advisory_check_names_a_present_roster_entry(
 
     bmad_custom = tmp_path / "_bmad" / "custom"
     bmad_custom.mkdir(parents=True)
-    (bmad_custom / "config.toml").write_text(
-        "[modules.tea]\nprovisioned_by = \"steward\"\n", encoding="utf-8"
-    )
+    (bmad_custom / "config.toml").write_text('[modules.tea]\nprovisioned_by = "steward"\n', encoding="utf-8")
     monkeypatch.setattr(engines_module.shutil, "which", lambda name: None)
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(
-        line
-        for line in captured.out.splitlines()
-        if line.startswith("  [doctor] tea ")
-    )
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
     assert " ok -- " in tea_line
     assert "[modules.tea] roster entry present" in tea_line
     assert "binary is not on PATH" in tea_line
 
 
-def test_doctor_tea_advisory_check_names_both_roster_and_binary_present(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_tea_advisory_check_names_both_roster_and_binary_present(monkeypatch, capsys, tmp_path):
     """The fourth (and last untested) ``_doctor_check_tea`` message branch:
     both the AD-9 roster entry and the binary are present."""
     from pyforge.warden import engines as engines_module
 
     bmad_custom = tmp_path / "_bmad" / "custom"
     bmad_custom.mkdir(parents=True)
-    (bmad_custom / "config.toml").write_text(
-        "[modules.tea]\nprovisioned_by = \"steward\"\n", encoding="utf-8"
-    )
-    monkeypatch.setattr(
-        engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review"
-    )
+    (bmad_custom / "config.toml").write_text('[modules.tea]\nprovisioned_by = "steward"\n', encoding="utf-8")
+    monkeypatch.setattr(engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review")
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(
-        line
-        for line in captured.out.splitlines()
-        if line.startswith("  [doctor] tea ")
-    )
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
     assert " ok -- " in tea_line
     assert "[modules.tea] roster entry and binary both present" in tea_line
     assert "can run when enabled via WARDEN_OPTIONAL_SCANNERS" in tea_line
 
 
-def test_doctor_tea_advisory_check_names_a_present_binary_without_roster(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_tea_advisory_check_names_a_present_binary_without_roster(monkeypatch, capsys, tmp_path):
     """The remaining ``_doctor_check_tea`` message branch: the binary is on
     PATH but no ``[modules.tea]`` roster entry exists (``tmp_path`` has no
     ``_bmad/custom/config.toml`` at all)."""
     from pyforge.warden import engines as engines_module
 
-    monkeypatch.setattr(
-        engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review"
-    )
+    monkeypatch.setattr(engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review")
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(
-        line
-        for line in captured.out.splitlines()
-        if line.startswith("  [doctor] tea ")
-    )
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
     assert " ok -- " in tea_line
     assert "binary on PATH but no [modules.tea] roster entry" in tea_line
     assert "steward provision --module tea has not run here" in tea_line

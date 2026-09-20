@@ -43,9 +43,7 @@ def station_token_from_dist_name(dist_name: str) -> str:
     return name
 
 
-def primary_console_script(
-    dist_name: str, scripts: Mapping[str, str]
-) -> str | None:
+def primary_console_script(dist_name: str, scripts: Mapping[str, str]) -> str | None:
     """Pick the station console script, never a sibling ``*-mcp`` extra."""
     token = station_token_from_dist_name(dist_name)
     if token in scripts:
@@ -90,11 +88,7 @@ def script_map_from_installed() -> dict[str, str]:
         name = (dist.metadata["Name"] or "").lower()
         if not name.startswith("pyforge-") or name in SKIP_DISTRIBUTIONS:
             continue
-        scripts = {
-            ep.name: ep.value
-            for ep in dist.entry_points
-            if ep.group == "console_scripts"
-        }
+        scripts = {ep.name: ep.value for ep in dist.entry_points if ep.group == "console_scripts"}
         primary = primary_console_script(name, scripts)
         if primary is None:
             continue
@@ -132,15 +126,10 @@ def dispatch_argv(
     mapping = resolve_script_map(script_map, packages_root=packages_root)
     if len(argv) < 2 or argv[1] in {"-h", "--help"}:
         known = ", ".join(sorted(mapping)) or "(none installed)"
-        raise DispatchError(
-            f"usage: pyforge <station> <noun> <verb> [args...]\n"
-            f"stations: {known}"
-        )
+        raise DispatchError(f"usage: pyforge <station> <noun> <verb> [args...]\nstations: {known}")
     station = argv[1]
     if station.startswith("-"):
-        raise DispatchError(
-            f"unknown option {station!r}; usage: pyforge <station> <noun> <verb>"
-        )
+        raise DispatchError(f"unknown option {station!r}; usage: pyforge <station> <noun> <verb>")
     primary = mapping.get(station)
     if primary is None:
         # Installed metadata can miss a checkout-only station; try the
@@ -150,11 +139,7 @@ def dispatch_argv(
         except PackageNotFoundError:
             dist = None
         if dist is not None:
-            scripts = {
-                ep.name: ep.value
-                for ep in dist.entry_points
-                if ep.group == "console_scripts"
-            }
+            scripts = {ep.name: ep.value for ep in dist.entry_points if ep.group == "console_scripts"}
             primary = primary_console_script(f"pyforge-{station}", scripts)
         if primary is None:
             known = ", ".join(sorted(mapping)) or "(none installed)"
@@ -174,9 +159,7 @@ def main(
     runner = process if process is not None else PosixProcess()
     workdir = cwd if cwd is not None else Path.cwd()
     try:
-        child = dispatch_argv(
-            args, script_map=script_map, packages_root=packages_root
-        )
+        child = dispatch_argv(args, script_map=script_map, packages_root=packages_root)
     except DispatchError as exc:
         print(str(exc), file=sys.stderr)
         return EXIT_USAGE

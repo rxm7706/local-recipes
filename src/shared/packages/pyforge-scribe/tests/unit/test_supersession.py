@@ -65,9 +65,7 @@ def test_superseded_record_stays_present_and_marked_ended(tmp_path: Path, memory
     assert new.path.stem == "plan-y"
 
 
-def test_query_by_citation_resolves_superseded_record_distinguishing_current(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_query_by_citation_resolves_superseded_record_distinguishing_current(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "project", "Original plan.", slug="plan-x")
     capture(memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x")
 
@@ -135,9 +133,7 @@ def test_recompile_after_supersession_is_still_idempotent(tmp_path: Path, memory
     assert first_bytes == second_bytes
 
 
-def test_chained_supersession_each_hop_has_its_own_distinct_pointer(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_chained_supersession_each_hop_has_its_own_distinct_pointer(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "project", "Plan A.", slug="plan-a")
     capture(memory_root, "project", "Plan B.", slug="plan-b", supersedes="project/plan-a")
     capture(memory_root, "project", "Plan C.", slug="plan-c", supersedes="project/plan-b")

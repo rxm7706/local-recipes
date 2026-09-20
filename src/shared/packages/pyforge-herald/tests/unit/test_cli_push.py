@@ -35,9 +35,7 @@ def test_deck_push_missing_slug_is_a_usage_error():
     assert cli.main(["deck", "push"]) == 2
 
 
-def test_deck_push_success_prints_the_pushed_and_skipped_counts_and_returns_0(
-    monkeypatch, capsys, tmp_path: Path
-):
+def test_deck_push_success_prints_the_pushed_and_skipped_counts_and_returns_0(monkeypatch, capsys, tmp_path: Path):
     seen = {}
 
     def _fake_push(transport, *, slug, repo_root, prove=False):
@@ -49,9 +47,7 @@ def test_deck_push_success_prints_the_pushed_and_skipped_counts_and_returns_0(
 
     monkeypatch.setattr(deck_pipeline, "push_exports", _fake_push)
 
-    exit_code = cli.main(
-        ["deck", "push", "pyforge-warden", "--repo-root", str(tmp_path)]
-    )
+    exit_code = cli.main(["deck", "push", "pyforge-warden", "--repo-root", str(tmp_path)])
 
     assert exit_code == 0
     assert seen["slug"] == "pyforge-warden"
@@ -91,9 +87,7 @@ def test_deck_push_default_repo_root_is_cwd(monkeypatch, tmp_path):
     assert seen["repo_root"] == tmp_path
 
 
-def test_deck_push_conflict_error_reaches_dispatch_and_returns_its_exit_code(
-    monkeypatch, capsys
-):
+def test_deck_push_conflict_error_reaches_dispatch_and_returns_its_exit_code(monkeypatch, capsys):
     def _fake_push(transport, *, slug, repo_root, prove=False):
         raise ExportConflictError("conflict on a.html")
 
@@ -179,9 +173,7 @@ def test_deck_push_no_prove_prints_no_proven_lines(monkeypatch, capsys):
     assert "proved" not in out
 
 
-def test_deck_push_read_back_mismatch_reaches_dispatch_and_returns_its_exit_code(
-    monkeypatch, capsys
-):
+def test_deck_push_read_back_mismatch_reaches_dispatch_and_returns_its_exit_code(monkeypatch, capsys):
     def _fake_push(transport, *, slug, repo_root, prove=False):
         raise ReadBackMismatchError("read-back mismatch for a.pptx")
 

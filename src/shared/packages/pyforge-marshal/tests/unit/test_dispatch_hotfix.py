@@ -8,20 +8,20 @@ import pytest
 
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import dispatch_re_preflight as re_preflight
+from pyforge.marshal.core import harness_session
+from pyforge.marshal.core.dispatch_completion import DispatchGitFacts
 from pyforge.marshal.core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
     exclude_harness_profiles_after_transient_failure,
     prune_blocked_stories_merged_on_main,
 )
-from pyforge.marshal.core.dispatch_completion import DispatchGitFacts
 from pyforge.marshal.core.dispatch_supervisor_state import (
     should_retry_stuck_land,
     should_terminalize_verify_refusal,
     supervisor_should_exit,
 )
 from pyforge.marshal.core.gate import widen_effective_surface_with_paths
-from pyforge.marshal.core import harness_session
 from pyforge.marshal.core.harness_session import (
     HarnessSessionOutcome,
     classify_session_log,
@@ -45,10 +45,7 @@ _CURSOR_USAGE_WALL_LOG = (
 
 
 def test_classify_session_log_quota_cursor_usage_wall() -> None:
-    assert (
-        classify_session_log(_CURSOR_USAGE_WALL_LOG)
-        is HarnessSessionOutcome.QUOTA_EXCEEDED
-    )
+    assert classify_session_log(_CURSOR_USAGE_WALL_LOG) is HarnessSessionOutcome.QUOTA_EXCEEDED
 
 
 def test_transient_block_on_cursor_usage_wall_with_no_git_progress() -> None:
@@ -62,9 +59,7 @@ def test_transient_block_on_cursor_usage_wall_with_no_git_progress() -> None:
 
 def test_exclude_harness_after_cursor_usage_wall() -> None:
     preference = ("cursor", "claude", "copilot")
-    result = exclude_harness_profiles_after_transient_failure(
-        preference, _CURSOR_USAGE_WALL_LOG
-    )
+    result = exclude_harness_profiles_after_transient_failure(preference, _CURSOR_USAGE_WALL_LOG)
     assert result == ("claude", "copilot")
 
 
@@ -78,10 +73,7 @@ def test_classify_session_log_reterminalizes_without_cursor_markers(
         "_QUOTA_MARKERS",
         harness_session._QUOTA_MARKERS_BY_HARNESS["claude"],
     )
-    assert (
-        classify_session_log(_CURSOR_USAGE_WALL_LOG)
-        is HarnessSessionOutcome.UNKNOWN
-    )
+    assert classify_session_log(_CURSOR_USAGE_WALL_LOG) is HarnessSessionOutcome.UNKNOWN
 
 
 def test_classify_session_log_auth() -> None:
@@ -141,17 +133,13 @@ def test_terminal_block_on_pre_existing_gate() -> None:
 
 def test_exclude_harness_after_quota_failure() -> None:
     preference = ("claude", "cursor", "copilot")
-    result = exclude_harness_profiles_after_transient_failure(
-        preference, "monthly spend limit hit"
-    )
+    result = exclude_harness_profiles_after_transient_failure(preference, "monthly spend limit hit")
     assert result == ("cursor", "copilot")
 
 
 def test_exclude_harness_keeps_preference_on_success_log() -> None:
     preference = ("claude", "cursor")
-    result = exclude_harness_profiles_after_transient_failure(
-        preference, "story complete, all tests green"
-    )
+    result = exclude_harness_profiles_after_transient_failure(preference, "story complete, all tests green")
     assert result == preference
 
 
@@ -201,9 +189,7 @@ def test_supervisor_should_exit_when_merged() -> None:
 
 def test_widen_effective_surface_with_paths() -> None:
     surface = ("src/**",)
-    widened = widen_effective_surface_with_paths(
-        surface, ("src/foo/bar.py", "docs/readme.md")
-    )
+    widened = widen_effective_surface_with_paths(surface, ("src/foo/bar.py", "docs/readme.md"))
     assert "src/foo/bar.py" in widened
     assert "docs/readme.md" in widened
     assert "src/**" in widened
@@ -261,13 +247,8 @@ def test_no_terminalize_without_git_progress() -> None:
 
 def test_spec_fingerprint_missing_when_no_spec(tmp_path: Path) -> None:
     slug = "pyforge-marshal"
-    (tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs").mkdir(
-        parents=True
-    )
-    assert (
-        re_preflight.spec_fingerprint(tmp_path, slug, "22-7-fleet")
-        == "spec:missing"
-    )
+    (tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs").mkdir(parents=True)
+    assert re_preflight.spec_fingerprint(tmp_path, slug, "22-7-fleet") == "spec:missing"
 
 
 def test_spec_fingerprint_changes_when_spec_lands(tmp_path: Path) -> None:
@@ -285,10 +266,7 @@ def test_reconcile_clears_missing_spec_block_when_spec_appears(tmp_path: Path) -
     slug = "pyforge-marshal"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    detail = (
-        "MRS-DISP-005: no tracked spec found for story '22.7' "
-        f"under {specs!r}"
-    )
+    detail = f"MRS-DISP-005: no tracked spec found for story '22.7' under {specs!r}"
     prior = re_preflight.RefusePredicate(
         gate="MRS-DISP-005",
         spec_fingerprint="spec:missing",
@@ -307,9 +285,7 @@ def test_reconcile_clears_missing_spec_block_when_spec_appears(tmp_path: Path) -
     assert results[0].decision is re_preflight.RePreflightDecision.CLEARED
 
 
-def test_reconcile_rate_limits_when_spec_becomes_unreadable(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_reconcile_rate_limits_when_spec_becomes_unreadable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Missing→unreadable must not clear MRS-DISP-005 — refuse still applies."""
     slug = "pyforge-marshal"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
@@ -342,9 +318,7 @@ def test_reconcile_rate_limits_when_spec_becomes_unreadable(
     assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
 
 
-def test_reconcile_rate_limits_unreadable_spec_predicate(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_reconcile_rate_limits_unreadable_spec_predicate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     dispatch_core.planning_specs_dir(tmp_path, slug).mkdir(parents=True)
     detail = "MRS-DISP-005: no tracked spec found for story '22.7'"

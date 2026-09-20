@@ -4284,6 +4284,44 @@ doctor Story 30.1's authored-page convention), `tests/unit/test_sprint_ledger_qu
 **And** steward never imports `pyforge.marshal` or parses its journal; with marshal unreachable `next` reads `?` with one WARN and the exit code is
 unchanged; the per-clone scope of the running fact is stated in `--help`, in the skill and in the how-to
 
+## Epic 66: Lint, types and the pre-push gate are checks, not prose (spec-pyforge-steward CAP-153..154)
+
+Minted 2026-09-20 (evening) from the Dream entry of the same name: two `TODO:` lines had stood in `AGENTS.md`'s managed
+block since 2026-09-04 because they were prose, never a Story. Verified 2026-09-20: CI lints/types only `src/platform`;
+the ten `pyforge-*` packages have no `[tool.ruff]` / `[tool.mypy]`, no task and no lane; the commit-message rule has
+no hook; and PR #1551 went red the same day on a coverage floor `pr-preflight` would have caught locally.
+**HARD boundaries:** `src/platform`'s `platform-ci` lane and its local twin are untouched; the CI lane and the
+`pr-preflight` leg call the SAME pixi tasks (no second invocation to drift); the `pre-push` hook has one documented
+opt-out env var and no silent skip; the block's two `TODO:` lines go only in the landing that makes them enforced.
+
+### Story 66.1: Lint and types gate the ten packages, locally and on the runners alike
+
+As a contributor to any `pyforge-*` package,
+I want `ruff`, `ruff format --check` and `mypy` to run over all ten packages from one pixi task, in CI and in `pr-preflight`,
+So that a lint or type regression reds the PR the same way locally and on the runners, instead of not at all.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-153 • Dream 2026-09-20 (evening)
+**Surface:** `src/shared/packages/pyforge-*/pyproject.toml` (`[tool.ruff]`, `[tool.mypy]`, py314 targets; strict for `pyforge-core`), `pixi.toml` (`[feature.guild-tasks.tasks.ruff]`, `ruff-format`, `mypy`, `target-version-check`, `lint-types`; a `pr-preflight` leg), `scripts/lint_types.py`, `scripts/target_version_check.py` (registry, like `pixi_version_registry.py`), `.github/workflows/lint-types.yml` (one lane calling the same task), `tests/scripts/test_lint_types_gate.py`.
+**Given** the ten packages have no lint or type gate anywhere while `src/platform` has one in CI and a step-for-step local twin
+**When** this story lands
+**Then** `pixi run -e pyforge-guild ruff` / `ruff-format` / `mypy` exit 0 on `main`, the CI lane and the `pr-preflight` leg invoke exactly those tasks, a planted violation in any package reds both, and `src/platform`'s lane is unchanged
+**And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green; `pyforge-station-tests` green (the `pixi.toml` change is shared surface)
+**Outcome (2026-09-20):** done, hand-driven in PR #1553 — see the tracked spec's Auto Run Result.
+
+### Story 66.2: The pre-commit set — attribution lines and un-preflighted pushes are refused by hooks
+
+As the operator who found today's coverage-floor miss and a `Co-Authored-By` rule that lives only in prose,
+I want a `.pre-commit-config.yaml` whose `commit-msg` hook refuses attribution trailers and whose `pre-push` hook runs `pr-preflight`, installed by `steward setup` / `initrepo`,
+So that the two rules are enforced where the mistake happens and the block's `TODO:` lines can finally retire.
+
+**Type:** feature • **Effort:** M • **Deps:** S-66.1 • **FR/AD:** spec-pyforge-steward CAP-154 • Dream 2026-09-20 (evening); observed evidence: PR #1551 (2026-09-20)
+**Surface:** `.pre-commit-config.yaml` (new; both hooks `language: script`), `scripts/commit_msg_hook.py`, `scripts/pre_push_preflight.sh` (one documented opt-out env var, journaled; `dispatch/*` skip, journaled), `scripts/precommit_config_check.py` (repo detector), `src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py` (the hooks step now looks for the canonical dotfile), `.gitignore` (the skip journal), `AGENTS.md` managed block (the two `TODO:` lines retire under ground 2 via `bmad-project-context`), `tests/scripts/test_lint_types_gate.py`.
+**Given** neither rule is enforced anywhere and `steward setup`'s hooks step skips for want of the config file
+**When** this story lands
+**Then** a commit carrying `Co-Authored-By:` is refused locally with the rule named; a push whose `pr-preflight` is red is refused unless the documented opt-out is set; `steward setup` on a fresh clone installs both hooks; CI reds a missing file or hook; the two managed-block `TODO:` lines are gone
+**And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Outcome (2026-09-20):** done, hand-driven in PR #1553 — see the tracked spec's Auto Run Result.
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

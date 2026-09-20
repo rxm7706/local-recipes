@@ -222,9 +222,7 @@ def _stub_run_discovery(monkeypatch, *, run_dir_map: dict[str, Path | None]) -> 
         return f"harness-{run_id}" if run_dir is not None else None
 
     monkeypatch.setattr(spin_module, "_latest_run_dir", _latest_run_dir)
-    monkeypatch.setattr(
-        spin_module, "_resolve_harness_run_id_for_resume", _resolve_harness_run_id_for_resume
-    )
+    monkeypatch.setattr(spin_module, "_resolve_harness_run_id_for_resume", _resolve_harness_run_id_for_resume)
 
 
 @pytest.fixture(autouse=True)
@@ -243,9 +241,7 @@ def test_malformed_project_slug_refuses_before_any_io(tmp_path, capsys, monkeypa
     _patch_repo(monkeypatch, tmp_path)
     vcs = _FakeVcs(worktrees_raise=True)  # would raise if ever called
 
-    exit_code = retire_module.run_retire(
-        _args(project="../evil"), vcs=vcs, fs=LocalFs(), harness=_FakeHarness()
-    )
+    exit_code = retire_module.run_retire(_args(project="../evil"), vcs=vcs, fs=LocalFs(), harness=_FakeHarness())
 
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
@@ -257,9 +253,7 @@ def test_no_loop_homes_is_a_clean_noop(tmp_path, capsys, monkeypatch):
     _patch_repo(monkeypatch, tmp_path)
     vcs = _FakeVcs(worktrees=())
 
-    exit_code = retire_module.run_retire(
-        _args(), vcs=vcs, fs=LocalFs(), harness=_FakeHarness()
-    )
+    exit_code = retire_module.run_retire(_args(), vcs=vcs, fs=LocalFs(), harness=_FakeHarness())
 
     payload = _payload(capsys)
     assert payload["data"]["proposals"] == []
@@ -273,9 +267,7 @@ def test_fleet_worktree_listing_failure_reports_warn(tmp_path, capsys, monkeypat
     _patch_repo(monkeypatch, tmp_path)
     vcs = _FakeVcs(worktrees_raise=True)
 
-    exit_code = retire_module.run_retire(
-        _args(), vcs=vcs, fs=LocalFs(), harness=_FakeHarness()
-    )
+    exit_code = retire_module.run_retire(_args(), vcs=vcs, fs=LocalFs(), harness=_FakeHarness())
 
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
@@ -293,9 +285,7 @@ def test_project_with_no_run_yet_contributes_zero_candidates(tmp_path, capsys, m
     home = tmp_path / "loop-homes" / "acme"
     vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
 
-    exit_code = retire_module.run_retire(
-        _args(), vcs=vcs, fs=LocalFs(), harness=_FakeHarness()
-    )
+    exit_code = retire_module.run_retire(_args(), vcs=vcs, fs=LocalFs(), harness=_FakeHarness())
 
     payload = _payload(capsys)
     assert payload["data"]["proposals"] == []
@@ -304,18 +294,14 @@ def test_project_with_no_run_yet_contributes_zero_candidates(tmp_path, capsys, m
     assert exit_code == 0
 
 
-def test_project_with_no_worktree_isolated_tasks_contributes_zero_candidates(
-    tmp_path, capsys, monkeypatch
-):
+def test_project_with_no_worktree_isolated_tasks_contributes_zero_candidates(tmp_path, capsys, monkeypatch):
     _patch_repo(monkeypatch, tmp_path)
     _stub_run_discovery(monkeypatch, run_dir_map={"acme": tmp_path / "runs" / "acme-run1"})
     home = tmp_path / "loop-homes" / "acme"
     vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
     harness = _FakeHarness(
         snapshots={
-            str(home): _snapshot(
-                (TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch=""),)
-            )
+            str(home): _snapshot((TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch=""),))
         }
     )
 
@@ -336,11 +322,7 @@ def test_malformed_story_key_is_skipped_not_a_failure(tmp_path, capsys, monkeypa
     harness = _FakeHarness(
         snapshots={
             str(home): _snapshot(
-                (
-                    TaskPhaseSnapshot(
-                        story_key="not-a-key", phase="done", commit_sha="sha1", branch="b1"
-                    ),
-                )
+                (TaskPhaseSnapshot(story_key="not-a-key", phase="done", commit_sha="sha1", branch="b1"),)
             )
         }
     )
@@ -354,9 +336,7 @@ def test_malformed_story_key_is_skipped_not_a_failure(tmp_path, capsys, monkeypa
     assert exit_code == 0
 
 
-def test_station_branch_named_in_a_task_snapshot_is_excluded_structurally(
-    tmp_path, capsys, monkeypatch
-):
+def test_station_branch_named_in_a_task_snapshot_is_excluded_structurally(tmp_path, capsys, monkeypatch):
     """Defense in depth (should never happen per the I/O matrix): a
     malformed harness snapshot naming a `loop/<slug>` branch as a task's own
     branch is excluded BEFORE any evidence-gathering VcsPort call runs."""
@@ -370,11 +350,7 @@ def test_station_branch_named_in_a_task_snapshot_is_excluded_structurally(
     harness = _FakeHarness(
         snapshots={
             str(home): _snapshot(
-                (
-                    TaskPhaseSnapshot(
-                        story_key="4.10", phase="done", commit_sha="sha1", branch="loop/acme"
-                    ),
-                )
+                (TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch="loop/acme"),)
             )
         }
     )
@@ -396,11 +372,7 @@ def _one_task_setup(monkeypatch, tmp_path, *, phase="done", commit_sha="sha1"):
     harness = _FakeHarness(
         snapshots={
             str(home): _snapshot(
-                (
-                    TaskPhaseSnapshot(
-                        story_key="4.10", phase=phase, commit_sha=commit_sha, branch="acme-4-10"
-                    ),
-                )
+                (TaskPhaseSnapshot(story_key="4.10", phase=phase, commit_sha=commit_sha, branch="acme-4-10"),)
             )
         }
     )
@@ -522,9 +494,7 @@ def test_dry_run_never_calls_delete_branch(tmp_path, capsys, monkeypatch):
         worktree_path_map={"acme-4-10": None},
     )
 
-    exit_code = retire_module.run_retire(
-        _args(execute=False), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = retire_module.run_retire(_args(execute=False), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = _payload(capsys)
     assert payload["data"]["executed"] is False
@@ -542,9 +512,7 @@ def test_execute_deletes_every_proposed_branch_and_journals(tmp_path, capsys, mo
         worktree_path_map={"acme-4-10": None},
     )
 
-    exit_code = retire_module.run_retire(
-        _args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = _payload(capsys)
     assert payload["data"]["executed"] is True
@@ -585,12 +553,8 @@ def test_execute_partial_failure_still_attempts_the_rest(tmp_path, capsys, monke
         snapshots={
             str(home): _snapshot(
                 (
-                    TaskPhaseSnapshot(
-                        story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"
-                    ),
-                    TaskPhaseSnapshot(
-                        story_key="4.11", phase="done", commit_sha="sha2", branch="acme-4-11"
-                    ),
+                    TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"),
+                    TaskPhaseSnapshot(story_key="4.11", phase="done", commit_sha="sha2", branch="acme-4-11"),
                 )
             )
         }
@@ -602,9 +566,7 @@ def test_execute_partial_failure_still_attempts_the_rest(tmp_path, capsys, monke
         delete_raises_for=frozenset({"acme-4-10"}),
     )
 
-    exit_code = retire_module.run_retire(
-        _args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
@@ -616,9 +578,7 @@ def test_execute_partial_failure_still_attempts_the_rest(tmp_path, capsys, monke
     assert exit_code == 0
 
 
-def test_duplicate_task_branch_in_one_run_is_evaluated_and_deleted_only_once(
-    tmp_path, capsys, monkeypatch
-):
+def test_duplicate_task_branch_in_one_run_is_evaluated_and_deleted_only_once(tmp_path, capsys, monkeypatch):
     """Code review (2026-08-06, Edge Case Hunter): two ``TaskPhaseSnapshot``
     entries naming the SAME branch (a harness anomaly, or a retried story
     reusing a worktree-isolated branch) must not gather evidence twice,
@@ -633,15 +593,11 @@ def test_duplicate_task_branch_in_one_run_is_evaluated_and_deleted_only_once(
         snapshots={
             str(home): _snapshot(
                 (
-                    TaskPhaseSnapshot(
-                        story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"
-                    ),
+                    TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"),
                     # A second task, different story_key, but the SAME
                     # branch -- must be treated as already-classified, not
                     # a fresh candidate.
-                    TaskPhaseSnapshot(
-                        story_key="4.10a", phase="done", commit_sha="sha1", branch="acme-4-10"
-                    ),
+                    TaskPhaseSnapshot(story_key="4.10a", phase="done", commit_sha="sha1", branch="acme-4-10"),
                 )
             )
         }
@@ -652,9 +608,7 @@ def test_duplicate_task_branch_in_one_run_is_evaluated_and_deleted_only_once(
         worktree_path_map={"acme-4-10": None},
     )
 
-    exit_code = retire_module.run_retire(
-        _args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = _payload(capsys)
     assert [p["branch"] for p in payload["data"]["proposals"]] == ["acme-4-10"]
@@ -690,11 +644,7 @@ def test_two_projects_one_with_proposals_one_without(tmp_path, capsys, monkeypat
     harness = _FakeHarness(
         snapshots={
             str(home_a): _snapshot(
-                (
-                    TaskPhaseSnapshot(
-                        story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"
-                    ),
-                )
+                (TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"),)
             ),
             str(home_b): _snapshot(()),
         }
@@ -730,18 +680,10 @@ def test_project_flag_scopes_to_one_slug(tmp_path, capsys, monkeypatch):
     harness = _FakeHarness(
         snapshots={
             str(home_a): _snapshot(
-                (
-                    TaskPhaseSnapshot(
-                        story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"
-                    ),
-                )
+                (TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"),)
             ),
             str(home_b): _snapshot(
-                (
-                    TaskPhaseSnapshot(
-                        story_key="9.1", phase="done", commit_sha="sha9", branch="beta-9-1"
-                    ),
-                )
+                (TaskPhaseSnapshot(story_key="9.1", phase="done", commit_sha="sha9", branch="beta-9-1"),)
             ),
         }
     )
@@ -754,9 +696,7 @@ def test_project_flag_scopes_to_one_slug(tmp_path, capsys, monkeypatch):
         worktree_path_map={"acme-4-10": None, "beta-9-1": None},
     )
 
-    exit_code = retire_module.run_retire(
-        _args(project="beta"), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = retire_module.run_retire(_args(project="beta"), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = _payload(capsys)
     assert len(payload["data"]["proposals"]) == 1

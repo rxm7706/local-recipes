@@ -22,9 +22,9 @@ import tomllib
 from pathlib import Path
 
 from pyforge.marshal.adapters.harness_bmadloop import (
-    HARNESS_VERSION_RANGE_TEXT,
     _HARNESS_MAX_MINOR_EXCLUSIVE,
     _HARNESS_MIN_VERSION,
+    HARNESS_VERSION_RANGE_TEXT,
 )
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[2]
@@ -42,10 +42,7 @@ def _load(name: str) -> dict:
 def test_package_pixi_version_matches_pyproject():
     """The conda package version (pixi.toml [package]) is the third copy of
     the version literal -- the cli/main.py copy is covered in test_cli.py."""
-    assert (
-        _load("pixi.toml")["package"]["version"]
-        == _load("pyproject.toml")["project"]["version"]
-    )
+    assert _load("pixi.toml")["package"]["version"] == _load("pyproject.toml")["project"]["version"]
 
 
 def test_package_run_dependencies_match_project_dependencies():

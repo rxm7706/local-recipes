@@ -7,11 +7,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from pyforge.atlas.duckdb_writer import ATLAS_DUCKDB_NAME
-from pyforge.atlas.duckdb_writer import LockedDuckDB
-from pyforge.atlas.duckdb_writer import connect_writer
-from pyforge.atlas.rag.store import DuckdbVssRagStore
-from pyforge.atlas.rag.store import load_vss_offline
+from pyforge.atlas.duckdb_writer import ATLAS_DUCKDB_NAME, LockedDuckDB, connect_writer
+from pyforge.atlas.rag.store import DuckdbVssRagStore, load_vss_offline
 
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
 DEFAULT_VECTOR_TABLE = "plane_vectors"
@@ -53,10 +50,7 @@ def extract_real_arrays_onto_plane(
                 [row_id, as_real],
             )
         writer.execute(f"DROP INDEX IF EXISTS {table_name}_hnsw")
-        writer.execute(
-            f"CREATE INDEX {table_name}_hnsw ON {table_name} "
-            f"USING HNSW (emb) WITH (metric = 'l2sq')"
-        )
+        writer.execute(f"CREATE INDEX {table_name}_hnsw ON {table_name} USING HNSW (emb) WITH (metric = 'l2sq')")
     except Exception:
         writer.close()
         raise

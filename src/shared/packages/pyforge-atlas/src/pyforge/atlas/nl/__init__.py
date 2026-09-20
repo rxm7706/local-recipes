@@ -13,8 +13,8 @@ from .backend import BackendConfig, resolve_backend, unconfigured_reason
 from .query import (
     STATUS_DEFERRED,
     STATUS_UNCONFIGURED,
-    build_bsl_context,
     bsl_model_names,
+    build_bsl_context,
     query_vizro_ai,
     vizro_ai_available,
 )

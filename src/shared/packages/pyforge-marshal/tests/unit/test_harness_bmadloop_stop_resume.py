@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import subprocess
 
-import pyforge.marshal.adapters.harness_bmadloop as module
 import pytest
+
+import pyforge.marshal.adapters.harness_bmadloop as module
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 
 
@@ -54,9 +55,7 @@ def test_stop_returns_false_for_a_nonzero_exit(harness, tmp_path, monkeypatch):
     assert harness.stop(tmp_path, "acme-run") is False
 
 
-def test_stop_raises_harness_error_when_the_process_could_not_be_launched(
-    harness, tmp_path, monkeypatch
-):
+def test_stop_raises_harness_error_when_the_process_could_not_be_launched(harness, tmp_path, monkeypatch):
     def _fake_run(argv, **kwargs):
         raise FileNotFoundError("no such file: bmad-loop")
 
@@ -198,9 +197,7 @@ def test_resume_raises_harness_error_when_popen_raises_oserror(harness, tmp_path
         harness.resume(tmp_path, "acme-run", log_path=tmp_path / "harness.log")
 
 
-def test_resume_raises_harness_error_for_an_embedded_null_byte_in_argv(
-    harness, tmp_path, monkeypatch
-):
+def test_resume_raises_harness_error_for_an_embedded_null_byte_in_argv(harness, tmp_path, monkeypatch):
     def _fake_popen(argv, **kwargs):
         raise ValueError("embedded null byte")
 

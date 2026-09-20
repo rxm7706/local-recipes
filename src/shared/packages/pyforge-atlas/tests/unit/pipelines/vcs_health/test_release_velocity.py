@@ -47,9 +47,10 @@ _COLS = ["pypi_name", "conda_name", "version", "release_lag_hours", "release_lag
 
 # -- happy path + ms→s boundary ---------------------------------------------
 
+
 def test_matched_version_lag_and_ms_to_seconds_boundary():
-    upload_s = _NOW - 2 * _DAY          # released 2 days ago (within 90 d → qualifies)
-    avail_s = upload_s + 6 * _HOUR      # conda-forge published 6 h later
+    upload_s = _NOW - 2 * _DAY  # released 2 days ago (within 90 d → qualifies)
+    avail_s = upload_s + 6 * _HOUR  # conda-forge published 6 h later
     pcv = _pcv([{"pypi_name": "foo", "version": "1.2.3", "upload_time_iso_8601": _iso(upload_s)}])
     repo = _repo([{"conda_name": "foo", "version": "1.2.3", "timestamp": avail_s * 1000}])  # ms
     mp = _map([{"pypi_name": "foo", "conda_name": "foo"}])
@@ -74,11 +75,12 @@ def test_seconds_magnitude_timestamp_is_not_divided():
 
 # -- MANDATORY 1: the 90-day recency guard ----------------------------------
 
+
 def test_ninety_day_guard_stale_release_does_not_qualify():
     # A version-unchanged package whose UPSTREAM release is >90 days old: the row still
     # exists (matched version) and a lag is computed, but qualifies MUST be False — the
     # rebuild-cadence artifact that produced the false "47% behind" cannot recur.
-    upload_s = _NOW - 200 * _DAY        # released 200 days ago (> 90 d)
+    upload_s = _NOW - 200 * _DAY  # released 200 days ago (> 90 d)
     avail_s = upload_s + 5 * _HOUR
     pcv = _pcv([{"pypi_name": "old", "version": "1.0", "upload_time_iso_8601": _iso(upload_s)}])
     repo = _repo([{"conda_name": "old", "version": "1.0", "timestamp": avail_s * 1000}])
@@ -100,18 +102,19 @@ def test_ninety_day_boundary_recent_release_qualifies():
 
 # -- MANDATORY 2: rebuild-inside-window invariance (MIN = first availability) ---
 
+
 def test_rebuild_inside_window_does_not_shift_lag():
     # Two builds of the SAME (conda_name, version): the first is the true first
     # availability; a later rebuild lands INSIDE the 90-day window. The lag MUST use the
     # EARLIER build (MIN timestamp), never the latest upload — otherwise a migration/ABI
     # rebuild would inflate the lag exactly as `latest_conda_upload` did.
     upload_s = _NOW - 10 * _DAY
-    first_avail = upload_s + 4 * _HOUR       # first build: 4 h after upstream
-    rebuild = upload_s + 40 * _DAY           # rebuild: 40 days later, still inside window
+    first_avail = upload_s + 4 * _HOUR  # first build: 4 h after upstream
+    rebuild = upload_s + 40 * _DAY  # rebuild: 40 days later, still inside window
     pcv = _pcv([{"pypi_name": "pkg", "version": "3.1", "upload_time_iso_8601": _iso(upload_s)}])
     repo = _repo(
         [
-            {"conda_name": "pkg", "version": "3.1", "timestamp": rebuild * 1000},       # later row first
+            {"conda_name": "pkg", "version": "3.1", "timestamp": rebuild * 1000},  # later row first
             {"conda_name": "pkg", "version": "3.1", "timestamp": first_avail * 1000},
         ]
     )
@@ -122,6 +125,7 @@ def test_rebuild_inside_window_does_not_shift_lag():
 
 
 # -- matched-version-only ----------------------------------------------------
+
 
 def test_unmatched_version_produces_no_row():
     # conda side carries a DIFFERENT version than the current PyPI release → no match,
@@ -156,6 +160,7 @@ def test_pypi_conda_name_differ_via_mapping():
 
 # -- AD-13 safety: malformed / missing / empty ------------------------------
 
+
 def test_malformed_upload_time_yields_nan_lag_and_false_qualifies():
     avail_s = _NOW - _DAY
     pcv = _pcv([{"pypi_name": "foo", "version": "1.0", "upload_time_iso_8601": "not-a-date"}])
@@ -182,7 +187,7 @@ def test_negative_lag_on_clock_skew_is_reported_not_dropped():
     # conda build predating the PyPI upload (clock skew / backport): a negative lag is a
     # data-quality SIGNAL, reported raw — the row is not dropped and does not crash.
     upload_s = _NOW - _DAY
-    avail_s = upload_s - 2 * _HOUR      # conda "available" 2 h BEFORE upstream upload
+    avail_s = upload_s - 2 * _HOUR  # conda "available" 2 h BEFORE upstream upload
     pcv = _pcv([{"pypi_name": "foo", "version": "1.0", "upload_time_iso_8601": _iso(upload_s)}])
     repo = _repo([{"conda_name": "foo", "version": "1.0", "timestamp": avail_s * 1000}])
     out = derive_release_velocity(pcv, repo, _map([{"pypi_name": "foo", "conda_name": "foo"}]), now=_NOW)
@@ -239,6 +244,7 @@ def test_duplicate_name_version_rows_deduped():
 
 
 # -- AD-14 parity boundary (new-signal, never parity-gated) ------------------
+
 
 def test_output_dataset_is_in_the_frozen_new_signal_exclusion_set():
     from pyforge.atlas.parity import EXCLUDED_NEW_SIGNAL_DATASETS

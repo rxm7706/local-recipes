@@ -55,9 +55,7 @@ def test_dispatch_maps_every_conflict_error_to_3_and_names_it_on_stderr(capsys, 
         UnconditionalWriteError("no etag"),
     ],
 )
-def test_dispatch_maps_every_transport_error_to_4_and_names_the_concrete_subclass(
-    capsys, error
-):
+def test_dispatch_maps_every_transport_error_to_4_and_names_the_concrete_subclass(capsys, error):
     def operation() -> None:
         raise error
 

@@ -53,9 +53,7 @@ def _parse(path: Path) -> ast.Module:
     return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
 
-def _resolve_import_from(
-    node: ast.ImportFrom, package_parts: tuple[str, ...]
-) -> str | None:
+def _resolve_import_from(node: ast.ImportFrom, package_parts: tuple[str, ...]) -> str | None:
     if not node.level:
         return node.module or ""
     if node.level - 1 >= len(package_parts):
@@ -67,9 +65,7 @@ def _resolve_import_from(
 
 
 def _is_os_shell_out_name(name: str) -> bool:
-    return name in ("system", "popen") or name.startswith(
-        ("spawn", "exec", "posix_spawn")
-    )
+    return name in ("system", "popen") or name.startswith(("spawn", "exec", "posix_spawn"))
 
 
 def _subprocess_or_mcp_violations(tree: ast.Module) -> list[int]:
@@ -91,17 +87,11 @@ def _subprocess_or_mcp_violations(tree: ast.Module) -> list[int]:
             module = node.module or ""
             if module == "subprocess" or module.startswith("subprocess."):
                 violations.append(node.lineno)
-            elif module == "os" and any(
-                _is_os_shell_out_name(alias.name) for alias in node.names
-            ):
+            elif module == "os" and any(_is_os_shell_out_name(alias.name) for alias in node.names):
                 violations.append(node.lineno)
             elif node.level == 0 and (module == "mcp" or module.startswith("mcp.")):
                 violations.append(node.lineno)
-        elif (
-            isinstance(node, ast.Attribute)
-            and isinstance(node.value, ast.Name)
-            and node.value.id == "subprocess"
-        ):
+        elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "subprocess":
             violations.append(node.lineno)
         elif (
             isinstance(node, ast.Attribute)
@@ -128,8 +118,7 @@ def _imported_modules(tree: ast.Module) -> set[str]:
 
 def test_prescribe_module_exists():
     assert PRESCRIBE_SOURCE_PATH.is_file(), (
-        f"expected {PRESCRIBE_SOURCE_PATH} -- the Story 3.1 "
-        "partition/rank/root-cause pipeline module is missing"
+        f"expected {PRESCRIBE_SOURCE_PATH} -- the Story 3.1 partition/rank/root-cause pipeline module is missing"
     )
 
 
@@ -187,11 +176,7 @@ def test_guard_fires_on_synthetic_mcp_import():
 
 
 def test_guard_does_not_fire_on_benign_use():
-    benign = (
-        "import os\n"
-        "os.getcwd()\n"
-        "from dataclasses import dataclass\n"
-    )
+    benign = "import os\nos.getcwd()\nfrom dataclasses import dataclass\n"
     assert _subprocess_or_mcp_violations(ast.parse(benign)) == []
 
 
@@ -203,9 +188,7 @@ def test_import_surface_guard_fires_on_synthetic_unsanctioned_imports():
         "from pathlib import Path\n",
     ):
         unsanctioned = _imported_modules(ast.parse(synthetic))
-        assert unsanctioned - _SANCTIONED_IMPORTS, (
-            f"allowlist guard failed to flag: {synthetic!r}"
-        )
+        assert unsanctioned - _SANCTIONED_IMPORTS, f"allowlist guard failed to flag: {synthetic!r}"
 
 
 def test_import_surface_guard_passes_the_sanctioned_surface():

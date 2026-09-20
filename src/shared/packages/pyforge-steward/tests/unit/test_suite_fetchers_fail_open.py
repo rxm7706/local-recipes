@@ -14,6 +14,7 @@ import urllib.error
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward import suite
 from pyforge.steward.suite import (
     _bmad_config_keys,
@@ -135,17 +136,19 @@ def test_fetch_github_latest_strips_the_leading_v_from_a_release_tag(route) -> N
 
 
 def test_fetch_github_latest_falls_back_to_the_newest_parseable_tag_on_404(route) -> None:
-    route({
-        "/releases/latest": _http_error("u", 404),
-        "/tags": [
-            {"name": "v1.2.3"},
-            "not-a-mapping",
-            {"nope": 1},
-            {"name": "nightly"},
-            {"name": "1.10.0"},
-            {"name": "v1.9.9"},
-        ],
-    })
+    route(
+        {
+            "/releases/latest": _http_error("u", 404),
+            "/tags": [
+                {"name": "v1.2.3"},
+                "not-a-mapping",
+                {"nope": 1},
+                {"name": "nightly"},
+                {"name": "1.10.0"},
+                {"name": "v1.9.9"},
+            ],
+        }
+    )
     assert fetch_github_latest("owner/repo") == "1.10.0"
 
 
@@ -165,7 +168,8 @@ def test_fetch_github_latest_non_404_misses_do_not_consult_tags(route, release: 
 
 
 @pytest.mark.parametrize(
-    "tags", [{"not": "a list"}, [{"name": "main"}, {"name": "rc"}], []],
+    "tags",
+    [{"not": "a list"}, [{"name": "main"}, {"name": "rc"}], []],
     ids=["non-list", "no-parseable", "empty"],
 )
 def test_fetch_github_latest_is_none_without_a_parseable_tag(route, tags: object) -> None:

@@ -170,10 +170,9 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
             raise ValueError(f"ttl_seconds must be an integer number of seconds; got {value!r}")
         try:
             ttl = int(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             raise ValueError(
-                f"ttl_seconds must be an integer number of seconds (or int-coercible "
-                f"string); got {value!r}"
+                f"ttl_seconds must be an integer number of seconds (or int-coercible string); got {value!r}"
             ) from None
         if ttl < 0:
             raise ValueError(f"ttl_seconds must be >= 0 (0 = everything stale); got {ttl}")

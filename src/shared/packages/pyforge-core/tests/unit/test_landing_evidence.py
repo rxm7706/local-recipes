@@ -8,11 +8,12 @@ either package importing ``pyforge.marshal``.
 from __future__ import annotations
 
 import pytest
+
 from pyforge.core.landing_evidence import (
-    BranchDerivedShape,
-    LandingEvidenceShape,
     PRE_CONVENTION_RECOVERY_COMMITS,
     RECOVERY_LANDING_CONVENTION,
+    BranchDerivedShape,
+    LandingEvidenceShape,
     StoryKeyRef,
     classify_branch_name,
     classify_commit,
@@ -59,20 +60,20 @@ def test_conformance_matrix(fixture: dict[str, object]) -> None:
 
 
 def test_three_recovery_commits_are_allowlisted() -> None:
-    assert PRE_CONVENTION_RECOVERY_COMMITS == frozenset({
-        "accc097e6a",
-        "5290c9bcd2",
-        "03d8fc8c86",
-    })
+    assert PRE_CONVENTION_RECOVERY_COMMITS == frozenset(
+        {
+            "accc097e6a",
+            "5290c9bcd2",
+            "03d8fc8c86",
+        }
+    )
     assert parse_recovery_commit_sha("accc097e6a") == StoryKeyRef(8, 2)
     assert parse_recovery_commit_sha("5290c9bcd2") == StoryKeyRef(10, 1)
     assert parse_recovery_commit_sha("03d8fc8c86") == StoryKeyRef(3, 7)
 
 
 def test_github_pattern_rejects_cross_project_collision() -> None:
-    subject = (
-        "Merge pull request #274 from rxm7706/marshal/4-2-teardown-reachability-spec-recovery"
-    )
+    subject = "Merge pull request #274 from rxm7706/marshal/4-2-teardown-reachability-spec-recovery"
     assert parse_github_pr_merge_subject(subject, "pyforge-marshal") == StoryKeyRef(4, 2)
     assert parse_github_pr_merge_subject(subject, "pyforge-mason") is None
 
@@ -112,18 +113,14 @@ def test_templated_merge_subject_rejects_a_foreign_slug() -> None:
     23.1..23.6 once herald renders under its own scoped template."""
     template = "Merge {slug}/{key} into main"
     subject = "Merge pyforge-atlas/23-1 into main"
-    match = classify_merge_subject(
-        subject, template=template, project_slug="pyforge-herald"
-    )
+    match = classify_merge_subject(subject, template=template, project_slug="pyforge-herald")
     assert match is None
 
 
 def test_templated_merge_subject_slug_scoped_still_classifies_for_its_own_station() -> None:
     template = "Merge {slug}/{key} into main"
     subject = "Merge pyforge-herald/23-1 into main"
-    match = classify_merge_subject(
-        subject, template=template, project_slug="pyforge-herald"
-    )
+    match = classify_merge_subject(subject, template=template, project_slug="pyforge-herald")
     assert match is not None
     assert match.key == StoryKeyRef(23, 1)
     assert match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
@@ -134,9 +131,7 @@ def test_story_direct_commit_refuses_without_a_corroborating_branch() -> None:
     marshal's own 48.2/48.4 -- ``branch`` defaults to ``None``, which
     refuses by default when a caller has no branch data at all."""
     subject = "Story 48.4: R-20 secrets profile for platform deploy."
-    match = classify_merge_subject(
-        subject, template=_TEMPLATE, project_slug="pyforge-marshal"
-    )
+    match = classify_merge_subject(subject, template=_TEMPLATE, project_slug="pyforge-marshal")
     assert match is None
 
 
@@ -172,9 +167,7 @@ def test_story_direct_commit_classifies_with_a_corroborating_branch() -> None:
 def test_dispatch_branch_merge_subject_classifies_for_its_own_station() -> None:
     subject = "Merge pull request #900 from rxm7706/dispatch/pyforge-marshal/22.9"
     assert parse_github_pr_merge_subject(subject, "pyforge-marshal") == StoryKeyRef(22, 9)
-    match = classify_merge_subject(
-        subject, template=_TEMPLATE, project_slug="pyforge-marshal"
-    )
+    match = classify_merge_subject(subject, template=_TEMPLATE, project_slug="pyforge-marshal")
     assert match is not None
     assert match.key == StoryKeyRef(22, 9)
     assert match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
@@ -190,24 +183,16 @@ def test_dispatch_branch_merge_subject_never_classifies_cross_station() -> None:
 
 
 def test_dispatch_branch_name_classifies_for_its_own_station() -> None:
-    assert parse_station_branch_name(
-        "dispatch/pyforge-marshal/22.9", "pyforge-marshal"
-    ) == StoryKeyRef(22, 9)
-    match = classify_branch_name(
-        "dispatch/pyforge-marshal/22.9", project_slug="pyforge-marshal"
-    )
+    assert parse_station_branch_name("dispatch/pyforge-marshal/22.9", "pyforge-marshal") == StoryKeyRef(22, 9)
+    match = classify_branch_name("dispatch/pyforge-marshal/22.9", project_slug="pyforge-marshal")
     assert match is not None
     assert match.key == StoryKeyRef(22, 9)
     assert match.shape is LandingEvidenceShape.STATION_BRANCH_NAME
 
 
 def test_dispatch_branch_name_never_classifies_cross_station() -> None:
-    assert parse_station_branch_name(
-        "dispatch/pyforge-mason/22.9", "pyforge-marshal"
-    ) is None
-    assert classify_branch_name(
-        "dispatch/pyforge-mason/22.9", project_slug="pyforge-marshal"
-    ) is None
+    assert parse_station_branch_name("dispatch/pyforge-mason/22.9", "pyforge-marshal") is None
+    assert classify_branch_name("dispatch/pyforge-mason/22.9", project_slug="pyforge-marshal") is None
 
 
 def test_legacy_station_branch_shapes_still_classify() -> None:
@@ -241,9 +226,7 @@ def test_station_branch_merge_subject_reports_station_branch_shape() -> None:
     shape as a real landing. Exposed as ``STATION_BRANCH`` so a caller can
     require independent corroboration for it."""
     subject = "Merge pull request #1477 from rxm7706/doctor/27-4-mint"
-    match = classify_merge_subject(
-        subject, template=_TEMPLATE, project_slug="pyforge-doctor"
-    )
+    match = classify_merge_subject(subject, template=_TEMPLATE, project_slug="pyforge-doctor")
     assert match is not None
     assert match.key == StoryKeyRef(27, 4)
     assert match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
@@ -254,8 +237,6 @@ def test_branch_shape_is_none_for_non_github_pr_shapes() -> None:
     """``branch_shape`` is populated only for ``GITHUB_PR_MERGE_SUBJECT`` --
     every other shape leaves it ``None``, including when no branch is
     involved at all."""
-    match = classify_merge_subject(
-        "Merge 4-2-teardown into main", template=_TEMPLATE, project_slug="pyforge-marshal"
-    )
+    match = classify_merge_subject("Merge 4-2-teardown into main", template=_TEMPLATE, project_slug="pyforge-marshal")
     assert match is not None
     assert match.branch_shape is None

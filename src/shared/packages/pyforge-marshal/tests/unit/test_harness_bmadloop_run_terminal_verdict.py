@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness
 
 

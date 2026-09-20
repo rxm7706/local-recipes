@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from pyforge.steward.cli import DUTIES, build_parser, resolve_duty
 from pyforge.steward.interfaces import DutyResult
 from pyforge.steward.restore import RestoreDuty

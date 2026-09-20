@@ -79,10 +79,9 @@ def _no_real_home(monkeypatch, tmp_path):
     """
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "fake-home-never-real")
 
+
 # ── Story 14.7 fixture shapes (mirror the live repo layout) ────────────────
-_PACKAGED_SOURCE_REL = (
-    ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
-)
+_PACKAGED_SOURCE_REL = ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
 _SKF_CONFIG_REL = "_bmad/skf/config.yaml"
 # Hand-set keys the 6.12 installer regenerated away (customization-inventory C7).
 _SKF_CONFIG_TEXT = (
@@ -131,9 +130,7 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _manifest_text(
-    modules: Sequence[str] | None, *, custom: Sequence[str] = ("skf",)
-) -> str:
+def _manifest_text(modules: Sequence[str] | None, *, custom: Sequence[str] = ("skf",)) -> str:
     """Installed manifest in the real shape: ``modules:`` is a list of mappings.
 
     ``None`` omits the key entirely; ``()`` writes an empty list. Names in
@@ -175,9 +172,7 @@ def _write_repo(
 
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
-    (manifest_dir / "manifest.yaml").write_text(
-        _manifest_text(modules, custom=custom), encoding="utf-8"
-    )
+    (manifest_dir / "manifest.yaml").write_text(_manifest_text(modules, custom=custom), encoding="utf-8")
     (manifest_dir / "skill-manifest.csv").write_text(
         'canonicalId,name\n"bmad-dev-auto","bmad-dev-auto"\n',
         encoding="utf-8",
@@ -199,13 +194,9 @@ def _write_repo(
     custom = root / "_bmad" / "custom"
     custom.mkdir(parents=True)
     if with_team_custom:
-        (custom / "config.toml").write_text(
-            "# team custom — must survive apply\nteam = true\n", encoding="utf-8"
-        )
+        (custom / "config.toml").write_text("# team custom — must survive apply\nteam = true\n", encoding="utf-8")
     if with_legacy_custom:
-        (custom / "bmad-dev-auto.toml").write_text(
-            "# legacy — shim HALT\n", encoding="utf-8"
-        )
+        (custom / "bmad-dev-auto.toml").write_text("# legacy — shim HALT\n", encoding="utf-8")
 
     if with_custom_module:
         packaged = root / _PACKAGED_SOURCE_REL
@@ -449,9 +440,7 @@ def _custom_module_fixture(
     custom: Sequence[str] = ("skf",),
 ) -> dict[str, Path]:
     """Repo + two fakes + custom catalog; returns the paths a test asserts on."""
-    repo = _write_repo(
-        tmp_path / "repo", modules=modules, custom=custom, with_custom_module=True
-    )
+    repo = _write_repo(tmp_path / "repo", modules=modules, custom=custom, with_custom_module=True)
     core_record = tmp_path / "core-argv.json"
     own_record = tmp_path / "own-argv.json"
     core = _fake_installer_script(
@@ -804,9 +793,7 @@ def test_apply_zero_diff_exit_zero_is_a_refusal(tmp_path):
 def test_apply_non_zero_exit_without_changes_is_not_zero_diff(tmp_path):
     """A non-zero exit already fails through the exit gate — never double-reported as trap 12."""
     repo = _write_repo(tmp_path / "repo")
-    installer = _fake_installer_script(
-        tmp_path / "fake-bmad-method", no_changes=True, exit_code=2
-    )
+    installer = _fake_installer_script(tmp_path / "fake-bmad-method", no_changes=True, exit_code=2)
 
     report = apply_bmad_core_upgrade(
         repo=repo,
@@ -850,9 +837,7 @@ def test_cli_apply_zero_diff_returns_failed_and_names_trap_12(tmp_path):
     assert payload["zero_diff"] is True
     assert payload["installer_exit"] == 0
     assert payload["changed_paths"] == []
-    assert any(
-        "trap 12" in n and "review/cli-zero-diff" in n for n in payload["notes"]
-    )
+    assert any("trap 12" in n and "review/cli-zero-diff" in n for n in payload["notes"])
     assert _git(repo, "branch", "--list", "review/cli-zero-diff").stdout.strip()
 
 
@@ -879,9 +864,7 @@ def test_cli_apply_zero_diff_text_prints_refused_line(tmp_path):
     assert "zero-diff: REFUSED" in out.getvalue() + err.getvalue()
 
 
-def test_apply_passes_env_to_keyword_aware_runner_and_prepends_pixi_bin(
-    tmp_path, monkeypatch
-):
+def test_apply_passes_env_to_keyword_aware_runner_and_prepends_pixi_bin(tmp_path, monkeypatch):
     repo = _write_repo(tmp_path / "repo")
     monkeypatch.setattr(shutil, "which", lambda name, *a, **k: None)
     seen: dict[str, object] = {}
@@ -943,9 +926,7 @@ def test_resolve_installer_environment_pixi_bin_is_derived_from_repo(tmp_path, m
     assert env["PATH"].endswith(os.environ["PATH"])
     assert str(pixi_bin) in note and "bmad-method" in note and "node" in note
 
-    monkeypatch.setattr(
-        shutil, "which", lambda name, *a, **k: None if name == "node" else f"/bin/{name}"
-    )
+    monkeypatch.setattr(shutil, "which", lambda name, *a, **k: None if name == "node" else f"/bin/{name}")
     env, note = resolve_installer_environment(repo, "bmad-method")
     assert env["PATH"].startswith(f"{pixi_bin}{os.pathsep}")
     assert "(node)" in note  # only the missing name is listed
@@ -956,9 +937,7 @@ def test_resolve_installer_environment_pixi_bin_is_derived_from_repo(tmp_path, m
     assert "resolved from PATH" in note
 
 
-def test_default_installer_runner_closes_stdin_and_uses_resolved_env(
-    tmp_path, monkeypatch
-):
+def test_default_installer_runner_closes_stdin_and_uses_resolved_env(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     repo.mkdir()
     monkeypatch.setattr(shutil, "which", lambda name, *a, **k: None)
@@ -1045,9 +1024,7 @@ def test_apply_custom_module_survives_core_apply_trap_13_14_replay(tmp_path):
     assert (repo / _SKF_CONFIG_REL).read_bytes() == expected_config
     packaged = repo / _PACKAGED_SOURCE_REL
     for name in ("skf-alpha", "skf-campaign"):
-        assert _tree_digest(repo / ".claude" / "skills" / name) == _tree_digest(
-            packaged / name
-        )
+        assert _tree_digest(repo / ".claude" / "skills" / name) == _tree_digest(packaged / name)
     assert (repo / "_bmad" / "skf" / "VERSION").is_file()
 
     assert len(report.custom_modules) == 1
@@ -1071,12 +1048,8 @@ def test_apply_custom_module_survives_core_apply_trap_13_14_replay(tmp_path):
 
     # Core argv carries no --pin (catalog pin: null); both fakes saw the argv reported.
     assert "--pin" not in report.installer_cmd
-    assert json.loads(fx["core_record"].read_text(encoding="utf-8")) == list(
-        report.installer_cmd
-    )
-    assert json.loads(fx["own_record"].read_text(encoding="utf-8")) == list(
-        module.own_installer_cmd
-    )
+    assert json.loads(fx["core_record"].read_text(encoding="utf-8")) == list(report.installer_cmd)
+    assert json.loads(fx["own_record"].read_text(encoding="utf-8")) == list(module.own_installer_cmd)
     assert report.installer_exit == 0
     assert report.zero_diff is False
     assert report.custom_identical is True
@@ -1145,9 +1118,7 @@ def test_apply_custom_module_own_installer_binary_missing_is_reported(tmp_path):
     """Default custom runner: an unresolvable own installer is reported, never raised."""
     fx = _custom_module_fixture(tmp_path)
     repo = fx["repo"]
-    catalog = _write_custom_catalog(
-        tmp_path / "catalog-missing", own_installer=("nonexistent-skf-installer", "update")
-    )
+    catalog = _write_custom_catalog(tmp_path / "catalog-missing", own_installer=("nonexistent-skf-installer", "update"))
 
     report = apply_bmad_core_upgrade(
         repo=repo,
@@ -1172,9 +1143,7 @@ def test_apply_custom_module_own_installer_binary_missing_is_reported(tmp_path):
 
 def test_cli_apply_custom_module_own_installer_missing_returns_failed_json(tmp_path):
     fx = _custom_module_fixture(tmp_path)
-    catalog = _write_custom_catalog(
-        tmp_path / "catalog-missing", own_installer=("nonexistent-skf-installer", "update")
-    )
+    catalog = _write_custom_catalog(tmp_path / "catalog-missing", own_installer=("nonexistent-skf-installer", "update"))
     out = io.StringIO()
     err = io.StringIO()
     with redirect_stdout(out), redirect_stderr(err):
@@ -1381,9 +1350,7 @@ def test_apply_custom_module_core_non_zero_exit_restores_config_skips_own_instal
 
 
 def test_apply_custom_module_config_path_absent_before_apply_is_missing(tmp_path):
-    fx = _custom_module_fixture(
-        tmp_path, clobber=False, config_paths=("_bmad/skf/absent.yaml",)
-    )
+    fx = _custom_module_fixture(tmp_path, clobber=False, config_paths=("_bmad/skf/absent.yaml",))
 
     report = apply_bmad_core_upgrade(
         repo=fx["repo"],
@@ -1407,15 +1374,11 @@ def test_apply_custom_module_config_path_absent_before_apply_is_missing(tmp_path
     [(("core", "bmm"), ("skf",)), (("core", "bmm", "skf"), ())],
     ids=["not-listed", "listed-not-custom"],
 )
-def test_catalog_module_not_installed_is_unselected_and_a_preflight_mismatch(
-    tmp_path, modules, custom
-):
+def test_catalog_module_not_installed_is_unselected_and_a_preflight_mismatch(tmp_path, modules, custom):
     fx = _custom_module_fixture(tmp_path, clobber=False, modules=modules, custom=custom)
     repo = fx["repo"]
 
-    preflight = build_preflight_report(
-        repo=repo, target_version="6.11.0", catalog_directory=fx["catalog"]
-    )
+    preflight = build_preflight_report(repo=repo, target_version="6.11.0", catalog_directory=fx["catalog"])
     finding = next(f for f in preflight.custom_modules if f.name == "skf")
     assert finding.in_catalog is True
     assert finding.matched is False
@@ -1462,17 +1425,13 @@ def test_installed_custom_module_absent_from_catalog_is_a_finding_not_a_gate(tmp
     )
     assert report.custom_modules == ()
     assert report.custom_modules_ok is True
-    assert any(
-        "absent from the release catalog" in n and "trap 14" in n for n in report.notes
-    )
+    assert any("absent from the release catalog" in n and "trap 14" in n for n in report.notes)
     assert "(none in catalog)" in format_apply(report, as_json=False)
 
 
 def test_preflight_custom_module_matched_row(tmp_path):
     fx = _custom_module_fixture(tmp_path)
-    report = build_preflight_report(
-        repo=fx["repo"], target_version="6.11.0", catalog_directory=fx["catalog"]
-    )
+    report = build_preflight_report(repo=fx["repo"], target_version="6.11.0", catalog_directory=fx["catalog"])
     assert len(report.custom_modules) == 1
     finding = report.custom_modules[0]
     assert finding.name == "skf"
@@ -1527,11 +1486,7 @@ def test_load_custom_modules_tolerates_missing_key_and_normalises_pin():
     assert load_custom_modules({}) == ()
     assert load_custom_modules({"custom_modules": None}) == ()
     (module,) = load_custom_modules(
-        {
-            "custom_modules": [
-                {"name": " skf ", "own_installer": ["bmad-module-skill-forge", "update"], "pin": "  "}
-            ]
-        }
+        {"custom_modules": [{"name": " skf ", "own_installer": ["bmad-module-skill-forge", "update"], "pin": "  "}]}
     )
     assert module.name == "skf"
     assert module.pin is None
@@ -1596,14 +1551,10 @@ def test_cli_apply_custom_module_ok_json(tmp_path, capsys):
     assert module["own_installer_exit"] == 0
     assert payload["installer_cmd"] == json.loads(fx["core_record"].read_text(encoding="utf-8"))
     assert payload["installer_exit"] == 0
-    assert (repo / _SKF_CONFIG_REL).read_bytes() == (
-        _SKF_CONFIG_TEXT.encode() + _OWN_INSTALLER_APPENDED.encode()
-    )
+    assert (repo / _SKF_CONFIG_REL).read_bytes() == (_SKF_CONFIG_TEXT.encode() + _OWN_INSTALLER_APPENDED.encode())
     packaged = repo / _PACKAGED_SOURCE_REL
     for name in ("skf-alpha", "skf-campaign"):
-        assert _tree_digest(repo / ".claude" / "skills" / name) == _tree_digest(
-            packaged / name
-        )
+        assert _tree_digest(repo / ".claude" / "skills" / name) == _tree_digest(packaged / name)
 
 
 def test_apply_custom_module_own_installer_clobbers_custom_is_reported(tmp_path):
@@ -1662,9 +1613,7 @@ def test_apply_custom_module_own_installer_oserror_is_reported(tmp_path):
     unexecutable = tmp_path / "not-executable-skf-installer"
     unexecutable.write_bytes(b"")  # empty file, executable bit set, no shebang
     unexecutable.chmod(0o755)
-    catalog = _write_custom_catalog(
-        tmp_path / "catalog-oserror", own_installer=(str(unexecutable), "update")
-    )
+    catalog = _write_custom_catalog(tmp_path / "catalog-oserror", own_installer=(str(unexecutable), "update"))
 
     report = apply_bmad_core_upgrade(
         repo=fx["repo"],
@@ -1692,9 +1641,7 @@ def test_apply_custom_installer_runner_is_injected_and_receives_env(tmp_path):
         seen["cwd"] = cwd
         seen["cmd"] = tuple(cmd)
         seen["env"] = env
-        (repo / _SKF_CONFIG_REL).write_text(
-            _SKF_CONFIG_TEXT + "injected: true\n", encoding="utf-8"
-        )
+        (repo / _SKF_CONFIG_REL).write_text(_SKF_CONFIG_TEXT + "injected: true\n", encoding="utf-8")
         return subprocess.CompletedProcess(list(cmd), 0, "", "")
 
     report = apply_bmad_core_upgrade(
@@ -1748,9 +1695,7 @@ def test_apply_custom_module_config_path_deleted_by_core_installer(tmp_path):
     assert module.config_paths[0].status == "restored"
     assert "deleted" in module.config_paths[0].detail
     # Own installer still runs (core changed, exit 0): restored bytes + its append.
-    assert (repo / _SKF_CONFIG_REL).read_bytes() == (
-        _SKF_CONFIG_TEXT.encode() + _OWN_INSTALLER_APPENDED.encode()
-    )
+    assert (repo / _SKF_CONFIG_REL).read_bytes() == (_SKF_CONFIG_TEXT.encode() + _OWN_INSTALLER_APPENDED.encode())
 
 
 def test_cli_apply_help_names_real_argv_shape(capsys, monkeypatch):
@@ -1793,9 +1738,7 @@ _CAP8_SKILL2_OURS = "ROUTE = old  # kept by repo\nMID_C = x\nTAIL = same\n"
 _CAP8_SKILL2_NEW = "ROUTE = new\nMID_C = x\nTAIL = same\n"
 
 
-def _write_cap8_package(
-    root: Path, *, script_body: str, skill1_body: str, skill2_body: str
-) -> Path:
+def _write_cap8_package(root: Path, *, script_body: str, skill1_body: str, skill2_body: str) -> Path:
     """Minimal package tree: one bmm-skills skill dir (2 files) + one script."""
     scripts = root / "src" / "scripts"
     scripts.mkdir(parents=True)
@@ -1809,16 +1752,12 @@ def _write_cap8_package(
 
 def _write_cap8_repo(root: Path) -> Path:
     """`_write_repo` (no skf) plus the three CAP-8-flagged files, committed."""
-    repo = _write_repo(
-        root, modules=("core", "bmm"), custom=(), with_legacy_custom=False
-    )
+    repo = _write_repo(root, modules=("core", "bmm"), custom=(), with_legacy_custom=False)
     skill_dir = repo / ".claude" / "skills" / _CAP8_SKILL_NAME
     skill_dir.mkdir(parents=True)
     (skill_dir / "step-01.md").write_text(_CAP8_SKILL1_OURS, encoding="utf-8")
     (skill_dir / "step-02.md").write_text(_CAP8_SKILL2_OURS, encoding="utf-8")
-    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
-        _CAP8_SCRIPT_OURS, encoding="utf-8"
-    )
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(_CAP8_SCRIPT_OURS, encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-m", "cap8 fixture: three installer-owned files edited in place")
     return repo
@@ -1872,9 +1811,7 @@ def _cap8_fixture(tmp_path: Path) -> dict[str, Path]:
         skill1_body=_CAP8_SKILL1_NEW,
         skill2_body=_CAP8_SKILL2_NEW,
     )
-    installer = _fake_cap8_installer_script(
-        tmp_path / "fake-bmad-method", target_package_root=target_pkg
-    )
+    installer = _fake_cap8_installer_script(tmp_path / "fake-bmad-method", target_package_root=target_pkg)
     return {
         "repo": repo,
         "installed_pkg": installed_pkg,
@@ -1921,15 +1858,13 @@ def test_apply_cap8_three_files_two_clean_one_conflict(tmp_path):
 
     script_finding = by_path["_bmad/scripts/helper.py"]
     assert script_finding.action == "merged_clean"
-    assert (paths["repo"] / "_bmad" / "scripts" / "helper.py").read_text(
-        encoding="utf-8"
-    ) == _CAP8_SCRIPT_MERGED
+    assert (paths["repo"] / "_bmad" / "scripts" / "helper.py").read_text(encoding="utf-8") == _CAP8_SCRIPT_MERGED
 
     skill1_finding = by_path[".claude/skills/bmad-dev-auto/step-01.md"]
     assert skill1_finding.action == "merged_clean"
-    assert (
-        paths["repo"] / ".claude" / "skills" / "bmad-dev-auto" / "step-01.md"
-    ).read_text(encoding="utf-8") == _CAP8_SKILL1_MERGED
+    assert (paths["repo"] / ".claude" / "skills" / "bmad-dev-auto" / "step-01.md").read_text(
+        encoding="utf-8"
+    ) == _CAP8_SKILL1_MERGED
 
     skill2_finding = by_path[".claude/skills/bmad-dev-auto/step-02.md"]
     assert skill2_finding.action == "conflict_needs_manual_merge"
@@ -1954,10 +1889,7 @@ def test_apply_cap8_three_files_two_clean_one_conflict(tmp_path):
     assert "## CAP-8 local customizations re-applied" in text
     assert "[merged_clean] _bmad/scripts/helper.py" in text
     assert "[conflict_needs_manual_merge] .claude/skills/bmad-dev-auto/step-02.md" in text
-    assert (
-        "conflict file: .claude/skills/bmad-dev-auto/step-02.md.customization-conflict"
-        in text
-    )
+    assert "conflict file: .claude/skills/bmad-dev-auto/step-02.md.customization-conflict" in text
 
 
 def test_cli_apply_cap8_conflict_gates_ok_false(tmp_path):
@@ -2009,9 +1941,7 @@ def test_reapply_local_customizations_unchanged_when_installer_leaves_file_alone
         skill1_body=_CAP8_SKILL1_NEW,
         skill2_body=_CAP8_SKILL2_NEW,
     )
-    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
-        _CAP8_SCRIPT_OURS, encoding="utf-8"
-    )
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(_CAP8_SCRIPT_OURS, encoding="utf-8")
     report = reapply_local_customizations(
         repo,
         pre_apply_snapshots={"_bmad/scripts/helper.py": _CAP8_SCRIPT_OURS.encode()},
@@ -2019,9 +1949,7 @@ def test_reapply_local_customizations_unchanged_when_installer_leaves_file_alone
         package_root=target_pkg,
     )
     assert report.findings[0].action == "unchanged"
-    assert (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).read_text(
-        encoding="utf-8"
-    ) == _CAP8_SCRIPT_OURS
+    assert (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).read_text(encoding="utf-8") == _CAP8_SCRIPT_OURS
 
 
 def test_reapply_local_customizations_skipped_no_package_match(tmp_path):
@@ -2066,9 +1994,7 @@ def test_reapply_local_customizations_new_side_missing_is_the_realistic_shape(tm
     )
     target_pkg = tmp_path / "target-pkg"
     (target_pkg / "src" / "scripts").mkdir(parents=True)
-    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
-        _CAP8_SCRIPT_OURS, encoding="utf-8"
-    )
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(_CAP8_SCRIPT_OURS, encoding="utf-8")
     report = reapply_local_customizations(
         repo,
         pre_apply_snapshots={"_bmad/scripts/helper.py": _CAP8_SCRIPT_OURS.encode()},
@@ -2089,20 +2015,12 @@ def test_reapply_local_customizations_nested_skill_file_merges_cleanly(tmp_path)
     nested = Path("scripts") / "tests" / "test_helper.py"
 
     installed_pkg = tmp_path / "installed-pkg"
-    (installed_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested.parent).mkdir(
-        parents=True
-    )
-    (installed_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested).write_text(
-        _CAP8_SKILL1_BASE, encoding="utf-8"
-    )
+    (installed_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested.parent).mkdir(parents=True)
+    (installed_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested).write_text(_CAP8_SKILL1_BASE, encoding="utf-8")
 
     target_pkg = tmp_path / "target-pkg"
-    (target_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested.parent).mkdir(
-        parents=True
-    )
-    (target_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested).write_text(
-        _CAP8_SKILL1_NEW, encoding="utf-8"
-    )
+    (target_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested.parent).mkdir(parents=True)
+    (target_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested).write_text(_CAP8_SKILL1_NEW, encoding="utf-8")
 
     repo_file = repo / ".claude" / "skills" / _CAP8_SKILL_NAME / nested
     repo_file.parent.mkdir(parents=True)
@@ -2144,12 +2062,8 @@ def test_reapply_local_customizations_clears_stale_conflict_sibling_on_clean_mer
     # The core installer already regenerated this file with the new upstream
     # content, as if it had just run (required for a merge to be attempted at
     # all — matching bytes would short-circuit to "unchanged" instead).
-    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
-        _CAP8_SCRIPT_NEW, encoding="utf-8"
-    )
-    stale_conflict = (
-        repo / "_bmad" / "scripts" / f"{_CAP8_SCRIPT_NAME}.customization-conflict"
-    )
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(_CAP8_SCRIPT_NEW, encoding="utf-8")
+    stale_conflict = repo / "_bmad" / "scripts" / f"{_CAP8_SCRIPT_NAME}.customization-conflict"
     stale_conflict.write_text("<<<<<<< stale from an earlier failed apply\n", encoding="utf-8")
 
     report = reapply_local_customizations(
@@ -2384,9 +2298,7 @@ def test_cli_apply_no_shims_flag_reaches_apply(tmp_path, capsys):
     repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_fixture_shim(repo)
     record = tmp_path / "argv.json"
-    installer = _fake_installer_script(
-        tmp_path / "fake-bmad-method", record=record, no_shims=True
-    )
+    installer = _fake_installer_script(tmp_path / "fake-bmad-method", record=record, no_shims=True)
     rc = main(
         [
             "upgrade",

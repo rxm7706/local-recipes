@@ -98,7 +98,7 @@ def load_rekey_maps(target: Path) -> dict[str, list[tuple[Path, RekeyMap]]]:
     for path in sorted(target.glob(REKEY_GLOB)):
         try:
             text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         slug = path.parent.parent.name
         out.setdefault(slug, []).append((path, parse_rekey(text)))

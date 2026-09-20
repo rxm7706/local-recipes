@@ -86,9 +86,7 @@ def test_portal_uses_portal_client_invoke_only() -> None:
 
 def test_home_template_is_chrome_projection() -> None:
     root = _repo_root()
-    html = (
-        _portal_root(root) / "templates" / "herald_portal" / "home.html"
-    ).read_text(encoding="utf-8")
+    html = (_portal_root(root) / "templates" / "herald_portal" / "home.html").read_text(encoding="utf-8")
     assert '{% extends "django_pyforge/base.html" %}' in html
     assert "herald-deck-status" in html
     assert "herald deck status" in html

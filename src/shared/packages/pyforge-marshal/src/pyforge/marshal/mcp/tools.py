@@ -51,10 +51,7 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
         "optional_flags": {"project": "--project", "base": "--base"},
     },
     "marshal_watch": {
-        "description": (
-            "Watch a pinned run, a station's current run, or the fleet "
-            "(marshal watch --format json)."
-        ),
+        "description": ("Watch a pinned run, a station's current run, or the fleet (marshal watch --format json)."),
         "cli": ["watch", "--format", "json"],
         "optional_flags": {"project": "--project", "run": "--run"},
         "store_true_flags": {"fleet": "--fleet"},

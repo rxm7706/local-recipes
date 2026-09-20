@@ -22,12 +22,11 @@ _LICMAP_COLS = ["license_raw", "packages", "candidates", "confidence", "suggeste
 
 # -- report_lts_registry_gap ------------------------------------------------
 
+
 def test_lts_exact_and_likely_and_registry_exclusion():
     seed = {"products": {"django": {"slug": "django", "aliases": ["Django"]}}}
     core = pd.DataFrame({"conda_name": ["numpy", "python-foo", "django", "orphan"]})
-    mapping = pd.DataFrame(
-        {"conda_name": ["numpy"], "pypi_name": ["numpy"], "match_source": ["parselmouth"]}
-    )
+    mapping = pd.DataFrame({"conda_name": ["numpy"], "pypi_name": ["numpy"], "match_source": ["parselmouth"]})
     eol = ["numpy", "foo", "django"]
 
     df = N.report_lts_registry_gap(seed, eol, core, mapping)
@@ -61,16 +60,17 @@ def test_lts_empty_feed_and_empty_candidates_give_empty_report():
 
 # -- report_cwe_seed_gap ----------------------------------------------------
 
+
 def test_cwe_strong_weak_and_seed_exclusion():
     seed = {"_doc": {"note": "meta"}, "CWE-89": "Injection"}
     vcwe = pd.DataFrame(
         {
             "cwe_id": ["CWE-89", "CWE-22", "CWE-502", "CWE-000"],
             "cwe_name": [
-                "SQL Injection",            # seeded → excluded
-                "Path Traversal",           # strong
-                "Deserialization foobar",   # weak (serialization)
-                "Totally unclassifiable",   # no hit → dropped
+                "SQL Injection",  # seeded → excluded
+                "Path Traversal",  # strong
+                "Deserialization foobar",  # weak (serialization)
+                "Totally unclassifiable",  # no hit → dropped
             ],
             "category": ["Other", "Other", "Other", "Other"],
         }
@@ -108,6 +108,7 @@ def test_cwe_empty_input_gives_empty_report():
 
 
 # -- report_spdx_schema_gap -------------------------------------------------
+
 
 def test_spdx_add_nonstandard_and_drift_tiers():
     schema = {"enum": ["MIT", "Apache-2.0"]}
@@ -173,16 +174,17 @@ def test_spdx_empty_upstream_gives_empty_report():
 
 # -- report_license_map_gap -------------------------------------------------
 
+
 def test_licmap_likely_and_report_tiers():
     schema = {"enum": ["MIT", "Apache-2.0", "BSD-3-Clause"]}
     enriched = pd.DataFrame(
         {
             "license_spdx": [None, None, "MIT", None],
             "license_raw": [
-                "the mit license",     # single candidate MIT → likely
+                "the mit license",  # single candidate MIT → likely
                 "some weird license",  # no candidate → report
-                " MIT ",               # already mapped (license_spdx set) → skipped
-                "unknown",             # junk → skipped
+                " MIT ",  # already mapped (license_spdx set) → skipped
+                "unknown",  # junk → skipped
             ],
         }
     )
@@ -202,9 +204,7 @@ def test_licmap_likely_and_report_tiers():
 
 def test_licmap_candidates_serialized_as_comma_string():
     schema = {"enum": ["MIT", "Apache-2.0"]}
-    enriched = pd.DataFrame(
-        {"license_spdx": [None], "license_raw": ["mit / apache-2.0 dual"]}
-    )
+    enriched = pd.DataFrame({"license_spdx": [None], "license_raw": ["mit / apache-2.0 dual"]})
     df = N.report_license_map_gap(schema, enriched)
     # two whole-token candidates → a comma-joined string, tier 'report'
     (row,) = df.to_dict("records")
@@ -220,6 +220,7 @@ def test_licmap_empty_input_gives_empty_report():
 
 # -- review patch: enum-less schema degrades gracefully (AD-13/AD-15) --------
 
+
 def test_enum_less_schema_does_not_crash_the_report_nodes():
     """A malformed vendored-schema dict lacking ``enum`` must NOT crash a
     derived report node (a per-rebuild run degrades, never hard-fails)."""
@@ -231,8 +232,6 @@ def test_enum_less_schema_does_not_crash_the_report_nodes():
     assert list(spdx.columns) == _SPDX_COLS
     assert set(spdx["tier"]) == {"upstream-drift"}
     # license-map: empty enum -> no candidates -> all 'report' (no crash)
-    lic = N.report_license_map_gap(
-        bad_schema, pd.DataFrame({"license_spdx": [None], "license_raw": ["weird license"]})
-    )
+    lic = N.report_license_map_gap(bad_schema, pd.DataFrame({"license_spdx": [None], "license_raw": ["weird license"]}))
     assert list(lic.columns) == _LICMAP_COLS
     assert set(lic["confidence"]) == {"report"}

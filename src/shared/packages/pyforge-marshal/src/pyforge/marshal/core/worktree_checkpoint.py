@@ -51,21 +51,15 @@ def commit_worktree_checkpoint(
     """Commit all uncommitted paths in ``worktree`` as a local-only checkpoint."""
     try:
         if not vcs.has_uncommitted_changes(worktree):
-            return WorktreeCheckpointResult(
-                committed=False, skipped_reason="clean worktree"
-            )
+            return WorktreeCheckpointResult(committed=False, skipped_reason="clean worktree")
         changed = vcs.changed_files(repo_root, worktree, base=base)
         if not changed:
-            return WorktreeCheckpointResult(
-                committed=False, skipped_reason="clean worktree"
-            )
+            return WorktreeCheckpointResult(committed=False, skipped_reason="clean worktree")
         head_sha = vcs.commit_paths(
             worktree,
             tuple(Path(path) for path in changed),
             auto_checkpoint_message(story_key),
         )
     except Exception as exc:
-        return WorktreeCheckpointResult(
-            committed=False, skipped_reason=str(exc)
-        )
+        return WorktreeCheckpointResult(committed=False, skipped_reason=str(exc))
     return WorktreeCheckpointResult(committed=True, head_sha=head_sha)

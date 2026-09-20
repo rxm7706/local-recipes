@@ -63,10 +63,9 @@ detecting ambiguity itself -- this module never performs it.
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 from typing import Any
-
-import tomllib
 
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
@@ -100,7 +99,7 @@ def _load_layer(path: Path) -> dict[str, Any]:
     try:
         with path.open("rb") as stream:
             parsed = tomllib.load(stream)
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+    except OSError, tomllib.TOMLDecodeError, UnicodeDecodeError:
         return {}
     if not isinstance(parsed, dict):
         return {}
@@ -118,9 +117,7 @@ def _structural_merge(base: Any, override: Any) -> Any:
     if isinstance(base, dict) and isinstance(override, dict):
         result = dict(base)
         for key, value in override.items():
-            result[key] = (
-                _structural_merge(result[key], value) if key in result else value
-            )
+            result[key] = _structural_merge(result[key], value) if key in result else value
         return result
     return override
 
@@ -182,20 +179,13 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     ambiguous = {name: paths for name, paths in leaf_paths.items() if len(paths) > 1}
 
     if not ambiguous:
-        suffix = (
-            f"({checked} checked -- no central config layers found)"
-            if checked == 0
-            else f"({checked} checked)"
-        )
+        suffix = f"({checked} checked -- no central config layers found)" if checked == 0 else f"({checked} checked)"
         return (
             Finding(
                 source=Source.BMAD_RENDER_CONFIG_AMBIGUITY,
                 check="bmad-render-config-ambiguity",
                 status=DoctorStatus.OK,
-                message=(
-                    f"no ambiguous config keys in the merged central "
-                    f"config {suffix}"
-                ),
+                message=(f"no ambiguous config keys in the merged central config {suffix}"),
                 evidence={"checked": checked},
             ),
         )
@@ -209,9 +199,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 source=Source.BMAD_RENDER_CONFIG_AMBIGUITY,
                 check="bmad-render-config-ambiguity",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"ambiguous config value `{name}` found at: {paths_text}"
-                ),
+                message=(f"ambiguous config value `{name}` found at: {paths_text}"),
                 evidence={"key": name, "paths": list(paths)},
             )
         )

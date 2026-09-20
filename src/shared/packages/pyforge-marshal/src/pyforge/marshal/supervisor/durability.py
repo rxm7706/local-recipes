@@ -138,14 +138,9 @@ def classify_push_triggers(
     for story_key, current_task in current.items():
         previous_task = previous.get(story_key)
         previous_phase = previous_task.phase if previous_task is not None else None
-        previous_commit_sha = (
-            previous_task.commit_sha if previous_task is not None else None
-        )
+        previous_commit_sha = previous_task.commit_sha if previous_task is not None else None
 
-        if (
-            current_task.phase == _REVIEW_VERIFY_PHASE
-            and previous_phase != _REVIEW_VERIFY_PHASE
-        ):
+        if current_task.phase == _REVIEW_VERIFY_PHASE and previous_phase != _REVIEW_VERIFY_PHASE:
             triggers.append(PushTrigger(story_key, "review-verdict-recorded"))
 
         if current_task.commit_sha is not None and previous_commit_sha is None:

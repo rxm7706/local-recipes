@@ -21,6 +21,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pyforge.core.process import ProcessResult
+
 from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.core import policy
 from pyforge.marshal.dispatch_verify import run_verify_commands_only
@@ -38,9 +39,7 @@ class FakeProcess:
 
 
 def _effective(commands: list[str]):
-    effective, _ = policy.compose(
-        project_slug="pyforge-marshal", project={"verify_commands": commands}, flags={}
-    )
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={"verify_commands": commands}, flags={})
     return effective
 
 
@@ -48,9 +47,7 @@ def test_run_verify_commands_only_reports_pass_and_fail(tmp_path: Path) -> None:
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(
-        _effective(["true", "false"]), process=process, worktree=worktree
-    )
+    reports, findings = run_verify_commands_only(_effective(["true", "false"]), process=process, worktree=worktree)
     assert [report["command"] for report in reports] == [
         "true",
         "false",
@@ -67,9 +64,7 @@ def test_run_verify_commands_only_all_green_has_no_findings(tmp_path: Path) -> N
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(
-        _effective(["true", "echo ok"]), process=process, worktree=worktree
-    )
+    reports, findings = run_verify_commands_only(_effective(["true", "echo ok"]), process=process, worktree=worktree)
     assert len(reports) == 3
     assert findings == ()
 
@@ -83,9 +78,7 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_surface_guard(
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(
-        _effective([]), process=process, worktree=worktree
-    )
+    reports, findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
     assert [report["command"] for report in reports] == [_SURFACE_RECONCILE_COMMAND]
     assert findings == ()
     assert process.calls == [

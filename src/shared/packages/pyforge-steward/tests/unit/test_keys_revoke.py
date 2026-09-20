@@ -8,6 +8,7 @@ staying visible via a subsequent `load_inventory`/`keys list`.
 from __future__ import annotations
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.keys import (
     InventoryError,
@@ -26,8 +27,12 @@ def _seed(tmp_path, entry: KeyIdentityEntry):
 
 def test_revoking_an_issued_active_entry_flips_status_and_keeps_other_fields(tmp_path):
     entry = KeyIdentityEntry(
-        name="jfrog", scope="jfrog", provenance="issued", status="active",
-        last_rotated="2026-08-01T00:00:00+00:00", identity_path="/nonexistent/id.txt",
+        name="jfrog",
+        scope="jfrog",
+        provenance="issued",
+        status="active",
+        last_rotated="2026-08-01T00:00:00+00:00",
+        identity_path="/nonexistent/id.txt",
         secrets=("/nonexistent/secret.age",),
     )
     inventory_path = _seed(tmp_path, entry)
@@ -47,8 +52,13 @@ def test_revoking_an_issued_active_entry_flips_status_and_keeps_other_fields(tmp
 
 def test_revoking_an_observed_entry_with_generic_scope_succeeds(tmp_path):
     entry = KeyIdentityEntry(
-        name="internal-tool", scope="internal-tool", provenance="observed", status="active",
-        last_rotated=None, identity_path=None, secrets=(),
+        name="internal-tool",
+        scope="internal-tool",
+        provenance="observed",
+        status="active",
+        last_rotated=None,
+        identity_path=None,
+        secrets=(),
     )
     inventory_path = _seed(tmp_path, entry)
 
@@ -65,12 +75,22 @@ def test_ambiguous_active_entries_for_a_scope_are_refused_not_silently_resolved(
     that would report success while leaving the OTHER active credential for
     the same scope live and untouched."""
     issued = KeyIdentityEntry(
-        name="jfrog", scope="jfrog", provenance="issued", status="active",
-        last_rotated=None, identity_path="/nonexistent/id.txt", secrets=(),
+        name="jfrog",
+        scope="jfrog",
+        provenance="issued",
+        status="active",
+        last_rotated=None,
+        identity_path="/nonexistent/id.txt",
+        secrets=(),
     )
     observed = KeyIdentityEntry(
-        name="jfrog-observed", scope="jfrog", provenance="observed", status="active",
-        last_rotated=None, identity_path=None, secrets=(),
+        name="jfrog-observed",
+        scope="jfrog",
+        provenance="observed",
+        status="active",
+        last_rotated=None,
+        identity_path=None,
+        secrets=(),
     )
     inventory_path = tmp_path / "keys-inventory.yaml"
     save_inventory(inventory_path, (issued, observed))
@@ -83,8 +103,13 @@ def test_ambiguous_active_entries_for_a_scope_are_refused_not_silently_resolved(
 
 def test_unknown_scope_raises_inventory_error(tmp_path):
     entry = KeyIdentityEntry(
-        name="jfrog", scope="jfrog", provenance="issued", status="active",
-        last_rotated=None, identity_path=None, secrets=(),
+        name="jfrog",
+        scope="jfrog",
+        provenance="issued",
+        status="active",
+        last_rotated=None,
+        identity_path=None,
+        secrets=(),
     )
     inventory_path = _seed(tmp_path, entry)
 
@@ -94,8 +119,13 @@ def test_unknown_scope_raises_inventory_error(tmp_path):
 
 def test_already_retired_scope_is_refused_not_a_silent_no_op(tmp_path):
     entry = KeyIdentityEntry(
-        name="jfrog", scope="jfrog", provenance="issued", status="retired",
-        last_rotated=None, identity_path=None, secrets=(),
+        name="jfrog",
+        scope="jfrog",
+        provenance="issued",
+        status="retired",
+        last_rotated=None,
+        identity_path=None,
+        secrets=(),
     )
     inventory_path = _seed(tmp_path, entry)
 
@@ -108,8 +138,13 @@ def test_keys_revoke_via_the_cli_marks_retired_and_prints_issued_remediation(tmp
     # scope-specific test below, and would otherwise mask this branch (a
     # scope-specific match wins over the generic issued/observed text).
     entry = KeyIdentityEntry(
-        name="internal-service", scope="internal-service", provenance="issued", status="active",
-        last_rotated=None, identity_path="/nonexistent/id.txt", secrets=(),
+        name="internal-service",
+        scope="internal-service",
+        provenance="issued",
+        status="active",
+        last_rotated=None,
+        identity_path="/nonexistent/id.txt",
+        secrets=(),
     )
     inventory_path = _seed(tmp_path, entry)
 
@@ -122,12 +157,15 @@ def test_keys_revoke_via_the_cli_marks_retired_and_prints_issued_remediation(tmp
     assert load_inventory(inventory_path)[0].status == "retired"
 
 
-def test_keys_revoke_via_the_cli_prints_jfrog_specific_remediation_for_an_observed_entry(
-    tmp_path, capsys
-):
+def test_keys_revoke_via_the_cli_prints_jfrog_specific_remediation_for_an_observed_entry(tmp_path, capsys):
     entry = KeyIdentityEntry(
-        name="jfrog-token", scope="jfrog-token", provenance="observed", status="active",
-        last_rotated=None, identity_path=None, secrets=(),
+        name="jfrog-token",
+        scope="jfrog-token",
+        provenance="observed",
+        status="active",
+        last_rotated=None,
+        identity_path=None,
+        secrets=(),
     )
     inventory_path = _seed(tmp_path, entry)
 
@@ -140,8 +178,13 @@ def test_keys_revoke_via_the_cli_prints_jfrog_specific_remediation_for_an_observ
 
 def test_keys_revoke_via_the_cli_prints_generic_observed_remediation(tmp_path, capsys):
     entry = KeyIdentityEntry(
-        name="github-token", scope="github-token", provenance="observed", status="active",
-        last_rotated=None, identity_path=None, secrets=(),
+        name="github-token",
+        scope="github-token",
+        provenance="observed",
+        status="active",
+        last_rotated=None,
+        identity_path=None,
+        secrets=(),
     )
     inventory_path = _seed(tmp_path, entry)
 
@@ -163,8 +206,13 @@ def test_keys_revoke_via_the_cli_projects_unknown_scope_to_exit_failed(tmp_path)
 
 def test_retired_entry_stays_visible_via_a_subsequent_list(tmp_path):
     entry = KeyIdentityEntry(
-        name="jfrog", scope="jfrog", provenance="issued", status="active",
-        last_rotated=None, identity_path=None, secrets=(),
+        name="jfrog",
+        scope="jfrog",
+        provenance="issued",
+        status="active",
+        last_rotated=None,
+        identity_path=None,
+        secrets=(),
     )
     inventory_path = _seed(tmp_path, entry)
 

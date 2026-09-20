@@ -152,12 +152,8 @@ def test_integration_threshold_is_70():
 def test_coverage_json_files_shape_is_accepted():
     payload = {
         "files": {
-            "/repo/src/pyforge/marshal/cli/spin.py": {
-                "summary": {"percent_covered": 55.0}
-            },
-            "/repo/src/pyforge/marshal/core/gate.py": {
-                "summary": {"percent_covered": 88.0}
-            },
+            "/repo/src/pyforge/marshal/cli/spin.py": {"summary": {"percent_covered": 55.0}},
+            "/repo/src/pyforge/marshal/core/gate.py": {"summary": {"percent_covered": 88.0}},
         }
     }
     percents = module_percents_from_coverage_json(payload)
@@ -170,9 +166,7 @@ def test_evaluate_coverage_payload_fixture_json():
         "pyforge.marshal.cli.spin": 40.0,
         "pyforge.marshal.core.gate": 95.0,
     }
-    ok, msg = evaluate_coverage_payload(
-        payload, station="marshal", suite="unit"
-    )
+    ok, msg = evaluate_coverage_payload(payload, station="marshal", suite="unit")
     assert ok is False
     assert "pyforge.marshal.cli.spin" in msg
 
@@ -224,9 +218,7 @@ def test_evaluate_only_modules_empty_is_ok():
     assert "OK" in msg
 
 
-def test_cli_evaluate_names_module_and_exits_nonzero(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
+def test_cli_evaluate_names_module_and_exits_nonzero(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     report = tmp_path / "cov.json"
     report.write_text(
         json.dumps({"pyforge.marshal.cli.spin": 10.0}),
@@ -249,9 +241,7 @@ def test_cli_evaluate_names_module_and_exits_nonzero(
     assert "FAILED" in out
 
 
-def test_cli_evaluate_ok_when_above_threshold(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
+def test_cli_evaluate_ok_when_above_threshold(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     report = tmp_path / "cov.json"
     report.write_text(
         json.dumps({"pyforge.marshal.cli.spin": 85.0}),
@@ -272,9 +262,7 @@ def test_cli_evaluate_ok_when_above_threshold(
     assert "OK" in capsys.readouterr().out
 
 
-def test_cli_evaluate_with_only_modules_file(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
+def test_cli_evaluate_with_only_modules_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     report = tmp_path / "cov.json"
     report.write_text(
         json.dumps(
@@ -305,10 +293,7 @@ def test_cli_evaluate_with_only_modules_file(
 
 
 def test_cli_touched_json(capsys: pytest.CaptureFixture[str]):
-    paths = (
-        "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py\n"
-        "README.md\n"
-    )
+    paths = "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py\nREADME.md\n"
     old = sys.stdin
     try:
         sys.stdin = io.StringIO(paths)
@@ -321,10 +306,7 @@ def test_cli_touched_json(capsys: pytest.CaptureFixture[str]):
 
 
 def test_cli_touched_modules_json(capsys: pytest.CaptureFixture[str]):
-    paths = (
-        "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py\n"
-        "README.md\n"
-    )
+    paths = "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py\nREADME.md\n"
     old = sys.stdin
     try:
         sys.stdin = io.StringIO(paths)
@@ -397,9 +379,7 @@ def test_module_label_from_site_packages_path():
     percents = module_percents_from_coverage_json(
         {
             "files": {
-                "/env/lib/python3.14/site-packages/pyforge/marshal/cli/spin.py": {
-                    "summary": {"percent_covered": 81.0}
-                }
+                "/env/lib/python3.14/site-packages/pyforge/marshal/cli/spin.py": {"summary": {"percent_covered": 81.0}}
             }
         }
     )

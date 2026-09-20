@@ -133,8 +133,15 @@ def test_tier1_pure_python_osi_licensed_not_on_cf():
     universe = _universe(["coolpkg"])
     mapping = _mapping(["unrelated-pkg"])
     intel = _intel(
-        [{"pypi_name": "coolpkg", "packaging_shape": "pure-python", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "coolpkg",
+                "packaging_shape": "pure-python",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     assert list(out.columns) == _OUT_COLS
@@ -151,8 +158,15 @@ def test_tier2_compiled_shape_not_on_cf(shape):
     universe = _universe(["fastpkg"])
     mapping = _mapping(["unrelated-pkg"])
     intel = _intel(
-        [{"pypi_name": "fastpkg", "packaging_shape": shape, "license_spdx": "Apache-2.0",
-          "license_raw": "Apache-2.0", "notes": None}]
+        [
+            {
+                "pypi_name": "fastpkg",
+                "packaging_shape": shape,
+                "license_spdx": "Apache-2.0",
+                "license_raw": "Apache-2.0",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -166,8 +180,15 @@ def test_already_on_conda_forge_skip():
     universe = _universe(["existingpkg"])
     mapping = _mapping(["existingpkg"])
     intel = _intel(
-        [{"pypi_name": "existingpkg", "packaging_shape": "pure-python", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "existingpkg",
+                "packaging_shape": "pure-python",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -206,8 +227,15 @@ def test_missing_intelligence_row_is_unclassified_needs_human():
     # intel table is non-empty (has data for an unrelated package) but lacks a row
     # for "newpkg" specifically.
     intel = _intel(
-        [{"pypi_name": "unrelated", "packaging_shape": "pure-python", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "unrelated",
+                "packaging_shape": "pure-python",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -221,8 +249,15 @@ def test_not_osi_license_skip():
     universe = _universe(["proprietarypkg"])
     mapping = _mapping(["unrelated-pkg"])
     intel = _intel(
-        [{"pypi_name": "proprietarypkg", "packaging_shape": "pure-python",
-          "license_spdx": "Proprietary", "license_raw": "Proprietary", "notes": None}]
+        [
+            {
+                "pypi_name": "proprietarypkg",
+                "packaging_shape": "pure-python",
+                "license_spdx": "Proprietary",
+                "license_raw": "Proprietary",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -235,8 +270,15 @@ def test_missing_license_spdx_is_also_not_osi_license():
     universe = _universe(["nolicensepkg"])
     mapping = _mapping(["unrelated-pkg"])
     intel = _intel(
-        [{"pypi_name": "nolicensepkg", "packaging_shape": "pure-python",
-          "license_spdx": None, "license_raw": None, "notes": None}]
+        [
+            {
+                "pypi_name": "nolicensepkg",
+                "packaging_shape": "pure-python",
+                "license_spdx": None,
+                "license_raw": None,
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -249,8 +291,15 @@ def test_ambiguous_packaging_shape_is_unclassified_needs_human():
     universe = _universe(["mysterypkg"])
     mapping = _mapping(["unrelated-pkg"])
     intel = _intel(
-        [{"pypi_name": "mysterypkg", "packaging_shape": "unknown", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "mysterypkg",
+                "packaging_shape": "unknown",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -346,8 +395,15 @@ def test_pypi_conda_mapping_alone_unusable_degrades_resolved_row_to_unclassified
     universe = _universe(["coolpkg"])
     empty_mapping = pd.DataFrame(columns=["conda_name", "pypi_name"])
     intel = _intel(
-        [{"pypi_name": "coolpkg", "packaging_shape": "pure-python", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "coolpkg",
+                "packaging_shape": "pure-python",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, empty_mapping, intel)
     row = out.iloc[0]
@@ -378,8 +434,15 @@ def test_non_string_license_spdx_does_not_raise():
     universe = _universe(["weirdlicensepkg"])
     mapping = _mapping(["unrelated-pkg"])
     intel = _intel(
-        [{"pypi_name": "weirdlicensepkg", "packaging_shape": "pure-python",
-          "license_spdx": ["MIT"], "license_raw": None, "notes": None}]
+        [
+            {
+                "pypi_name": "weirdlicensepkg",
+                "packaging_shape": "pure-python",
+                "license_spdx": ["MIT"],
+                "license_raw": None,
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -437,9 +500,7 @@ def test_all_null_join_keys_are_not_a_usable_signal(null_value):
 def test_pd_na_join_key_is_never_inserted_as_a_live_index_entry():
     """``pd.NA`` must not survive as the literal join key ``"<na>"`` — a repo actually
     named ``<NA>`` would otherwise false-match it."""
-    assert N._normalized_pypi_index(pd.DataFrame({"pypi_name": [pd.NA, "realpkg"]})) == {
-        "realpkg": "realpkg"
-    }
+    assert N._normalized_pypi_index(pd.DataFrame({"pypi_name": [pd.NA, "realpkg"]})) == {"realpkg": "realpkg"}
     assert N._is_missing(pd.NA) is True
     assert N._is_missing(["MIT"]) is False
 
@@ -451,8 +512,15 @@ def test_all_null_mapping_keys_degrade_resolved_row_to_unclassified():
     universe = _universe(["coolpkg"])
     null_mapping = pd.DataFrame({"conda_name": ["conda-x"], "pypi_name": [None]})
     intel = _intel(
-        [{"pypi_name": "coolpkg", "packaging_shape": "pure-python", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "coolpkg",
+                "packaging_shape": "pure-python",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, null_mapping, intel)
     row = out.iloc[0]
@@ -468,8 +536,15 @@ def test_malformed_packaging_shape_degrades_to_unclassified_not_confident_tier2(
     universe = _universe(["oddshapepkg"])
     mapping = _mapping(["unrelated-pkg"])
     intel = _intel(
-        [{"pypi_name": "oddshapepkg", "packaging_shape": "nim-nimpy", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "oddshapepkg",
+                "packaging_shape": "nim-nimpy",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(tc, universe, mapping, intel)
     row = out.iloc[0]
@@ -558,14 +633,19 @@ def test_org_audit_candidates_reuse_drops_already_shipped_candidate():
     shipped independently to conda-forge — tier="skip"/reason="already-on-conda-forge"
     — proving both FR-67's re-verification contract and that the classifier tolerates a
     narrower input schema than trending_candidates."""
-    org_audit_candidates = load_org_audit_candidates(
-        [{"repo_full_name": "microsoft/promptflow"}]
-    )
+    org_audit_candidates = load_org_audit_candidates([{"repo_full_name": "microsoft/promptflow"}])
     universe = _universe(["promptflow"])
     mapping = _mapping(["promptflow"])  # already shipped to conda-forge since the list was written
     intel = _intel(
-        [{"pypi_name": "promptflow", "packaging_shape": "pure-python", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "promptflow",
+                "packaging_shape": "pure-python",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(org_audit_candidates, universe, mapping, intel)
     assert len(out) == 1
@@ -582,8 +662,15 @@ def test_org_audit_candidates_malformed_entry_reaches_classifier_as_a_visible_sk
     universe = _universe(["promptflow"])
     mapping = _mapping(["promptflow"])
     intel = _intel(
-        [{"pypi_name": "promptflow", "packaging_shape": "pure-python", "license_spdx": "MIT",
-          "license_raw": "MIT", "notes": None}]
+        [
+            {
+                "pypi_name": "promptflow",
+                "packaging_shape": "pure-python",
+                "license_spdx": "MIT",
+                "license_raw": "MIT",
+                "notes": None,
+            }
+        ]
     )
     out = N.classify_trending_candidates(org_audit_candidates, universe, mapping, intel)
     assert len(out) == 1
@@ -708,7 +795,14 @@ def _attribution(rows: list[dict]) -> pd.DataFrame:
 
 def test_join_enterprise_conda_maintainers_matched_feedstock():
     about = _about_raw(
-        [{"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1}]
+        [
+            {
+                "feedstock_slug": "conda-forge/numpy-feedstock",
+                "role": "Maintainer",
+                "source": "about_readme",
+                "fetched_at": 1,
+            }
+        ]
     )
     attribution = _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}])
     out = join_enterprise_conda_maintainers(about, attribution)
@@ -727,7 +821,14 @@ def test_join_enterprise_conda_maintainers_strips_prefix_and_suffix_before_match
     feedstock_slug carries the full "conda-forge/<x>-feedstock" form and must be
     stripped before comparing."""
     about = _about_raw(
-        [{"feedstock_slug": "conda-forge/dbt-bigquery-feedstock", "role": "Co-Maintainer", "source": "about_readme", "fetched_at": 1}]
+        [
+            {
+                "feedstock_slug": "conda-forge/dbt-bigquery-feedstock",
+                "role": "Co-Maintainer",
+                "source": "about_readme",
+                "fetched_at": 1,
+            }
+        ]
     )
     attribution = _attribution([{"conda_name": "dbt-bigquery", "feedstock_name": "dbt-bigquery"}])
     out = join_enterprise_conda_maintainers(about, attribution)
@@ -738,8 +839,18 @@ def test_join_enterprise_conda_maintainers_strips_prefix_and_suffix_before_match
 def test_join_enterprise_conda_maintainers_unmatched_feedstock_is_dropped_never_fabricated():
     about = _about_raw(
         [
-            {"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1},
-            {"feedstock_slug": "conda-forge/retired-pkg-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1},
+            {
+                "feedstock_slug": "conda-forge/numpy-feedstock",
+                "role": "Maintainer",
+                "source": "about_readme",
+                "fetched_at": 1,
+            },
+            {
+                "feedstock_slug": "conda-forge/retired-pkg-feedstock",
+                "role": "Maintainer",
+                "source": "about_readme",
+                "fetched_at": 1,
+            },
         ]
     )
     attribution = _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}])
@@ -750,7 +861,14 @@ def test_join_enterprise_conda_maintainers_unmatched_feedstock_is_dropped_never_
 
 def test_join_enterprise_conda_maintainers_empty_attribution_degrades_to_empty_schema():
     about = _about_raw(
-        [{"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1}]
+        [
+            {
+                "feedstock_slug": "conda-forge/numpy-feedstock",
+                "role": "Maintainer",
+                "source": "about_readme",
+                "fetched_at": 1,
+            }
+        ]
     )
     out = join_enterprise_conda_maintainers(about, pd.DataFrame(columns=_ATTRIBUTION_COLS))
     assert out.empty
@@ -759,7 +877,14 @@ def test_join_enterprise_conda_maintainers_empty_attribution_degrades_to_empty_s
 
 def test_join_enterprise_conda_maintainers_none_attribution_never_raises():
     about = _about_raw(
-        [{"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1}]
+        [
+            {
+                "feedstock_slug": "conda-forge/numpy-feedstock",
+                "role": "Maintainer",
+                "source": "about_readme",
+                "fetched_at": 1,
+            }
+        ]
     )
     out = join_enterprise_conda_maintainers(about, None)
     assert out.empty
@@ -767,7 +892,9 @@ def test_join_enterprise_conda_maintainers_none_attribution_never_raises():
 
 
 def test_join_enterprise_conda_maintainers_empty_about_raw_degrades_to_empty_schema():
-    out = join_enterprise_conda_maintainers(pd.DataFrame(columns=_ABOUT_COLS), _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}]))
+    out = join_enterprise_conda_maintainers(
+        pd.DataFrame(columns=_ABOUT_COLS), _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}])
+    )
     assert out.empty
     assert list(out.columns) == _ENTERPRISE_COLS
 
@@ -838,16 +965,12 @@ def test_load_org_audit_candidates_malformed_curated_groups_seed_never_raises():
 
 
 def test_load_org_audit_candidates_curated_groups_seed_alone_with_no_org_audit_candidates():
-    out = load_org_audit_candidates(
-        None, {"groups": [{"org": "example", "repos": ["exampleorg/repo-one"]}]}
-    )
+    out = load_org_audit_candidates(None, {"groups": [{"org": "example", "repos": ["exampleorg/repo-one"]}]})
     assert list(out["repo_full_name"]) == ["exampleorg/repo-one"]
 
 
 def test_load_org_audit_candidates_curated_groups_malformed_repo_entry_is_a_visible_none_row():
-    out = load_org_audit_candidates(
-        None, {"groups": [{"org": "example", "repos": [123, "exampleorg/repo-one"]}]}
-    )
+    out = load_org_audit_candidates(None, {"groups": [{"org": "example", "repos": [123, "exampleorg/repo-one"]}]})
     assert len(out) == 2
     values = list(out["repo_full_name"])
     assert values[1] == "exampleorg/repo-one"
@@ -1017,7 +1140,16 @@ def test_identity_associator_hit():
     )
     out = _build_primary(
         assoc=assoc,
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "cool-pkg", "role": "Maintainer", "feedstock_slug": "conda-forge/cool-pkg-feedstock", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "cool-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "conda-forge/cool-pkg-feedstock",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
         enumerated_names=["cool-pkg"],
     )
     row = _row_for(out, "cool-pkg")
@@ -1033,11 +1165,30 @@ def test_identity_associator_hit():
 def test_identity_associator_hit_via_alias_fallback():
     """lookup_assoc's -/./_ alias fallback."""
     assoc = _assoc_raw(
-        [{"assoc_key": "cool.pkg", "purl": "pkg:pypi/cool-pkg", "type": "pypi", "status": "ok", "alternative_purls": "", "cpes": "", "fetched_at": 1}]
+        [
+            {
+                "assoc_key": "cool.pkg",
+                "purl": "pkg:pypi/cool-pkg",
+                "type": "pypi",
+                "status": "ok",
+                "alternative_purls": "",
+                "cpes": "",
+                "fetched_at": 1,
+            }
+        ]
     )
     out = _build_primary(
         assoc=assoc,
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "cool-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "cool-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
     )
     row = _row_for(out, "cool-pkg")
     assert row["identity_source"] == "purl-associator"
@@ -1047,7 +1198,16 @@ def test_identity_associator_hit_via_alias_fallback():
 def test_identity_inventory_derived_fallback_pypi_only():
     """Matrix row: Inventory-derived fallback (PyPI verified, no associator hit)."""
     out = _build_primary(
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "newpkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "newpkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
         universe_names=["newpkg"],
     )
     row = _row_for(out, "newpkg")
@@ -1060,7 +1220,16 @@ def test_identity_inventory_derived_fallback_pypi_only():
 def test_identity_unmapped_none():
     """Matrix row: Unmapped (none) — no associator hit, no PyPI/conda verification."""
     out = _build_primary(
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "ghostpkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "ghostpkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
     )
     row = _row_for(out, "ghostpkg")
     assert row["identity_source"] == "none"
@@ -1072,7 +1241,16 @@ def test_identity_unmapped_none():
 def test_identity_board_only_extra_appended():
     """Matrix row: Board-only extra."""
     board = _board_raw(
-        [{"number": 1, "title": "[Conda-Forge Packaging] board-only-pkg", "url": "https://x/1", "state": "OPEN", "milestone": None, "fetched_at": 1}]
+        [
+            {
+                "number": 1,
+                "title": "[Conda-Forge Packaging] board-only-pkg",
+                "url": "https://x/1",
+                "state": "OPEN",
+                "milestone": None,
+                "fetched_at": 1,
+            }
+        ]
     )
     out = _build_primary(board=board)
     row = _row_for(out, "board-only-pkg")
@@ -1083,10 +1261,29 @@ def test_identity_board_only_extra_appended():
 def test_identity_board_only_associator_rechecked():
     """from_board_only re-checks the associator for a board-only name too."""
     assoc = _assoc_raw(
-        [{"assoc_key": "board-assoc-pkg", "purl": "pkg:pypi/board-assoc-pkg", "type": "pypi", "status": "ok", "alternative_purls": "", "cpes": "", "fetched_at": 1}]
+        [
+            {
+                "assoc_key": "board-assoc-pkg",
+                "purl": "pkg:pypi/board-assoc-pkg",
+                "type": "pypi",
+                "status": "ok",
+                "alternative_purls": "",
+                "cpes": "",
+                "fetched_at": 1,
+            }
+        ]
     )
     board = _board_raw(
-        [{"number": 2, "title": "[Conda-Forge Packaging] board-assoc-pkg", "url": "https://x/2", "state": "OPEN", "milestone": None, "fetched_at": 1}]
+        [
+            {
+                "number": 2,
+                "title": "[Conda-Forge Packaging] board-assoc-pkg",
+                "url": "https://x/2",
+                "state": "OPEN",
+                "milestone": None,
+                "fetched_at": 1,
+            }
+        ]
     )
     out = _build_primary(assoc=assoc, board=board)
     row = _row_for(out, "board-assoc-pkg")
@@ -1099,8 +1296,22 @@ def test_identity_board_duplicate_name_keeps_first_issue_url():
     the FIRST issue URL seen, never overwritten."""
     board = _board_raw(
         [
-            {"number": 1, "title": "[Conda-Forge Packaging] dup-pkg", "url": "https://x/first", "state": "OPEN", "milestone": None, "fetched_at": 1},
-            {"number": 2, "title": "[Conda-Forge Packaging] dup-pkg", "url": "https://x/second", "state": "OPEN", "milestone": None, "fetched_at": 1},
+            {
+                "number": 1,
+                "title": "[Conda-Forge Packaging] dup-pkg",
+                "url": "https://x/first",
+                "state": "OPEN",
+                "milestone": None,
+                "fetched_at": 1,
+            },
+            {
+                "number": 2,
+                "title": "[Conda-Forge Packaging] dup-pkg",
+                "url": "https://x/second",
+                "state": "OPEN",
+                "milestone": None,
+                "fetched_at": 1,
+            },
         ]
     )
     out = _build_primary(board=board)
@@ -1113,8 +1324,18 @@ def test_identity_conda_purl_only_when_conda_forge_verified():
     out = _build_primary(
         conda_maintainers=_conda_maintainers(
             [
-                {"core_python_package_name": "verified-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"},
-                {"core_python_package_name": "unverified-pkg", "role": "Maintainer", "feedstock_slug": "y", "repository_source": "CDO-ENT-CONDA"},
+                {
+                    "core_python_package_name": "verified-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                },
+                {
+                    "core_python_package_name": "unverified-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "y",
+                    "repository_source": "CDO-ENT-CONDA",
+                },
             ]
         ),
         enumerated_names=["verified-pkg"],
@@ -1127,16 +1348,42 @@ def test_identity_overlay_urls_feedstock_metadata_staged_local():
     """Matrix row: Overlay URLs — feedstock + metadata + staged PR + local recipes."""
     attribution = _attribution_raw([{"conda_name": "overlay-pkg", "feedstock_name": "overlay-pkg"}])
     staged = _staged_raw(
-        [{"number": 10, "state": "open", "merged_at": None, "url": "https://x/10", "title": "Add recipe for overlay-pkg", "file_paths": "", "fetched_at": 1}]
+        [
+            {
+                "number": 10,
+                "state": "open",
+                "merged_at": None,
+                "url": "https://x/10",
+                "title": "Add recipe for overlay-pkg",
+                "file_paths": "",
+                "fetched_at": 1,
+            }
+        ]
     )
     local = _local_raw(
-        [{"dir_name": "overlay-pkg", "names": "overlay-pkg", "url": "https://github.com/rxm7706/local-recipes/tree/main/recipes/overlay-pkg", "build_status": "success"}]
+        [
+            {
+                "dir_name": "overlay-pkg",
+                "names": "overlay-pkg",
+                "url": "https://github.com/rxm7706/local-recipes/tree/main/recipes/overlay-pkg",
+                "build_status": "success",
+            }
+        ]
     )
     out = _build_primary(
         attribution=attribution,
         staged=staged,
         local=local,
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "overlay-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "overlay-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
     )
     row = _row_for(out, "overlay-pkg")
     assert row["Conda-Forge_FeedStock_URL"] == "https://github.com/conda-forge/overlay-pkg-feedstock"
@@ -1151,13 +1398,38 @@ def test_identity_staged_pr_file_path_match_ranks_above_title_match():
     title-parse match on a different (also open) PR."""
     staged = _staged_raw(
         [
-            {"number": 5, "state": "open", "merged_at": None, "url": "https://x/title-match", "title": "Add recipe for rank-pkg", "file_paths": "", "fetched_at": 1},
-            {"number": 6, "state": "open", "merged_at": None, "url": "https://x/file-match", "title": "unrelated title", "file_paths": "recipes/rank-pkg/recipe.yaml", "fetched_at": 1},
+            {
+                "number": 5,
+                "state": "open",
+                "merged_at": None,
+                "url": "https://x/title-match",
+                "title": "Add recipe for rank-pkg",
+                "file_paths": "",
+                "fetched_at": 1,
+            },
+            {
+                "number": 6,
+                "state": "open",
+                "merged_at": None,
+                "url": "https://x/file-match",
+                "title": "unrelated title",
+                "file_paths": "recipes/rank-pkg/recipe.yaml",
+                "fetched_at": 1,
+            },
         ]
     )
     out = _build_primary(
         staged=staged,
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "rank-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "rank-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
     )
     assert _row_for(out, "rank-pkg")["Staged_Recipes_PR_URL"] == "https://x/file-match"
 
@@ -1170,7 +1442,16 @@ def test_identity_no_local_build_status_stays_blank_never_fabricated():
     )
     out = _build_primary(
         local=local,
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "blank-status-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "blank-status-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
     )
     assert _row_for(out, "blank-status-pkg")["Local_Build_Status"] == ""
 
@@ -1181,7 +1462,16 @@ def test_identity_associator_fetch_fully_unavailable_falls_through_to_inventory(
     behaves identically)."""
     out = _build_primary(
         assoc=_EMPTY_ASSOC,
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "assoc-down-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "assoc-down-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
         universe_names=["assoc-down-pkg"],
     )
     row = _row_for(out, "assoc-down-pkg")
@@ -1194,7 +1484,16 @@ def test_identity_board_totally_unavailable_join_still_proceeds():
     universe-row join still proceeds using inventory/associator data alone."""
     out = _build_primary(
         board=_EMPTY_BOARD,
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "board-down-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "board-down-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
     )
     row = _row_for(out, "board-down-pkg")
     assert row["OpenTeams_Issue_URL"] == ""
@@ -1205,20 +1504,54 @@ def test_identity_export_parquet_full_gist_schema_shape():
     """Matrix row: identity_export_parquet shape — full GIST_SCHEMA column order,
     18 core columns populated, every ranking/JFROG column present as null."""
     primary = _build_primary(
-        conda_maintainers=_conda_maintainers([{"core_python_package_name": "export-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        conda_maintainers=_conda_maintainers(
+            [
+                {
+                    "core_python_package_name": "export-pkg",
+                    "role": "Maintainer",
+                    "feedstock_slug": "x",
+                    "repository_source": "CDO-ENT-CONDA",
+                }
+            ]
+        ),
         enumerated_names=["export-pkg"],
     )
     out = build_identity_export_parquet(primary)
     assert list(out.columns) == [
-        "P", "Rank", "Score", "Package", "Work",
-        "Platforms", "Apps", "Downloads", "Versions", "Vuln",
-        "Core_Python_Package_Name", "OpenTeams_Title", "identity_source", "associator_key",
-        "associator_status", "primary_purl", "primary_type", "alternative_purls", "cpes",
-        "conda_purl", "source_repository_url", "OpenTeams_Issue_URL",
-        "Conda-Forge_FeedStock_URL", "Conda-Forge_Metadata_URL", "Staged_Recipes_PR_URL",
-        "Local_Recipes_URL", "Local_Build_Status", "Verification_Timestamp_UTC",
-        "Priority_Bucket_Description", "Priority_Source", "Priority_Reason",
-        "JFROG_risk_level", "JFROG_latest_vuln_count", "internal_component_count",
+        "P",
+        "Rank",
+        "Score",
+        "Package",
+        "Work",
+        "Platforms",
+        "Apps",
+        "Downloads",
+        "Versions",
+        "Vuln",
+        "Core_Python_Package_Name",
+        "OpenTeams_Title",
+        "identity_source",
+        "associator_key",
+        "associator_status",
+        "primary_purl",
+        "primary_type",
+        "alternative_purls",
+        "cpes",
+        "conda_purl",
+        "source_repository_url",
+        "OpenTeams_Issue_URL",
+        "Conda-Forge_FeedStock_URL",
+        "Conda-Forge_Metadata_URL",
+        "Staged_Recipes_PR_URL",
+        "Local_Recipes_URL",
+        "Local_Build_Status",
+        "Verification_Timestamp_UTC",
+        "Priority_Bucket_Description",
+        "Priority_Source",
+        "Priority_Reason",
+        "JFROG_risk_level",
+        "JFROG_latest_vuln_count",
+        "internal_component_count",
         "internal_lob_count",
     ]
     row = out.iloc[0]
@@ -1242,9 +1575,22 @@ def test_identity_join_never_raises_on_all_empty_inputs():
     out = build_identity_packages_primary(None, None, None, None, None, None, None, None, None)
     assert out.empty
     assert list(out.columns) == [
-        "Core_Python_Package_Name", "OpenTeams_Title", "identity_source", "associator_key",
-        "associator_status", "primary_purl", "primary_type", "alternative_purls", "cpes",
-        "conda_purl", "source_repository_url", "OpenTeams_Issue_URL",
-        "Conda-Forge_FeedStock_URL", "Conda-Forge_Metadata_URL", "Staged_Recipes_PR_URL",
-        "Local_Recipes_URL", "Local_Build_Status", "Verification_Timestamp_UTC",
+        "Core_Python_Package_Name",
+        "OpenTeams_Title",
+        "identity_source",
+        "associator_key",
+        "associator_status",
+        "primary_purl",
+        "primary_type",
+        "alternative_purls",
+        "cpes",
+        "conda_purl",
+        "source_repository_url",
+        "OpenTeams_Issue_URL",
+        "Conda-Forge_FeedStock_URL",
+        "Conda-Forge_Metadata_URL",
+        "Staged_Recipes_PR_URL",
+        "Local_Recipes_URL",
+        "Local_Build_Status",
+        "Verification_Timestamp_UTC",
     ]

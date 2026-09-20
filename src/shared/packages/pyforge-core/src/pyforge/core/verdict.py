@@ -33,9 +33,7 @@ class Lattice:
     ``.exit_codes``.
     """
 
-    def __init__(
-        self, order: Sequence[Hashable], exit_by_member: Mapping[Hashable, int]
-    ) -> None:
+    def __init__(self, order: Sequence[Hashable], exit_by_member: Mapping[Hashable, int]) -> None:
         self.order: tuple[Hashable, ...] = tuple(order)
         if len(set(self.order)) != len(self.order):
             raise ValueError(
@@ -45,9 +43,7 @@ class Lattice:
                 "fail-loud per this codebase's convention)"
             )
         self.exit_by_member: dict[Hashable, int] = dict(exit_by_member)
-        self._rank_by_member: dict[Hashable, int] = {
-            member: rank for rank, member in enumerate(self.order)
-        }
+        self._rank_by_member: dict[Hashable, int] = {member: rank for rank, member in enumerate(self.order)}
 
     def rank(self, member: Hashable) -> int:
         """The 0-indexed position of ``member`` in ``order`` -- replaces

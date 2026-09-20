@@ -316,9 +316,7 @@ def new(
 
     if result.returncode != 0:
         cfe_message = (
-            result.stdout.strip()
-            or result.stderr.strip()
-            or f"CFE exited with code {result.returncode} and no output"
+            result.stdout.strip() or result.stderr.strip() or f"CFE exited with code {result.returncode} and no output"
         )
         raise RecipeGenerationError(source=source, cfe_message=cfe_message)
 
@@ -662,7 +660,10 @@ def submit(
         recipe_dir = Path(recipe_path).expanduser().resolve()
     except (OSError, ValueError) as exc:
         return ShipTargetResult(
-            target="conda-forge", state=ShipState.FAILED, reference=None, message=str(exc),
+            target="conda-forge",
+            state=ShipState.FAILED,
+            reference=None,
+            message=str(exc),
         )
     args = [recipe_dir.name]
     if not confirm:
@@ -683,7 +684,9 @@ def submit(
 
 
 def _ship_target_result_from_cfe_result(
-    result: CfeResult, *, confirm: bool,
+    result: CfeResult,
+    *,
+    confirm: bool,
 ) -> ShipTargetResult:
     """Map a `submit_pr` `CfeResult` onto a `ShipTargetResult` (AD-9) -- the
     one Mason-side reinterpretation of a CFE JSON body this epic makes
@@ -727,14 +730,17 @@ def _ship_target_result_from_cfe_result(
 
     if not confirm:
         return ShipTargetResult(
-            target="conda-forge", state=ShipState.NOT_ATTEMPTED,
-            reference=None, message=message,
+            target="conda-forge",
+            state=ShipState.NOT_ATTEMPTED,
+            reference=None,
+            message=message,
         )
 
     succeeded = body.get("success") if body is not None else result.returncode == 0
     if not succeeded:
         return ShipTargetResult(
-            target="conda-forge", state=ShipState.FAILED,
+            target="conda-forge",
+            state=ShipState.FAILED,
             reference=(body.get("fork_branch_url") if body else None),
             message=message,
         )
@@ -742,7 +748,10 @@ def _ship_target_result_from_cfe_result(
     pr_url = body.get("pr_url") if body else None
     reference = pr_url if pr_url else (body.get("fork_branch_url") if body else None)
     return ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference=reference, message=message,
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference=reference,
+        message=message,
     )
 
 
