@@ -84,27 +84,13 @@ def select_build_engine_plugin(
     raises ``PluginError``.
     """
     registry = registry if registry is not None else build_engine_registry()
-    candidates = [
-        plugin
-        for plugin in registry.plugins
-        if plugin.hook_spec == BUILD_ENGINE_HOOK_SPEC.name
-    ]
+    candidates = [plugin for plugin in registry.plugins if plugin.hook_spec == BUILD_ENGINE_HOOK_SPEC.name]
     if name is None:
-        defaults = [
-            plugin
-            for plugin in candidates
-            if getattr(plugin, "is_default", False)
-        ]
+        defaults = [plugin for plugin in candidates if getattr(plugin, "is_default", False)]
         if not defaults:
-            raise PluginError(
-                "no default build-engine plugin registered "
-                f"for {BUILD_ENGINE_HOOK_SPEC.name!r}"
-            )
+            raise PluginError(f"no default build-engine plugin registered for {BUILD_ENGINE_HOOK_SPEC.name!r}")
         if len(defaults) > 1:
-            raise PluginError(
-                "multiple default build-engine plugins registered "
-                f"for {BUILD_ENGINE_HOOK_SPEC.name!r}"
-            )
+            raise PluginError(f"multiple default build-engine plugins registered for {BUILD_ENGINE_HOOK_SPEC.name!r}")
         return defaults[0]
     for plugin in candidates:
         if getattr(plugin, "engine_name", None) == name:

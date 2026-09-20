@@ -15,9 +15,7 @@ from pyforge.marshal.ports.vcs import WorktreeEntry
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -49,11 +47,7 @@ def _worktree_paths(repo: Path) -> list[str]:
     ``repo`` -- used to prove ``merge_branch``'s own temp detached worktree
     never leaks (code review, 2026-08-06, P1)."""
     result = _git(repo, "worktree", "list", "--porcelain")
-    return [
-        line.removeprefix("worktree ")
-        for line in result.stdout.splitlines()
-        if line.startswith("worktree ")
-    ]
+    return [line.removeprefix("worktree ") for line in result.stdout.splitlines() if line.startswith("worktree ")]
 
 
 # --- repo_common_root ---------------------------------------------------------
@@ -133,9 +127,7 @@ def test_worktree_path_for_branch_ignores_other_branches(vcs, repo, tmp_path):
     assert vcs.worktree_path_for_branch(repo, "loop/two") is None
 
 
-def test_worktree_path_for_branch_raises_on_a_block_without_worktree_line(
-    vcs, repo, monkeypatch
-):
+def test_worktree_path_for_branch_raises_on_a_block_without_worktree_line(vcs, repo, monkeypatch):
     """Review finding: a porcelain block carrying a `branch` line but no
     `worktree` line (a worktree path containing a blank line splits one
     block in two) raised a raw KeyError instead of the port's error."""
@@ -279,9 +271,7 @@ def test_add_worktree_raises_on_branch_checked_out_twice(vcs, repo, tmp_path):
         vcs.add_worktree(repo, other_home, "loop/dup", base="main")
 
 
-def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(
-    vcs, repo, tmp_path
-):
+def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(vcs, repo, tmp_path):
     """A `loop/<slug>` tag colliding with the branch of the same name must
     not make `add_worktree` attach in detached HEAD instead of the branch
     (empirically: `git worktree add <path> <bare-name>` recognizes the
@@ -300,9 +290,7 @@ def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(
     assert result.stdout.strip() == "refs/heads/loop/tagged"
 
 
-def test_add_worktree_from_a_remote_tracking_base_sets_no_upstream(
-    vcs, cloned_repo, tmp_path
-):
+def test_add_worktree_from_a_remote_tracking_base_sets_no_upstream(vcs, cloned_repo, tmp_path):
     """Regression (2026-08-30/31): minting a new branch from a
     remote-tracking ``base`` (every dispatch/loop-home caller passes
     ``origin/main``) must NOT auto-configure that branch's upstream to
@@ -318,14 +306,10 @@ def test_add_worktree_from_a_remote_tracking_base_sets_no_upstream(
         capture_output=True,
         text=True,
     )
-    assert result.returncode != 0, (
-        f"expected no upstream configured, got {result.stdout.strip()!r}"
-    )
+    assert result.returncode != 0, f"expected no upstream configured, got {result.stdout.strip()!r}"
 
 
-def test_add_worktree_creates_a_new_branch_when_only_a_same_named_tag_exists(
-    vcs, repo, tmp_path
-):
+def test_add_worktree_creates_a_new_branch_when_only_a_same_named_tag_exists(vcs, repo, tmp_path):
     """Review finding, the actual bug: with only a TAG present (no branch),
     a bare `rev-parse --verify <branch>` (pre-fix `branch_exists`) resolves
     the tag and reports `True`, so `add_worktree` would take the "attach to
@@ -393,9 +377,7 @@ def test_run_replaces_undecodable_git_output(monkeypatch):
 
     from pyforge.marshal.adapters.vcs_git import _run
 
-    result = _run(
-        [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\xff')"]
-    )
+    result = _run([sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\xff')"])
     assert result.returncode == 0
     assert result.stdout == "�"
 
@@ -436,9 +418,7 @@ def test_has_uncommitted_changes_raises_outside_a_repo(vcs, tmp_path):
         vcs.has_uncommitted_changes(outside)
 
 
-def test_has_uncommitted_changes_true_for_untracked_file_despite_local_config_hiding_it(
-    vcs, repo
-):
+def test_has_uncommitted_changes_true_for_untracked_file_despite_local_config_hiding_it(vcs, repo):
     """Review finding: an operator's LOCAL ``status.showUntrackedFiles=no``
     would otherwise hide an untracked file from plain ``git status
     --porcelain``, silently defeating the refusal this method exists to
@@ -542,9 +522,7 @@ def test_is_branch_merged_true_for_a_squash_merged_branch(vcs, repo):
     # Confirms the parent count really is 1 -- the exact live-verified shape
     # this method exists to handle.
     show = _git(repo, "cat-file", "-p", "HEAD")
-    assert show.stdout.count("\nparent ") + (
-        1 if show.stdout.startswith("parent ") else 0
-    ) == 1
+    assert show.stdout.count("\nparent ") + (1 if show.stdout.startswith("parent ") else 0) == 1
     # Confirms bare ancestry really would misreport this as unmerged.
     ancestry = subprocess.run(
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", "loop/squash", "main"],
@@ -555,9 +533,7 @@ def test_is_branch_merged_true_for_a_squash_merged_branch(vcs, repo):
     assert vcs.is_branch_merged(repo, "loop/squash", into="main") is True
 
 
-def test_is_branch_merged_true_for_a_squash_merge_even_after_main_advances_further(
-    vcs, repo
-):
+def test_is_branch_merged_true_for_a_squash_merge_even_after_main_advances_further(vcs, repo):
     """Confirms the live-verified claim from the story's Design Notes: the
     squash-merge recognition survives `main` advancing with further,
     unrelated commits after the squash landed."""
@@ -575,9 +551,7 @@ def test_is_branch_merged_true_for_a_squash_merge_even_after_main_advances_furth
     assert vcs.is_branch_merged(repo, "loop/squash2", into="main") is True
 
 
-def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(
-    vcs, tmp_path, monkeypatch
-):
+def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(vcs, tmp_path, monkeypatch):
     """Boundaries & Constraints: the internal commit-tree call must pin its
     own author/committer identity and disable GPG signing so it never
     depends on the operator's global git config -- proven against a repo/
@@ -650,9 +624,7 @@ def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(
     # is_branch_merged's own internal commit-tree call must succeed even
     # here -- if it relied on ambient identity it would raise
     # VcsCommandError instead of returning a bool.
-    assert (
-        vcs.is_branch_merged(no_identity_repo, "loop/noidentity", into="main") is False
-    )
+    assert vcs.is_branch_merged(no_identity_repo, "loop/noidentity", into="main") is False
 
 
 def test_is_branch_merged_raises_on_unknown_branch(vcs, repo):
@@ -752,9 +724,7 @@ def test_delete_branch_force_removes_an_unmerged_branch(vcs, repo):
     assert vcs.branch_exists(repo, "loop/forcedelete") is False
 
 
-def test_delete_branch_force_removes_a_squash_merged_branch_plain_d_would_refuse(
-    vcs, repo
-):
+def test_delete_branch_force_removes_a_squash_merged_branch_plain_d_would_refuse(vcs, repo):
     """The exact rationale this story's Design Notes give for always using
     -D once Marshal's own merged-check authorizes removal: plain `-d`'s
     ancestry-only heuristic refuses a squash-merged branch even though it is
@@ -823,9 +793,7 @@ def cloned_repo(remote: Path, tmp_path: Path) -> Path:
     ``main``'s own upstream is set up exactly the way a real clone does
     it."""
     clone = tmp_path / "clone"
-    subprocess.run(
-        ["git", "clone", str(remote), str(clone)], capture_output=True, text=True, check=True
-    )
+    subprocess.run(["git", "clone", str(remote), str(clone)], capture_output=True, text=True, check=True)
     _git(clone, "config", "user.email", "test@example.com")
     _git(clone, "config", "user.name", "Test")
     (clone / "README.md").write_text("hello\n", encoding="utf-8")
@@ -896,9 +864,7 @@ def test_push_never_passes_force(vcs, cloned_repo, remote, monkeypatch):
         assert "--set-upstream" not in args
 
 
-def test_push_does_not_depend_on_repo_root_having_the_branch_checked_out(
-    vcs, cloned_repo, remote
-):
+def test_push_does_not_depend_on_repo_root_having_the_branch_checked_out(vcs, cloned_repo, remote):
     """`repo_root` need not have `branch` checked out as HEAD -- refs are
     shared across the repo, and this method names `branch` EXPLICITLY as
     the source refspec rather than relying on a bare `git push`."""
@@ -922,9 +888,7 @@ def test_push_raises_on_no_configured_remote(vcs, repo):
         vcs.push(repo, "main")
 
 
-def test_push_raises_rather_than_falls_back_on_a_non_missing_upstream_rev_parse_failure(
-    vcs, repo, monkeypatch
-):
+def test_push_raises_rather_than_falls_back_on_a_non_missing_upstream_rev_parse_failure(vcs, repo, monkeypatch):
     """Review finding (P3, Blind Hunter + Edge Case Hunter): the earlier
     implementation treated ANY non-zero `git rev-parse --abbrev-ref
     <branch>@{upstream}` exit as "no upstream configured" and silently fell
@@ -1051,9 +1015,7 @@ def test_changed_files_a_committed_rename_reports_only_the_new_path(vcs, repo, t
     assert "README.md" not in result
 
 
-def test_changed_files_an_untracked_directory_reports_each_file_individually(
-    vcs, repo, tmp_path
-):
+def test_changed_files_an_untracked_directory_reports_each_file_individually(vcs, repo, tmp_path):
     """Review finding (Blind Hunter + Edge Case Hunter): git's default
     `--untracked-files=normal` collapses a wholly-new untracked directory
     into a single "dir/" porcelain line -- which never matches a
@@ -1303,9 +1265,7 @@ def test_merge_branch_merges_cleanly_and_returns_the_new_commit_sha(vcs, repo, t
     assert log.stdout.strip() == "Merge 1.2 into main"
     # --no-ff: a real merge commit, with two parents, even though this was
     # a fast-forward-eligible branch.
-    parents = (
-        _git(repo, "log", "-1", "--format=%P", "refs/heads/main").stdout.strip().split()
-    )
+    parents = _git(repo, "log", "-1", "--format=%P", "refs/heads/main").stdout.strip().split()
     assert len(parents) == 2
 
 
@@ -1330,9 +1290,7 @@ def test_merge_branch_never_touches_repo_roots_own_active_checkout(vcs, repo, tm
     assert _git(repo, "branch", "--show-current").stdout.strip() == "some-other-branch"
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == head_before
     # `main` itself DID advance -- that is the one intended write.
-    assert _git(repo, "log", "-1", "--format=%s", "refs/heads/main").stdout.strip() == (
-        "Merge 1.2 into main"
-    )
+    assert _git(repo, "log", "-1", "--format=%s", "refs/heads/main").stdout.strip() == ("Merge 1.2 into main")
 
 
 def test_merge_branch_never_checks_out_branch_itself(vcs, repo, tmp_path):
@@ -1430,9 +1388,7 @@ def test_merge_branch_refuses_when_into_moves_concurrently(vcs, repo, tmp_path, 
     assert not any("marshal-land-" in path for path in _worktree_paths(repo))
 
 
-def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(
-    vcs, repo, tmp_path, monkeypatch
-):
+def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(vcs, repo, tmp_path, monkeypatch):
     """P5: a cosmetic post-merge-success failure (here, the temp worktree's
     own removal) must never mask an already-durable merge -- cleanup is
     best-effort and swallows this class of failure internally, so a
@@ -1449,9 +1405,7 @@ def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(
 
     def _flaky_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
         if "worktree" in args and "remove" in args:
-            return subprocess.CompletedProcess(
-                args, 1, stdout="", stderr="simulated cleanup failure"
-            )
+            return subprocess.CompletedProcess(args, 1, stdout="", stderr="simulated cleanup failure")
         return real_run(args, timeout_s=timeout_s)
 
     monkeypatch.setattr(vcs_git_module, "_run", _flaky_run)
@@ -1465,9 +1419,7 @@ def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(
     assert not any("marshal-land-" in path for path in _worktree_paths(repo))
 
 
-def test_merge_branch_still_returns_the_sha_if_cleanup_raises_outright(
-    vcs, repo, tmp_path, monkeypatch
-):
+def test_merge_branch_still_returns_the_sha_if_cleanup_raises_outright(vcs, repo, tmp_path, monkeypatch):
     """P5, the stronger case: `_run` itself can RAISE `VcsCommandError`
     (a launch failure, a timeout) rather than merely returning a non-zero
     exit code -- the `finally` block's own cleanup must swallow that too,
@@ -1630,9 +1582,7 @@ def test_fetch_raises_when_repo_root_is_not_a_git_repository(vcs, tmp_path):
         vcs.fetch(not_a_repo, "origin", "main")
 
 
-def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(
-    vcs, repo, remote, tmp_path
-):
+def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(vcs, repo, remote, tmp_path):
     """`fetch` alone (no `fast_forward` call) must never move `home`'s own
     checked-out branch -- only `refs/remotes/origin/<ref>` advances."""
     _git(repo, "remote", "add", "origin", str(remote))
@@ -1650,9 +1600,10 @@ def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(
     vcs.fetch(home, "origin", "main")
 
     assert _git(home, "rev-parse", "HEAD").stdout.strip() == before
-    assert _git(home, "rev-parse", "refs/remotes/origin/main").stdout.strip() == _git(
-        repo, "rev-parse", "main"
-    ).stdout.strip()
+    assert (
+        _git(home, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+        == _git(repo, "rev-parse", "main").stdout.strip()
+    )
 
 
 def test_fast_forward_raises_on_an_unresolvable_ref(vcs, repo):
@@ -1660,9 +1611,7 @@ def test_fast_forward_raises_on_an_unresolvable_ref(vcs, repo):
         vcs.fast_forward(repo, "origin/no-such-branch")
 
 
-def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(
-    vcs, repo, remote
-):
+def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(vcs, repo, remote):
     """CAP-5: promote publishes on origin/main from a throwaway worktree.
     The operator checkout stays on its pre-promote HEAD, dirty files stay,
     and no detached worktree is leaked."""
@@ -1693,9 +1642,7 @@ def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(
 
 def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
     with pytest.raises(VcsCommandError, match="at least one write"):
-        vcs.commit_paths_onto_remote_tip(
-            repo, remote="origin", ref="main", writes=(), message="nope"
-        )
+        vcs.commit_paths_onto_remote_tip(repo, remote="origin", ref="main", writes=(), message="nope")
 
 
 # --- merge_tree_write / add_worktree_for_tree (Story 51.1) --------------------
@@ -1769,9 +1716,7 @@ def test_add_worktree_for_tree_checks_out_the_merged_content(vcs, repo, tmp_path
     assert not any("merge-tree-preview-home" in path for path in _worktree_paths(repo))
 
 
-def test_add_worktree_for_tree_raises_vcs_command_error_on_an_unresolvable_parent(
-    vcs, repo, tmp_path
-):
+def test_add_worktree_for_tree_raises_vcs_command_error_on_an_unresolvable_parent(vcs, repo, tmp_path):
     tree_oid = _git(repo, "rev-parse", "HEAD^{tree}").stdout.strip()
     home = tmp_path / "merge-tree-preview-home"
     with pytest.raises(VcsCommandError):

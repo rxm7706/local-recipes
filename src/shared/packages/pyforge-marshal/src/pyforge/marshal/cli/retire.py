@@ -163,9 +163,7 @@ def _retire_writer_id() -> str:
     return "-".join(("retire", str(os.getpid()), _retire_random_token()))
 
 
-def _journal_retirement(
-    fs: FsPort, root: Path, slug: str, deleted: list[dict[str, object]]
-) -> Finding | None:
+def _journal_retirement(fs: FsPort, root: Path, slug: str, deleted: list[dict[str, object]]) -> Finding | None:
     """One journal ``observation`` entry recording every branch actually
     deleted for ``slug`` this run (the story's own Always bullet: "every
     deletion is journaled") -- mirrors ``cli/deploy.py::
@@ -180,15 +178,7 @@ def _journal_retirement(
     grounds to undo anything."""
     moment = datetime.now(timezone.utc)
     run_id = mint_run_id(slug, _retire_format_utc_compact(moment), _retire_random_token())
-    run_dir = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-        / run_id
-    )
+    run_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     try:
         fs.ensure_dir(run_dir.parent)
         fs.create_dir_exclusive(run_dir)
@@ -197,8 +187,7 @@ def _journal_retirement(
             code=_MRS_RETIRE_003,
             severity=Severity.WARN,
             message=(
-                f"{len(deleted)} branch(es) for {slug!r} were deleted but "
-                f"the retirement could not be journaled: {exc}"
+                f"{len(deleted)} branch(es) for {slug!r} were deleted but the retirement could not be journaled: {exc}"
             ),
         )
 
@@ -213,18 +202,13 @@ def _journal_retirement(
     try:
         prepared = prepare_for_write(entry)
         if prepared.sidecar_relative_path is not None:
-            fs.write_text_atomic(
-                run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
-            )
+            fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
         fs.append_line(run_dir / _RETIRE_JOURNAL_FILENAME, prepared.line, fsync=True)
     except FsError as exc:
         return Finding(
             code=_MRS_RETIRE_003,
             severity=Severity.WARN,
-            message=(
-                f"{len(deleted)} branch(es) for {slug!r} were deleted but "
-                f"could not be journaled: {exc}"
-            ),
+            message=(f"{len(deleted)} branch(es) for {slug!r} were deleted but could not be journaled: {exc}"),
         )
     return None
 
@@ -302,9 +286,7 @@ def run_retire(
     def _subjects_for_base(base_branch: str) -> tuple[str, ...]:
         if base_branch not in subjects_by_base:
             try:
-                subjects_by_base[base_branch] = vcs.commit_subjects(
-                    git_repo_root, base_branch
-                )
+                subjects_by_base[base_branch] = vcs.commit_subjects(git_repo_root, base_branch)
             except VcsCommandError:
                 subjects_by_base[base_branch] = ()
         return subjects_by_base[base_branch]
@@ -322,9 +304,7 @@ def run_retire(
                     project_data = _read_project_policy(policy_path)
                 except PolicyIOError as exc:
                     findings.append(exc.finding)
-        effective, policy_findings = policy.compose(
-            project_slug=slug, project=project_data, flags={}
-        )
+        effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
         findings.extend(policy_findings)
         base = effective.landing_base_branch.value
         template = effective.merge_subject_template.value
@@ -375,9 +355,7 @@ def run_retire(
             except MalformedStoryKeyError:
                 continue
 
-            candidate = RetirementCandidate(
-                slug=slug, branch=branch, story_key=str(story_key)
-            )
+            candidate = RetirementCandidate(slug=slug, branch=branch, story_key=str(story_key))
 
             try:
                 merged_by_patch_id = vcs.is_branch_merged(git_repo_root, branch, into=base)
@@ -386,10 +364,7 @@ def run_retire(
                     Finding(
                         code=_MRS_RETIRE_002,
                         severity=Severity.WARN,
-                        message=(
-                            f"cannot confirm {branch!r} ({slug!r}) is merged "
-                            f"by patch-id into {base!r}: {exc}"
-                        ),
+                        message=(f"cannot confirm {branch!r} ({slug!r}) is merged by patch-id into {base!r}: {exc}"),
                         path=branch,
                     )
                 )
@@ -412,10 +387,7 @@ def run_retire(
                     Finding(
                         code=_MRS_RETIRE_002,
                         severity=Severity.WARN,
-                        message=(
-                            f"cannot confirm {branch!r} ({slug!r}) has no "
-                            f"live worktree checked out: {exc}"
-                        ),
+                        message=(f"cannot confirm {branch!r} ({slug!r}) has no live worktree checked out: {exc}"),
                         path=branch,
                     )
                 )
@@ -524,10 +496,7 @@ def _render_text_retire(data: Mapping[str, object], findings: tuple[Finding, ...
     insufficient = data.get("insufficient_evidence") or []
     lines.append(f"insufficient evidence: {len(insufficient)}")
     for entry in insufficient:
-        lines.append(
-            f"  {entry['slug']}/{entry['branch']!r}: "
-            f"missing {', '.join(entry['missing'])}"
-        )
+        lines.append(f"  {entry['slug']}/{entry['branch']!r}: missing {', '.join(entry['missing'])}")
 
     deleted = data.get("deleted") or []
     lines.append(f"deleted: {len(deleted)}")
@@ -545,9 +514,7 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
     """The envelope-build-then-print tail every ``cli/*.py`` command shares
     (AD-14: one envelope shape per command)."""
     verdict_value = compute_verdict(findings)
-    envelope = build_envelope(
-        command="retire", verdict=verdict_value, data=data, findings=tuple(findings)
-    )
+    envelope = build_envelope(command="retire", verdict=verdict_value, data=data, findings=tuple(findings))
 
     if args.format == "json":
         rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)

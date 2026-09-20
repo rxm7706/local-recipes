@@ -208,9 +208,7 @@ def parse_regions(text: str, fmt: RegionFormat) -> tuple[RegionSpan, ...]:
     fence_lineno = 0
     open_region: _OpenRegion | None = None
 
-    for lineno, (content, line_start, content_end, line_end) in enumerate(
-        _iter_lines(text), start=1
-    ):
+    for lineno, (content, line_start, content_end, line_end) in enumerate(_iter_lines(text), start=1):
         if fence_aware:
             if open_fence is not None:
                 if _closes_fence(content, open_fence):
@@ -247,9 +245,7 @@ def parse_regions(text: str, fmt: RegionFormat) -> tuple[RegionSpan, ...]:
             continue
 
         if open_region is None:
-            raise RegionParseError(
-                f"line {lineno}: end marker for region {marker.region!r} with no region open"
-            )
+            raise RegionParseError(f"line {lineno}: end marker for region {marker.region!r} with no region open")
         if marker.region != open_region.marker.region:
             raise RegionParseError(
                 f"line {lineno}: end marker for region {marker.region!r} does not match the"
@@ -280,13 +276,9 @@ def parse_regions(text: str, fmt: RegionFormat) -> tuple[RegionSpan, ...]:
         char, run_length = open_fence
         detail = ""
         if open_region is not None:
-            detail = (
-                f" (region {open_region.marker.region!r}, begun at line"
-                f" {open_region.lineno}, is also still open)"
-            )
+            detail = f" (region {open_region.marker.region!r}, begun at line {open_region.lineno}, is also still open)"
         raise RegionParseError(
-            f"line {fence_lineno}: a {char * run_length!r} fenced code block is never closed"
-            f" before end of text{detail}"
+            f"line {fence_lineno}: a {char * run_length!r} fenced code block is never closed before end of text{detail}"
         )
     if open_region is not None:
         raise RegionParseError(
@@ -351,9 +343,7 @@ def _frontmatter_end(text: str) -> int:
     return 0
 
 
-def resolve_anchor(
-    text: str, fmt: RegionFormat, anchor: tuple[str, ...]
-) -> AnchorResolution:
+def resolve_anchor(text: str, fmt: RegionFormat, anchor: tuple[str, ...]) -> AnchorResolution:
     """Resolve ``anchor`` -- an ORDERED preference list, not a file-position
     search (see the module's Design Notes) -- against ``text`` to a single
     byte offset a new region may be inserted at.
@@ -405,9 +395,7 @@ def resolve_anchor(
     open_fence: tuple[str, int] | None = None
     fence_lineno = 0
 
-    for lineno, (content, _line_start, _content_end, line_end) in enumerate(
-        _iter_lines(text), start=1
-    ):
+    for lineno, (content, _line_start, _content_end, line_end) in enumerate(_iter_lines(text), start=1):
         if fence_aware:
             if open_fence is not None:
                 if _closes_fence(content, open_fence):
@@ -428,8 +416,7 @@ def resolve_anchor(
     if open_fence is not None:
         char, run_length = open_fence
         raise RegionParseError(
-            f"line {fence_lineno}: a {char * run_length!r} fenced code block is never closed"
-            " before end of text"
+            f"line {fence_lineno}: a {char * run_length!r} fenced code block is never closed before end of text"
         )
 
     for anchor_text in anchor:

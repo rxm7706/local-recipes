@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from pyforge.core.hooks import PluginError
+
 from pyforge.scribe.embeddings import embed_text, vector_literal
 from pyforge.scribe.graph_store import GRAPHSTORE_HOOK_SPEC, PG_GRAPHSTORE_OWNER
 from pyforge.scribe.models import GraphNode
@@ -182,9 +183,7 @@ class PostgresGraphStore:
         existing = self._nodes.get(node_id)
         if existing is None:
             raise ValueError(f"cannot invalidate unknown node id {node_id!r} -- upsert it first")
-        self._nodes[node_id] = existing.model_copy(
-            update={"valid_until": ended_at, "superseded_by": superseded_by}
-        )
+        self._nodes[node_id] = existing.model_copy(update={"valid_until": ended_at, "superseded_by": superseded_by})
 
     def query_by_citation(self, citation: str) -> list[GraphNode]:
         return [node for node in self._nodes.values() if node.citation == citation]
@@ -238,9 +237,7 @@ class PostgresGraphStore:
                 conn.execute(sql.SQL("DELETE FROM {}").format(self._table()))
                 for node in snapshot:
                     embedding = embed_text(f"{node.title} {node.text}")
-                    embedding_literal = (
-                        vector_literal(embedding) if embedding is not None else None
-                    )
+                    embedding_literal = vector_literal(embedding) if embedding is not None else None
                     conn.execute(
                         sql.SQL(
                             """
@@ -278,10 +275,7 @@ class PostgresGraphStorePlugin:
                 raise PluginError("graph-store plugin requires context['store_path']")
             dsn = resolve_graph_dsn(context)
             if dsn is None:
-                raise PluginError(
-                    "PostgreSQL graph-store requires context['dsn'] or "
-                    f"{_DSN_ENV} (or DATABASE_URL)"
-                )
+                raise PluginError(f"PostgreSQL graph-store requires context['dsn'] or {_DSN_ENV} (or DATABASE_URL)")
             context["store"] = PostgresGraphStore(dsn, Path(store_path))
             nxt = context.get("next")
             if callable(nxt):

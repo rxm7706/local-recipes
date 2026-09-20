@@ -42,9 +42,7 @@ def read_cutover_root(path: Path | str | None = None) -> str:
     """Return ``local-recipes`` or ``foundry`` from the flag's defaultVariant."""
     resolved = resolve_flags_path(path)
     if resolved is None:
-        raise CutoverRootError(
-            "no flag tree: set PYFORGE_FLAGS_PATH or pass a flags.json path"
-        )
+        raise CutoverRootError("no flag tree: set PYFORGE_FLAGS_PATH or pass a flags.json path")
     try:
         payload = json.loads(resolved.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:

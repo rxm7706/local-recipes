@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from scope_triangle import point_scope_triangle
 
 from pyforge.marshal.cli.dispatch import (
     cross_station_surface_overlap_advisories,
@@ -16,19 +17,18 @@ from pyforge.marshal.cli.dispatch import (
 )
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.journal import (
+    SCOPE_VIOLATION_ADVISORIES_FIELD,
     JournalEntryId,
     Phase,
-    SCOPE_VIOLATION_ADVISORIES_FIELD,
     build_entry,
     fold,
     prepare_for_write,
     prepare_for_write_offloading_fields,
     sidecar_texts_for_lines,
 )
-from pyforge.marshal.dispatch_supervisor.__main__ import _verification_outcome_verdict
 from pyforge.marshal.core.verdict import EXIT_OK
+from pyforge.marshal.dispatch_supervisor.__main__ import _verification_outcome_verdict
 from pyforge.marshal.ports.build_harness import DispatchLaunchResult, HarnessResolution
-from scope_triangle import point_scope_triangle
 
 
 def _init_git_repo(path: Path) -> None:
@@ -93,9 +93,7 @@ class FakeVcs:
     def worktree_path_for_branch(self, _repo_root: Path, _branch: str) -> Path | None:
         return None
 
-    def add_worktree(
-        self, repo_root: Path, home: Path, branch: str, *, base: str
-    ) -> None:
+    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         self.added.append((repo_root, home, branch, base))
         home.mkdir(parents=True, exist_ok=True)
 
@@ -182,9 +180,7 @@ def test_serial_mode_still_refuses_unrelated_live_story(tmp_path: Path) -> None:
 
     slug = "pyforge-marshal"
     fs = FakeFs()
-    _seed_live_dispatch_journal(
-        tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1"
-    )
+    _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1")
 
     class LiveVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
@@ -220,9 +216,7 @@ def test_unrelated_live_story_allowed_without_surface_data(
 
     slug = "pyforge-marshal"
     fs = FakeFs()
-    _seed_live_dispatch_journal(
-        tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1"
-    )
+    _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1")
 
     class LiveVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
@@ -270,9 +264,7 @@ def test_surface_overlap_refuses_second_dispatch(tmp_path: Path) -> None:
         '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
         encoding="utf-8",
     )
-    _seed_live_dispatch_journal(
-        tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1"
-    )
+    _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1")
 
     class LiveVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
@@ -318,9 +310,7 @@ def test_redispatch_allowed_when_session_dead_and_verification_refused(
 
     slug = "pyforge-atlas"
     fs = FakeFs()
-    run_dir = _seed_live_dispatch_journal(
-        tmp_path, fs, slug=slug, run_id="run-dead", story_key="21.1"
-    )
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-dead", story_key="21.1")
     journal_path = run_dir / "journal.jsonl"
     verification_intent = prepare_for_write(
         build_entry(
@@ -379,9 +369,7 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
     busy_slug = "pyforge-marshal"
     free_slug = "pyforge-doctor"
     fs = FakeFs()
-    _seed_live_dispatch_journal(
-        tmp_path, fs, slug=busy_slug, run_id="run-busy", story_key="22.1"
-    )
+    _seed_live_dispatch_journal(tmp_path, fs, slug=busy_slug, run_id="run-busy", story_key="22.1")
 
     story = "22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud"
     for slug in (busy_slug, free_slug):
@@ -426,9 +414,7 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
     assert code == EXIT_OK
 
 
-def test_overlap_advisory_is_warn_and_dispatch_proceeds(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_overlap_advisory_is_warn_and_dispatch_proceeds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _init_git_repo(tmp_path)
     slug_a = "pyforge-marshal"
     slug_b = "pyforge-doctor"
@@ -517,9 +503,7 @@ def test_gather_dispatch_journal_facts_round_trips_scope_violation_advisories(
     same way but never populates ``scope_violation_advisories``."""
     slug = "pyforge-marshal"
     fs = FakeFs()
-    run_dir = _seed_live_dispatch_journal(
-        tmp_path, fs, slug=slug, run_id="run-scope", story_key="28.15"
-    )
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-scope", story_key="28.15")
     journal_path = run_dir / "journal.jsonl"
     advisories_payload = [
         {
@@ -585,17 +569,12 @@ def test_verification_outcome_verdict_reads_legacy_sidecarred_payload(
     """Regression: dispatch supervisor must fold sidecars before reading verdict."""
     slug = "pyforge-marshal"
     fs = FakeFs()
-    run_dir = _seed_live_dispatch_journal(
-        tmp_path, fs, slug=slug, run_id="run-sidecar", story_key="28.8"
-    )
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-sidecar", story_key="28.8")
     journal_path = run_dir / "journal.jsonl"
     payload = {
         "verdict": "verified",
         "ok": True,
-        "scope_violation_advisories": [
-            {"code": "MRS-GATE-012", "path": f"extra/{index}.py"}
-            for index in range(500)
-        ],
+        "scope_violation_advisories": [{"code": "MRS-GATE-012", "path": f"extra/{index}.py"} for index in range(500)],
     }
     prepared = prepare_for_write(
         build_entry(
@@ -635,14 +614,9 @@ def test_gather_dispatch_journal_facts_reads_offloaded_scope_advisories(
 ) -> None:
     slug = "pyforge-marshal"
     fs = FakeFs()
-    run_dir = _seed_live_dispatch_journal(
-        tmp_path, fs, slug=slug, run_id="run-offload", story_key="28.15"
-    )
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-offload", story_key="28.15")
     journal_path = run_dir / "journal.jsonl"
-    advisories = [
-        {"code": "MRS-GATE-012", "path": f"src/outside/{index}.py"}
-        for index in range(400)
-    ]
+    advisories = [{"code": "MRS-GATE-012", "path": f"src/outside/{index}.py"} for index in range(400)]
     prepared = prepare_for_write_offloading_fields(
         build_entry(
             id=JournalEntryId("w", 2),

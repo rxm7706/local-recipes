@@ -415,7 +415,7 @@ def _priority_pep503(raw) -> str | None:
 def _priority_num(v) -> float:
     try:
         return float(v) if v not in (None, "") else 0.0
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 0.0
 
 
@@ -425,14 +425,7 @@ def _priority_filled(raw) -> bool:
 
 
 def _priority_use_score(plat: int, apps: int, ic: int, lob: int, downloads: int, versions: int) -> float:
-    return (
-        100.0 * plat
-        + 10.0 * apps
-        + 3.0 * ic
-        + 2.0 * lob
-        + math.log10(1.0 + downloads)
-        + math.log10(1.0 + versions)
-    )
+    return 100.0 * plat + 10.0 * apps + 3.0 * ic + 2.0 * lob + math.log10(1.0 + downloads) + math.log10(1.0 + versions)
 
 
 def _priority_percentile_1_100(raws: list[float]) -> list[int]:
@@ -655,9 +648,7 @@ def _explicit_inv_from_identity(ident: dict) -> dict | None:
     return inv if any(inv.values()) else None
 
 
-def _priority_inv_from_identity(
-    ident: dict, in_jfrog: bool, on_cf: bool, in_conda_ent: bool
-) -> dict[str, str]:
+def _priority_inv_from_identity(ident: dict, in_jfrog: bool, on_cf: bool, in_conda_ent: bool) -> dict[str, str]:
     derived_cohort = _derive_openteams_cohort(in_jfrog, on_cf, in_conda_ent)
     cohort = _priority_str_field(ident.get("OpenTeams_Cohort")) or derived_cohort
     return {
@@ -891,9 +882,7 @@ _INVENTORY_AOSS_FREE_QUEUE_COLUMNS: tuple[str, ...] = (
     "Verification_Timestamp_UTC",
 )
 
-_AOSS_FREE_QUEUE_REASON = (
-    "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)"
-)
+_AOSS_FREE_QUEUE_REASON = "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)"
 
 
 def _verification_timestamp(parameters: dict[str, Any] | None) -> str:
@@ -901,12 +890,7 @@ def _verification_timestamp(parameters: dict[str, Any] | None) -> str:
     override = params.get("inventory_verified_packages", {}).get("verification_timestamp_utc")
     if override is not None:
         return str(override)
-    return (
-        datetime.now(timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _names_from_column(df: pd.DataFrame | None, column: str) -> set[str]:
@@ -1027,9 +1011,7 @@ def build_inventory_verified_packages(
     Tier-0 sets; ``Priority_Bucket`` comes from Story 23.3's assignments (default P9).
     """
     timestamp = _verification_timestamp(parameters)
-    _, pypi_index, cf_or_pm = _verification_sets(
-        core_packages_enumerated, pypi_universe, pypi_conda_mapping
-    )
+    _, pypi_index, cf_or_pm = _verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping)
     priority_map = _priority_map_from_assignments(inventory_priority_assignments)
     maint, co = _maint_co_from_universe(inventory_universe)
 
@@ -1076,9 +1058,7 @@ def build_inventory_verified_packages(
                 "PyPI_Package_URL": f"https://pypi.org/project/{pkg}/" if pypi_ok else "N/A",
                 "Conda-forge_PURL": f"pkg:conda/{pkg}?channel=conda-forge" if cf_ok else "N/A",
                 "Conda-Forge_Package_URL": f"https://anaconda.org/conda-forge/{pkg}/" if cf_ok else "N/A",
-                "Conda-Forge_FeedStock_URL": (
-                    f"https://github.com/conda-forge/{pkg}-feedstock" if cf_ok else "N/A"
-                ),
+                "Conda-Forge_FeedStock_URL": (f"https://github.com/conda-forge/{pkg}-feedstock" if cf_ok else "N/A"),
                 "Verification_Timestamp_UTC": timestamp,
             }
         )
@@ -1113,13 +1093,9 @@ def build_inventory_aoss_free_queue(
 ) -> pd.DataFrame:
     """AOSS-Free Mason queue — supplementary artifact, never expands OpenTeams universe."""
     timestamp = _verification_timestamp(parameters)
-    _, pypi_index, cf_or_pm = _verification_sets(
-        core_packages_enumerated, pypi_universe, pypi_conda_mapping
-    )
+    _, pypi_index, cf_or_pm = _verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping)
     aoss_free = _names_from_column(discovery_aoss_free_python_raw, "pypi_name")
-    aoss_free_candidates = {
-        pkg for pkg in aoss_free if pkg in pypi_index and pkg not in cf_or_pm
-    }
+    aoss_free_candidates = {pkg for pkg in aoss_free if pkg in pypi_index and pkg not in cf_or_pm}
     must_keep = _universe_membership_names(enterprise_jfrog_consumption, enterprise_conda_maintainers)
     queue = sorted(aoss_free_candidates - must_keep)
 
@@ -1256,12 +1232,7 @@ def _export_timestamp(parameters: dict[str, Any] | None) -> str:
     override = params.get("identity_complete_export", {}).get("verification_timestamp_utc")
     if override is not None:
         return str(override)
-    return (
-        datetime.now(timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _export_blank(value: Any) -> Any:
@@ -1401,9 +1372,7 @@ def build_identity_complete_export(
             "Role": _export_blank(ver.get("Role") if ver else pd.NA),
             "PyPI_Verified": _export_blank(ver.get("PyPI_Verified") if ver else pd.NA),
             "CondaForge_Verified": _export_blank(ver.get("CondaForge_Verified") if ver else pd.NA),
-            "Packaging_Candidate_Status": _export_blank(
-                ver.get("Packaging_Candidate_Status") if ver else pd.NA
-            ),
+            "Packaging_Candidate_Status": _export_blank(ver.get("Packaging_Candidate_Status") if ver else pd.NA),
             "Verification_Timestamp_UTC": timestamp,
         }
 

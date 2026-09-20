@@ -98,9 +98,7 @@ def _follow_keycloak_login(auth_url: str) -> None:
         if action.startswith("/"):
             parsed = urllib.parse.urlparse(final_url)
             action = f"{parsed.scheme}://{parsed.netloc}{action}"
-        form_data = urllib.parse.urlencode(
-            {"username": USERNAME, "password": PASSWORD}
-        ).encode("utf-8")
+        form_data = urllib.parse.urlencode({"username": USERNAME, "password": PASSWORD}).encode("utf-8")
         post = urllib.request.Request(  # noqa: S310
             action,
             data=form_data,

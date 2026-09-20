@@ -172,18 +172,14 @@ def _now_iso() -> str:
 def _validate_component(component: object) -> str:
     if not isinstance(component, str) or not _COMPONENT_RE.match(component):
         raise errors.HeraldError(
-            f"invalid component name {component!r}: must be a non-empty string "
-            f"of letters, digits, '.', '_', or '-'"
+            f"invalid component name {component!r}: must be a non-empty string of letters, digits, '.', '_', or '-'"
         )
     return component
 
 
 def _validate_type(notice_type: object) -> str:
     if notice_type not in NOTICE_TYPES:
-        raise errors.HeraldError(
-            f"invalid notice type {notice_type!r}; expected one of "
-            f"{', '.join(NOTICE_TYPES)}"
-        )
+        raise errors.HeraldError(f"invalid notice type {notice_type!r}; expected one of {', '.join(NOTICE_TYPES)}")
     return notice_type  # type: ignore[return-value]
 
 
@@ -213,17 +209,14 @@ def _read_legacy_index_document(index_path: Path) -> dict[str, object]:
     except FileNotFoundError:
         return {"notices": {}, "redirects": {}}
     except (ValueError, OSError, RecursionError) as exc:
-        raise errors.HeraldError(
-            f"notices index {index_path} could not be read: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"notices index {index_path} could not be read: {exc}") from exc
     if (
         not isinstance(document, dict)
         or not isinstance(document.get("notices"), dict)
         or not isinstance(document.get("redirects"), dict)
     ):
         raise errors.HeraldError(
-            f"notices index {index_path} is malformed: expected an object "
-            f"with 'notices' and 'redirects' sub-objects"
+            f"notices index {index_path} is malformed: expected an object with 'notices' and 'redirects' sub-objects"
         )
     return document
 
@@ -275,7 +268,7 @@ def _require_existing_index(index_path: Path, missing: str) -> None:
         return
     try:
         index_path.stat()
-    except (FileNotFoundError, NotADirectoryError):
+    except FileNotFoundError, NotADirectoryError:
         raise errors.HeraldError(missing) from None
     except OSError:
         return
@@ -312,14 +305,12 @@ def _entry_to_notice(entry: dict[str, object]) -> Notice:
     missing = sorted(_REQUIRED_NOTICE_FIELDS - set(entry))
     if missing:
         raise errors.HeraldError(
-            f"notices index entry for {entry.get('component')!r} is "
-            f"missing field(s): {', '.join(map(repr, missing))}"
+            f"notices index entry for {entry.get('component')!r} is missing field(s): {', '.join(map(repr, missing))}"
         )
     revisions = entry.get("revisions", [])
     if not isinstance(revisions, list):
         raise errors.HeraldError(
-            f"notices index entry for {entry.get('component')!r} has a "
-            f"malformed 'revisions' field"
+            f"notices index entry for {entry.get('component')!r} has a malformed 'revisions' field"
         )
     kwargs = {k: v for k, v in entry.items() if k != "revisions"}
     return Notice(revisions=tuple(revisions), **kwargs)
@@ -381,13 +372,11 @@ def _row_to_entry(index_path: Path, row) -> dict[str, object]:
         revisions = json.loads(row["revisions"])
     except ValueError as exc:
         raise errors.HeraldError(
-            f"notices index record {row['component']!r} in {index_path} has "
-            f"malformed revisions JSON: {exc}"
+            f"notices index record {row['component']!r} in {index_path} has malformed revisions JSON: {exc}"
         ) from exc
     if not isinstance(revisions, list):
         raise errors.HeraldError(
-            f"notices index record {row['component']!r} in {index_path} has "
-            f"malformed revisions: expected a JSON array"
+            f"notices index record {row['component']!r} in {index_path} has malformed revisions: expected a JSON array"
         )
     return {
         "type": row["type"],
@@ -412,12 +401,8 @@ def _row_to_notice(index_path: Path, row) -> Notice:
     return _entry_to_notice(_row_to_entry(index_path, row))
 
 
-def _get_entry(
-    conn: sqlite3.Connection, index_path: Path, component: str
-) -> dict[str, object] | None:
-    row = conn.execute(
-        "SELECT * FROM notices_index WHERE component = ?", (component,)
-    ).fetchone()
+def _get_entry(conn: sqlite3.Connection, index_path: Path, component: str) -> dict[str, object] | None:
+    row = conn.execute("SELECT * FROM notices_index WHERE component = ?", (component,)).fetchone()
     return None if row is None else _row_to_entry(index_path, row)
 
 
@@ -470,9 +455,7 @@ def _render_markdown(notice: Notice) -> str:
     )
 
 
-def _notice_path(
-    notices_dir: Path, notice_type: str, component: str, created_at: str
-) -> Path:
+def _notice_path(notices_dir: Path, notice_type: str, component: str, created_at: str) -> Path:
     year_month = created_at[:7]  # created_at is ISO 8601; YYYY-MM is its prefix
     return notices_dir / year_month / notice_type / f"{component}.md"
 
@@ -488,9 +471,7 @@ def _write_markdown(repo_root: Path, notice: Notice) -> None:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(_render_markdown(notice), encoding="utf-8")
     except OSError as exc:
-        raise errors.HeraldError(
-            f"notice markdown file {full_path} could not be written: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"notice markdown file {full_path} could not be written: {exc}") from exc
 
 
 # --- redirect resolution ---------------------------------------------------
@@ -509,14 +490,10 @@ def _resolve_component(redirects: dict[str, object], component: str) -> str:
         if target is None:
             return current
         if target in seen:
-            raise errors.HeraldError(
-                f"notices index has a redirect cycle involving {current!r}"
-            )
+            raise errors.HeraldError(f"notices index has a redirect cycle involving {current!r}")
         seen.add(target)
         current = target
-    raise errors.HeraldError(
-        f"redirect chain for {component!r} exceeds {_MAX_REDIRECT_HOPS} hops"
-    )
+    raise errors.HeraldError(f"redirect chain for {component!r} exceeds {_MAX_REDIRECT_HOPS} hops")
 
 
 # --- public operations (Stories 10.1/10.2/10.3/10.6) -----------------------
@@ -551,12 +528,8 @@ def author_notice(
     lock."""
     _validate_type(notice_type)
     _validate_component(component)
-    index_path = (
-        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
-    )
-    notices_dir = (
-        notices_dir if notices_dir is not None else repo_root / DEFAULT_NOTICES_DIR
-    )
+    index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
+    notices_dir = notices_dir if notices_dir is not None else repo_root / DEFAULT_NOTICES_DIR
     stale_markdown: Path | None = None
     try:
         with db.transaction(index_path) as conn:
@@ -570,9 +543,7 @@ def author_notice(
                 )
 
             existing_entry = _get_entry(conn, index_path, component)
-            existing = (
-                _entry_to_notice(existing_entry) if existing_entry is not None else None
-            )
+            existing = _entry_to_notice(existing_entry) if existing_entry is not None else None
             if existing is not None and existing.status != "draft":
                 raise errors.HeraldError(
                     f"notice for {component!r} is already {existing.status}; cannot "
@@ -581,9 +552,7 @@ def author_notice(
                 )
 
             created_at = existing.created_at if existing is not None else timestamp
-            relative_path = str(
-                _notice_path(Path("notices"), notice_type, component, created_at)
-            )
+            relative_path = str(_notice_path(Path("notices"), notice_type, component, created_at))
             revisions = (*(existing.revisions if existing is not None else ()),) + (
                 {
                     "edited_at": timestamp,
@@ -630,11 +599,7 @@ def author_notice(
             # deliberately deferred past the commit; see below.
             _write_markdown(repo_root, notice)
             _upsert_notice_row(conn, notice)
-            if (
-                existing is not None
-                and existing.path != relative_path
-                and (repo_root / existing.path).exists()
-            ):
+            if existing is not None and existing.path != relative_path and (repo_root / existing.path).exists():
                 # Regression: re-authoring a draft with a changed
                 # `notice_type` relocates its markdown path (the type is part
                 # of the path), but the OLD file was never removed -- a
@@ -654,9 +619,7 @@ def author_notice(
     except errors.HeraldError:
         raise
     except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
-        raise errors.HeraldError(
-            f"notice for {component!r} could not be written: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"notice for {component!r} could not be written: {exc}") from exc
     if stale_markdown is not None:
         try:
             stale_markdown.unlink()
@@ -683,9 +646,7 @@ def publish_notice(
     The whole body below runs inside ``db.transaction`` -- see
     ``author_notice``'s docstring and the module docstring's Concurrency
     section."""
-    index_path = (
-        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
-    )
+    index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     _require_existing_index(index_path, f"no notice found for component {component!r}")
     try:
         with db.transaction(index_path) as conn:
@@ -699,15 +660,12 @@ def publish_notice(
             if notice.status == "published":
                 raise errors.HeraldError(f"notice for {resolved!r} is already published")
             if notice.status == "closed":
-                raise errors.HeraldError(
-                    f"notice for {resolved!r} is closed; cannot publish"
-                )
+                raise errors.HeraldError(f"notice for {resolved!r} is closed; cannot publish")
             notice = replace(
                 notice,
                 status="published",
                 published_at=timestamp,
-                revisions=notice.revisions
-                + ({"edited_at": timestamp, "summary": "published"},),
+                revisions=notice.revisions + ({"edited_at": timestamp, "summary": "published"},),
             )
             # Markdown before index -- see author_notice's own comment for why.
             _write_markdown(repo_root, notice)
@@ -716,9 +674,7 @@ def publish_notice(
     except errors.HeraldError:
         raise
     except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
-        raise errors.HeraldError(
-            f"notice for {component!r} could not be written: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"notice for {component!r} could not be written: {exc}") from exc
 
 
 def close_notice(
@@ -738,9 +694,7 @@ def close_notice(
     The whole body below runs inside ``db.transaction`` -- see
     ``author_notice``'s docstring and the module docstring's Concurrency
     section."""
-    index_path = (
-        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
-    )
+    index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     _require_existing_index(index_path, f"no notice found for component {component!r}")
     try:
         with db.transaction(index_path) as conn:
@@ -752,9 +706,7 @@ def close_notice(
                 raise errors.HeraldError(f"no notice found for component {component!r}")
             notice = _entry_to_notice(entry)
             if notice.status == "draft":
-                raise errors.HeraldError(
-                    f"notice for {resolved!r} is still a draft; publish it before closing"
-                )
+                raise errors.HeraldError(f"notice for {resolved!r} is still a draft; publish it before closing")
             if notice.status == "closed":
                 raise errors.HeraldError(f"notice for {resolved!r} is already closed")
             notice = replace(
@@ -763,8 +715,7 @@ def close_notice(
                 closed_at=timestamp,
                 closed_by=closed_by or UNKNOWN_OPERATOR,
                 close_reason=reason,
-                revisions=notice.revisions
-                + ({"edited_at": timestamp, "summary": "closed"},),
+                revisions=notice.revisions + ({"edited_at": timestamp, "summary": "closed"},),
             )
             # Markdown before index -- see author_notice's own comment for why.
             _write_markdown(repo_root, notice)
@@ -773,19 +724,13 @@ def close_notice(
     except errors.HeraldError:
         raise
     except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
-        raise errors.HeraldError(
-            f"notice for {component!r} could not be written: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"notice for {component!r} could not be written: {exc}") from exc
 
 
-def get_notice(
-    repo_root: Path, component: str, *, index_path: Path | None = None
-) -> Notice:
+def get_notice(repo_root: Path, component: str, *, index_path: Path | None = None) -> Notice:
     """Full detail for ``component``, following a redirect if it was
     renamed (Story 10.3)."""
-    index_path = (
-        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
-    )
+    index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     with db.connection(index_path) as conn:
         redirects = _get_redirects(conn)
         resolved = _resolve_component(redirects, component)
@@ -795,9 +740,7 @@ def get_notice(
     return _entry_to_notice(entry)
 
 
-def aliases_for(
-    repo_root: Path, component: str, *, index_path: Path | None = None
-) -> list[str]:
+def aliases_for(repo_root: Path, component: str, *, index_path: Path | None = None) -> list[str]:
     """``component``'s resolved (current) name plus every old name whose
     redirect chain resolves to it (Story 10.3 renames) -- Story 11.3's
     cross-Moment backlink needs this: a claim's ``Evidence.url`` for a
@@ -806,15 +749,11 @@ def aliases_for(
     claims by only the current resolved name silently misses any claim
     that cited an old name before the rename happened. Returns the
     resolved name first, then aliases in no particular order."""
-    index_path = (
-        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
-    )
+    index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     with db.connection(index_path) as conn:
         redirects = _get_redirects(conn)
     resolved = _resolve_component(redirects, component)
-    aliases = [
-        old for old in redirects if _resolve_component(redirects, old) == resolved
-    ]
+    aliases = [old for old in redirects if _resolve_component(redirects, old) == resolved]
     return [resolved, *aliases]
 
 
@@ -834,9 +773,7 @@ def list_notices(
     ``status="all"`` for every status, or an exact status to see only that
     one. ``date_range`` filters on ``created_at``'s date prefix (inclusive,
     ``YYYY-MM-DD`` bounds)."""
-    index_path = (
-        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
-    )
+    index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     with db.connection(index_path) as conn:
         rows = conn.execute("SELECT * FROM notices_index").fetchall()
     notices = [_row_to_notice(index_path, row) for row in rows]
@@ -846,8 +783,7 @@ def list_notices(
     elif status != "all":
         if status not in NOTICE_STATUSES:
             raise errors.HeraldError(
-                f"invalid status {status!r}; expected one of "
-                f"{', '.join(NOTICE_STATUSES)}, or 'all'"
+                f"invalid status {status!r}; expected one of {', '.join(NOTICE_STATUSES)}, or 'all'"
             )
         notices = [n for n in notices if n.status == status]
 
@@ -890,9 +826,7 @@ def archive_rename(
     _validate_component(new_component)
     if old_component == new_component:
         raise errors.HeraldError("cannot redirect a component to itself")
-    index_path = (
-        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
-    )
+    index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     _require_existing_index(
         index_path,
         f"cannot redirect to {new_component!r}: no notice exists for it yet",
@@ -900,24 +834,19 @@ def archive_rename(
     try:
         with db.transaction(index_path) as conn:
             if _get_entry(conn, index_path, new_component) is None:
-                raise errors.HeraldError(
-                    f"cannot redirect to {new_component!r}: no notice exists for it yet"
-                )
+                raise errors.HeraldError(f"cannot redirect to {new_component!r}: no notice exists for it yet")
             redirects = _get_redirects(conn)
             if old_component in redirects:
                 raise errors.HeraldError(
-                    f"component {old_component!r} already redirects to "
-                    f"{redirects[old_component]!r}"
+                    f"component {old_component!r} already redirects to {redirects[old_component]!r}"
                 )
             conn.execute(
-                "INSERT INTO notices_redirects (old_component, new_component) "
-                "VALUES (?, ?)",
+                "INSERT INTO notices_redirects (old_component, new_component) VALUES (?, ?)",
                 (old_component, new_component),
             )
     except errors.HeraldError:
         raise
     except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(
-            f"redirect {old_component!r} -> {new_component!r} could not be "
-            f"written: {exc}"
+            f"redirect {old_component!r} -> {new_component!r} could not be written: {exc}"
         ) from exc

@@ -144,9 +144,7 @@ def test_banner_above_frontmatter_still_reads_the_surface():
 
 
 def test_multiline_banner_above_frontmatter_still_reads_the_surface():
-    text = "<!--\nRECOVERED\nfrom a session transcript\n-->\n" + _frontmatter(
-        _HEADER + 'surface: ["recipes/x/**"]\n'
-    )
+    text = "<!--\nRECOVERED\nfrom a session transcript\n-->\n" + _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n')
     assert parse_declared_surface(text) == ("recipes/x/**",)
 
 

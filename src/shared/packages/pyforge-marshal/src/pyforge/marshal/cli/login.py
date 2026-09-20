@@ -91,9 +91,7 @@ def _mint_local_token(repo_root: Path, persona: str) -> str:
         "print(main([sys.argv[1]]))"
     )
     try:
-        completed = PosixProcess().run(
-            [sys.executable, "-c", script, persona], cwd=repo_root
-        )
+        completed = PosixProcess().run([sys.executable, "-c", script, persona], cwd=repo_root)
     except ProcessError as exc:
         # A launch failure (the interpreter could not be spawned at all) is
         # reported the same way a failed mint is -- `run_login` catches
@@ -117,9 +115,7 @@ def _write_bearer_file(bearer_path: Path, token: str) -> None:
 
 def _resolve_bearer_path(args: argparse.Namespace) -> Path:
     return Path(
-        args.bearer_file
-        or os.environ.get(_BEARER_ENV, "")
-        or _DEFAULT_BEARER_PATH,
+        args.bearer_file or os.environ.get(_BEARER_ENV, "") or _DEFAULT_BEARER_PATH,
     ).expanduser()
 
 

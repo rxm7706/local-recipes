@@ -22,6 +22,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import (
@@ -29,6 +30,7 @@ from pyforge.doctor.sources import (
     bmad_method,
     board,
     capability_effect,
+    capability_ledger,
     chain,
     deps,
     docs_currency,
@@ -36,12 +38,11 @@ from pyforge.doctor.sources import (
     docs_shelf,
     factory,
     frozen_path,
-    capability_ledger,
-    one_chain,
     general_docs_consistency,
     ledger,
     live_proof_surfaces,
     marshal,
+    one_chain,
     pixi_currency,
     platform_policy,
     sibling_dreams,
@@ -217,9 +218,7 @@ def test_dreams_flag_on_dream_chain_invokes_hygiene_gather(
     exit_code = dispatch.main(["dream-chain", "--dreams", "--json"])
 
     assert exit_code == 0
-    assert json.loads(capsys.readouterr().out) == [
-        f.to_json_dict() for f in hygiene_ok
-    ]
+    assert json.loads(capsys.readouterr().out) == [f.to_json_dict() for f in hygiene_ok]
 
 
 def test_dreams_flag_on_non_dream_chain_source_is_a_usage_error(

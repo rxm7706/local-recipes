@@ -2,7 +2,7 @@
 title: 'upstream_discovery identity join and export Parquet (Story 21.6, CAP-3)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 baseline_revision: '2fa0d73abc1f701f60b46bf9f81deca3f90555c5'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
@@ -404,3 +404,17 @@ this).
   - `[low]` `[patch]` `_id_metadata_url` interpolated the package name into a URL with no encoding; a name containing `/`, `?`, `&`, or spaces would produce a malformed URL. Wrapped the segment in `urllib.parse.quote`.
 
 Findings investigated and rejected after verification: `PurlAssociatorMappingsDataset.fetch_shard` being unwired from the join is correct, not a gap — the module's own investigation confirmed the legacy parity target (`lookup_assoc`/`from_assoc`) never performs a second/shard fetch either, so wiring it would break byte-for-byte parity with the legacy script, the story's primary mandate; `_id_pep503` vs. `_normalize_pypi_name` stripping-behavior mismatch is real but requires a leading/trailing-hyphen package name to manifest (negligible in practice, already documented as deliberate); `_ID_GIT_HOST_RE` matching `codeberg.org` while `_id_git_purl` returns `None` for it is spec-compliant — the I/O matrix scopes "recognizable" source URLs to github/gitlab/bitbucket only; duplicate `assoc_key` last-wins is structurally unreachable (the JSON source object has unique keys and the store is replaced, not merged, on each refresh); the untracked parity-fixture test files flagged by the verification-gap reviewer are resolved automatically by this step's own Finalize (all reviewed-diff files get committed); the remaining rejects (`LocalRecipesOverlayDataset` per-run scan cost, no reciprocal legacy-script comment, no fixture for conflicting `conda_purl` values, uniform weekly TTL cadence across the three new sources) are non-behavioral/informational observations with no test or contract impact.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `20-6-upstream_discovery-identity-join-and-export-parquet: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `20-6-upstream_discovery-identity-join-and-export-parquet: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

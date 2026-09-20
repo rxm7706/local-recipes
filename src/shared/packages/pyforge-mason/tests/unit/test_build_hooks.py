@@ -10,10 +10,10 @@ verdict. No real conda-build/rattler-build subprocesses.
 from __future__ import annotations
 
 import os
+import tomllib
 from pathlib import Path
 
 import pytest
-import tomllib
 from pyforge.core.hooks import (
     ENTRY_POINT_GROUP,
     HookSpec,
@@ -78,12 +78,8 @@ def test_pyproject_declares_both_plugins_on_the_canonical_hooks_group_only():
     groups = data["project"]["entry-points"]
     assert ENTRY_POINT_GROUP in groups
     names = groups[ENTRY_POINT_GROUP]
-    assert names["rattler-build"] == (
-        "pyforge.mason.engines.build_hooks:RattlerBuildPlugin"
-    )
-    assert names["conda-build"] == (
-        "pyforge.mason.engines.build_hooks:CondaBuildPlugin"
-    )
+    assert names["rattler-build"] == ("pyforge.mason.engines.build_hooks:RattlerBuildPlugin")
+    assert names["conda-build"] == ("pyforge.mason.engines.build_hooks:CondaBuildPlugin")
     assert "pyforge.mason.hooks" not in groups
     assert "pyforge.mason.plugins" not in groups
 

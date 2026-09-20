@@ -6,8 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-import pytest
-
 from pyforge.marshal.cli import benchmark as benchmark_cli
 from pyforge.marshal.core import token_economy_benchmark as bench
 from pyforge.marshal.core.verdict import EXIT_OK
@@ -147,9 +145,7 @@ def test_collect_leg_from_harness_reads_review_cycle(tmp_path):
         escalated_task_phase=None,
         deferred=(),
         finished=True,
-        tasks=(
-            TaskPhaseSnapshot(story_key=story, phase="done", commit_sha="abc123"),
-        ),
+        tasks=(TaskPhaseSnapshot(story_key=story, phase="done", commit_sha="abc123"),),
     )
     harness = _FakeHarness(usage, snapshot)
     leg = benchmark_cli.collect_leg_from_harness(

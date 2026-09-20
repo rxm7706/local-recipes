@@ -227,8 +227,7 @@ IGNORE_PARTS = {"__pycache__"}
 # Known-stale CONTENT patterns -- verbatim from the original's own
 # STALE_RULE_PATTERNS.
 STALE_RULE_PATTERNS: list[tuple[str, str]] = [
-    (r"<recipe-name>-<version>",
-     "stale branch-naming rule — CFE convention is add-recipe-<name> (auto-memory)"),
+    (r"<recipe-name>-<version>", "stale branch-naming rule — CFE convention is add-recipe-<name> (auto-memory)"),
 ]
 
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
@@ -249,16 +248,21 @@ TERMINAL_STATUS = re.compile(r"\b(done|shipped|complete|completed|cancelled|canc
 # (falling back to a bare version only when `conda-forge-expert` is absent
 # entirely) cannot make that mistake: the anchor is a literal substring
 # search, not backtracking priority.
-_PIN_KEY_RE = re.compile(
-    r"(?:source_pin|last_synced_skill_version)[\"']?\s*:\s*(.+)"
-)
+_PIN_KEY_RE = re.compile(r"(?:source_pin|last_synced_skill_version)[\"']?\s*:\s*(.+)")
 _PIN_VER_AFTER_CFE_RE = re.compile(r"conda-forge-expert\s+v?(\d+)\.(\d+)\.(\d+)")
 _PIN_BARE_VER_RE = re.compile(r"^['\"]?v?(\d+)\.(\d+)\.(\d+)")
 _VER_RE = re.compile(r"\*\*v(\d+)\.(\d+)\.(\d+)\*\*")
 _SKILL_DECLARED_VER_RE = re.compile(r"^version:\s*(\d+)\.(\d+)\.(\d+)", re.M)
 
-FINGERPRINT_KEYS = ("skill_version", "schema_version", "mcp_tools", "atlas_phases",
-                    "gotcha_max", "pixi_envs", "phase_ids")
+FINGERPRINT_KEYS = (
+    "skill_version",
+    "schema_version",
+    "mcp_tools",
+    "atlas_phases",
+    "gotcha_max",
+    "pixi_envs",
+    "phase_ids",
+)
 
 
 def _probe(p: Path) -> os.stat_result | None:
@@ -272,7 +276,7 @@ def _probe(p: Path) -> os.stat_result | None:
     honest WARN, but only if the probe raises instead of lying first."""
     try:
         return p.stat()
-    except (FileNotFoundError, NotADirectoryError):
+    except FileNotFoundError, NotADirectoryError:
         return None
 
 
@@ -386,12 +390,11 @@ def _read(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return path.read_bytes().decode("utf-8", errors="replace")
-    except (FileNotFoundError, IsADirectoryError, NotADirectoryError):
+    except FileNotFoundError, IsADirectoryError, NotADirectoryError:
         return ""
 
 
-def _read_item(path: Path, check_name: str, target: Path,
-               out: list[Finding]) -> str | None:
+def _read_item(path: Path, check_name: str, target: Path, out: list[Finding]) -> str | None:
     """``_read`` for one file among MANY in the same check -- appending one
     WARN that names THAT FILE and returning ``None``, instead of letting the
     raise escape and take the whole check with it.
@@ -413,8 +416,7 @@ def _read_item(path: Path, check_name: str, target: Path,
     try:
         return _read(path)
     except OSError as exc:
-        out.append(_unevaluable(
-            check_name, f"{_rel(path, target)}: {exc.__class__.__name__}", target))
+        out.append(_unevaluable(check_name, f"{_rel(path, target)}: {exc.__class__.__name__}", target))
         return None
 
 
@@ -445,8 +447,7 @@ def _skill_version(target: Path) -> str | None:
 
 
 def _schema_version(target: Path) -> int | None:
-    m = re.search(r"SCHEMA_VERSION\s*=\s*(\d+)",
-                  _read(_skill(target) / "scripts" / "conda_forge_atlas.py"))
+    m = re.search(r"SCHEMA_VERSION\s*=\s*(\d+)", _read(_skill(target) / "scripts" / "conda_forge_atlas.py"))
     return int(m.group(1)) if m else None
 
 
@@ -581,7 +582,7 @@ def _git_head(target: Path) -> str | None:
     ``check_baseline`` finding (the value is computed but never read)."""
     try:
         out = run_git(target, ["rev-parse", "--short", "HEAD"])
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     return out.strip() or None
 
@@ -598,7 +599,7 @@ def _git_tracked(target: Path, relpath: str) -> list[str] | None:
     "cannot evaluate"; the caller must surface that honestly."""
     try:
         out = run_git(target, ["ls-files", "--", relpath])
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     return [ln for ln in out.splitlines() if ln.strip()]
 
@@ -725,15 +726,16 @@ def check_pins(target: Path) -> list[Finding]:
         pin = _doc_pin(proj / rel, text)
         if pin is None:
             if cat != "snapshot":
-                out.append(_finding(HARD, "pin-missing", rel,
-                           "missing/corrupt source_pin — breaks the drift contract"))
-        elif (
-            cat == "snapshot"
-            and live is not None
-            and (pin[0], pin[1]) < (live[0], live[1])
-        ):
-            out.append(_finding(INFO, "pin-behind", rel,
-                       f"pinned v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]} [{cat}]"))
+                out.append(_finding(HARD, "pin-missing", rel, "missing/corrupt source_pin — breaks the drift contract"))
+        elif cat == "snapshot" and live is not None and (pin[0], pin[1]) < (live[0], live[1]):
+            out.append(
+                _finding(
+                    INFO,
+                    "pin-behind",
+                    rel,
+                    f"pinned v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]} [{cat}]",
+                )
+            )
     return out
 
 
@@ -759,24 +761,43 @@ def check_archive_hygiene(target: Path) -> list[Finding]:
         plan = _plan(target)
         if _is_dir(plan):
             for p in _listdir_match(plan, "sprint-change-proposal-*.md"):
-                out.append(_finding(HARD, "archive-misplaced", f"planning-artifacts/{p.name}",
-                           "sprint-change-proposal belongs in change-history/", fixable=True))
+                out.append(
+                    _finding(
+                        HARD,
+                        "archive-misplaced",
+                        f"planning-artifacts/{p.name}",
+                        "sprint-change-proposal belongs in change-history/",
+                        fixable=True,
+                    )
+                )
     except OSError as exc:
-        out.append(_unevaluable("check_archive_hygiene",
-                                f"{exc.__class__.__name__}: {exc}", target))
+        out.append(_unevaluable("check_archive_hygiene", f"{exc.__class__.__name__}: {exc}", target))
     try:
         impl = _impl(target)
         if _is_dir(impl):
             for p in _listdir_match(impl, "retro-*.md"):
-                out.append(_finding(HARD, "archive-misplaced", f"implementation-artifacts/{p.name}",
-                           "retro belongs in retros/", fixable=True))
+                out.append(
+                    _finding(
+                        HARD,
+                        "archive-misplaced",
+                        f"implementation-artifacts/{p.name}",
+                        "retro belongs in retros/",
+                        fixable=True,
+                    )
+                )
             for p in _listdir(impl):
                 if _is_file(p) and p.suffix in STRAY_SUFFIXES:
-                    out.append(_finding(HARD, "stray-file", f"implementation-artifacts/{p.name}",
-                               "throwaway artifact (already in git history) — remove", fixable=True))
+                    out.append(
+                        _finding(
+                            HARD,
+                            "stray-file",
+                            f"implementation-artifacts/{p.name}",
+                            "throwaway artifact (already in git history) — remove",
+                            fixable=True,
+                        )
+                    )
     except OSError as exc:
-        out.append(_unevaluable("check_archive_hygiene",
-                                f"{exc.__class__.__name__}: {exc}", target))
+        out.append(_unevaluable("check_archive_hygiene", f"{exc.__class__.__name__}: {exc}", target))
     return out
 
 
@@ -799,8 +820,14 @@ def check_spec_status(target: Path) -> list[Finding]:
         sslug = _slug(spec.name)
         shipped = any(sslug and (sslug in rs or rs in sslug) for rs in retro_slugs)
         if shipped:
-            out.append(_finding(DRIFT, "spec-status-stale", f"implementation-artifacts/{spec.name}",
-                       f"status '{status}' but a matching retro exists — it shipped"))
+            out.append(
+                _finding(
+                    DRIFT,
+                    "spec-status-stale",
+                    f"implementation-artifacts/{spec.name}",
+                    f"status '{status}' but a matching retro exists — it shipped",
+                )
+            )
     return out
 
 
@@ -816,13 +843,25 @@ def check_deferred_work(target: Path) -> list[Finding]:
     text = _read(df)
     m = re.search(r"last\s+reconciled[^\n]*?v(\d+)\.(\d+)\.(\d+)", text, re.I)
     if not m:
-        return [_finding(DRIFT, "deferred-stale", "implementation-artifacts/deferred-work.md",
-                "no 'Last reconciled: ... vX.Y.Z' stamp — cannot tell if it is current")]
+        return [
+            _finding(
+                DRIFT,
+                "deferred-stale",
+                "implementation-artifacts/deferred-work.md",
+                "no 'Last reconciled: ... vX.Y.Z' stamp — cannot tell if it is current",
+            )
+        ]
     live = _live_version(target)
     pin = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
     if (pin[0], pin[1]) < (live[0], live[1]):
-        return [_finding(DRIFT, "deferred-stale", "implementation-artifacts/deferred-work.md",
-                f"reconciled at v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]}")]
+        return [
+            _finding(
+                DRIFT,
+                "deferred-stale",
+                "implementation-artifacts/deferred-work.md",
+                f"reconciled at v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]}",
+            )
+        ]
     return []
 
 
@@ -847,8 +886,14 @@ def check_counts(target: Path) -> list[Finding]:
                 continue
             for mm in re.finditer(pat, text):
                 if int(mm.group(1)) < live_val:
-                    out.append(_finding(INFO, "count-stale", rel,
-                               f"states {label} {mm.group(1)} < live {live_val} (review in context)"))
+                    out.append(
+                        _finding(
+                            INFO,
+                            "count-stale",
+                            rel,
+                            f"states {label} {mm.group(1)} < live {live_val} (review in context)",
+                        )
+                    )
                     break
     return out
 
@@ -895,8 +940,11 @@ def check_phase_lists(target: Path) -> list[Finding]:
             if hi is None:
                 hi = _max_single_phase(target)
             if f"/{hi}" not in seg and not seg.endswith(hi):
-                out.append(_finding(DRIFT, "phase-list-stale", rel,
-                           f"atlas-phase list '{seg[:32]}…' omits phases through {hi}"))
+                out.append(
+                    _finding(
+                        DRIFT, "phase-list-stale", rel, f"atlas-phase list '{seg[:32]}…' omits phases through {hi}"
+                    )
+                )
                 break
     return out
 
@@ -912,8 +960,14 @@ def check_baseline(target: Path) -> list[Finding]:
     finding for this check."""
     baseline = _proj(target) / ".sync-baseline.json"
     if not _is_file(baseline):
-        return [_finding(INFO, "no-baseline", ".sync-baseline.json",
-                          "no reconciliation baseline — run `bmad-drift-check -- --write-baseline` after a sync")]
+        return [
+            _finding(
+                INFO,
+                "no-baseline",
+                ".sync-baseline.json",
+                "no reconciliation baseline — run `bmad-drift-check -- --write-baseline` after a sync",
+            )
+        ]
     # `_read` is deliberately OUTSIDE the try: it now raises on a file that
     # exists but cannot be read, and the origin's blanket `except OSError`
     # here turned that into a `baseline-corrupt` HARD accusation against a
@@ -939,9 +993,15 @@ def check_baseline(target: Path) -> list[Finding]:
     live, out = _fingerprint(target), []
     for k in FINGERPRINT_KEYS:
         if base.get(k) != live.get(k):
-            out.append(_finding(DRIFT, "surface-changed", k,
-                       f"{k}: baseline {base.get(k)} -> live {live.get(k)} "
-                       f"(out-of-band change since git {base.get('git_head')})"))
+            out.append(
+                _finding(
+                    DRIFT,
+                    "surface-changed",
+                    k,
+                    f"{k}: baseline {base.get(k)} -> live {live.get(k)} "
+                    f"(out-of-band change since git {base.get('git_head')})",
+                )
+            )
     return out
 
 
@@ -971,9 +1031,9 @@ def classify(path: Path, target: Path) -> str:
     # landed as `uncovered` on the first run, which is the coverage rule working: an
     # unclassified file is a hole, not a pass.
     if re.fullmatch(r"planning-artifacts/prds/prd-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/[A-Za-z0-9._-]+", rel):
-        return "tracked:plan"          # bmad-prd run folder: prd.md + memlog + reviews
+        return "tracked:plan"  # bmad-prd run folder: prd.md + memlog + reviews
     if re.fullmatch(r"planning-artifacts/architecture/architecture-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/.*", rel):
-        return "tracked:plan"          # bmad-architecture run folder (incl. reviews/)
+        return "tracked:plan"  # bmad-architecture run folder (incl. reviews/)
     if re.fullmatch(r"planning-artifacts/briefs/brief-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/[A-Za-z0-9._-]+", rel):
         return "tracked:plan"
     if re.fullmatch(r"planning-artifacts/epics(-[a-z0-9-]+)?\.md", rel):
@@ -983,7 +1043,7 @@ def classify(path: Path, target: Path) -> str:
     if re.fullmatch(r"planning-artifacts/product-brief-[a-z0-9-]+\.md", rel):
         return "tracked:plan"
     if re.fullmatch(r"planning-artifacts/research/[A-Za-z0-9._-]+\.md", rel):
-        return "archive:research"      # undated research + briefs filed under research/
+        return "archive:research"  # undated research + briefs filed under research/
     if re.fullmatch(r"planning-artifacts/upstream-report-[a-z0-9-]+\.md", rel):
         return "archive:change-history"  # frozen upstream defect report
     if re.fullmatch(r"planning-artifacts/implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md", rel):
@@ -1056,7 +1116,7 @@ def classify(path: Path, target: Path) -> str:
         # pin-gated shape.
         return "local:run-journal"
     if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
-        return "local:sprint-feed"     # Tier-3 story context, gitignored
+        return "local:sprint-feed"  # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
         # PRFAQ kill-test records + distillates (bmad-prfaq): frozen stress-test
         # outputs — no pin gating.
@@ -1227,8 +1287,11 @@ def check_coverage(target: Path) -> list[Finding]:
         if cls == "ignored":
             continue
         if cls == "UNKNOWN" and path.suffix not in STRAY_SUFFIXES:
-            findings.append(_finding(HARD, "uncovered", _rel(path, target),
-                           "not covered by drift-check — add a classification rule"))
+            findings.append(
+                _finding(
+                    HARD, "uncovered", _rel(path, target), "not covered by drift-check — add a classification rule"
+                )
+            )
     return findings
 
 
@@ -1246,26 +1309,41 @@ def check_tier_alignment(target: Path) -> list[Finding]:
     out: list[Finding] = []
     tracked = _git_tracked(target, IMPL_REL)
     if tracked is None:
-        out.append(_unevaluable(
-            "check_tier_alignment",
-            f"git ls-files -- {IMPL_REL} failed; git may be unavailable or "
-            f"{target} is not a repository",
-            target,
-        ))
+        out.append(
+            _unevaluable(
+                "check_tier_alignment",
+                f"git ls-files -- {IMPL_REL} failed; git may be unavailable or {target} is not a repository",
+                target,
+            )
+        )
     else:
         for f in tracked:
             name = f.rsplit("/", 1)[-1]
-            remedy = ("intake spec -> git mv to docs/specs/" if name.startswith("spec-")
-                      else "Tier-3 output -> keep local (git rm --cached)")
-            out.append(_finding(HARD, "tracked-impl-artifact", f,
-                       f"implementation-artifacts is gitignored/local-only; this file is "
-                       f"git-tracked ({remedy})"))
+            remedy = (
+                "intake spec -> git mv to docs/specs/"
+                if name.startswith("spec-")
+                else "Tier-3 output -> keep local (git rm --cached)"
+            )
+            out.append(
+                _finding(
+                    HARD,
+                    "tracked-impl-artifact",
+                    f,
+                    f"implementation-artifacts is gitignored/local-only; this file is git-tracked ({remedy})",
+                )
+            )
     docs_specs = _docs_specs(target)
     if _is_dir(docs_specs):
         for p in _listdir(docs_specs):
             if _is_file(p) and p.suffix != ".md":
-                out.append(_finding(DRIFT, "docs-specs-nonmd", f"docs/specs/{p.name}",
-                           "docs/specs holds BMAD intake specs (markdown) — non-.md is misfiled"))
+                out.append(
+                    _finding(
+                        DRIFT,
+                        "docs-specs-nonmd",
+                        f"docs/specs/{p.name}",
+                        "docs/specs holds BMAD intake specs (markdown) — non-.md is misfiled",
+                    )
+                )
     return out
 
 
@@ -1276,9 +1354,16 @@ def check_spec_indexed(target: Path) -> list[Finding]:
     if not _is_dir(docs_specs):
         return []
     claude = _read(target / "CLAUDE.md")
-    return [_finding(DRIFT, "spec-unindexed", f"docs/specs/{p.name}",
-                    "not referenced in CLAUDE.md Project Documentation Reference")
-            for p in _listdir_match(docs_specs, "*.md") if p.name not in claude]
+    return [
+        _finding(
+            DRIFT,
+            "spec-unindexed",
+            f"docs/specs/{p.name}",
+            "not referenced in CLAUDE.md Project Documentation Reference",
+        )
+        for p in _listdir_match(docs_specs, "*.md")
+        if p.name not in claude
+    ]
 
 
 def _roster(target: Path) -> dict:
@@ -1289,9 +1374,7 @@ def _roster(target: Path) -> dict:
     it exactly as the original does, never restating the values. Read per
     call (not cached at import time) because ``target`` is a runtime
     parameter -- see this module's own docstring."""
-    return json.loads(
-        (target / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8")
-    )
+    return json.loads((target / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8"))
 
 
 def check_dream_vocab(target: Path) -> list[Finding]:
@@ -1317,14 +1400,21 @@ def check_dream_vocab(target: Path) -> list[Finding]:
         if not m:
             out.append(_finding(DRIFT, "dream-vocab", _rel(f, target), "no status: in frontmatter"))
         elif m.group(1) not in dream_statuses:
-            out.append(_finding(DRIFT, "dream-vocab", _rel(f, target),
-                       f"status {m.group(1)!r} is not one of "
-                       f"{'/'.join(dream_statuses)}"))
+            out.append(
+                _finding(
+                    DRIFT,
+                    "dream-vocab",
+                    _rel(f, target),
+                    f"status {m.group(1)!r} is not one of {'/'.join(dream_statuses)}",
+                )
+            )
         m = re.search(r"^type:\s*(\S+)\s*(?:#.*)?$", text, re.M)
         if m and m.group(1) not in dream_types:
-            out.append(_finding(DRIFT, "dream-vocab", _rel(f, target),
-                       f"type {m.group(1)!r} is not one of "
-                       f"{'/'.join(dream_types)}"))
+            out.append(
+                _finding(
+                    DRIFT, "dream-vocab", _rel(f, target), f"type {m.group(1)!r} is not one of {'/'.join(dream_types)}"
+                )
+            )
     return out
 
 
@@ -1347,16 +1437,27 @@ def check_dream_owners(target: Path) -> list[Finding]:
         m = re.search(r"^owner:\s*(\S+)\s*$", text, re.M)
         owner = m.group(1) if m else ""
         if not owner:
-            out.append(_finding(DRIFT, "dream-unowned", _rel(f, target),
-                       "no owner: in frontmatter — name one of "
-                       f"{', '.join(stations)}"))
+            out.append(
+                _finding(
+                    DRIFT,
+                    "dream-unowned",
+                    _rel(f, target),
+                    f"no owner: in frontmatter — name one of {', '.join(stations)}",
+                )
+            )
         elif owner == "guild" and f.stem not in guild_dreams:
-            out.append(_finding(DRIFT, "dream-unowned", _rel(f, target),
-                       "owner 'guild' is reserved for "
-                       f"{'/'.join(guild_dreams)} — assign a station"))
+            out.append(
+                _finding(
+                    DRIFT,
+                    "dream-unowned",
+                    _rel(f, target),
+                    f"owner 'guild' is reserved for {'/'.join(guild_dreams)} — assign a station",
+                )
+            )
         elif owner not in stations and owner != "guild":
-            out.append(_finding(DRIFT, "dream-unowned", _rel(f, target),
-                       f"owner {owner!r} is not one of the eight Smiths"))
+            out.append(
+                _finding(DRIFT, "dream-unowned", _rel(f, target), f"owner {owner!r} is not one of the eight Smiths")
+            )
     return out
 
 
@@ -1441,10 +1542,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 source=Source.BMAD_DRIFT,
                 check="bmad-drift-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"no {PROJ_REL}/ under {target} — the BMAD project drift "
-                    f"check cannot be evaluated here"
-                ),
+                message=(f"no {PROJ_REL}/ under {target} — the BMAD project drift check cannot be evaluated here"),
                 evidence={"check": "bmad-drift", "target": str(target)},
             ),
         )
@@ -1472,10 +1570,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 source=Source.BMAD_DRIFT,
                 check="bmad-drift",
                 status=DoctorStatus.OK,
-                message=(
-                    f"all tracked BMAD project docs under {PROJ_REL}/ are in "
-                    f"sync with the live factory"
-                ),
+                message=(f"all tracked BMAD project docs under {PROJ_REL}/ are in sync with the live factory"),
                 evidence={"target": str(target)},
             ),
         )

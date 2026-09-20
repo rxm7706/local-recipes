@@ -28,8 +28,9 @@ import subprocess
 from importlib import resources
 from pathlib import Path
 
-import pyforge.marshal
 import pytest
+
+import pyforge.marshal
 from pyforge.marshal.seed.engine.copier import (
     CopierEngineError,
     MaterializeRequest,

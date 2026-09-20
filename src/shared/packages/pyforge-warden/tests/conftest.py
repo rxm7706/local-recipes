@@ -50,16 +50,12 @@ def make_component(
 ) -> Component:
     has_version = bool(version)  # "" is version-less, same as None
     if cve_match_level is None:
-        cve_match_level = (
-            CveMatchLevel.EXACT if has_version else CveMatchLevel.NAME_ONLY
-        )
+        cve_match_level = CveMatchLevel.EXACT if has_version else CveMatchLevel.NAME_ONLY
     if pypi_identity is _UNSET:
         pypi_identity = PypiIdentity(name=name, version=version)
     if vuln_matchable is None:
         # The Gap-C predicate (enforced by Component.__post_init__).
-        vuln_matchable = (
-            has_version and pypi_identity is not None and indeterminate_reason is None
-        )
+        vuln_matchable = has_version and pypi_identity is not None and indeterminate_reason is None
     return Component(
         name=name,
         version=version,
@@ -198,9 +194,7 @@ def _denied_sendto(self, data, *args, **kwargs):
 def _denied_sendmsg(self, *args, **kwargs):
     # sendmsg(buffers[, ancdata[, flags[, address]]]): the destination is
     # the optional 4th positional argument (None on a connected socket).
-    raise SocketDenyError(
-        "socket.socket.sendmsg", args[3] if len(args) >= 4 else None
-    )
+    raise SocketDenyError("socket.socket.sendmsg", args[3] if len(args) >= 4 else None)
 
 
 def _denied_create_connection(address, *args, **kwargs):
@@ -300,12 +294,8 @@ def _osv_ambient_cache_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def _osv_ambient_db_env(
-    monkeypatch: pytest.MonkeyPatch, _osv_ambient_cache_root: Path
-) -> None:
-    monkeypatch.setenv(
-        "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(_osv_ambient_cache_root)
-    )
+def _osv_ambient_db_env(monkeypatch: pytest.MonkeyPatch, _osv_ambient_cache_root: Path) -> None:
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(_osv_ambient_cache_root))
 
 
 # --- Story 6.4: ambient CISA KEV feed (keeps the fail-on-kev-default-true

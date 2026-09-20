@@ -36,9 +36,7 @@ _EXEMPT_RELATIVE_PATHS = frozenset({Path("sources") / "atlas.py"})
 
 def _package_modules() -> list[Path]:
     return sorted(
-        path
-        for path in PACKAGE_DIR.rglob("*.py")
-        if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
+        path for path in PACKAGE_DIR.rglob("*.py") if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
     )
 
 
@@ -67,10 +65,7 @@ def test_package_scan_surface_is_not_empty():
 
 def test_sources_atlas_module_exists():
     atlas_path = PACKAGE_DIR / "sources" / "atlas.py"
-    assert atlas_path.is_file(), (
-        f"expected {atlas_path} -- the sanctioned mcp import site "
-        "(Story 2.1) is missing"
-    )
+    assert atlas_path.is_file(), f"expected {atlas_path} -- the sanctioned mcp import site (Story 2.1) is missing"
 
 
 def test_sources_atlas_is_exempted_from_this_scan():
@@ -92,9 +87,7 @@ def test_sources_atlas_itself_imports_mcp():
     """Non-vacuous proof: the sanctioned site actually imports mcp
     somewhere (lazily, inside the async helper) -- so this guard is
     testing a real narrowing, not an accidentally-unused permission."""
-    violations = _mcp_import_violations(
-        _parse(PACKAGE_DIR / "sources" / "atlas.py")
-    )
+    violations = _mcp_import_violations(_parse(PACKAGE_DIR / "sources" / "atlas.py"))
     assert violations, "sources/atlas.py does not import mcp at all"
 
 

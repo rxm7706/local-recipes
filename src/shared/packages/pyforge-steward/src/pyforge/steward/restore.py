@@ -53,11 +53,7 @@ class RestoreDuty:
                 details={"error": str(exc), "backup_path": str(backup_path)},
             )
         ok = bool(result["ok"])
-        summary = (
-            "restore drill: counts match manifest"
-            if ok
-            else "restore drill: count mismatch"
-        )
+        summary = "restore drill: counts match manifest" if ok else "restore drill: count mismatch"
         return DutyResult(
             ok=ok,
             summary=summary,

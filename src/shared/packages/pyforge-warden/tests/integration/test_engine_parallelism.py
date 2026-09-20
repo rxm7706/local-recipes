@@ -53,11 +53,7 @@ def register_engine_for_test(monkeypatch, engine_cls) -> None:
     subprocess) is deliberately kept. Registration order among the
     surviving factories — and repeated calls within one test — still
     accumulate exactly like the additive helper does."""
-    current = [
-        factory
-        for factory in engines_module._ENGINE_FACTORIES
-        if factory not in _SLOW_REAL_ENGINES
-    ]
+    current = [factory for factory in engines_module._ENGINE_FACTORIES if factory not in _SLOW_REAL_ENGINES]
     monkeypatch.setattr(
         engines_module,
         "_ENGINE_FACTORIES",
@@ -131,9 +127,7 @@ def test_stub_engines_run_concurrently_not_sequentially(capsys, monkeypatch):
     AND that at least two intervals genuinely overlap in wall-clock time
     (the direct, non-timing-fragile half of the proof)."""
     for i in range(4):
-        register_engine_for_test(
-            monkeypatch, _make_sleepy_engine(f"sleepy-{i}", AXIS_HYGIENE)
-        )
+        register_engine_for_test(monkeypatch, _make_sleepy_engine(f"sleepy-{i}", AXIS_HYGIENE))
 
     t0 = time.monotonic()
     rc, out, _err = run_scan(capsys, CLEAN)
@@ -155,9 +149,7 @@ def test_stub_engines_run_concurrently_not_sequentially(capsys, monkeypatch):
         return a[1] < b[2] and b[1] < a[2]
 
     assert any(
-        _overlaps(_INTERVALS[i], _INTERVALS[j])
-        for i in range(len(_INTERVALS))
-        for j in range(i + 1, len(_INTERVALS))
+        _overlaps(_INTERVALS[i], _INTERVALS[j]) for i in range(len(_INTERVALS)) for j in range(i + 1, len(_INTERVALS))
     ), f"no two stub-engine intervals overlapped: {_INTERVALS}"
 
 
@@ -218,25 +210,19 @@ def test_result_order_survives_reordered_completion(capsys, monkeypatch):
 
     rc, out, _err = run_scan(capsys, CLEAN)
     document = parse_report(out)
-    matches = [
-        f for f in document["findings"] if f["id"] == "hygiene:DEP002:requests"
-    ]
+    matches = [f for f in document["findings"] if f["id"] == "hygiene:DEP002:requests"]
     assert len(matches) == 1, "engine-vs-engine dedupe must yield exactly one finding"
     assert matches[0]["message"] == "from the FIRST-registered (slow) engine"
 
 
-def test_a_late_registered_engine_error_still_lands_in_registration_order(
-    capsys, monkeypatch
-):
+def test_a_late_registered_engine_error_still_lands_in_registration_order(capsys, monkeypatch):
     """A companion to the dedupe proof above, on the errors[]/typed-error
     side: a FAST-crashing engine registered AFTER a SLOW-succeeding one must
     not reorder ``errors[]`` — this is a coarser check (errors[] here has
     exactly one entry either way) that the crash path shares the same
     future-collection code path as the success path, not a special one
     that could reorder independently."""
-    register_engine_for_test(
-        monkeypatch, _make_sleepy_engine("slow-succeeds", AXIS_VULNERABILITY)
-    )
+    register_engine_for_test(monkeypatch, _make_sleepy_engine("slow-succeeds", AXIS_VULNERABILITY))
 
     class _FastCrashingEngine:
         name = "fast-crashes"

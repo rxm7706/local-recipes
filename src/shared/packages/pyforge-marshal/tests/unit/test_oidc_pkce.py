@@ -53,9 +53,7 @@ def test_build_authorization_url_shape() -> None:
 
 def test_exchange_authorization_code_returns_access_token() -> None:
     transport = RecordingTransport(
-        json.dumps({"access_token": "idp-bearer-token", "token_type": "Bearer"}).encode(
-            "utf-8"
-        )
+        json.dumps({"access_token": "idp-bearer-token", "token_type": "Bearer"}).encode("utf-8")
     )
     token = exchange_authorization_code(
         issuer="http://issuer.test/realms/platform",
@@ -97,16 +95,12 @@ def test_capture_authorization_code_timeout() -> None:
 
 
 def test_pkce_login_success_with_injected_transport() -> None:
-    transport = RecordingTransport(
-        json.dumps({"access_token": "mint-me", "token_type": "Bearer"}).encode("utf-8")
-    )
+    transport = RecordingTransport(json.dumps({"access_token": "mint-me", "token_type": "Bearer"}).encode("utf-8"))
     errors: list[Exception] = []
     token_holder: list[str] = []
 
     def deliver_code(url: str) -> None:
-        redirect_uri = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)[
-            "redirect_uri"
-        ][0]
+        redirect_uri = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["redirect_uri"][0]
         with urllib.request.urlopen(  # noqa: S310
             f"{redirect_uri}?code=live-code",
             timeout=5,
@@ -190,9 +184,7 @@ def test_callback_handler_404s_any_other_path() -> None:
 def test_callback_handler_rejects_post_with_405() -> None:
     server, port = oidc_pkce_mod._bind_loopback_server()
     thread = _serve_one(server)
-    request = urllib.request.Request(
-        f"http://127.0.0.1:{port}/callback", data=b"code=x", method="POST"
-    )
+    request = urllib.request.Request(f"http://127.0.0.1:{port}/callback", data=b"code=x", method="POST")
     with pytest.raises(urllib.error.HTTPError) as excinfo:
         with urllib.request.urlopen(request, timeout=5):  # noqa: S310
             pass
@@ -225,9 +217,7 @@ def test_first_param_treats_blank_values_as_absent() -> None:
 
 def test_blank_issuer_is_rejected() -> None:
     with pytest.raises(PkceLoginError, match="issuer is required"):
-        build_authorization_url(
-            issuer="  / ", client_id="c", redirect_uri="r", code_challenge="x"
-        )
+        build_authorization_url(issuer="  / ", client_id="c", redirect_uri="r", code_challenge="x")
 
 
 def test_default_transport_wraps_station_client_error(monkeypatch) -> None:
@@ -250,9 +240,7 @@ def test_default_transport_returns_the_raw_body(monkeypatch) -> None:
         return b'{"access_token": "t"}'
 
     monkeypatch.setattr(oidc_pkce_mod, "urllib_request", _ok)
-    assert oidc_pkce_mod._default_transport("http://x/token", {"H": "v"}, b"b") == (
-        b'{"access_token": "t"}'
-    )
+    assert oidc_pkce_mod._default_transport("http://x/token", {"H": "v"}, b"b") == (b'{"access_token": "t"}')
     assert seen == [("POST", "http://x/token", {"H": "v"}, b"b")]
 
 
@@ -331,9 +319,7 @@ def test_capture_authorization_code_binds_its_own_server_when_none_given(
     port), serves the one callback, and releases the server it owns."""
     server, port = oidc_pkce_mod._bind_loopback_server()
     monkeypatch.setattr(oidc_pkce_mod, "_bind_loopback_server", lambda: (server, port))
-    thread = threading.Thread(
-        target=lambda: _hit(f"http://127.0.0.1:{port}/callback?code=owned"), daemon=True
-    )
+    thread = threading.Thread(target=lambda: _hit(f"http://127.0.0.1:{port}/callback?code=owned"), daemon=True)
     thread.start()
     result = capture_authorization_code(timeout_s=5.0)
     thread.join(timeout=2.0)
@@ -394,18 +380,13 @@ def _redirect_uri_of(url: str) -> str:
 
 def test_pkce_login_surfaces_the_idp_error_description() -> None:
     def deliver_error(url: str) -> None:
-        _hit(
-            f"{_redirect_uri_of(url)}?error=access_denied"
-            "&error_description=User%20declined"
-        )
+        _hit(f"{_redirect_uri_of(url)}?error=access_denied&error_description=User%20declined")
 
     login, error = _run_login_with(deliver_error)
     assert isinstance(error, PkceLoginError)
     assert str(error) == "User declined"
     # The property is populated before the browser is opened.
-    assert login.authorization_url.startswith(
-        "http://issuer.test/realms/platform/protocol/openid-connect/auth?"
-    )
+    assert login.authorization_url.startswith("http://issuer.test/realms/platform/protocol/openid-connect/auth?")
 
 
 def test_pkce_login_falls_back_to_the_bare_error_code() -> None:

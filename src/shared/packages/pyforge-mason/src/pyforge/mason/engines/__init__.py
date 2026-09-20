@@ -140,7 +140,7 @@ def probe_engine(name: str, binary: str) -> EngineStatus:
             timeout=_PROBE_TIMEOUT_SECONDS,
             check=False,
         )
-    except (OSError, UnicodeDecodeError, subprocess.TimeoutExpired):
+    except OSError, UnicodeDecodeError, subprocess.TimeoutExpired:
         return EngineStatus(name=name, available=True, version=None)
 
     version = _stripped_or_none(completed.stdout) or _stripped_or_none(completed.stderr)

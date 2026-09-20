@@ -113,10 +113,8 @@ def test_empty_last_pulse_is_advisory_empty_state():
     assert shown["empty"] is True
     assert shown["advisory"] is True
     assert shown["summary"] is None
-    html = (_portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html").read_text(
-        encoding="utf-8"
-    )
-    assert "id=\"doctor-fleet-pulse\"" in html
+    html = (_portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html").read_text(encoding="utf-8")
+    assert 'id="doctor-fleet-pulse"' in html
     assert "No last" in html
     assert "advisory" in html.lower()
     assert "second PR gate" in html
@@ -140,11 +138,9 @@ def test_django_doctor_is_client_only_no_pyforge_no_raw_http():
 
 
 def test_home_extends_shared_chrome_not_a_copy():
-    html = (
-        _portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html"
-    ).read_text(encoding="utf-8")
+    html = (_portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html").read_text(encoding="utf-8")
     assert '{% extends "django_pyforge/base.html" %}' in html
-    assert "id=\"doctor-body\"" in html
+    assert 'id="doctor-body"' in html
     chrome_copies = list((_portal_root(_repo_root()) / "templates").rglob("chrome.html"))
     assert chrome_copies == []
 

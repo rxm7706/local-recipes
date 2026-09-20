@@ -68,9 +68,7 @@ def test_skipped_suite_does_not_evaluate(driver, tmp_path: Path, monkeypatch, ca
     monkeypatch.setattr(driver, "_evaluate", fake_evaluate)
     monkeypatch.delenv("COVERAGE_GATES_STATIONS", raising=False)
 
-    rc = driver.main(
-        ["--paths-file", str(paths_file), "--suites", "integration"]
-    )
+    rc = driver.main(["--paths-file", str(paths_file), "--suites", "integration"])
     assert rc == 0
     assert evaluated == []
     out = capsys.readouterr().out

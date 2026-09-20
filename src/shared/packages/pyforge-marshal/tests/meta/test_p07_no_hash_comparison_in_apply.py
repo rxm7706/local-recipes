@@ -97,9 +97,7 @@ def _hash_import_violations(tree: ast.Module) -> list[int]:
             return
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "hashlib" or _ends_with_dotted_segment(
-                    alias.name, "detect.hashes"
-                ):
+                if alias.name == "hashlib" or _ends_with_dotted_segment(alias.name, "detect.hashes"):
                     violations.append(node.lineno)
                     break
         elif isinstance(node, ast.ImportFrom):
@@ -220,9 +218,7 @@ def test_detector_does_not_fire_on_a_hashlib_import_guarded_by_type_checking():
 
 
 def test_detector_does_not_fire_on_a_hashes_import_guarded_by_dotted_type_checking():
-    tree = ast.parse(
-        "import typing\nif typing.TYPE_CHECKING:\n    from ..detect.hashes import check_managed_file\n"
-    )
+    tree = ast.parse("import typing\nif typing.TYPE_CHECKING:\n    from ..detect.hashes import check_managed_file\n")
     assert _hash_import_violations(tree) == []
 
 
@@ -230,7 +226,5 @@ def test_detector_still_fires_on_a_hashlib_import_in_the_type_checking_else_bran
     """Only the ``if TYPE_CHECKING:`` body is guarded -- an import placed in
     its ``else:`` branch runs unconditionally at runtime and is a real
     violation."""
-    tree = ast.parse(
-        "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    pass\nelse:\n    import hashlib\n"
-    )
+    tree = ast.parse("from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    pass\nelse:\n    import hashlib\n")
     assert _hash_import_violations(tree) == [5]

@@ -153,11 +153,9 @@ def parse_declared_surface(text: str) -> tuple[str, ...] | None:
             )
         try:
             value = ast.literal_eval(raw)
-        except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+        except ValueError, SyntaxError, TypeError, MemoryError, RecursionError:
             return None
-        if isinstance(value, list) and all(
-            isinstance(item, str) and item != "" for item in value
-        ):
+        if isinstance(value, list) and all(isinstance(item, str) and item != "" for item in value):
             return tuple(value)
         return None
 

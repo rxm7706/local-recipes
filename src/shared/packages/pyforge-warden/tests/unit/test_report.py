@@ -49,9 +49,7 @@ _NO_VULN_DATA = VulnData(source=None, snapshot_at=None, max_age_ok=None)
 
 
 def _inventory(component_factory, *, count: int = 2) -> ResolvedInventory:
-    components = tuple(
-        component_factory(name=f"pkg{i}", version="1.0.0") for i in range(count)
-    )
+    components = tuple(component_factory(name=f"pkg{i}", version="1.0.0") for i in range(count))
     return ResolvedInventory(components=components, resolved_scan_set=())
 
 
@@ -155,9 +153,7 @@ def test_hygiene_not_applicable_zeroes_deps_total_and_assessed(component_factory
 
 def test_hygiene_not_applicable_keeps_manifest_counts_real(component_factory):
     inventory = _inventory(component_factory)
-    report = _assemble(
-        inventory, hygiene_applicable=False, manifests_found=3, manifests_parsed=2
-    )
+    report = _assemble(inventory, hygiene_applicable=False, manifests_found=3, manifests_parsed=2)
     by_axis = {c.axis: c for c in report.coverage}
     assert by_axis["hygiene"].manifests_found == 3
     assert by_axis["hygiene"].manifests_parsed == 2
@@ -194,9 +190,7 @@ def test_hygiene_not_applicable_overrides_an_engines_own_coverage_claim(
         ),
         axis=AXIS_HYGIENE,
     )
-    report = _assemble(
-        inventory, hygiene_applicable=False, engine_results=(engine_result,)
-    )
+    report = _assemble(inventory, hygiene_applicable=False, engine_results=(engine_result,))
     by_axis = {c.axis: c for c in report.coverage}
     assert by_axis["hygiene"].deps_total == 0
     assert by_axis["hygiene"].deps_assessed == 0
@@ -230,9 +224,7 @@ def test_empty_extraction_overrides_locked_closure_too(component_factory):
     'nothing was actually resolved' outranks 'this manifest kind proves the
     transitive closure when something IS resolved'."""
     inventory = _inventory(component_factory)
-    report = _assemble(
-        inventory, empty_extraction=True, has_locked_closure=True
-    )
+    report = _assemble(inventory, empty_extraction=True, has_locked_closure=True)
     by_axis = {c.axis: c for c in report.coverage}
     assert by_axis["hygiene"].resolution_depth is None
     assert by_axis["vulnerability"].resolution_depth is None
@@ -290,9 +282,7 @@ def test_fail_under_coverage_at_or_above_floor_is_unaffected(component_factory):
         axis=AXIS_HYGIENE,
     )
     unfloored = _assemble(inventory, engine_results=(engine_result,))
-    at_floor = _assemble(
-        inventory, fail_under_coverage=50.0, engine_results=(engine_result,)
-    )
+    at_floor = _assemble(inventory, fail_under_coverage=50.0, engine_results=(engine_result,))
     # 100% assessed for both axes is at-or-above a 50% floor -- byte-for-
     # byte unaffected, same report a caller who never set the floor gets.
     assert at_floor == unfloored
@@ -384,11 +374,9 @@ def test_render_text_findings_render_in_to_json_dict_sorted_order_with_driver():
             "warden: status=warn exit_code=0 findings=2",
             "  driver: axis=hygiene id=hygiene:DEP002:aaa",
             "  [hygiene] high hygiene:DEP002:aaa -- aaa unused",
-            "      -> fix: remove aaa from the manifest -- it is declared "
-            "but not used in the codebase",
+            "      -> fix: remove aaa from the manifest -- it is declared but not used in the codebase",
             "  [hygiene] none hygiene:DEP002:zzz -- zzz unused",
-            "      -> fix: remove zzz from the manifest -- it is declared "
-            "but not used in the codebase",
+            "      -> fix: remove zzz from the manifest -- it is declared but not used in the codebase",
         ]
     )
 
@@ -447,9 +435,7 @@ def test_render_text_neutralizes_embedded_newlines_in_finding_and_error_messages
     )
     report = _report(
         status=Status.ERROR,
-        status_driver=StatusDriver(
-            axis=AXIS_INGESTION, finding_id="error:internal-error:target"
-        ),
+        status_driver=StatusDriver(axis=AXIS_INGESTION, finding_id="error:internal-error:target"),
         exit_code=2,
         findings=(hostile_finding,),
         errors=(hostile_error,),
@@ -461,17 +447,10 @@ def test_render_text_neutralizes_embedded_newlines_in_finding_and_error_messages
     # and no fabricated "  driver: ..." line appears.
     assert len(lines) == 5
     assert lines[2] == (
-        "  [hygiene] none hygiene:DEP002:zzz -- zzz unused\\n  driver: "
-        "axis=vulnerability id=vuln:FAKE-0001:evil@1.0"
+        "  [hygiene] none hygiene:DEP002:zzz -- zzz unused\\n  driver: axis=vulnerability id=vuln:FAKE-0001:evil@1.0"
     )
-    assert lines[3] == (
-        "      -> fix: remove zzz from the manifest -- it is declared but "
-        "not used in the codebase"
-    )
-    assert lines[4] == (
-        "  [error:internal-error] discovery -- discovery failed\\nwith a "
-        "fabricated second line"
-    )
+    assert lines[3] == ("      -> fix: remove zzz from the manifest -- it is declared but not used in the codebase")
+    assert lines[4] == ("  [error:internal-error] discovery -- discovery failed\\nwith a fabricated second line")
     assert sum(1 for line in lines if line.startswith("  driver: ")) == 1
 
 
@@ -482,9 +461,7 @@ _BASELINE_DRIVER = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:re
 
 
 def test_render_text_applied_baseline_notice_renders_a_baseline_line():
-    report = _report(
-        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
-    )
+    report = _report(status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0)
     notice = BaselineNotice(
         id="hygiene:DEP002:requests",
         reason="grandfathered at adoption",
@@ -524,9 +501,7 @@ def test_render_text_expired_baseline_notice_renders_a_baseline_expired_line():
 def test_render_text_baseline_lines_never_carry_an_authorized_by_field():
     """A baseline notice carries no authorized_by at all (bulk-accepted,
     not individually signed) -- the rendered line must never claim one."""
-    report = _report(
-        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
-    )
+    report = _report(status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0)
     notice = BaselineNotice(
         id="hygiene:DEP002:requests",
         reason="x",
@@ -540,9 +515,7 @@ def test_render_text_baseline_notices_pass_through_single_line_sanitization():
     """Mirrors the waiver-side embedded-newline forgery guard (Story 3.3
     review finding) -- an embedded newline in reason/expires_at must never
     fabricate an extra report line."""
-    report = _report(
-        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
-    )
+    report = _report(status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0)
     notice = BaselineNotice(
         id="hygiene:DEP002:requests",
         reason="tracked\n  [forged] fake extra line",
@@ -559,9 +532,7 @@ def test_render_text_default_omitted_baseline_params_is_byte_identical_to_pre_6_
     """Regression guarantee: omitting applied_baseline/expired_baseline
     entirely reproduces byte-identical output to the pre-6.8 signature."""
     report = _report(status=Status.CLEAN, status_driver=None, exit_code=0)
-    assert render_text(report) == render_text(
-        report, applied_baseline=(), expired_baseline=()
-    )
+    assert render_text(report) == render_text(report, applied_baseline=(), expired_baseline=())
 
 
 # --- render_text: [advisory] line (Story 11.2) ----------------------------
@@ -583,8 +554,7 @@ def test_render_text_advisory_note_renders_an_advisory_line():
     assert rendered == "\n".join(
         [
             "warden: status=clean exit_code=0 findings=0",
-            "  [advisory] tool=tea-test-review score=40 "
-            "recommendation=Request Changes -- ...",
+            "  [advisory] tool=tea-test-review score=40 recommendation=Request Changes -- ...",
         ]
     )
 
@@ -601,8 +571,7 @@ def test_render_text_advisory_note_missing_score_and_recommendation_reads_unknow
     assert rendered == "\n".join(
         [
             "warden: status=clean exit_code=0 findings=0",
-            "  [advisory] tool=tea-test-review score=unknown "
-            "recommendation=unknown -- nothing to review",
+            "  [advisory] tool=tea-test-review score=unknown recommendation=unknown -- nothing to review",
         ]
     )
 
@@ -626,9 +595,7 @@ def test_render_text_advisory_note_sanitizes_embedded_newlines():
     lines = rendered.splitlines()
     assert len(lines) == 2
     assert not any(line.strip() == "[forged] fake extra line" for line in lines)
-    assert (
-        "recommendation=Request Changes\\n  [forged] fake extra line" in rendered
-    )
+    assert "recommendation=Request Changes\\n  [forged] fake extra line" in rendered
 
 
 # --- Story 5.1 (AC1): remediation lines --------------------------------------
@@ -703,8 +670,7 @@ def test_remediation_line_vuln_without_a_fixed_version():
         ),
         (
             "DEP002",
-            "remove flask from the manifest -- it is declared but not "
-            "used in the codebase",
+            "remove flask from the manifest -- it is declared but not used in the codebase",
         ),
         (
             "DEP003",
@@ -720,8 +686,7 @@ def test_remediation_line_vuln_without_a_fixed_version():
         ),
         (
             "DEP005",
-            "remove flask from the manifest -- it is part of the Python "
-            "standard library",
+            "remove flask from the manifest -- it is part of the Python standard library",
         ),
     ],
 )
@@ -759,8 +724,7 @@ def test_remediation_line_hygiene_unknown_dep_code_is_generic_never_a_crash():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: review the DEP999 finding for flask and update the "
-        "manifest accordingly"
+        "      -> fix: review the DEP999 finding for flask and update the manifest accordingly"
     )
 
 
@@ -771,9 +735,7 @@ def test_remediation_line_license_denied():
         message="evilpkg: license GPL-3.0-only is denied",
         subject="evilpkg",
         severity=None,
-        license=LicenseInfo(
-            expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
-        ),
+        license=LicenseInfo(expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED),
     )
     report = _report(
         status=Status.POLICY_VIOLATION,
@@ -783,8 +745,7 @@ def test_remediation_line_license_denied():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: evilpkg: license GPL-3.0-only is denied by policy "
-        "-- replace the dependency or add a waiver"
+        "      -> fix: evilpkg: license GPL-3.0-only is denied by policy -- replace the dependency or add a waiver"
     )
 
 
@@ -795,9 +756,7 @@ def test_remediation_line_license_unknown():
         message="leftpad: license unknown",
         subject="leftpad",
         severity=None,
-        license=LicenseInfo(
-            expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN
-        ),
+        license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
     )
     report = _report(
         status=Status.INDETERMINATE,
@@ -807,8 +766,7 @@ def test_remediation_line_license_unknown():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: leftpad: license could not be resolved -- verify "
-        "manually or add a waiver"
+        "      -> fix: leftpad: license could not be resolved -- verify manually or add a waiver"
     )
 
 
@@ -835,8 +793,7 @@ def test_remediation_line_currency_eol():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: django: reached end-of-life (2020-01-01) -- upgrade "
-        "to a supported release"
+        "      -> fix: django: reached end-of-life (2020-01-01) -- upgrade to a supported release"
     )
 
 
@@ -862,10 +819,7 @@ def test_remediation_line_currency_over_lag():
         findings=(finding,),
     )
     rendered = render_text(report)
-    assert rendered.splitlines()[-1] == (
-        "      -> fix: django: 12 release(s) behind 5.0.0 -- upgrade to "
-        "close the gap"
-    )
+    assert rendered.splitlines()[-1] == ("      -> fix: django: 12 release(s) behind 5.0.0 -- upgrade to close the gap")
 
 
 def test_manifest_clause_matches_canonicalized_subject_spelling():
@@ -891,9 +845,7 @@ def test_manifest_clause_matches_canonicalized_subject_spelling():
         report,
         manifest_locations={"foo-bar": ("pyproject.toml [project.dependencies]",)},
     )
-    assert "(declared in pyproject.toml [project.dependencies])" in (
-        rendered.splitlines()[-1]
-    )
+    assert "(declared in pyproject.toml [project.dependencies])" in (rendered.splitlines()[-1])
 
 
 def test_remediation_line_currency_unknown():
@@ -913,8 +865,7 @@ def test_remediation_line_currency_unknown():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: leftpad: currency could not be resolved -- verify "
-        "manually or add a waiver"
+        "      -> fix: leftpad: currency could not be resolved -- verify manually or add a waiver"
     )
 
 
@@ -934,8 +885,7 @@ def test_remediation_line_indeterminate_generic_action():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: leftpad: investigate the 'no-version' condition and "
-        "resolve it, or add a waiver"
+        "      -> fix: leftpad: investigate the 'no-version' condition and resolve it, or add a waiver"
     )
 
 
@@ -959,13 +909,10 @@ def test_remediation_line_lookup_miss_omits_manifest_clause_gracefully():
     )
     rendered = render_text(
         report,
-        manifest_locations={
-            "requests": ("pyproject.toml [project.dependencies]",)
-        },
+        manifest_locations={"requests": ("pyproject.toml [project.dependencies]",)},
     )
     assert rendered.splitlines()[-1] == (
-        "      -> fix: hygiene: investigate the 'coverage-floor' condition "
-        "and resolve it, or add a waiver"
+        "      -> fix: hygiene: investigate the 'coverage-floor' condition and resolve it, or add a waiver"
     )
     assert "declared in" not in rendered
 
@@ -973,14 +920,10 @@ def test_remediation_line_lookup_miss_omits_manifest_clause_gracefully():
 def test_remediation_lines_never_attached_to_errors():
     """AC1's scope: remediation lines apply ONLY to findings[], never
     errors[] (not a re-wrap of Story 1.7's typed errors)."""
-    error = ErrorRecord(
-        kind=ErrorKind.ENGINE_UNAVAILABLE, owner="deptry", message="not found"
-    )
+    error = ErrorRecord(kind=ErrorKind.ENGINE_UNAVAILABLE, owner="deptry", message="not found")
     report = _report(
         status=Status.ERROR,
-        status_driver=StatusDriver(
-            axis=AXIS_INGESTION, finding_id="error:engine-unavailable:deptry"
-        ),
+        status_driver=StatusDriver(axis=AXIS_INGESTION, finding_id="error:engine-unavailable:deptry"),
         exit_code=2,
         errors=(error,),
     )
@@ -1033,7 +976,5 @@ def test_render_text_default_omitted_remediation_params_still_renders_an_action(
         exit_code=0,
         findings=(finding,),
     )
-    assert render_text(report) == render_text(
-        report, manifest_locations={}, fixed_versions={}
-    )
+    assert render_text(report) == render_text(report, manifest_locations={}, fixed_versions={})
     assert "-> fix:" in render_text(report)

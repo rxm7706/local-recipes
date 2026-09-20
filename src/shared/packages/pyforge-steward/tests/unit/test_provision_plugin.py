@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import tomllib
 from pathlib import Path
 
 import pytest
-import tomllib
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.provision import (
     _LABS_CONSENT_SKILLS,
@@ -80,13 +81,9 @@ def test_fresh_install_lands_skill_and_writes_labs_roster(labs_fixture):
 
     assert result["skill_installed"] == "mcp-builder"
     assert result["skills_on_roster"] == ["mcp-builder"]
-    assert (labs_fixture / ".claude/skills/mcp-builder/SKILL.md").read_text(
-        encoding="utf-8"
-    ) == "# mcp-builder\n"
+    assert (labs_fixture / ".claude/skills/mcp-builder/SKILL.md").read_text(encoding="utf-8") == "# mcp-builder\n"
 
-    config = tomllib.loads(
-        (labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8")
-    )
+    config = tomllib.loads((labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
     labs = config["modules"]["labs"]
     assert labs["skills"] == ["mcp-builder"]
     assert labs["provisioned_by"] == "steward"
@@ -107,9 +104,7 @@ def test_second_call_accumulates_without_disturbing_the_first_skill(labs_fixture
     assert first_dir.stat().st_mtime == first_mtime
     assert (first_dir / "SKILL.md").read_text(encoding="utf-8") == "# mcp-builder\n"
 
-    config = tomllib.loads(
-        (labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8")
-    )
+    config = tomllib.loads((labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
     assert config["modules"]["labs"]["skills"] == ["mcp-builder", "release-please"]
 
 
@@ -119,9 +114,7 @@ def test_reprovision_is_idempotent_overwrite_without_roster_duplication(labs_fix
     result = provision_plugin_skill("labs", "mcp-builder", cwd=labs_fixture)
 
     assert result["skills_on_roster"] == ["mcp-builder"]
-    config = tomllib.loads(
-        (labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8")
-    )
+    config = tomllib.loads((labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
     assert config["modules"]["labs"]["skills"] == ["mcp-builder"]
 
 
@@ -132,9 +125,7 @@ def test_all_four_consented_skills_accumulate_in_sorted_order(labs_fixture):
     for name in _LABS_CONSENT_SKILLS:
         assert (labs_fixture / ".claude/skills" / name).is_dir(), name
 
-    config = tomllib.loads(
-        (labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8")
-    )
+    config = tomllib.loads((labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
     assert config["modules"]["labs"]["skills"] == sorted(_LABS_CONSENT_SKILLS)
 
 
@@ -176,9 +167,7 @@ def test_collision_check_is_per_skill_not_per_module(labs_fixture):
     with pytest.raises(RuntimeError, match="skill-name collision"):
         provision_plugin_skill("labs", "release-please", cwd=labs_fixture)
 
-    config = tomllib.loads(
-        (labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8")
-    )
+    config = tomllib.loads((labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
     assert config["modules"]["labs"]["skills"] == ["mcp-builder"]
     assert (foreign / "NOTES.md").read_text(encoding="utf-8") == "unrelated foreign content\n"
 
@@ -201,9 +190,7 @@ def test_collision_error_names_plugin_not_module(labs_fixture):
         provision_plugin_skill("labs", "mcp-builder", cwd=labs_fixture)
 
 
-def test_manifest_write_before_copy_makes_a_copy_failure_retry_self_healing(
-    labs_fixture, monkeypatch
-):
+def test_manifest_write_before_copy_makes_a_copy_failure_retry_self_healing(labs_fixture, monkeypatch):
     """Review finding, empirically reproduced: an earlier draft copied the
     skill directory BEFORE recording the roster, so a write failure AFTER a
     successful copy left the directory behind with the roster never gaining
@@ -230,9 +217,7 @@ def test_manifest_write_before_copy_makes_a_copy_failure_retry_self_healing(
         provision_plugin_skill("labs", "mcp-builder", cwd=labs_fixture)
 
     # The roster already gained the skill; the directory does not exist yet.
-    config = tomllib.loads(
-        (labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8")
-    )
+    config = tomllib.loads((labs_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
     assert config["modules"]["labs"]["skills"] == ["mcp-builder"]
     assert not (labs_fixture / ".claude/skills/mcp-builder").exists()
 
@@ -255,13 +240,7 @@ def test_marketplace_json_sibling_is_never_touched(labs_fixture):
     """I/O Matrix: `.claude-plugin/marketplace.json` alongside
     `share/bmad-labs-skills/skills/` is never read or copied -- only the
     named subdirectory under `skills/` is."""
-    marketplace = (
-        labs_fixture
-        / ".pixi/envs/pyforge-guild/share"
-        / LABS_PACKAGE
-        / ".claude-plugin"
-        / "marketplace.json"
-    )
+    marketplace = labs_fixture / ".pixi/envs/pyforge-guild/share" / LABS_PACKAGE / ".claude-plugin" / "marketplace.json"
     marketplace.parent.mkdir(parents=True)
     marketplace.write_text("{}", encoding="utf-8")
 
@@ -323,9 +302,7 @@ def test_skill_without_plugin_falls_through_to_bare_provision_help(labs_fixture,
 def test_run_plugin_json_success_is_valid_json(labs_fixture, monkeypatch):
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: labs_fixture)
 
-    result = ProvisionDuty().run(
-        _full_namespace(plugin="labs", skill="mcp-builder", json=True)
-    )
+    result = ProvisionDuty().run(_full_namespace(plugin="labs", skill="mcp-builder", json=True))
 
     assert result.ok is True
     payload = json.loads(result.summary)
@@ -336,9 +313,7 @@ def test_run_plugin_json_success_is_valid_json(labs_fixture, monkeypatch):
 def test_run_plugin_json_failure_is_valid_json(labs_fixture, monkeypatch):
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: labs_fixture)
 
-    result = ProvisionDuty().run(
-        _full_namespace(plugin="labs", skill=NOT_CONSENTED_SKILL, json=True)
-    )
+    result = ProvisionDuty().run(_full_namespace(plugin="labs", skill=NOT_CONSENTED_SKILL, json=True))
 
     assert result.ok is False
     payload = json.loads(result.summary)

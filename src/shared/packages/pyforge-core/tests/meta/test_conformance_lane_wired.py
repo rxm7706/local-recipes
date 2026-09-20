@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import re
 import tomllib
-from pathlib import Path
 
 from conftest import PACKAGES_ROOT, sibling_station_dirs
 
@@ -57,9 +56,7 @@ _IF_LINE = re.compile(r"^\s+if:\s*(.+?)\s*$", re.MULTILINE)
 _NEEDS_LINE = re.compile(r"^\s+needs:\s*(.+?)\s*$", re.MULTILINE)
 _RUN_LINE = re.compile(r"^\s+-\s+run:\s*(.+?)\s*$", re.MULTILINE)
 _META_FILE = re.compile(r"tests/(?:meta|unit)\b")
-_SHARED_DIFF = re.compile(
-    r'git diff --quiet "\$BASE"\.\.\.HEAD -- \\\n(.*?)2>/dev/null; then', re.DOTALL
-)
+_SHARED_DIFF = re.compile(r'git diff --quiet "\$BASE"\.\.\.HEAD -- \\\n(.*?)2>/dev/null; then', re.DOTALL)
 _STATION_LOOP = re.compile(r"^\s*for s in ([^;\n]+); do\n(.*?)^\s*done\s*$", re.MULTILINE | re.DOTALL)
 _CORE_SEED = re.compile(r'^\s*CORE_CHANGED="\$SHARED_CHANGED"\s*$', re.MULTILINE)
 _CORE_SET = re.compile(r"^\s*CORE_CHANGED=true\s*$", re.MULTILINE)
@@ -101,11 +98,7 @@ def _shared_surface_packages(changes_block: str) -> list[str]:
     m = _SHARED_DIFF.search(changes_block)
     if m is None:
         return []
-    return [
-        token.split("/")[-1]
-        for token in m.group(1).split()
-        if token.startswith("src/shared/packages/")
-    ]
+    return [token.split("/")[-1] for token in m.group(1).split() if token.startswith("src/shared/packages/")]
 
 
 def _station_loop(changes_block: str) -> tuple[list[str], str] | None:
@@ -157,7 +150,9 @@ def changes_wiring_problems(workflow_text: str) -> list[str]:
     if loop is None:
         problems.append("no `for s in ...; do ... done` station loop in the changes shell")
     elif _CORE_SET.search(loop[1]) is None:
-        problems.append("the station loop does not assign `CORE_CHANGED=true` -- a station-only diff would not fire core-test")
+        problems.append(
+            "the station loop does not assign `CORE_CHANGED=true` -- a station-only diff would not fire core-test"
+        )
     if _CORE_OUT.search(block) is None:
         problems.append('`echo "core=$CORE_CHANGED" >> "$GITHUB_OUTPUT"` missing')
     return problems
@@ -177,7 +172,9 @@ def pixi_leg_problems(pixi_data: dict) -> list[str]:
         )
     preflight = [d if isinstance(d, str) else d["task"] for d in tasks["pr-preflight"].get("depends-on", [])]
     if "pyforge-station-tests" not in preflight:
-        problems.append("pr-preflight no longer depends on pyforge-station-tests, so it no longer inherits the core leg")
+        problems.append(
+            "pr-preflight no longer depends on pyforge-station-tests, so it no longer inherits the core leg"
+        )
     cmd = pixi_data["feature"]["pyforge-core"]["tasks"].get(CORE_TASK, {}).get("cmd", "")
     if "src/shared/packages/pyforge-core/tests" not in cmd or _META_FILE.search(cmd):
         problems.append(f"`{CORE_TASK}` cmd {cmd!r} does not target the whole tests/ tree")

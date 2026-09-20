@@ -14,9 +14,7 @@ def _pf(
     check="pkg-a",
     partition=Partition.ACTIONABLE,
 ):
-    finding = Finding(
-        source=source, check=check, status=status, message="stub", evidence=evidence or {}
-    )
+    finding = Finding(source=source, check=check, status=status, message="stub", evidence=evidence or {})
     return PartitionedFinding(finding=finding, partition=partition, reason="actionable")
 
 
@@ -64,9 +62,7 @@ def test_blast_radius_tiebreak_patch_before_minor_before_major():
 
 def test_severity_dominates_kev_and_epss():
     fail_plain = _pf(status=DoctorStatus.FAIL, evidence={}, check="fail-plain")
-    warn_kev = _pf(
-        status=DoctorStatus.WARN, evidence={"kev": True, "epss": 0.99}, check="warn-kev"
-    )
+    warn_kev = _pf(status=DoctorStatus.WARN, evidence={"kev": True, "epss": 0.99}, check="warn-kev")
     result = rank([warn_kev, fail_plain])
     assert result[0].finding.check == "fail-plain"
 
@@ -146,9 +142,7 @@ def test_clean_ok_finding_is_excluded_from_ranking_even_though_actionable():
     but ranking it alongside real problems is meaningless -- there is
     nothing to prioritize."""
     clean = _pf(status=DoctorStatus.OK, partition=Partition.ACTIONABLE, check="clean-pkg")
-    real_problem = _pf(
-        status=DoctorStatus.FAIL, partition=Partition.ACTIONABLE, check="broken-pkg"
-    )
+    real_problem = _pf(status=DoctorStatus.FAIL, partition=Partition.ACTIONABLE, check="broken-pkg")
     result = rank([clean, real_problem])
     assert len(result) == 1
     assert result[0].finding.check == "broken-pkg"

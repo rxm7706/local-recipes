@@ -43,9 +43,7 @@ def memory_root(tmp_path: Path) -> Path:
 
 
 def _git(repo_root: Path, *args: str) -> None:
-    subprocess.run(
-        ["git", *args], cwd=str(repo_root), check=True, capture_output=True, text=True
-    )
+    subprocess.run(["git", *args], cwd=str(repo_root), check=True, capture_output=True, text=True)
 
 
 def _init_git_repo_with_commits(repo_root: Path, count: int = 2) -> None:
@@ -58,9 +56,7 @@ def _init_git_repo_with_commits(repo_root: Path, count: int = 2) -> None:
         _git(repo_root, "commit", "-q", "-m", f"commit {i}")
 
 
-def _assistant_transcript_line(
-    text: str, *, timestamp: str | None = "2026-08-20T12:00:00.000Z"
-) -> str:
+def _assistant_transcript_line(text: str, *, timestamp: str | None = "2026-08-20T12:00:00.000Z") -> str:
     """`timestamp=None` omits the field entirely -- exercises
     `transcripts.py`'s own `"unknown time"` sentinel for an untimestamped
     entry, which in turn exercises `compile.py`'s mtime-fallback branch."""
@@ -204,9 +200,7 @@ def test_git_absent_logs_warning_and_does_not_abort(
     assert any("git" in w.lower() for w in result.warnings)
 
 
-def test_malformed_memory_entry_is_skipped_with_warning_not_aborted(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_malformed_memory_entry_is_skipped_with_warning_not_aborted(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "a good entry")
     (memory_root / "feedback" / "broken.md").write_text("not frontmatter at all\n", encoding="utf-8")
 
@@ -244,7 +238,7 @@ def test_non_utf8_commit_message_is_replaced_not_a_crash(tmp_path: Path, memory_
     )
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(
+    compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
         store=store,
@@ -291,9 +285,7 @@ def test_memory_file_removed_between_the_two_read_passes_is_skipped_not_a_crash(
     assert any("supersession" in w for w in result.warnings)
 
 
-def test_data_named_directory_outside_dot_claude_is_not_excluded(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_data_named_directory_outside_dot_claude_is_not_excluded(tmp_path: Path, memory_root: Path) -> None:
     """Review finding: `_EXCLUDED_DIR_NAMES` matched the bare name "data"
     ANYWHERE in a path, silently dropping a legitimate CHANGELOG.md/
     .memlog.md/*retro*.md under any directory literally named "data" --
@@ -304,7 +296,7 @@ def test_data_named_directory_outside_dot_claude_is_not_excluded(
     (other_data_dir / "CHANGELOG.md").write_text("# Changes\n\nsomething\n", encoding="utf-8")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(
+    compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
         store=store,
@@ -387,9 +379,7 @@ def test_transcript_surface_happy_path_produces_one_node(tmp_path: Path, memory_
     )
 
 
-def test_transcript_surface_missing_timestamp_falls_back_to_file_mtime(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_missing_timestamp_falls_back_to_file_mtime(tmp_path: Path, memory_root: Path) -> None:
     """`transcripts.py` substitutes its own `"unknown time"` sentinel for an
     entry with no `timestamp` field at all; `datetime.fromisoformat()` on
     that sentinel raises `ValueError`, exercising `_transcript_valid_from()`'s
@@ -398,11 +388,7 @@ def test_transcript_surface_missing_timestamp_falls_back_to_file_mtime(
     path = _write_transcript_jsonl(
         transcript_root,
         "session-a.jsonl",
-        [
-            _assistant_transcript_line(
-                "We decided to use SQLite for the local cache.", timestamp=None
-            )
-        ],
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.", timestamp=None)],
     )
     expected_valid_from = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
 
@@ -453,9 +439,7 @@ def test_transcript_surface_non_string_timestamp_falls_back_to_file_mtime_withou
     assert transcript_nodes[0].valid_from == expected_valid_from
 
 
-def test_transcript_surface_curated_covered_content_is_not_double_indexed(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_curated_covered_content_is_not_double_indexed(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "project", "We decided to use SQLite for the local cache.")
     transcript_root = tmp_path / "transcripts"
     _write_transcript_jsonl(
@@ -478,9 +462,7 @@ def test_transcript_surface_curated_covered_content_is_not_double_indexed(
     assert len(memory_nodes) == 1
 
 
-def test_transcript_surface_missing_root_warns_and_contributes_zero_nodes(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_missing_root_warns_and_contributes_zero_nodes(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
@@ -498,9 +480,7 @@ def test_transcript_surface_missing_root_warns_and_contributes_zero_nodes(
     assert len(transcript_warnings) == 1
 
 
-def test_transcript_surface_two_candidates_on_one_line_get_distinct_ids(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_two_candidates_on_one_line_get_distinct_ids(tmp_path: Path, memory_root: Path) -> None:
     transcript_root = tmp_path / "transcripts"
     _write_transcript_jsonl(
         transcript_root,
@@ -529,9 +509,7 @@ def test_transcript_surface_two_candidates_on_one_line_get_distinct_ids(
     assert citations == {"session-a.jsonl:L1"}
 
 
-def test_transcript_surface_idempotent_rerun_is_byte_identical(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_idempotent_rerun_is_byte_identical(tmp_path: Path, memory_root: Path) -> None:
     transcript_root = tmp_path / "transcripts"
     _write_transcript_jsonl(
         transcript_root,
@@ -562,9 +540,7 @@ def test_transcript_surface_idempotent_rerun_is_byte_identical(
     assert first_bytes == second_bytes
 
 
-def test_transcript_surface_naive_timestamp_is_normalized_to_utc(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_naive_timestamp_is_normalized_to_utc(tmp_path: Path, memory_root: Path) -> None:
     """Review finding: a transcript timestamp with no UTC offset parses to a
     NAIVE datetime, while every other surface's `valid_from` is tz-aware
     UTC. Mixing the two on one graph made any cross-node comparison raise
@@ -608,9 +584,7 @@ def test_transcript_surface_naive_timestamp_is_normalized_to_utc(
         "root CI container rather than on a real regression (review finding)"
     ),
 )
-def test_transcript_surface_unreadable_root_warns_and_contributes_zero_nodes(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_unreadable_root_warns_and_contributes_zero_nodes(tmp_path: Path, memory_root: Path) -> None:
     """Review finding: this story's contract says a "missing/UNREADABLE"
     transcript root degrades to a warning and zero nodes, but
     `scan_transcripts()` swallows the `OSError` from its own glob -- so an
@@ -642,9 +616,7 @@ def test_transcript_surface_unreadable_root_warns_and_contributes_zero_nodes(
     assert "is not readable" in transcript_warnings[0]
 
 
-def test_transcript_surface_warning_does_not_advertise_a_flag_compile_lacks(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_warning_does_not_advertise_a_flag_compile_lacks(tmp_path: Path, memory_root: Path) -> None:
     """Review finding: the warning forwarded `scan_transcripts()`'s own
     `ValueError`, whose text ends "pass --source to point at the correct
     user-local session-transcript directory". `--source` exists on `scribe
@@ -700,9 +672,7 @@ def test_transcript_surface_ids_are_keyed_by_file_and_line_not_a_global_index(
     assert ids == {"transcript:session-a.jsonl:L1", "transcript:session-b.jsonl:L1"}
 
 
-def test_transcript_surface_citation_carries_the_real_line_number(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_surface_citation_carries_the_real_line_number(tmp_path: Path, memory_root: Path) -> None:
     """Review finding: every transcript fixture in this package put its
     decision on line 1 of a one-line file, so the `:L<line>` component of
     the citation and the id was entirely unpinned -- hardcoding
@@ -865,9 +835,7 @@ def test_worktree_homes_are_not_compile_surfaces(tmp_path: Path, memory_root: Pa
 # --- Story 3.3: overlap lock + bounded-scan cache -----------------------------
 
 
-def test_second_compile_against_a_locked_store_is_refused_not_queued(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_second_compile_against_a_locked_store_is_refused_not_queued(tmp_path: Path, memory_root: Path) -> None:
     """An overlapping compile is pure waste (each run is a full rebuild of
     the same derived store), so the lock skips rather than waits -- unlike
     `capture.py::_locked`, which polls because two captures are both meant
@@ -876,9 +844,7 @@ def test_second_compile_against_a_locked_store_is_refused_not_queued(
     store_path = tmp_path / "graph.json"
 
     with compile_module._compile_lock(store_path):
-        with pytest.raises(
-            compile_module.CompileInProgressError, match="already holds the lock"
-        ):
+        with pytest.raises(compile_module.CompileInProgressError, match="already holds the lock"):
             compile_graph(
                 memory_root=memory_root,
                 repo_root=tmp_path,
@@ -899,9 +865,7 @@ def test_second_compile_against_a_locked_store_is_refused_not_queued(
     assert store_path.is_file()
 
 
-def test_compile_writes_the_transcript_scan_cache_beside_the_store(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_compile_writes_the_transcript_scan_cache_beside_the_store(tmp_path: Path, memory_root: Path) -> None:
     """Story 3.3's mtime-incremental pass: `compile_graph()` points the
     scanner's cache at the graph store's own directory (gitignored,
     derived-artifact home), so an unattended nightly re-run over an
@@ -1009,9 +973,7 @@ def test_graphify_extra_off_by_default_is_a_no_op(
     six builtins, and produces zero graphify-related noise."""
     monkeypatch.delenv("SCRIBE_GRAPHIFY_EXTRA", raising=False)
     (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
-    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
-        "x = 1\n", encoding="utf-8"
-    )
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text("x = 1\n", encoding="utf-8")
     capture(memory_root, "feedback", "content")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
@@ -1035,9 +997,7 @@ def test_graphify_extra_on_writes_code_nodes_through_the_same_store(
     store."""
     monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
     (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
-    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
-        "x = 1\n", encoding="utf-8"
-    )
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text("x = 1\n", encoding="utf-8")
     fake_nodes = {
         "python:example": {
             "label": "example",
@@ -1046,9 +1006,7 @@ def test_graphify_extra_on_writes_code_nodes_through_the_same_store(
             "source_location": "L1",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
     capture(memory_root, "feedback", "content")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
@@ -1077,9 +1035,7 @@ def test_graphify_extra_on_but_unavailable_degrades_to_warning_not_abort(
 
     monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
     (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
-    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
-        "x = 1\n", encoding="utf-8"
-    )
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text("x = 1\n", encoding="utf-8")
     capture(memory_root, "feedback", "content")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
@@ -1106,9 +1062,7 @@ def test_compile_graph_is_unaffected_by_the_cocoindex_extra_env_var(
     or on."""
     monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
     (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
-    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
-        "x = 1\n", encoding="utf-8"
-    )
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text("x = 1\n", encoding="utf-8")
     fake_nodes = {
         "python:example": {
             "label": "example",
@@ -1116,9 +1070,7 @@ def test_compile_graph_is_unaffected_by_the_cocoindex_extra_env_var(
             "source_location": "L1",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
     capture(memory_root, "feedback", "content")
 
     monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
@@ -1168,9 +1120,7 @@ def _init_git_and_commit_everything(tmp_path: Path) -> None:
     _git(tmp_path, "commit", "-q", "-m", "commit touching the current tree")
 
 
-def test_stale_flag_set_when_source_commit_postdates_compile_clock(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_stale_flag_set_when_source_commit_postdates_compile_clock(tmp_path: Path, memory_root: Path) -> None:
     """AC1 / Story 8.4: stale when the source commit is authored after
     this compile's `compiled_at` — not when working-tree mtime is old."""
     capture(memory_root, "project", "Original plan.", slug="plan-x")
@@ -1190,9 +1140,7 @@ def test_stale_flag_set_when_source_commit_postdates_compile_clock(
     assert result.stale_count == 1
 
 
-def test_stale_flag_not_set_when_source_has_no_git_history(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_stale_flag_not_set_when_source_has_no_git_history(tmp_path: Path, memory_root: Path) -> None:
     """AC2 ("unchanged source"): a source with no git history at all (never
     committed) has nothing to compare against -- never flagged stale."""
     capture(memory_root, "project", "Original plan.", slug="plan-x")
@@ -1211,9 +1159,7 @@ def test_stale_flag_not_set_when_source_has_no_git_history(
     assert result.stale_count == 0
 
 
-def test_stale_flag_not_set_when_valid_from_postdates_the_commit(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_stale_flag_not_set_when_valid_from_postdates_the_commit(tmp_path: Path, memory_root: Path) -> None:
     """AC2 ("unchanged source"): a source WITH git history, but whose
     `valid_from` is already at or after that history's latest commit (the
     ordinary post-checkout steady state -- nothing has moved since), is
@@ -1236,16 +1182,12 @@ def test_stale_flag_not_set_when_valid_from_postdates_the_commit(
     assert result.stale_count == 0
 
 
-def test_superseded_node_is_never_flagged_stale_even_with_a_newer_commit(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_superseded_node_is_never_flagged_stale_even_with_a_newer_commit(tmp_path: Path, memory_root: Path) -> None:
     """AC2 (second clause): a node with a declared `supersedes:` edge
     pointing at it is never flagged stale, regardless of git timestamps --
     Story 2.3's supersession already took it out of `is_current`."""
     old = capture(memory_root, "project", "Original plan.", slug="plan-x")
-    new = capture(
-        memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x"
-    )
+    new = capture(memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x")
     old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
     os.utime(old.path, (old_mtime, old_mtime))
     future_mtime = (datetime.now(timezone.utc) + timedelta(days=1)).timestamp()
@@ -1268,9 +1210,7 @@ def test_superseded_node_is_never_flagged_stale_even_with_a_newer_commit(
     assert result.stale_count == 0
 
 
-def test_full_rebuild_does_not_flag_stale_when_mtime_is_older_than_commit(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_full_rebuild_does_not_flag_stale_when_mtime_is_older_than_commit(tmp_path: Path, memory_root: Path) -> None:
     """Story 8.4: a just-read file whose mtime predates its last commit is
     still current on this compile — that used to false-positive ~1k nodes."""
     result_capture = capture(memory_root, "project", "Original plan.", slug="plan-x")
@@ -1313,9 +1253,7 @@ def test_stale_flag_applies_to_memlog_and_doc_surfaces_too(tmp_path: Path, memor
     assert result.stale_count == 1
 
 
-def test_transcript_and_commit_nodes_are_never_staleness_candidates(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_and_commit_nodes_are_never_staleness_candidates(tmp_path: Path, memory_root: Path) -> None:
     """`commit:`/`transcript:` citations have no git-trackable source-file
     counterpart (mirrors `recall.py::_citation_is_resolvable`'s own split)
     -- neither kind is ever a staleness candidate, however old its
@@ -1390,7 +1328,7 @@ def test_facts_ledger_becomes_one_doc_node(tmp_path: Path, memory_root: Path) ->
     ledger = tmp_path / "presentations" / "pyforge-scribe" / "facts.yaml"
     ledger.parent.mkdir(parents=True)
     ledger.write_text(
-        "# GENERATED\ndeck: pyforge-scribe\nfacts:\n  - id: n\n    value: \"1\"\n",
+        '# GENERATED\ndeck: pyforge-scribe\nfacts:\n  - id: n\n    value: "1"\n',
         encoding="utf-8",
     )
     (tmp_path / "presentations" / "pyforge-scribe" / "project").mkdir()
@@ -1419,13 +1357,11 @@ def test_facts_ledger_becomes_one_doc_node(tmp_path: Path, memory_root: Path) ->
     assert fact_nodes[0].kind == "doc"
     assert fact_nodes[0].id == "doc:presentations/pyforge-scribe/facts.yaml"
     assert fact_nodes[0].title == "facts:pyforge-scribe"
-    assert "value: \"1\"" in fact_nodes[0].text
+    assert 'value: "1"' in fact_nodes[0].text
     assert not any("facts.yaml" in w or "fact ledger" in w.lower() for w in result.warnings)
 
 
-def test_missing_presentations_dir_adds_no_facts_nodes_or_warning(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_missing_presentations_dir_adds_no_facts_nodes_or_warning(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
     store = FlatFileGraphStore(tmp_path / "graph.json")
     result = compile_graph(
@@ -1439,43 +1375,19 @@ def test_missing_presentations_dir_adds_no_facts_nodes_or_warning(
     assert not any("facts.yaml" in w or "fact ledger" in w.lower() for w in result.warnings)
 
 
-def test_compile_hygiene_skips_archive_tests_impl_and_retro_filename_glob(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_compile_hygiene_skips_archive_tests_impl_and_retro_filename_glob(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
     (tmp_path / "archive" / "old").mkdir(parents=True)
     (tmp_path / "archive" / "old" / ".memlog.md").write_text("archived\n", encoding="utf-8")
     (tmp_path / "pkg" / "tests").mkdir(parents=True)
     (tmp_path / "pkg" / "tests" / ".memlog.md").write_text("fixture\n", encoding="utf-8")
-    impl = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "implementation-artifacts"
-    )
+    impl = tmp_path / "_bmad-output" / "projects" / "demo" / "implementation-artifacts"
     impl.mkdir(parents=True)
     (impl / "epic-1-retro-2026-01-01.md").write_text("impl retro\n", encoding="utf-8")
-    specs = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "planning-artifacts"
-        / "specs"
-    )
+    specs = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "specs"
     specs.mkdir(parents=True)
-    (specs / "spec-12-1-landed-retros-are-mirrored.md").write_text(
-        "story spec about retros\n", encoding="utf-8"
-    )
-    retros = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "planning-artifacts"
-        / "retros"
-    )
+    (specs / "spec-12-1-landed-retros-are-mirrored.md").write_text("story spec about retros\n", encoding="utf-8")
+    retros = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "retros"
     retros.mkdir(parents=True)
     (retros / "retro-demo-2026-09-01.md").write_text("# real retro\n", encoding="utf-8")
 
@@ -1492,51 +1404,22 @@ def test_compile_hygiene_skips_archive_tests_impl_and_retro_filename_glob(
     assert "pkg/tests/.memlog.md" not in citations
     assert not any("implementation-artifacts" in c for c in citations)
     assert not any("spec-12-1-landed-retros" in c for c in citations)
-    assert (
-        "_bmad-output/projects/demo/planning-artifacts/retros/retro-demo-2026-09-01.md"
-        in citations
-    )
+    assert "_bmad-output/projects/demo/planning-artifacts/retros/retro-demo-2026-09-01.md" in citations
 
 
-def test_active_dreams_and_specs_compile_inactive_are_skipped(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_active_dreams_and_specs_compile_inactive_are_skipped(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
     dreams = tmp_path / "docs" / "dreams"
     dreams.mkdir(parents=True)
     (dreams / "README.md").write_text("# Dreams\n", encoding="utf-8")
-    (dreams / "live.md").write_text(
-        "---\nstatus: specified\n---\n# Live dream\n", encoding="utf-8"
-    )
-    (dreams / "done.md").write_text(
-        "---\nstatus: realized\n---\n# Done dream\n", encoding="utf-8"
-    )
-    spec_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-demo"
-    )
+    (dreams / "live.md").write_text("---\nstatus: specified\n---\n# Live dream\n", encoding="utf-8")
+    (dreams / "done.md").write_text("---\nstatus: realized\n---\n# Done dream\n", encoding="utf-8")
+    spec_dir = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "specs" / "spec-demo"
     spec_dir.mkdir(parents=True)
-    (spec_dir / "SPEC.md").write_text(
-        "---\nstatus: ready\n---\n# Demo spec\n", encoding="utf-8"
-    )
-    shipped = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-old"
-    )
+    (spec_dir / "SPEC.md").write_text("---\nstatus: ready\n---\n# Demo spec\n", encoding="utf-8")
+    shipped = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "specs" / "spec-old"
     shipped.mkdir(parents=True)
-    (shipped / "SPEC.md").write_text(
-        "---\nstatus: shipped\n---\n# Old spec\n", encoding="utf-8"
-    )
+    (shipped / "SPEC.md").write_text("---\nstatus: shipped\n---\n# Old spec\n", encoding="utf-8")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
     compile_graph(
@@ -1554,42 +1437,16 @@ def test_active_dreams_and_specs_compile_inactive_are_skipped(
     assert "_bmad-output/projects/demo/planning-artifacts/specs/spec-old/SPEC.md" not in citations
 
 
-def test_in_flight_story_spec_compiles_done_and_stale_frontmatter_do_not(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_in_flight_story_spec_compiles_done_and_stale_frontmatter_do_not(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
-    specs = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "planning-artifacts"
-        / "specs"
-    )
+    specs = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "specs"
     specs.mkdir(parents=True)
-    flying = (
-        "---\nstatus: ready-for-dev\n---\n# In flight\nuniqueinflighttoken\n"
-    )
-    landed = (
-        "---\nstatus: ready-for-dev\n---\n# Landed\nuniquehistorictoken\n"
-    )
-    (specs / "spec-10-1-in-flight-story-specs-join-the-compile.md").write_text(
-        flying, encoding="utf-8"
-    )
-    (specs / "spec-2-1-graphstore-port-flat-file-adapter.md").write_text(
-        landed, encoding="utf-8"
-    )
-    (specs / "spec-10-2-backlog-only.md").write_text(
-        "---\nstatus: ready-for-dev\n---\n# Backlog\n", encoding="utf-8"
-    )
-    ledger = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    flying = "---\nstatus: ready-for-dev\n---\n# In flight\nuniqueinflighttoken\n"
+    landed = "---\nstatus: ready-for-dev\n---\n# Landed\nuniquehistorictoken\n"
+    (specs / "spec-10-1-in-flight-story-specs-join-the-compile.md").write_text(flying, encoding="utf-8")
+    (specs / "spec-2-1-graphstore-port-flat-file-adapter.md").write_text(landed, encoding="utf-8")
+    (specs / "spec-10-2-backlog-only.md").write_text("---\nstatus: ready-for-dev\n---\n# Backlog\n", encoding="utf-8")
+    ledger = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "sprint-status-ledger.yaml"
     ledger.write_text(
         "development_status:\n"
         "  10-1-in-flight-story-specs-join-the-compile: in-progress\n"
@@ -1610,26 +1467,16 @@ def test_in_flight_story_spec_compiles_done_and_stale_frontmatter_do_not(
     citations = {n.citation for n in store.iter_nodes() if n.kind == "doc"}
     assert (
         "_bmad-output/projects/demo/planning-artifacts/specs/"
-        "spec-10-1-in-flight-story-specs-join-the-compile.md"
-        in citations
+        "spec-10-1-in-flight-story-specs-join-the-compile.md" in citations
     )
     assert not any("spec-2-1-graphstore" in c for c in citations)
     assert not any("spec-10-2-backlog" in c for c in citations)
     assert not any("story spec" in w.lower() or "in-flight" in w.lower() for w in result.warnings)
 
 
-def test_missing_ledger_adds_no_story_spec_nodes_or_warning(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_missing_ledger_adds_no_story_spec_nodes_or_warning(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
-    specs = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "demo"
-        / "planning-artifacts"
-        / "specs"
-    )
+    specs = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "specs"
     specs.mkdir(parents=True)
     (specs / "spec-10-1-in-flight-story-specs-join-the-compile.md").write_text(
         "---\nstatus: in-progress\n---\n# Would compile if ledger said so\n",
@@ -1648,13 +1495,9 @@ def test_missing_ledger_adds_no_story_spec_nodes_or_warning(
     assert not any("story spec" in w.lower() for w in result.warnings)
 
 
-def test_planning_pointers_extract_ids_and_omit_wholesale_body(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_planning_pointers_extract_ids_and_omit_wholesale_body(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
-    planning = (
-        tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts"
-    )
+    planning = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts"
     prd = planning / "prds" / "prd-demo" / "prd.md"
     brief = planning / "briefs" / "brief-demo" / "brief.md"
     spine = planning / "architecture" / "architecture-demo" / "ARCHITECTURE-SPINE.md"
@@ -1664,8 +1507,7 @@ def test_planning_pointers_extract_ids_and_omit_wholesale_body(
     spine.parent.mkdir(parents=True)
     marker = "WHOLESALEBODYMARKERUNIQUE"
     prd.write_text(
-        "---\nstatus: final\n---\n# PRD: demo\n\n"
-        f"{marker} " + ("lorem " * 4000) + "\n\nFR-1 and later FR-2.\n",
+        f"---\nstatus: final\n---\n# PRD: demo\n\n{marker} " + ("lorem " * 4000) + "\n\nFR-1 and later FR-2.\n",
         encoding="utf-8",
     )
     brief.write_text(
@@ -1681,15 +1523,9 @@ def test_planning_pointers_extract_ids_and_omit_wholesale_body(
         "## Epic 1: First slice\n\n### Story 1.1: Land it\n\nlong story body\n",
         encoding="utf-8",
     )
-    (planning / "epics-deckcraft.md").write_text(
-        "# Chain epics novel\n" + marker + "\n", encoding="utf-8"
-    )
-    (planning / "architecture-cf-atlas.md").write_text(
-        "# Architecture novel\nAD-99\n", encoding="utf-8"
-    )
-    (planning / "prds" / "prd-demo" / "addendum.md").write_text(
-        "# Addendum\nFR-99\n", encoding="utf-8"
-    )
+    (planning / "epics-deckcraft.md").write_text("# Chain epics novel\n" + marker + "\n", encoding="utf-8")
+    (planning / "architecture-cf-atlas.md").write_text("# Architecture novel\nAD-99\n", encoding="utf-8")
+    (planning / "prds" / "prd-demo" / "addendum.md").write_text("# Addendum\nFR-99\n", encoding="utf-8")
     (planning / "research").mkdir()
     (planning / "research" / "note.md").write_text("# Research\nFR-88\n", encoding="utf-8")
 
@@ -1716,17 +1552,12 @@ def test_planning_pointers_extract_ids_and_omit_wholesale_body(
     assert "status:final" in pointers[prd_cite].text
     assert len(pointers[prd_cite].text) <= 4_000
 
-    brief_cite = (
-        "_bmad-output/projects/demo/planning-artifacts/briefs/brief-demo/brief.md"
-    )
+    brief_cite = "_bmad-output/projects/demo/planning-artifacts/briefs/brief-demo/brief.md"
     assert brief_cite in pointers
     assert "pointer:brief" in pointers[brief_cite].text
     assert "status:complete" in pointers[brief_cite].text
 
-    spine_cite = (
-        "_bmad-output/projects/demo/planning-artifacts/architecture/"
-        "architecture-demo/ARCHITECTURE-SPINE.md"
-    )
+    spine_cite = "_bmad-output/projects/demo/planning-artifacts/architecture/architecture-demo/ARCHITECTURE-SPINE.md"
     assert spine_cite in pointers
     assert "AD-1" in pointers[spine_cite].text
     assert "pointer:architecture" in pointers[spine_cite].text
@@ -1745,9 +1576,7 @@ def test_planning_pointers_extract_ids_and_omit_wholesale_body(
     assert not any("planning pointer" in w.lower() for w in result.warnings)
 
 
-def test_missing_planning_tree_adds_no_pointer_nodes_or_warning(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_missing_planning_tree_adds_no_pointer_nodes_or_warning(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
     store = FlatFileGraphStore(tmp_path / "graph.json")
     result = compile_graph(
@@ -1757,28 +1586,20 @@ def test_missing_planning_tree_adds_no_pointer_nodes_or_warning(
         transcript_root=tmp_path / "no-transcripts",
     )
     assert not any(
-        "planning-artifacts/epics.md" in n.citation
-        or "ARCHITECTURE-SPINE" in n.citation
-        or "/prd.md" in n.citation
+        "planning-artifacts/epics.md" in n.citation or "ARCHITECTURE-SPINE" in n.citation or "/prd.md" in n.citation
         for n in store.iter_nodes()
     )
     assert not any("pointer" in w.lower() and "planning" in w.lower() for w in result.warnings)
 
 
-def test_named_docs_compile_how_tos_and_catalog_extract_not_docs_tree(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_named_docs_compile_how_tos_and_catalog_extract_not_docs_tree(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
     how_to = tmp_path / "docs" / "how-to"
     how_to.mkdir(parents=True)
-    (how_to / "pixi-tasks.md").write_text(
-        "# Pixi tasks\nhowtopixiuniquetoken\n", encoding="utf-8"
-    )
+    (how_to / "pixi-tasks.md").write_text("# Pixi tasks\nhowtopixiuniquetoken\n", encoding="utf-8")
     (how_to / "README.md").write_text("# How-to index\n", encoding="utf-8")
     (tmp_path / "docs" / "explanation").mkdir(parents=True)
-    (tmp_path / "docs" / "explanation" / "why.md").write_text(
-        "# Why\nexplanationuniquetoken\n", encoding="utf-8"
-    )
+    (tmp_path / "docs" / "explanation" / "why.md").write_text("# Why\nexplanationuniquetoken\n", encoding="utf-8")
     (tmp_path / "docs" / "tutorials").mkdir(parents=True)
     (tmp_path / "docs" / "tutorials" / "getting-started.md").write_text(
         "# Start\ntutorialuniquetoken\n", encoding="utf-8"
@@ -1815,9 +1636,7 @@ def test_named_docs_compile_how_tos_and_catalog_extract_not_docs_tree(
     assert not any("named docs" in w.lower() or "library-llms" in w.lower() for w in result.warnings)
 
 
-def test_missing_named_docs_adds_no_nodes_or_warning(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_missing_named_docs_adds_no_nodes_or_warning(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "feedback", "content")
     store = FlatFileGraphStore(tmp_path / "graph.json")
     result = compile_graph(
@@ -1827,8 +1646,6 @@ def test_missing_named_docs_adds_no_nodes_or_warning(
         transcript_root=tmp_path / "no-transcripts",
     )
     assert not any(
-        n.citation.startswith("docs/how-to/")
-        or n.citation.endswith("library-llms-full.md")
-        for n in store.iter_nodes()
+        n.citation.startswith("docs/how-to/") or n.citation.endswith("library-llms-full.md") for n in store.iter_nodes()
     )
     assert not any("named docs" in w.lower() or "library-llms" in w.lower() for w in result.warnings)

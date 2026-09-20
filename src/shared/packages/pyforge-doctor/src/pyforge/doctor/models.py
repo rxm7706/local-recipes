@@ -397,9 +397,7 @@ class Finding:
         # the original dict must not be able to mutate this Finding after
         # construction.
         if not isinstance(self.evidence, dict):
-            raise ValueError(
-                f"evidence must be a dict, got {self.evidence!r}"
-            )
+            raise ValueError(f"evidence must be a dict, got {self.evidence!r}")
         object.__setattr__(self, "evidence", dict(self.evidence))
 
     def to_json_dict(self) -> dict[str, object]:
@@ -494,20 +492,13 @@ class DoctorReport:
         # report-schema.json declares schema_version's minimum as 1 -- fail
         # loud at construction rather than only at schema-validation time.
         if isinstance(self.schema_version, bool) or self.schema_version < 1:
-            raise ValueError(
-                f"schema_version must be an int >= 1, got {self.schema_version!r}"
-            )
+            raise ValueError(f"schema_version must be an int >= 1, got {self.schema_version!r}")
         if self.verb not in _VALID_VERBS:
-            raise ValueError(
-                f"verb must be one of {sorted(_VALID_VERBS)}, got {self.verb!r}"
-            )
+            raise ValueError(f"verb must be one of {sorted(_VALID_VERBS)}, got {self.verb!r}")
         object.__setattr__(self, "findings", tuple(self.findings))
         if self.verb == "diagnose":
             if self.prescriptions is None:
-                raise ValueError(
-                    "verb 'diagnose' requires prescriptions (a list, "
-                    "possibly empty) — got None"
-                )
+                raise ValueError("verb 'diagnose' requires prescriptions (a list, possibly empty) — got None")
             object.__setattr__(self, "prescriptions", tuple(self.prescriptions))
         elif self.prescriptions is not None:
             raise ValueError(
@@ -515,9 +506,7 @@ class DoctorReport:
                 "'diagnose' reports do) — the key must be omitted, never null"
             )
         if self.axis_scores is not None:
-            object.__setattr__(
-                self, "axis_scores", tuple(dict(axis) for axis in self.axis_scores)
-            )
+            object.__setattr__(self, "axis_scores", tuple(dict(axis) for axis in self.axis_scores))
 
     def to_json_dict(self) -> dict[str, object]:
         document: dict[str, object] = {
@@ -527,9 +516,7 @@ class DoctorReport:
             "findings": [finding.to_json_dict() for finding in self.findings],
         }
         if self.prescriptions is not None:
-            document["prescriptions"] = [
-                prescription.to_json_dict() for prescription in self.prescriptions
-            ]
+            document["prescriptions"] = [prescription.to_json_dict() for prescription in self.prescriptions]
         if self.grade is not None:
             document["grade"] = self.grade
         if self.axis_scores is not None:

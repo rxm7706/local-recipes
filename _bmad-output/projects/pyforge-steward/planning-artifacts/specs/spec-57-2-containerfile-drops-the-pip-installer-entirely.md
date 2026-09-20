@@ -64,3 +64,15 @@ src/platform/Containerfile` is empty and `platform_image_pip_layer.py` exits
 **Status:** done — shipped `59083b8391` (2026-08-25); re-verified live
 2026-09-11 and again 2026-09-14 (3/3 `tests/packaging/test_platform_image_one_pixi_env.py` pass)
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `57-2-containerfile-drops-the-pip-installer-entirely: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

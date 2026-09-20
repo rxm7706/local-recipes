@@ -429,18 +429,12 @@ GATE_MODE_AUTONOMY_LABELS: Mapping[str, Mapping[str, str]] = {
     "per-epic": {
         "level": "L3",
         "name": "Conditional / Context Gates",
-        "meaning": (
-            "Machine-readable boundaries; human at epic seams. The "
-            "production ceiling."
-        ),
+        "meaning": ("Machine-readable boundaries; human at epic seams. The production ceiling."),
     },
     "none": {
         "level": "L4",
         "name": "Approver",
-        "meaning": (
-            "Runs independently; surfaces only at blockers or "
-            "pre-specified conditions."
-        ),
+        "meaning": ("Runs independently; surfaces only at blockers or pre-specified conditions."),
     },
 }
 
@@ -448,9 +442,7 @@ GATE_MODE_AUTONOMY_LABELS: Mapping[str, Mapping[str, str]] = {
 # as ONE literal path segment of the generated worktree_seed_paths entry
 # (`_bmad-output/projects/<slug>/implementation-artifacts`), so anything that
 # could split or escape that segment is out.
-_SLUG_CHARS: frozenset[str] = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
-)
+_SLUG_CHARS: frozenset[str] = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
 
 # Marshal's OWN built-in defaults for the 8 literal-valued keys -- see the
 # module docstring for why this is independent of any one project's rendered
@@ -985,10 +977,7 @@ def _valid_context_block(value: object) -> dict[str, object] | None:
         entry: dict[str, object] = {"enabled": enabled}
         if "aggressiveness" in settings:
             aggressiveness = settings["aggressiveness"]
-            if (
-                not isinstance(aggressiveness, str)
-                or aggressiveness not in _CONTEXT_AGGRESSIVENESS
-            ):
+            if not isinstance(aggressiveness, str) or aggressiveness not in _CONTEXT_AGGRESSIVENESS:
                 return None
             entry["aggressiveness"] = aggressiveness
         result[layer_name] = entry
@@ -1153,9 +1142,7 @@ def _valid_landing_rule(value: object) -> LandingRule | None:
     if label is not None and (not isinstance(label, str) or label == ""):
         return None
     required_check = value.get("required_check")
-    if required_check is not None and (
-        not isinstance(required_check, str) or required_check == ""
-    ):
+    if required_check is not None and (not isinstance(required_check, str) or required_check == ""):
         return None
     if label is None and required_check is None:
         return None
@@ -1470,7 +1457,7 @@ def _valid_positive_number(value: object) -> int | float | None:
     # malformed-value finding every other bad value already produces.
     try:
         as_float = float(value)
-    except (OverflowError, ValueError):
+    except OverflowError, ValueError:
         return None
     if not (as_float > 0 and math.isfinite(as_float)):
         return None
@@ -1532,12 +1519,7 @@ def _is_valid_project_slug(slug: str) -> bool:
     consumer; the charset is ASCII, so characters == bytes), drawn from the
     conservative ``_SLUG_CHARS`` charset, and not a pure-dot name
     (``.``/``..`` would alias or escape the ``projects/`` directory)."""
-    return (
-        bool(slug)
-        and len(slug) <= 255
-        and set(slug) <= _SLUG_CHARS
-        and slug.strip(".") != ""
-    )
+    return bool(slug) and len(slug) <= 255 and set(slug) <= _SLUG_CHARS and slug.strip(".") != ""
 
 
 def _project_slug_finding(slug: str) -> Finding:
@@ -1769,8 +1751,7 @@ class EffectivePolicy:
             raise ValueError(f"_seed must be a Mapping, got {self._seed!r}")
         if set(self._seed.keys()) != _SEED_KEYS:
             raise ValueError(
-                f"_seed must carry exactly the seed keys {sorted(_SEED_KEYS)}, "
-                f"got {sorted(self._seed.keys())}"
+                f"_seed must carry exactly the seed keys {sorted(_SEED_KEYS)}, got {sorted(self._seed.keys())}"
             )
         for seed_key, field in self._seed.items():
             if not isinstance(field, PolicyField):
@@ -1816,9 +1797,7 @@ class EffectivePolicy:
                 "dispatch",
             )
         )
-        seed = ", ".join(
-            f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items())
-        )
+        seed = ", ".join(f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items()))
         return f"{type(self).__name__}({static}, _seed={{{seed}}})"
 
     def seed_view(self) -> Mapping[str, PolicyField]:
@@ -1872,9 +1851,7 @@ class EffectivePolicy:
             "model_cost_catalog": _field_payload(self.model_cost_catalog),
             "dispatch": _field_payload(self.dispatch),
         }
-        payload.update(
-            {key: _field_payload(field) for key, field in self._seed.items()}
-        )
+        payload.update({key: _field_payload(field) for key, field in self._seed.items()})
         canonical = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -1918,9 +1895,7 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
         raw_enabled = layer_declared.get("enabled", False)
         resolved[layer] = {
             "enabled": raw_enabled if layer == "wire" else bool(raw_enabled),
-            "aggressiveness": layer_declared.get(
-                "aggressiveness", _CONTEXT_DEFAULT_AGGRESSIVENESS
-            ),
+            "aggressiveness": layer_declared.get("aggressiveness", _CONTEXT_DEFAULT_AGGRESSIVENESS),
         }
     return resolved
 
@@ -1942,7 +1917,11 @@ def resolve_compression_escalation_threshold(effective: EffectivePolicy) -> floa
 
 
 def compose(
-    *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
+    *,
+    project_slug: str,
+    repo_defaults: Mapping[str, object] | None = None,
+    project: Mapping[str, object],
+    flags: Mapping[str, object],
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
     wins (AD-16), over Marshal's closed 33-key policy vocabulary. Never reads a
@@ -1974,9 +1953,7 @@ def compose(
     if repo_defaults is None:
         repo_defaults = {}
     if isinstance(repo_defaults, str) or not isinstance(repo_defaults, Mapping):
-        raise TypeError(
-            f"repo_defaults must be a Mapping, not a bare str: {repo_defaults!r}"
-        )
+        raise TypeError(f"repo_defaults must be a Mapping, not a bare str: {repo_defaults!r}")
     if isinstance(project, str) or not isinstance(project, Mapping):
         raise TypeError(f"project must be a Mapping, not a bare str: {project!r}")
     if isinstance(flags, str) or not isinstance(flags, Mapping):

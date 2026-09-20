@@ -2,7 +2,7 @@
 title: 'Nightly compile from named tool surfaces (Story 2.2)'
 type: 'feature'
 created: '2026-08-07'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -173,3 +173,17 @@ Dispatched with the diff file path only, no shared context. Two findings landed 
 **Re-verification (2026-08-07, after both patches):** `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` -- **88 passed** (full suite).
 
 **Follow-up review recommendation (updated): false** -- both findings are narrow, each covered by a dedicated regression test.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `471e214840` (2026-08-07, "herald: Story 2.2 — --commit opt-in flag on herald deck pull"); also `a65962b2bb` (2026-08-07, "scribe: Story 2.2 — nightly compile from named tool surfaces"); also `0ae1a7797c` (2026-08-07, "doctor: Story 2.2 — cve and abandonment watch axes"). Ledger row `2-2-nightly-compile-from-named-tool-surfaces: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `2-2-nightly-compile-from-named-tool-surfaces: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

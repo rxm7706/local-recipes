@@ -182,9 +182,7 @@ def test_list_filters_by_status(capsys, tmp_path, monkeypatch):
     draft = claims.create(claims_path, project_name="draft-one")
     published = claims.create(claims_path, project_name="published-one")
     claims.publish(claims_path, published.id, thesis="Shipped")
-    rc = cli.main(
-        ["success", "--repo-root", str(tmp_path), "list", "--status", "draft"]
-    )
+    rc = cli.main(["success", "--repo-root", str(tmp_path), "list", "--status", "draft"])
     assert rc == 0
     out = capsys.readouterr().out
     assert draft.id in out
@@ -259,10 +257,7 @@ def test_publish_requires_operator_role(capsys, tmp_path, monkeypatch):
     assert rc == 1
     err = capsys.readouterr().err
     assert "unauthorized" in err
-    assert (
-        claims.read_one(tmp_path / claims.DEFAULT_CLAIMS_PATH, claim.id).status
-        == "draft"
-    )
+    assert claims.read_one(tmp_path / claims.DEFAULT_CLAIMS_PATH, claim.id).status == "draft"
 
 
 def test_publish_with_operator_role_publishes(capsys, tmp_path, monkeypatch):
@@ -270,9 +265,7 @@ def test_publish_with_operator_role_publishes(capsys, tmp_path, monkeypatch):
     claim = claims.create(
         claims_path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://ci.example", label="t")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://ci.example", label="t")],
     )
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: True)
@@ -301,9 +294,7 @@ def test_publish_rejects_a_broken_evidence_link(capsys, tmp_path, monkeypatch):
     claim = claims.create(
         claims_path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://broken", label="t")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://broken", label="t")],
     )
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: True)
@@ -403,9 +394,7 @@ def test_validate_requires_exactly_one_of_claim_id_or_all(capsys, tmp_path):
 
 def test_validate_rejects_both_claim_id_and_all(capsys, tmp_path):
     claim = claims.create(tmp_path / claims.DEFAULT_CLAIMS_PATH, project_name="warden")
-    rc = cli.main(
-        ["success", "--repo-root", str(tmp_path), "validate", claim.id, "--all"]
-    )
+    rc = cli.main(["success", "--repo-root", str(tmp_path), "validate", claim.id, "--all"])
     assert rc == 1
 
 

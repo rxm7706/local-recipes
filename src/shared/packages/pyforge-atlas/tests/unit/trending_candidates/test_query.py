@@ -48,19 +48,23 @@ def test_happy_path_default_filters(seed_catalog):
     repo_full_name asc."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
             # tie with alice/libfoo at 1200 stars -- tie-break proves repo_full_name asc
-            _row(repo_full_name="zed/ziplib", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="bob/rustcli", period="weekly", tier="2",
-                 reason=_TIER2_REASON, stars_total=900),
-            _row(repo_full_name="carol/onconda", period="weekly", tier="skip",
-                 reason="already-on-conda-forge", stars_total=5000),
-            _row(repo_full_name="dave/tiny", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=100),  # below the 500 floor
-            _row(repo_full_name="gina/dailyonly", period="daily", tier="1",
-                 reason=_TIER1_REASON, stars_total=2000),  # wrong period
+            _row(repo_full_name="zed/ziplib", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="bob/rustcli", period="weekly", tier="2", reason=_TIER2_REASON, stars_total=900),
+            _row(
+                repo_full_name="carol/onconda",
+                period="weekly",
+                tier="skip",
+                reason="already-on-conda-forge",
+                stars_total=5000,
+            ),
+            _row(
+                repo_full_name="dave/tiny", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=100
+            ),  # below the 500 floor
+            _row(
+                repo_full_name="gina/dailyonly", period="daily", tier="1", reason=_TIER1_REASON, stars_total=2000
+            ),  # wrong period
         ]
     )
     seed_catalog(df)
@@ -88,10 +92,10 @@ def test_tier_all_is_a_no_op(seed_catalog):
     alongside tier-1/2, still subject to the other default filters)."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="frank/skiplib", period="weekly", tier="skip",
-                 reason="no-pypi-artifact", stars_total=700),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(
+                repo_full_name="frank/skiplib", period="weekly", tier="skip", reason="no-pypi-artifact", stars_total=700
+            ),
         ]
     )
     seed_catalog(df)
@@ -110,14 +114,17 @@ def test_period_all_includes_every_period_duplicates_included(seed_catalog):
     search-api-fallback period="all" tag), duplicates across periods included."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="daily", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="alice/libfoo", period="monthly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="hank/fallback", period="all", tier="1",
-                 reason=_TIER1_REASON, stars_total=1600, source="search_api_fallback"),
+            _row(repo_full_name="alice/libfoo", period="daily", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="monthly", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(
+                repo_full_name="hank/fallback",
+                period="all",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=1600,
+                source="search_api_fallback",
+            ),
         ]
     )
     seed_catalog(df)
@@ -134,8 +141,13 @@ def test_all_flag_includes_already_on_cf_rows(seed_catalog):
     always tier "skip")."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="carol/onconda", period="weekly", tier="skip",
-                 reason="already-on-conda-forge", stars_total=5000),
+            _row(
+                repo_full_name="carol/onconda",
+                period="weekly",
+                tier="skip",
+                reason="already-on-conda-forge",
+                stars_total=5000,
+            ),
         ]
     )
     seed_catalog(df)
@@ -153,12 +165,15 @@ def test_null_or_unparseable_stars_total_excluded_not_errored(seed_catalog):
     excluded, never an error."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="erin/nostar", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=None),
-            _row(repo_full_name="frank/badstar", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total="not-a-number"),
-            _row(repo_full_name="gail/goodstar", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1000),
+            _row(repo_full_name="erin/nostar", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=None),
+            _row(
+                repo_full_name="frank/badstar",
+                period="weekly",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total="not-a-number",
+            ),
+            _row(repo_full_name="gail/goodstar", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1000),
         ]
     )
     seed_catalog(df)
@@ -212,8 +227,7 @@ def test_build_stamp_propagates_through_a_real_parquet_dataset(seed_parquet_cata
 
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_parquet_catalog(df)
@@ -225,16 +239,12 @@ def test_build_stamp_propagates_through_a_real_parquet_dataset(seed_parquet_cata
 
     assert result["count"] == 1
     assert result["provenance_kind"] == "file-mtime"
-    assert result["build_stamp"] == datetime.datetime.fromtimestamp(
-        old_ts, tz=datetime.UTC
-    ).isoformat()
+    assert result["build_stamp"] == datetime.datetime.fromtimestamp(old_ts, tz=datetime.UTC).isoformat()
 
 
 def test_empty_dataset_degrades_to_empty_no_exception(seed_catalog):
     """Matrix row 6b: a present-but-zero-row dataset also degrades to count: 0."""
-    empty_df = pd.DataFrame(
-        columns=["repo_full_name", "period", "tier", "reason", "stars_total"]
-    )
+    empty_df = pd.DataFrame(columns=["repo_full_name", "period", "tier", "reason", "stars_total"])
     seed_catalog(empty_df)
 
     result = query.query_trending_candidates()
@@ -249,8 +259,7 @@ def test_top_actually_truncates(seed_catalog):
     qualifying rows with distinct `stars_total` and asserts exactly `top` survive, and
     that they're the `top`-highest by the documented sort order."""
     rows = [
-        _row(repo_full_name=f"user{i}/repo{i}", period="weekly", tier="1",
-             reason=_TIER1_REASON, stars_total=1000 + i)
+        _row(repo_full_name=f"user{i}/repo{i}", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1000 + i)
         for i in range(30)
     ]
     seed_catalog(pd.DataFrame(rows))
@@ -265,7 +274,11 @@ def test_top_actually_truncates(seed_catalog):
     assert result["matched"] == 30
     # highest stars_total first: repo29 (1029) down to repo25 (1025)
     assert [c["repo_full_name"] for c in result["candidates"]] == [
-        "user29/repo29", "user28/repo28", "user27/repo27", "user26/repo26", "user25/repo25",
+        "user29/repo29",
+        "user28/repo28",
+        "user27/repo27",
+        "user26/repo26",
+        "user25/repo25",
     ]
 
 
@@ -277,10 +290,10 @@ def test_mixed_numeric_string_and_int_stars_total_does_not_crash_the_sort(seed_c
     `TypeError: '<' not supported between instances of 'str' and 'int'`."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="a/numeric-string", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total="1500"),
-            _row(repo_full_name="b/real-int", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=2000),
+            _row(
+                repo_full_name="a/numeric-string", period="weekly", tier="1", reason=_TIER1_REASON, stars_total="1500"
+            ),
+            _row(repo_full_name="b/real-int", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=2000),
         ]
     )
     seed_catalog(df)
@@ -289,7 +302,8 @@ def test_mixed_numeric_string_and_int_stars_total_does_not_crash_the_sort(seed_c
 
     assert result["count"] == 2
     assert [c["repo_full_name"] for c in result["candidates"]] == [
-        "b/real-int", "a/numeric-string",
+        "b/real-int",
+        "a/numeric-string",
     ]
     # Integral star counts stay ints (follow-up review finding, Story 13.3): the
     # numeric coercion must not render a whole-number count as `1500.0`.
@@ -315,10 +329,22 @@ def test_null_optional_column_serializes_to_json_safe_none(seed_catalog):
 
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200, stars_today=7),
-            _row(repo_full_name="bob/libbar", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=900, stars_today=None),
+            _row(
+                repo_full_name="alice/libfoo",
+                period="weekly",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=1200,
+                stars_today=7,
+            ),
+            _row(
+                repo_full_name="bob/libbar",
+                period="weekly",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=900,
+                stars_today=None,
+            ),
         ]
     )
     # The dtype this test exists to cover -- pin it, so a future fixture edit that
@@ -369,8 +395,9 @@ def test_whitespace_padded_all_tier_is_accepted(seed_catalog):
     token instead of being treated as the "no filter" sentinel."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="skip",
-                 reason="no-pypi-artifact", stars_total=700),
+            _row(
+                repo_full_name="alice/libfoo", period="weekly", tier="skip", reason="no-pypi-artifact", stars_total=700
+            ),
         ]
     )
     seed_catalog(df)
@@ -386,8 +413,7 @@ def test_whitespace_padded_period_is_accepted(seed_catalog):
     rejected on the other (`--tier " all "` worked, `--period " weekly "` raised)."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)
@@ -407,10 +433,8 @@ def test_missing_period_column_empties_rather_than_ignoring_the_filter(seed_cata
     the `stars_total` branch already did."""
     df = pd.DataFrame(
         [
-            {"repo_full_name": "a/x", "tier": "1", "reason": _TIER1_REASON,
-             "stars_total": 1000},
-            {"repo_full_name": "b/y", "tier": "1", "reason": _TIER1_REASON,
-             "stars_total": 900},
+            {"repo_full_name": "a/x", "tier": "1", "reason": _TIER1_REASON, "stars_total": 1000},
+            {"repo_full_name": "b/y", "tier": "1", "reason": _TIER1_REASON, "stars_total": 900},
         ]
     )
     seed_catalog(df)
@@ -429,8 +453,7 @@ def test_missing_reason_column_never_leaks_an_already_on_cf_row(seed_catalog):
     must never be handed."""
     df = pd.DataFrame(
         [
-            {"repo_full_name": "carol/onconda", "tier": "skip", "period": "weekly",
-             "stars_total": 5000},
+            {"repo_full_name": "carol/onconda", "tier": "skip", "period": "weekly", "stars_total": 5000},
         ]
     )
     seed_catalog(df)
@@ -447,8 +470,7 @@ def test_missing_tier_column_empties_rather_than_ignoring_the_filter(seed_catalo
     reason filters."""
     df = pd.DataFrame(
         [
-            {"repo_full_name": "a/x", "period": "weekly", "reason": _TIER1_REASON,
-             "stars_total": 1000},
+            {"repo_full_name": "a/x", "period": "weekly", "reason": _TIER1_REASON, "stars_total": 1000},
         ]
     )
     seed_catalog(df)
@@ -464,10 +486,10 @@ def test_integral_stars_total_survives_an_unrelated_null_row(seed_catalog):
     type that depended on unrelated rows, and `1200.0` in the operator's table."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
-            _row(repo_full_name="erin/nostar", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=None),  # excluded, but widens dtype
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
+            _row(
+                repo_full_name="erin/nostar", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=None
+            ),  # excluded, but widens dtype
         ]
     )
     seed_catalog(df)
@@ -488,11 +510,24 @@ def test_integral_optional_columns_also_survive_an_unrelated_null_row(seed_catal
     rows that do carry a count, the identical defect one column over."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="daily", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200, stars_today=7, forks_total=3),
-            _row(repo_full_name="bob/libbar", period="daily", tier="1",
-                 reason=_TIER1_REASON, stars_total=900, stars_today=None,
-                 forks_total=None),
+            _row(
+                repo_full_name="alice/libfoo",
+                period="daily",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=1200,
+                stars_today=7,
+                forks_total=3,
+            ),
+            _row(
+                repo_full_name="bob/libbar",
+                period="daily",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=900,
+                stars_today=None,
+                forks_total=None,
+            ),
         ]
     )
     seed_catalog(df)
@@ -517,10 +552,8 @@ def test_non_finite_stars_total_is_excluded_not_a_whole_query_crash(seed_catalog
     for bad in (float("inf"), float("-inf"), "inf", "1e400"):
         df = pd.DataFrame(
             [
-                _row(repo_full_name="a/corrupt", period="weekly", tier="1",
-                     reason=_TIER1_REASON, stars_total=bad),
-                _row(repo_full_name="b/good", period="weekly", tier="1",
-                     reason=_TIER1_REASON, stars_total=900),
+                _row(repo_full_name="a/corrupt", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=bad),
+                _row(repo_full_name="b/good", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=900),
             ]
         )
         seed_catalog(df)
@@ -537,10 +570,22 @@ def test_non_finite_optional_value_serializes_to_json_safe_none(seed_catalog):
     strict parser."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200, stars_today=float("inf")),
-            _row(repo_full_name="bob/libbar", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=900, stars_today=1.0),
+            _row(
+                repo_full_name="alice/libfoo",
+                period="weekly",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=1200,
+                stars_today=float("inf"),
+            ),
+            _row(
+                repo_full_name="bob/libbar",
+                period="weekly",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=900,
+                stars_today=1.0,
+            ),
         ]
     )
     seed_catalog(df)
@@ -562,8 +607,7 @@ def test_period_all_truncation_does_not_depend_on_physical_row_order(seed_catalo
     data re-materialized in a different order returned different rows, contradicting
     this function's own documented "deterministic tie-break for --top's cap"."""
     rows = [
-        _row(repo_full_name=name, period=period, tier="1", reason=_TIER1_REASON,
-             stars_total=1000)
+        _row(repo_full_name=name, period=period, tier="1", reason=_TIER1_REASON, stars_total=1000)
         for name in ("o/r0", "o/r1")
         for period in ("daily", "weekly", "monthly")
     ]
@@ -572,9 +616,7 @@ def test_period_all_truncation_does_not_depend_on_physical_row_order(seed_catalo
     for order in ([0, 1, 2, 3, 4, 5], [2, 0, 1, 5, 3, 4], [5, 4, 3, 2, 1, 0]):
         seed_catalog(pd.DataFrame([rows[i] for i in order]))
         result = query.query_trending_candidates(period="all", top=3)
-        seen.add(
-            tuple((c["repo_full_name"], c["period"]) for c in result["candidates"])
-        )
+        seen.add(tuple((c["repo_full_name"], c["period"]) for c in result["candidates"]))
 
     assert len(seen) == 1, f"truncation varied with input order: {seen}"
 
@@ -590,10 +632,22 @@ def test_a_fallback_shaped_table_is_reported_present_not_silently_empty(seed_cat
     qualified in: `count: 0` under a fresh `build_stamp`. `rows` distinguishes them."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="all", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200, source="search_api_fallback"),
-            _row(repo_full_name="bob/rustcli", period="all", tier="2",
-                 reason=_TIER2_REASON, stars_total=900, source="search_api_fallback"),
+            _row(
+                repo_full_name="alice/libfoo",
+                period="all",
+                tier="1",
+                reason=_TIER1_REASON,
+                stars_total=1200,
+                source="search_api_fallback",
+            ),
+            _row(
+                repo_full_name="bob/rustcli",
+                period="all",
+                tier="2",
+                reason=_TIER2_REASON,
+                stars_total=900,
+                source="search_api_fallback",
+            ),
         ]
     )
     seed_catalog(df)
@@ -626,8 +680,7 @@ def test_a_whitespace_padded_tier_list_is_echoed_normalized(seed_catalog):
     for an identical candidate list."""
     df = pd.DataFrame(
         [
-            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1", reason=_TIER1_REASON, stars_total=1200),
         ]
     )
     seed_catalog(df)

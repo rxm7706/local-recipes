@@ -32,12 +32,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
+from pyforge.steward.cli import EXIT_OK, main
 from pyforge.steward.provision import (
+    _SUPPORTED_MODULES,
     CondaInstallBackend,
     ProvisionDuty,
     SetupSkillBackend,
-    _SUPPORTED_MODULES,
     _installer_skill_names,
     _manifest_location_label,
     _module_yaml_answers,
@@ -113,16 +113,16 @@ _TEA_ALL_SKILL_NAMES: frozenset[str] = frozenset({"bmad-tea", *_TEA_WORKFLOW_LEA
 # override, a bool variable and a string variable that must both survive
 # untouched, and a non-variable scalar (`code`) that must be skipped.
 _TEA_MODULE_YAML_TEXT = (
-    'code: tea\n'
-    'test_artifacts:\n'
+    "code: tea\n"
+    "test_artifacts:\n"
     '  prompt: "Where should test artifacts be stored?"\n'
     '  default: "{output_folder}/test-artifacts"\n'
     '  result: "{project-root}/{value}"\n'
-    'tea_use_playwright_utils:\n'
+    "tea_use_playwright_utils:\n"
     '  prompt: "Enable Playwright Utils integration?"\n'
-    '  default: true\n'
+    "  default: true\n"
     '  result: "{value}"\n'
-    'ci_platform:\n'
+    "ci_platform:\n"
     '  prompt: "Which CI/CD platform do you use?"\n'
     '  default: "auto"\n'
     '  result: "{value}"\n'
@@ -189,9 +189,7 @@ def _fake_installer_run(cmd, **kwargs):  # noqa: ARG001
                 _copy_dir(child, dest / child.name)
                 installed.append(child.name)
 
-    stdout = f"Installed {len(installed)} skill(s) to '{dest}':\n" + "".join(
-        f"  - {s}\n" for s in installed
-    )
+    stdout = f"Installed {len(installed)} skill(s) to '{dest}':\n" + "".join(f"  - {s}\n" for s in installed)
     return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
 
 
@@ -210,10 +208,7 @@ def tea_fixture(tmp_path):
         container="testarch",
         leaf_names=_TEA_WORKFLOW_LEAF_NAMES,
     )
-    share_root = (
-        tmp_path
-        / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
-    )
+    share_root = tmp_path / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
     (share_root / "module.yaml").write_text(_TEA_MODULE_YAML_TEXT, encoding="utf-8")
     return tmp_path
 
@@ -248,9 +243,7 @@ def test_supported_installer_modules_have_disjoint_skill_names():
             # dynamic half (explicit cis allowlist still checked above).
             continue
         for skill in names:
-            assert skill not in claimed, (
-                f"skill {skill!r} claimed by both {claimed[skill]!r} and {name!r}"
-            )
+            assert skill not in claimed, f"skill {skill!r} claimed by both {claimed[skill]!r} and {name!r}"
             claimed[skill] = name
 
 
@@ -276,9 +269,7 @@ def test_live_share_skill_names_are_disjoint_across_installer_modules():
         if not share_root.is_dir():
             pytest.skip(f"share package {backend.share_package} missing")
         for skill in _installer_skill_names(backend, share_root=share_root):
-            assert skill not in claimed, (
-                f"skill {skill!r} claimed by both {claimed[skill]!r} and {name!r}"
-            )
+            assert skill not in claimed, f"skill {skill!r} claimed by both {claimed[skill]!r} and {name!r}"
             claimed[skill] = name
     assert claimed  # sanity: at least one skill discovered
 
@@ -351,9 +342,7 @@ def test_provision_tea_via_installer_records_manifest_and_skills(tea_fixture, mo
     assert not (tea_fixture / "_bmad/config.yaml").exists()
 
 
-def test_provision_tea_module_yaml_answers_override_test_artifacts_only(
-    tea_fixture, monkeypatch
-):
+def test_provision_tea_module_yaml_answers_override_test_artifacts_only(tea_fixture, monkeypatch):
     """Story 46.3: `[modules.tea]` carries every module.yaml variable's
     answer, with `test_artifacts` overridden to the UNRESOLVED
     `"{output_folder}/planning-artifacts"` template -- never a pre-resolved
@@ -398,15 +387,11 @@ def test_provision_installer_preserves_sibling_config_toml_content(tea_fixture, 
     updated = (custom_dir / "config.toml").read_text(encoding="utf-8")
     assert updated.startswith(existing), "pre-existing content must be untouched"
     parsed = tomllib.loads(updated)
-    assert parsed["modules"]["skf"]["sidecar_path"] == (
-        "{project-root}/_bmad/_memory/forger-sidecar"
-    )
+    assert parsed["modules"]["skf"]["sidecar_path"] == ("{project-root}/_bmad/_memory/forger-sidecar")
     assert parsed["modules"]["tea"]["installer"] == "bmad-tea-install"
 
 
-def test_provision_installer_idempotent_config_toml_rewrite_replaces_in_place(
-    tea_fixture, monkeypatch
-):
+def test_provision_installer_idempotent_config_toml_rewrite_replaces_in_place(tea_fixture, monkeypatch):
     """Re-provisioning must replace the existing `[modules.tea]` section in
     place -- not duplicate it -- and leave the rest of the file byte-for-byte
     unchanged between the two runs."""
@@ -469,9 +454,7 @@ def test_provision_tea_flatten_refreshes_stale_content_on_reprovision(tea_fixtur
     assert flattened.read_text(encoding="utf-8") == "# bmad-testarch-nfr (v2, upgraded)\n"
 
 
-def test_provision_installer_rewrite_of_non_last_section_preserves_trailing_content(
-    tea_fixture, monkeypatch
-):
+def test_provision_installer_rewrite_of_non_last_section_preserves_trailing_content(tea_fixture, monkeypatch):
     """Review finding: rewriting `[modules.tea]` when it is NOT the file's
     last section must not swallow the blank line or hand-written comment
     that separates it from the section after it -- both belong to the rest
@@ -495,9 +478,7 @@ def test_provision_installer_rewrite_of_non_last_section_preserves_trailing_cont
     assert "\n\n# skf prose comment block, describes the NEXT section.\n[modules.skf]\n" in updated
     parsed = tomllib.loads(updated)
     assert parsed["modules"]["tea"]["installer"] == "bmad-tea-install"
-    assert parsed["modules"]["skf"]["sidecar_path"] == (
-        "{project-root}/_bmad/_memory/forger-sidecar"
-    )
+    assert parsed["modules"]["skf"]["sidecar_path"] == ("{project-root}/_bmad/_memory/forger-sidecar")
 
 
 def test_provision_prefers_local_share_over_ambient_conda_prefix(tea_fixture, monkeypatch):
@@ -527,6 +508,7 @@ def test_provision_installer_exit_0_but_skills_missing_raises(tea_fixture, monke
     naming what it expected vs. found, per this story's own I/O Matrix
     ("If flattening can't find the expected nested container, raise a
     clear RuntimeError")."""
+
     def _noop_installer(cmd, **kwargs):  # noqa: ARG001
         return subprocess.CompletedProcess(cmd, 0, stdout="Installed 0\n", stderr="")
 
@@ -539,20 +521,17 @@ def test_provision_installer_exit_0_but_skills_missing_raises(tea_fixture, monke
     assert not (tea_fixture / "_bmad/custom/config.toml").exists()
 
 
-def test_provision_installer_missing_non_nested_skill_after_successful_flatten_raises(
-    tea_fixture, monkeypatch
-):
+def test_provision_installer_missing_non_nested_skill_after_successful_flatten_raises(tea_fixture, monkeypatch):
     """Story 46.3: the predicted-vs-actual name check still catches a
     genuinely missing skill post-flatten -- here the `workflows` container
     installs and flattens cleanly, but `agents/bmad-tea` (a non-nested
     source, untouched by flattening) never got installed at all."""
+
     def _installer_skips_agents(cmd, **kwargs):
         dest = Path(cmd[1])
         dest.mkdir(parents=True, exist_ok=True)
         cwd = Path(kwargs.get("cwd") or ".")
-        prefix = Path(
-            (kwargs.get("env") or {}).get("CONDA_PREFIX", cwd / ".pixi/envs/pyforge-guild")
-        )
+        prefix = Path((kwargs.get("env") or {}).get("CONDA_PREFIX", cwd / ".pixi/envs/pyforge-guild"))
         share_root = prefix / "share" / "bmad-method-test-architecture-enterprise"
         shutil.copytree(share_root / "workflows" / "testarch", dest / "testarch")
         return subprocess.CompletedProcess(cmd, 0, stdout="Installed 1 skill(s)\n", stderr="")
@@ -578,9 +557,7 @@ def test_discovery_backends_skill_names_are_disjoint_in_fixture(tmp_path):
     the `testarch` container name itself."""
     tea_pkg = "bmad-method-test-architecture-enterprise"
     util_pkg = "bmad-utility-skills"
-    _stage_share_skills(
-        tmp_path, package=tea_pkg, source_dir="agents", skill_names=("bmad-tea",)
-    )
+    _stage_share_skills(tmp_path, package=tea_pkg, source_dir="agents", skill_names=("bmad-tea",))
     _stage_nested_share_skills(
         tmp_path,
         package=tea_pkg,
@@ -603,9 +580,7 @@ def test_discovery_backends_skill_names_are_disjoint_in_fixture(tmp_path):
         if not share_root.is_dir():
             continue
         for skill in _installer_skill_names(backend, share_root=share_root):
-            assert skill not in claimed, (
-                f"skill {skill!r} claimed by both {claimed[skill]!r} and {name!r}"
-            )
+            assert skill not in claimed, f"skill {skill!r} claimed by both {claimed[skill]!r} and {name!r}"
             claimed[skill] = name
     assert set(claimed) >= {"bmad-tea", "bmad-testarch-nfr", "bmad-os-gh-triage"}
     assert "testarch" not in claimed
@@ -853,10 +828,7 @@ def test_provision_tea_missing_module_yaml_raises_named_error(tea_fixture, monke
     context-free message. Prove the named message, not just that
     *something* raises."""
     monkeypatch.setattr(subprocess, "run", _fake_installer_run)
-    share_root = (
-        tea_fixture
-        / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
-    )
+    share_root = tea_fixture / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
     (share_root / "module.yaml").unlink()
 
     with pytest.raises(FileNotFoundError, match="module.yaml is missing"):
@@ -872,10 +844,7 @@ def test_provision_tea_non_mapping_module_yaml_raises_named_error(tea_fixture, m
     none. Without this guard, `_module_yaml_answers` would raise a bare
     `AttributeError` ('list' object has no attribute 'items') instead."""
     monkeypatch.setattr(subprocess, "run", _fake_installer_run)
-    share_root = (
-        tea_fixture
-        / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
-    )
+    share_root = tea_fixture / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
     (share_root / "module.yaml").write_text("- not-a-mapping\n", encoding="utf-8")
 
     with pytest.raises(RuntimeError, match="did not parse to a mapping"):
@@ -891,7 +860,9 @@ def test_render_module_toml_section_rejects_reserved_answer_key():
 
     with pytest.raises(RuntimeError, match="reserved manifest key"):
         _render_module_toml_section(
-            "tea", installer="bmad-tea-install", skills=("bmad-tea",),
+            "tea",
+            installer="bmad-tea-install",
+            skills=("bmad-tea",),
             answers={"skills": "oops"},
         )
 
@@ -904,14 +875,14 @@ def test_toml_value_unsupported_type_names_the_module_and_key():
 
     with pytest.raises(TypeError, match=r"module 'tea'.*risk_threshold.*unsupported"):
         _render_module_toml_section(
-            "tea", installer="bmad-tea-install", skills=("bmad-tea",),
+            "tea",
+            installer="bmad-tea-install",
+            skills=("bmad-tea",),
             answers={"risk_threshold": 1},
         )
 
 
-def test_provision_cis_via_installer_never_gains_module_yaml_answer_keys(
-    cis_fixture, monkeypatch
-):
+def test_provision_cis_via_installer_never_gains_module_yaml_answer_keys(cis_fixture, monkeypatch):
     """Story 46.3 boundaries: cis's `[modules.cis]` section carries only the
     three AD-9 fields (`provisioned_by`/`installer`/`skills`) -- no
     module.yaml-answer keys leak in for a backend that never declared

@@ -61,3 +61,16 @@ during dev/review. For the actual landing record, see `spec-deck-family-lockstep
 - Part 1 of CAP-1 (21-2 is part 2, the Infographic Deck)
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `1113e6eceb` (2026-09-17, "herald: recover Epic 21 story specs 21.1-21.4 from a stale loop home"); also `a6bccc1b1c` (2026-09-10, "Reconcile DEFERRED_SPECS against live Spec statuses (Story 21.1)"); also `19090c81ca` (2026-08-29, "atlas: sync sprint-status-ledger -- Story 21.1 done"). Ledger row `21-1-deck-trio-derives-the-infographic-head-from-the-standalone: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-1-deck-trio-derives-the-infographic-head-from-the-standalone.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-2-deck-trio-derives-the-infographic-deck-from-the-standalone.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

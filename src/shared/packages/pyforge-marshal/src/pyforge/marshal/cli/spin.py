@@ -265,7 +265,6 @@ import tomlkit
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.vcs_git import GitVcs
 from ..adapters.harness_bmadloop import (
     ADAPTER_REVIEW_MODEL_STOCK_DEFAULT,
     HarnessError,
@@ -276,9 +275,8 @@ from ..adapters.harness_bmadloop import (
     write_policy_document,
     write_policy_toml,
 )
-from ..core import harness_profile
-from ..core import policy
-from ..core.tier_routing import resolve_tier_launch
+from ..adapters.vcs_git import GitVcs
+from ..core import harness_profile, policy
 from ..core.identity import (
     StoryKey,
     normalize,
@@ -298,10 +296,10 @@ from ..core.journal import (
 from ..core.model import Finding, Severity, build_envelope
 from ..core.spec_difficulty import DifficultyParseError, parse_declared_difficulty
 from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_retry_escalation
+from ..core.tier_routing import resolve_tier_launch
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import DeferredStory, HarnessPort
-from .dispatch import spin_loop_home_in_flight_conflict
 from .config import (
     PolicyIOError,
     _read_project_policy,
@@ -309,6 +307,7 @@ from .config import (
     conventional_project_policy_path,
     read_repo_policy_defaults,
 )
+from .dispatch import spin_loop_home_in_flight_conflict
 from .init import _home_path
 
 if TYPE_CHECKING:
@@ -405,11 +404,7 @@ def _prior_attempt_keys(home: Path) -> set[StoryKey]:
                 continue
             attempt = task.get("attempt", 0)
             phase = task.get("phase")
-            retried = (
-                isinstance(attempt, (int, float))
-                and not isinstance(attempt, bool)
-                and attempt >= 2
-            )
+            retried = isinstance(attempt, (int, float)) and not isinstance(attempt, bool) and attempt >= 2
             left_terminal = isinstance(phase, str) and phase in _PRIOR_ATTEMPT_PHASES
             if not (retried or left_terminal):
                 continue
@@ -430,7 +425,7 @@ def _prior_attempt_keys(home: Path) -> set[StoryKey]:
         # this helper's own contract is "never raises". `MemoryError` for an
         # oversized file is deliberately NOT caught: that is a process-wide
         # condition, not a malformed-input one.
-        except (OSError, ValueError, UnicodeDecodeError, RecursionError):
+        except OSError, ValueError, UnicodeDecodeError, RecursionError:
             continue
         if not isinstance(document, Mapping):
             continue
@@ -450,11 +445,7 @@ def _prior_attempt_keys(home: Path) -> set[StoryKey]:
             # `"attempt": 2.0`, which JSON parses as a Python `float`,
             # silently failing an `isinstance(attempt, int)` check and
             # suppressing a genuine prior-attempt signal.
-            retried = (
-                isinstance(attempt, (int, float))
-                and not isinstance(attempt, bool)
-                and attempt >= 2
-            )
+            retried = isinstance(attempt, (int, float)) and not isinstance(attempt, bool) and attempt >= 2
             left_terminal = isinstance(phase, str) and phase in _PRIOR_ATTEMPT_PHASES
             if not (retried or left_terminal):
                 continue
@@ -492,9 +483,7 @@ def _story_spec_candidates(home: Path, slug: str, key: StoryKey) -> list[Path]:
     return [tier3 / f"{stem}.md", *titled]
 
 
-def _story_declared_difficulty(
-    home: Path, slug: str, key: StoryKey, findings: list[Finding]
-) -> str | None:
+def _story_declared_difficulty(home: Path, slug: str, key: StoryKey, findings: list[Finding]) -> str | None:
     """FR-51's own per-story difficulty resolution (Story 6.1): ``key``'s
     own declared ``difficulty:`` frontmatter, read from the SAME Tier-3
     spec file ``_story_spec_candidates`` locates -- never a second notion of
@@ -523,7 +512,7 @@ def _story_declared_difficulty(
     for path in _story_spec_candidates(home, slug, key):
         try:
             text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         try:
             declared = parse_declared_difficulty(text)
@@ -599,10 +588,7 @@ def _resolve_governing_difficulty(
     ]
     batching_report: dict[str, object] = {
         "governing": governing,
-        "reason": (
-            "most common declared difficulty among in-scope stories, ties "
-            "broken by earliest declaration order"
-        ),
+        "reason": ("most common declared difficulty among in-scope stories, ties broken by earliest declaration order"),
         "mismatched": mismatched,
     }
     return governing, batching_report
@@ -1083,9 +1069,9 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
     resume_parser.set_defaults(handler=run_resume)
 
     from .dispatch import (
-        add_factory_dispatch_subparser,
         add_factory_dispatch_attach_subparser,
         add_factory_dispatch_resume_subparser,
+        add_factory_dispatch_subparser,
         add_factory_drain_subparser,
     )
 
@@ -1206,10 +1192,7 @@ def _spawn_supervisor_sidecar(
                     "supervisor's idle threshold (the launch itself is "
                     "unaffected; every key a finding below names kept its "
                     "composed default instead of the project's own value): "
-                    + "; ".join(
-                        f"{finding.code}: {finding.message}"
-                        for finding in policy_findings
-                    )
+                    + "; ".join(f"{finding.code}: {finding.message}" for finding in policy_findings)
                 ),
             )
         )
@@ -1234,9 +1217,7 @@ def _spawn_supervisor_sidecar(
             wire_payload = wire.journal_payload()
         else:
             wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
-            enabled = harness_profile.resolve_wire_enabled(
-                wire_layer["enabled"], wrapper_declared=False
-            )
+            enabled = harness_profile.resolve_wire_enabled(wire_layer["enabled"], wrapper_declared=False)
             wire_payload = harness_profile.WireWrap(
                 applied=False,
                 reason=(
@@ -1245,18 +1226,14 @@ def _spawn_supervisor_sidecar(
                 )
                 if enabled
                 else None,
-                aggressiveness=(
-                    wire_layer["aggressiveness"] if enabled else None
-                ),
+                aggressiveness=(wire_layer["aggressiveness"] if enabled else None),
             ).journal_payload()
         data["wire"] = wire_payload
     reason = wire_payload.get("reason")
     if wire_payload.get("applied") is False and isinstance(reason, str) and reason:
         context_layers = policy.resolve_context_layers(effective_policy)
         if bool(context_layers[harness_profile.WIRE_LAYER_NAME]["enabled"]):
-            findings.append(
-                Finding(code="MRS-SPIN-017", severity=Severity.WARN, message=reason)
-            )
+            findings.append(Finding(code="MRS-SPIN-017", severity=Severity.WARN, message=reason))
     idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
     # Story 3.6's 4 budget-ceiling values -- resolved from the SAME
     # `effective_policy` composition idle_threshold_minutes above already
@@ -1265,12 +1242,8 @@ def _spawn_supervisor_sidecar(
     # wiring exactly.
     max_tokens_per_story = effective_policy.seed_view()["max_tokens_per_story"].value
     max_tokens_per_run = effective_policy.seed_view()["max_tokens_per_run"].value
-    max_wall_clock_minutes_per_story = effective_policy.seed_view()[
-        "max_wall_clock_minutes_per_story"
-    ].value
-    max_wall_clock_minutes_per_run = effective_policy.seed_view()[
-        "max_wall_clock_minutes_per_run"
-    ].value
+    max_wall_clock_minutes_per_story = effective_policy.seed_view()["max_wall_clock_minutes_per_story"].value
+    max_wall_clock_minutes_per_run = effective_policy.seed_view()["max_wall_clock_minutes_per_run"].value
 
     # Story 28.6 (CAP-8): sidecar the supervisor reads once at attach --
     # threshold + wire layer from the same composition site as dispatch.
@@ -1287,9 +1260,7 @@ def _spawn_supervisor_sidecar(
     # whereas ``wire_layer`` was only ever bound inside one of them.
     if wire_payload.get("applied"):
         compression_sidecar = {
-            "escalation_threshold": policy.resolve_compression_escalation_threshold(
-                effective_policy
-            ),
+            "escalation_threshold": policy.resolve_compression_escalation_threshold(effective_policy),
             "wire": {
                 "enabled": True,
                 "aggressiveness": wire_payload["aggressiveness"],
@@ -1424,8 +1395,7 @@ def run_spin(
                 code="MRS-SPIN-002",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home not provisioned: {str(home)!r} is not a directory "
-                    f"-- run 'marshal init {slug}' first"
+                    f"loop home not provisioned: {str(home)!r} is not a directory -- run 'marshal init {slug}' first"
                 ),
                 path=str(home),
             )
@@ -1438,9 +1408,7 @@ def run_spin(
     # this module's own docstring).
     if args.foreground:
         try:
-            code = harness.run_foreground(
-                home, epic=args.epic, story=args.story, max_count=args.max_count
-            )
+            code = harness.run_foreground(home, epic=args.epic, story=args.story, max_count=args.max_count)
         except HarnessError as exc:
             findings.append(
                 Finding(
@@ -1482,9 +1450,7 @@ def run_spin(
     except (ValueError, TypeError, RecursionError, OSError) as exc:
         feed_error = f"cannot read story feed: {exc}"
     if feed_error is not None:
-        findings.append(
-            Finding(code="MRS-SPIN-005", severity=Severity.ERROR, message=feed_error)
-        )
+        findings.append(Finding(code="MRS-SPIN-005", severity=Severity.ERROR, message=feed_error))
         return _emit(args, data, findings)
 
     # --- AD-38 feed completeness -- refuse the launch if anything failed ----
@@ -1500,9 +1466,7 @@ def run_spin(
     try:
         raw_keys = harness.story_feed_keys(home)
     except HarnessError as exc:
-        findings.append(
-            Finding(code="MRS-SPIN-005", severity=Severity.ERROR, message=str(exc))
-        )
+        findings.append(Finding(code="MRS-SPIN-005", severity=Severity.ERROR, message=str(exc)))
         return _emit(args, data, findings)
     # `resolve_feed` catches only `MalformedStoryKeyError` around its own
     # `normalize` calls, so a raw feed key whose epic position exceeds
@@ -1535,9 +1499,7 @@ def run_spin(
         return _emit(args, data, findings)
 
     # --- echoed preview -------------------------------------------------------
-    preview = _filter_preview(
-        resolution.resolved, epic=args.epic, story=args.story, max_count=args.max_count
-    )
+    preview = _filter_preview(resolution.resolved, epic=args.epic, story=args.story, max_count=args.max_count)
     data["selector"] = {"epic": args.epic, "story": args.story, "max_count": args.max_count}
     data["preview"] = [render_feed_key(key) for key in preview]
 
@@ -1566,18 +1528,14 @@ def run_spin(
             reasons.append(f"spec size {spec_size} bytes >= {_LARGE_SPEC_BYTES}")
         if key in prior_attempts:
             reasons.append(
-                "a prior run in this loop home recorded attempt >= 2 or a "
-                "deferred/escalated outcome for this story"
+                "a prior run in this loop home recorded attempt >= 2 or a deferred/escalated outcome for this story"
             )
         if reasons:
             findings.append(
                 Finding(
                     code="MRS-SPIN-009",
                     severity=Severity.WARN,
-                    message=(
-                        f"story {render_feed_key(key)!r} may exceed budget: "
-                        + "; ".join(reasons)
-                    ),
+                    message=(f"story {render_feed_key(key)!r} may exceed budget: " + "; ".join(reasons)),
                 )
             )
 
@@ -1625,10 +1583,7 @@ def run_spin(
             Finding(
                 code="MRS-SPIN-002",
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot read the loop home Tier-3 backlink "
-                    f"{str(tier3_path)!r}: {exc}"
-                ),
+                message=(f"cannot read the loop home Tier-3 backlink {str(tier3_path)!r}: {exc}"),
                 path=str(tier3_path),
             )
         )
@@ -1853,8 +1808,7 @@ def run_spin(
                 code="MRS-SPIN-006",
                 severity=Severity.WARN,
                 message=(
-                    f"bmad-loop run launched (pid {spin_result.pid}) but its "
-                    f"outcome could not be journaled: {exc}"
+                    f"bmad-loop run launched (pid {spin_result.pid}) but its outcome could not be journaled: {exc}"
                 ),
             )
         )
@@ -2152,8 +2106,7 @@ def run_resume(
                 code="MRS-SPIN-002",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home not provisioned: {str(home)!r} is not a directory "
-                    f"-- run 'marshal init {slug}' first"
+                    f"loop home not provisioned: {str(home)!r} is not a directory -- run 'marshal init {slug}' first"
                 ),
                 path=str(home),
             )
@@ -2168,10 +2121,7 @@ def run_resume(
             Finding(
                 code="MRS-SPIN-002",
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot read the loop home Tier-3 backlink "
-                    f"{str(tier3_path)!r}: {exc}"
-                ),
+                message=(f"cannot read the loop home Tier-3 backlink {str(tier3_path)!r}: {exc}"),
                 path=str(tier3_path),
             )
         )
@@ -2197,10 +2147,7 @@ def run_resume(
             Finding(
                 code="MRS-SPIN-011",
                 severity=Severity.ERROR,
-                message=(
-                    f"no resumable run found for {slug!r} under "
-                    f"{str(tier3_path / 'runs')!r}"
-                ),
+                message=(f"no resumable run found for {slug!r} under {str(tier3_path / 'runs')!r}"),
             )
         )
         return _emit(args, data, findings)
@@ -2261,21 +2208,14 @@ def run_resume(
             Finding(
                 code="MRS-SPIN-011",
                 severity=Severity.ERROR,
-                message=(
-                    f"run {harness_run_id!r} already finished -- nothing to "
-                    "resume"
-                ),
+                message=(f"run {harness_run_id!r} already finished -- nothing to resume"),
             )
         )
         return _emit(args, data, findings)
 
     paused_stage = status_snapshot.paused_stage if status_snapshot is not None else None
-    paused_story_key = (
-        status_snapshot.paused_story_key if status_snapshot is not None else None
-    )
-    task_phase = (
-        status_snapshot.escalated_task_phase if status_snapshot is not None else None
-    )
+    paused_story_key = status_snapshot.paused_story_key if status_snapshot is not None else None
+    task_phase = status_snapshot.escalated_task_phase if status_snapshot is not None else None
     escalation_status = evaluate_escalation(paused_stage, paused_story_key, task_phase)
     if escalation_status is EscalationStatus.UNRESOLVED:
         findings.append(
@@ -2301,24 +2241,14 @@ def run_resume(
     # fields describe.
     was_resolved_escalation = escalation_status is EscalationStatus.RESOLVED
     story_key = paused_story_key if was_resolved_escalation else None
-    reason = (
-        status_snapshot.paused_reason
-        if status_snapshot is not None and was_resolved_escalation
-        else None
-    )
-    spec_file = (
-        status_snapshot.escalated_spec_file
-        if status_snapshot is not None and was_resolved_escalation
-        else None
-    )
+    reason = status_snapshot.paused_reason if status_snapshot is not None and was_resolved_escalation else None
+    spec_file = status_snapshot.escalated_spec_file if status_snapshot is not None and was_resolved_escalation else None
     resolution_reference = (
-        harness.resolution_reference(home, harness_run_id, story_key)
-        if story_key is not None
-        else None
+        harness.resolution_reference(home, harness_run_id, story_key) if story_key is not None else None
     )
     try:
         resolver = getpass.getuser()
-    except (OSError, KeyError):
+    except OSError, KeyError:
         # Realistic in a detached/headless automation context -- exactly
         # where `marshal factory resume` is meant to run (AD-22) -- when no
         # pwd entry exists and none of LOGNAME/USER/LNAME/USERNAME is set.
@@ -2462,10 +2392,7 @@ def run_resume(
             Finding(
                 code="MRS-SPIN-006",
                 severity=Severity.WARN,
-                message=(
-                    f"bmad-loop resume launched (pid {pid}) but its "
-                    f"outcome could not be journaled: {exc}"
-                ),
+                message=(f"bmad-loop resume launched (pid {pid}) but its outcome could not be journaled: {exc}"),
             )
         )
 
@@ -2499,9 +2426,7 @@ def _scalar(value: object) -> str:
     return str(value)
 
 
-def _render_text(
-    data: Mapping[str, object], findings: tuple[Finding, ...], command: str = "factory spin"
-) -> str:
+def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...], command: str = "factory spin") -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching every sibling command's
     own ``_render_text`` convention. ``command`` (Story 3.7) is the same
@@ -2579,9 +2504,7 @@ def _render_text(
         # operator actually reads.
         lines.append(f"escalated: {_scalar(data['escalated'])}")
         if data["escalated"]:
-            lines.append(
-                f"escalated_stories: {', '.join(str(k) for k in data['escalated_stories'])}"
-            )
+            lines.append(f"escalated_stories: {', '.join(str(k) for k in data['escalated_stories'])}")
             lines.append(f"from_model: {_scalar(data['from_model'])}")
             lines.append(f"to_model: {_scalar(data['to_model'])}")
     if "wire" in data:
@@ -2594,10 +2517,7 @@ def _render_text(
         # is deliberately NOT repeated here: whenever there is one it is
         # already a `MRS-SPIN-017` line in the findings block below.
         wire = data["wire"]
-        lines.append(
-            f"wire: applied={_scalar(wire['applied'])} "
-            f"aggressiveness={_scalar(wire['aggressiveness'])}"
-        )
+        lines.append(f"wire: applied={_scalar(wire['applied'])} aggressiveness={_scalar(wire['aggressiveness'])}")
     if "supervisor_log" in data:
         lines.append(f"supervisor_log: {_scalar(str(data['supervisor_log']))}")
     if "supervisor_pid" in data:
@@ -2620,9 +2540,7 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
     # convention, predating this story).
     command = f"factory {getattr(args, 'factory_command', 'spin')}"
     verdict_value = compute_verdict(tuple(findings))
-    envelope = build_envelope(
-        command=command, verdict=verdict_value, data=data, findings=tuple(findings)
-    )
+    envelope = build_envelope(command=command, verdict=verdict_value, data=data, findings=tuple(findings))
     # Same flush + broken-pipe-suppression convention as every sibling
     # command's own _emit (cli/init.py, cli/gate.py, cli/config.py).
     #
@@ -2639,7 +2557,7 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
             print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
             print(_render_text(envelope.data, envelope.findings, command), flush=True)
-    except (OSError, UnicodeEncodeError):
+    except OSError, UnicodeEncodeError:
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)
 
@@ -2692,10 +2610,7 @@ def run_attach(
         finding = Finding(
             code="MRS-SPIN-002",
             severity=Severity.ERROR,
-            message=(
-                f"loop home not provisioned: {str(home)!r} is not a directory -- "
-                f"run 'marshal init {slug}' first"
-            ),
+            message=(f"loop home not provisioned: {str(home)!r} is not a directory -- run 'marshal init {slug}' first"),
             path=str(home),
         )
         return _relay_attach_finding(finding)
@@ -2739,6 +2654,6 @@ def _relay_attach_finding(finding: Finding) -> int:
             file=sys.stderr,
             flush=True,
         )
-    except (OSError, UnicodeEncodeError):
+    except OSError, UnicodeEncodeError:
         _suppress_downstream_pipe_close()
     return exit_code_for(compute_verdict((finding,)))

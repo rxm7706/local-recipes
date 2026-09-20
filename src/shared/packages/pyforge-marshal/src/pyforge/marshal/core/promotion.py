@@ -101,9 +101,7 @@ def _story_key_from_ref(ref: StoryKeyRef) -> StoryKey | None:
         return None
 
 
-def extract_story_key_from_bmadloop_merge_subject(
-    subject: str, project_slug: str
-) -> StoryKey | None:
+def extract_story_key_from_bmadloop_merge_subject(subject: str, project_slug: str) -> StoryKey | None:
     """Delegate to ``pyforge.core.landing_evidence`` (Story 20.10).
 
     Preserved as a public surface for callers and tests that already import
@@ -114,9 +112,7 @@ def extract_story_key_from_bmadloop_merge_subject(
     return _story_key_from_ref(ref)
 
 
-def extract_story_key_from_github_merge_subject(
-    subject: str, project_slug: str
-) -> StoryKey | None:
+def extract_story_key_from_github_merge_subject(subject: str, project_slug: str) -> StoryKey | None:
     """Delegate to ``pyforge.core.landing_evidence`` (Story 20.10).
 
     Preserved as a public surface for callers and tests that already import
@@ -195,9 +191,7 @@ def _classify_merge_subject_match(
         return _story_key_from_ref(match.key), match
     gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
     if gh_match is not None:
-        branch_match = classify_branch_name(
-            gh_match.group("branch"), project_slug=project_slug
-        )
+        branch_match = classify_branch_name(gh_match.group("branch"), project_slug=project_slug)
         if branch_match is not None:
             return _story_key_from_ref(branch_match.key), None
     return None, None
@@ -343,9 +337,7 @@ def branch_story_merge_confirmed_by_grammar(
     ``VcsPort.is_branch_merged`` alone cannot confirm a recovered branch
     whose content-equivalence check fails but whose story demonstrably
     landed via the recovery convention."""
-    merged = merged_story_keys(
-        subjects, template, project_slug, commits=commits
-    )
+    merged = merged_story_keys(subjects, template, project_slug, commits=commits)
     if story_key not in merged:
         return False
     branch_match = classify_branch_name(branch, project_slug=project_slug)
@@ -453,11 +445,7 @@ def count_conforming_subjects(subjects: tuple[str, ...], template: str, project_
     and none of them conformed to any recognized pattern" -- a silent
     zero-vs-zero ambiguity a prior version of this run reported no way to
     distinguish."""
-    return sum(
-        1
-        for subject in subjects
-        if _classify_merge_subject(subject, template, project_slug) is not None
-    )
+    return sum(1 for subject in subjects if _classify_merge_subject(subject, template, project_slug) is not None)
 
 
 @dataclass(frozen=True)
@@ -641,9 +629,7 @@ def classify_promotion_candidates(
     promotion candidate (the story's own I/O matrix: "not-yet-merged story,
     spec exists in Tier-3" -> "Skipped -- not a promotion candidate yet").
     """
-    candidate_by_key: dict[StoryKey, SpecCandidate] = {
-        candidate.story_key: candidate for candidate in candidates
-    }
+    candidate_by_key: dict[StoryKey, SpecCandidate] = {candidate.story_key: candidate for candidate in candidates}
 
     to_promote: list[SpecCandidate] = []
     gaps: list[Finding] = []

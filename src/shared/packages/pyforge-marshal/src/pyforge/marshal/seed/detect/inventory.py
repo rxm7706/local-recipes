@@ -417,7 +417,7 @@ def _load_gitignore_rules(repo_root: Path) -> tuple[_GitignoreRule, ...]:
     gitignore_path = repo_root / ".gitignore"
     try:
         text = gitignore_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return ()
     rules: list[_GitignoreRule] = []
     for pattern_body, negated, dir_only in _iter_gitignore_lines(text):
@@ -516,7 +516,7 @@ def _classify_hybrid(entry: ManifestEntry, target: Path) -> ArtifactState:
         return ArtifactState.PRESENT_DIVERGENT
     try:
         text = target.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return ArtifactState.PRESENT_DIVERGENT
     # `ManifestEntry.__post_init__` requires a non-None `format` on every
     # hybrid-managed-region entry -- narrows for the type checker; see
@@ -524,7 +524,7 @@ def _classify_hybrid(entry: ManifestEntry, target: Path) -> ArtifactState:
     assert entry.format is not None
     try:
         spans = parse_regions(text, entry.format)
-    except (RegionParseError, MarkerError, NotImplementedError):
+    except RegionParseError, MarkerError, NotImplementedError:
         return ArtifactState.PRESENT_DIVERGENT
     found_names = {span.name for span in spans}
     declared_names = {region.name for region in entry.regions}
@@ -611,9 +611,7 @@ def classify(manifest: Manifest, repo_root: Path) -> Inventory:
             # `entry.legacy_of` is guaranteed non-None here -- it is the
             # only way `_classify_entry` produces `PRESENT_LEGACY`.
             assert entry.legacy_of is not None
-            legacy.append(
-                LegacyRecord(entry_id=entry.id, path=entry.path, legacy_of=entry.legacy_of)
-            )
+            legacy.append(LegacyRecord(entry_id=entry.id, path=entry.path, legacy_of=entry.legacy_of))
     return Inventory(
         repo_root=repo_root,
         tree=tree,
@@ -661,11 +659,10 @@ def writable_exemptions(manifest: Manifest, inventory: Inventory) -> frozenset[s
     defect reproduces) still needs its path exempted, precisely because the
     write that would MAKE it present is the one rung 4 was refusing."""
     legacy_paths = {record.path for record in inventory.legacy}
-    return frozenset(
-        entry.path
-        for entry in manifest.entries
-        if entry.artifact_class in _WRITABLE_EXEMPTION_CLASSES
-    ) - legacy_paths
+    return (
+        frozenset(entry.path for entry in manifest.entries if entry.artifact_class in _WRITABLE_EXEMPTION_CLASSES)
+        - legacy_paths
+    )
 
 
 def legacy_findings(inventory: Inventory) -> tuple[Finding, ...]:

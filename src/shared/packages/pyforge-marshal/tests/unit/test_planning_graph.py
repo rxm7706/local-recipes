@@ -10,9 +10,7 @@ from pyforge.marshal.core import planning_graph as planning
 
 class TestParseRecallOutput:
     def test_grounded_answer_with_citation(self):
-        parsed = planning.parse_recall_output(
-            "Epic 28 token economy goals.\n[source: epics.md:L42]\n"
-        )
+        parsed = planning.parse_recall_output("Epic 28 token economy goals.\n[source: epics.md:L42]\n")
         assert parsed.grounded is True
         assert parsed.text == "Epic 28 token economy goals."
         assert parsed.citation == "epics.md:L42"
@@ -29,12 +27,7 @@ class TestParseRecallOutput:
 
 class TestResolveRetrievalMode:
     def test_graph_mode_requires_all_three(self):
-        assert (
-            planning.resolve_retrieval_mode(
-                layer_enabled=True, recall_ok=True, grounded=True
-            )
-            == planning.MODE_GRAPH
-        )
+        assert planning.resolve_retrieval_mode(layer_enabled=True, recall_ok=True, grounded=True) == planning.MODE_GRAPH
 
     @pytest.mark.parametrize(
         "layer_enabled,recall_ok,grounded",
@@ -44,9 +37,7 @@ class TestResolveRetrievalMode:
             (True, True, False),
         ],
     )
-    def test_every_other_shape_falls_back(
-        self, layer_enabled, recall_ok, grounded
-    ):
+    def test_every_other_shape_falls_back(self, layer_enabled, recall_ok, grounded):
         assert (
             planning.resolve_retrieval_mode(
                 layer_enabled=layer_enabled,
@@ -59,17 +50,11 @@ class TestResolveRetrievalMode:
 
 class TestWholesaleDocGuard:
     def test_epics_and_prd_are_wholesale(self):
-        assert planning.is_wholesale_planning_doc(
-            "_bmad-output/projects/x/planning-artifacts/epics.md"
-        )
-        assert planning.is_wholesale_planning_doc(
-            "_bmad-output/projects/x/planning-artifacts/PRD.md"
-        )
+        assert planning.is_wholesale_planning_doc("_bmad-output/projects/x/planning-artifacts/epics.md")
+        assert planning.is_wholesale_planning_doc("_bmad-output/projects/x/planning-artifacts/PRD.md")
 
     def test_architecture_is_not_wholesale(self):
-        assert not planning.is_wholesale_planning_doc(
-            "_bmad-output/projects/x/planning-artifacts/architecture.md"
-        )
+        assert not planning.is_wholesale_planning_doc("_bmad-output/projects/x/planning-artifacts/architecture.md")
 
 
 class TestTokenSavings:
@@ -77,12 +62,7 @@ class TestTokenSavings:
         assert planning.estimate_tokens_saved(mode=planning.MODE_GRAPH) == 109_500
 
     def test_fallback_reports_none(self):
-        assert (
-            planning.estimate_tokens_saved(
-                mode=planning.MODE_EPIC_CONTEXT_FALLBACK
-            )
-            is None
-        )
+        assert planning.estimate_tokens_saved(mode=planning.MODE_EPIC_CONTEXT_FALLBACK) is None
 
 
 class TestRecallArgvScope:
@@ -107,9 +87,7 @@ class TestRecallArgvScope:
         assert argv == ("/bin/scribe", "recall", "a query", "--mode", "planning")
 
     def test_never_passes_kind(self):
-        scoped = planning.render_scribe_recall_argv(
-            "/bin/scribe", "a query", scope="pyforge-scribe"
-        )
+        scoped = planning.render_scribe_recall_argv("/bin/scribe", "a query", scope="pyforge-scribe")
         assert "--kind" not in scoped
         assert "--mode" in scoped
         assert scoped[scoped.index("--mode") + 1] == "planning"

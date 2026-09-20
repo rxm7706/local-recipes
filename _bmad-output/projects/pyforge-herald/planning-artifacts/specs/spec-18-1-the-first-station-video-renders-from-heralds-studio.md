@@ -231,7 +231,8 @@ separate human creator present in this walkthrough -- exactly as gate 1 (`outlin
 
 ## Auto Run Result
 
-Status: blocked
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `4251c42229 2026-09-17 Land herald fold: one chain — 11 Dreams, 10 Specs, rekey 2026-09-17` — that promotion is the ruling this record now reflects.
 Blocking condition: implementation subagent launch denied by harness auto-mode classifier
 
 Evidence: a prior synchronous investigation subagent (not this step's implementation subagent)
@@ -341,3 +342,7 @@ the register and the doc, but a real production use of this pipeline should have
 human approve at least gate 2 and gate 4. The render's very specific numeric claims are verifiable
 only on the machine that produced them; a fresh clone or CI cannot independently confirm them. The
 un-audited sed-bypass-pattern risk named above under the follow-up recommendation.
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

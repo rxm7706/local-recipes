@@ -101,8 +101,11 @@ from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError, Recipe
 from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
 from pyforge.mason.recipe import build, diagnose, new, optimize, scan, submit, update, validate
 from pyforge.mason.resolve import (
-    STEP_CWD_WALK, STEP_NOT_FOUND, STEP_RUNNING_INTERPRETER,
-    ResolvedCfeInterpreter, ResolvedCfeRoot,
+    STEP_CWD_WALK,
+    STEP_NOT_FOUND,
+    STEP_RUNNING_INTERPRETER,
+    ResolvedCfeInterpreter,
+    ResolvedCfeRoot,
 )
 
 _ROOT = ResolvedCfeRoot(root=Path("/fake/cfe"), step=STEP_CWD_WALK)
@@ -127,6 +130,7 @@ have installed."""
 
 # --- new(): I/O & Edge-Case Matrix --------------------------------------------
 
+
 @pytest.mark.parametrize("source", ["pypi", "github", "cran", "npm"])
 def test_new_forwards_source_as_the_adapters_first_argv_element(source, fake_cfe_root):
     """FR-7: `source` is CFE's own subcommand vocabulary, already selected by
@@ -134,12 +138,19 @@ def test_new_forwards_source_as_the_adapters_first_argv_element(source, fake_cfe
     its own, only forwards `[source, package, "--output", output]` unmodified
     (spec Always boundary)."""
     fake_result = CfeResult(returncode=0, stdout="ok", stderr="", json_body=None)
-    with patch("pyforge.mason.cfe.probe_import_floor", return_value=_EMPTY_FLOOR), \
-         patch("pyforge.mason.cfe.generate_recipe", return_value=fake_result) as mock_generate:
+    with (
+        patch("pyforge.mason.cfe.probe_import_floor", return_value=_EMPTY_FLOOR),
+        patch("pyforge.mason.cfe.generate_recipe", return_value=fake_result) as mock_generate,
+    ):
         result = new(
-            source, "demo-package", "recipes/demo",
-            cfe_root_arg=str(fake_cfe_root), cfe_python_arg=None,
-            cfe_timeout_arg=None, environ={}, start_directory=fake_cfe_root,
+            source,
+            "demo-package",
+            "recipes/demo",
+            cfe_root_arg=str(fake_cfe_root),
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=fake_cfe_root,
         )
 
     assert result == fake_result
@@ -149,7 +160,8 @@ def test_new_forwards_source_as_the_adapters_first_argv_element(source, fake_cfe
 
 
 def test_new_raises_recipe_generation_error_carrying_the_fixtures_stdout(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     """`MASON_FIXTURE_EXIT_CODE=1` against the real fixture stub, real
     subprocess, no mocking of `generate_recipe` itself -- proves
@@ -162,9 +174,14 @@ def test_new_raises_recipe_generation_error_carrying_the_fixtures_stdout(
     with patch("pyforge.mason.cfe.probe_import_floor", return_value=_EMPTY_FLOOR):
         with pytest.raises(RecipeGenerationError) as excinfo:
             new(
-                "pypi", "demo", "recipes/demo",
-                cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-                cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+                "pypi",
+                "demo",
+                "recipes/demo",
+                cfe_root_arg=str(fake_cfe_root),
+                cfe_python_arg=sys.executable,
+                cfe_timeout_arg=15.0,
+                environ={},
+                start_directory=fake_cfe_root,
             )
 
     assert excinfo.value.source == "pypi"
@@ -183,15 +200,21 @@ def test_new_raises_cfe_unresolved_error_before_any_subprocess_spawns(tmp_path):
     with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
         with pytest.raises(CfeUnresolvedError):
             new(
-                "pypi", "demo", "recipes/demo",
-                cfe_root_arg=None, cfe_python_arg=None,
-                cfe_timeout_arg=None, environ={}, start_directory=tmp_path,
+                "pypi",
+                "demo",
+                "recipes/demo",
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=tmp_path,
             )
 
     mock_run.assert_not_called()
 
 
 # --- build(): I/O & Edge-Case Matrix ------------------------------------------
+
 
 def test_build_native_happy_path_against_fake_cfe_root(fake_cfe_root, monkeypatch):
     _clear_fixture_env(monkeypatch)
@@ -216,7 +239,8 @@ def test_build_native_happy_path_against_fake_cfe_root(fake_cfe_root, monkeypatc
 
 
 def test_build_native_stamps_rattler_build_via_the_default_hook(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     """Native ``build()`` selects the default plugin and runs ``around``;
     context ``engine`` is rattler-build and ``next`` is today's native
@@ -357,48 +381,67 @@ def test_build_docker_resolves_a_cfe_interpreter_from_the_flag(fake_cfe_root, mo
 
 _VALIDATE_RESULT = CfeResult(
     returncode=0,
-    stdout='{"passed": true, "errors": [], "warnings": [], "info": [], '
-           '"rattler_lint_ran": true}',
+    stdout='{"passed": true, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": true}',
     stderr="",
     json_body={
-        "passed": True, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": True,
+        "passed": True,
+        "errors": [],
+        "warnings": [],
+        "info": [],
+        "rattler_lint_ran": True,
     },
 )
 
 
 # --- Composition (mocked) ----------------------------------------------------
 
+
 def test_validate_passes_json_flag_then_recipe_path_as_validate_recipe_args():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
-         patch(
-             "pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT,
-         ) as mock_validate:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch(
+            "pyforge.mason.cfe.validate_recipe",
+            return_value=_VALIDATE_RESULT,
+        ) as mock_validate,
+    ):
         result = validate(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure.assert_called_once_with(_ROOT)
     mock_validate.assert_called_once_with(
-        ["--json", "recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        ["--json", "recipes/foo"],
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
     assert result is _VALIDATE_RESULT
 
 
 def test_validate_passes_an_explicit_cfe_timeout_arg_straight_through():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT,
-         ) as mock_validate:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.validate_recipe",
+            return_value=_VALIDATE_RESULT,
+        ) as mock_validate,
+    ):
         validate(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=42.0,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_validate.call_args.kwargs["timeout"] == 42.0
@@ -409,14 +452,19 @@ def test_validate_returns_the_cfe_result_verbatim_no_reinterpretation():
     `CfeResult` directly -- no new model, no field renaming, no wrapping, no
     Mason-side pass/fail reinterpretation (that projection is `cli.py`'s own
     dispatch-time decision, not this function's)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT),
+    ):
         result = validate(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result is _VALIDATE_RESULT
@@ -424,16 +472,23 @@ def test_validate_returns_the_cfe_result_verbatim_no_reinterpretation():
 
 
 def test_validate_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root, \
-         patch.object(
-             recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER,
-         ) as mock_interp, \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root,
+        patch.object(
+            recipe_module,
+            "resolve_cfe_interpreter",
+            return_value=_INTERPRETER,
+        ) as mock_interp,
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT),
+    ):
         validate(
             "recipes/foo",
-            cfe_root_arg="/explicit/root", cfe_python_arg="/explicit/python",
-            cfe_timeout_arg=None, environ={"X": "1"}, start_directory=Path("/start"),
+            cfe_root_arg="/explicit/root",
+            cfe_python_arg="/explicit/python",
+            cfe_timeout_arg=None,
+            environ={"X": "1"},
+            start_directory=Path("/start"),
         )
 
     mock_root.assert_called_once_with("/explicit/root", {"X": "1"}, Path("/start"))
@@ -445,16 +500,21 @@ def test_validate_never_calls_ensure_import_floor():
     import, PyYAML, already degrades to an honest failure on its own -- no
     import-floor gate, mirroring `diagnose()`'s own established exemption,
     not `optimize()`/`scan()`'s scoped-probe pattern."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT), \
-         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor, \
-         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT),
+        patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
+        patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,
+    ):
         validate(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure_floor.assert_not_called()
@@ -463,32 +523,47 @@ def test_validate_never_calls_ensure_import_floor():
 
 # --- CFE-unresolved propagation: raises before any subprocess spawns -------
 
+
 def test_validate_raises_cfe_unresolved_error_when_root_is_not_found():
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+    ):
         with pytest.raises(CfeUnresolvedError):
             validate(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
 
 def test_validate_never_calls_validate_recipe_when_root_is_unresolved():
     """The `CfeUnresolvedError` path must short-circuit before
     `cfe.validate_recipe` is ever reached."""
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.validate_recipe") as mock_validate:
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.validate_recipe") as mock_validate,
+    ):
         with pytest.raises(CfeUnresolvedError):
             validate(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     mock_validate.assert_not_called()
@@ -503,8 +578,11 @@ def test_validate_raises_before_any_subprocess_spawns_against_a_real_unresolved_
         with pytest.raises(CfeUnresolvedError):
             validate(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=tmp_path,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=tmp_path,
             )
 
     mock_run.assert_not_called()
@@ -512,15 +590,20 @@ def test_validate_raises_before_any_subprocess_spawns_against_a_real_unresolved_
 
 # --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
 
+
 def test_validate_against_fake_cfe_root_returns_the_fixtures_canned_passing_result(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     _clear_fixture_env(monkeypatch)
 
     result = validate(
         "recipes/example",
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert isinstance(result, CfeResult)
@@ -530,7 +613,8 @@ def test_validate_against_fake_cfe_root_returns_the_fixtures_canned_passing_resu
 
 
 def test_validate_against_fake_cfe_root_returns_a_failing_result_via_fixture_override(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     """The fixture's own `validate_recipe.py` stub only emits a canned
     passing body (Story 1.9) -- a failing round trip needs the
@@ -540,15 +624,17 @@ def test_validate_against_fake_cfe_root_returns_a_failing_result_via_fixture_ove
     _clear_fixture_env(monkeypatch)
     monkeypatch.setenv(
         "MASON_FIXTURE_STDOUT",
-        '{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], '
-        '"rattler_lint_ran": true}',
+        '{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], "rattler_lint_ran": true}',
     )
     monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
 
     result = validate(
         "recipes/example",
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert isinstance(result, CfeResult)
@@ -563,33 +649,47 @@ def test_validate_against_fake_cfe_root_returns_a_failing_result_via_fixture_ove
 
 # --- Composition (mocked) ----------------------------------------------------
 
+
 def test_diagnose_passes_log_path_as_the_sole_diagnose_failure_argument():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
-         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT) as mock_diagnose:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT) as mock_diagnose,
+    ):
         result = diagnose(
             "build.log",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure.assert_called_once_with(_ROOT)
     mock_diagnose.assert_called_once_with(
-        ["build.log"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        ["build.log"],
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
     assert result is _RESULT
 
 
 def test_diagnose_passes_an_explicit_cfe_timeout_arg_straight_through():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT) as mock_diagnose:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT) as mock_diagnose,
+    ):
         diagnose(
             "build.log",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=42.0,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_diagnose.call_args.kwargs["timeout"] == 42.0
@@ -598,14 +698,19 @@ def test_diagnose_passes_an_explicit_cfe_timeout_arg_straight_through():
 def test_diagnose_returns_the_cfe_result_verbatim_no_reinterpretation():
     """Spec Never boundary: `diagnose()` returns `cfe.diagnose_failure`'s
     `CfeResult` directly -- no new model, no field renaming, no wrapping."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT),
+    ):
         result = diagnose(
             "build.log",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result is _RESULT
@@ -616,16 +721,23 @@ def test_diagnose_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
     """`resolve_cfe_root`/`resolve_cfe_interpreter` do their own flag ->
     environment -> default resolution -- `diagnose()` must pass the raw flag
     values through unresolved, mirroring `doctor.build_report`'s contract."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root, \
-         patch.object(
-             recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER,
-         ) as mock_interp, \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root,
+        patch.object(
+            recipe_module,
+            "resolve_cfe_interpreter",
+            return_value=_INTERPRETER,
+        ) as mock_interp,
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT),
+    ):
         diagnose(
             "build.log",
-            cfe_root_arg="/explicit/root", cfe_python_arg="/explicit/python",
-            cfe_timeout_arg=None, environ={"X": "1"}, start_directory=Path("/start"),
+            cfe_root_arg="/explicit/root",
+            cfe_python_arg="/explicit/python",
+            cfe_timeout_arg=None,
+            environ={"X": "1"},
+            start_directory=Path("/start"),
         )
 
     mock_root.assert_called_once_with("/explicit/root", {"X": "1"}, Path("/start"))
@@ -637,15 +749,20 @@ def test_diagnose_never_calls_ensure_import_floor():
     (`failure_analyzer.py` is stdlib-only, confirmed by reading it) had no
     positive regression test -- a future re-addition of the gate would only
     be caught incidentally, if at all."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT), \
-         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT),
+        patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
+    ):
         diagnose(
             "build.log",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure_floor.assert_not_called()
@@ -653,32 +770,47 @@ def test_diagnose_never_calls_ensure_import_floor():
 
 # --- CFE-unresolved propagation: raises before any subprocess spawns -------
 
+
 def test_diagnose_raises_cfe_unresolved_error_when_root_is_not_found():
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+    ):
         with pytest.raises(CfeUnresolvedError):
             diagnose(
                 "build.log",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
 
 def test_diagnose_never_calls_diagnose_failure_when_root_is_unresolved():
     """The `CfeUnresolvedError` path must short-circuit before
     `cfe.diagnose_failure` is ever reached."""
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.diagnose_failure") as mock_diagnose:
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.diagnose_failure") as mock_diagnose,
+    ):
         with pytest.raises(CfeUnresolvedError):
             diagnose(
                 "build.log",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     mock_diagnose.assert_not_called()
@@ -698,8 +830,11 @@ def test_diagnose_raises_before_any_subprocess_spawns_against_a_real_unresolved_
         with pytest.raises(CfeUnresolvedError):
             diagnose(
                 "build.log",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=tmp_path,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=tmp_path,
             )
 
     mock_run.assert_not_called()
@@ -707,16 +842,21 @@ def test_diagnose_raises_before_any_subprocess_spawns_against_a_real_unresolved_
 
 # --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
 
+
 def test_diagnose_against_fake_cfe_root_returns_the_fixtures_canned_diagnosis(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
     result = diagnose(
         "build.log",
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert isinstance(result, CfeResult)
@@ -736,8 +876,11 @@ def test_diagnose_against_fake_cfe_root_with_a_real_cfe_root_walk(fake_cfe_root,
 
     result = diagnose(
         "build.log",
-        cfe_root_arg=None, cfe_python_arg=sys.executable, cfe_timeout_arg=15.0,
-        environ={}, start_directory=fake_cfe_root / ".claude",
+        cfe_root_arg=None,
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root / ".claude",
     )
 
     assert result.returncode == 0
@@ -759,42 +902,56 @@ _OPTIMIZE_RESULT = CfeResult(
 
 # --- Composition (mocked) ----------------------------------------------------
 
+
 def test_optimize_passes_recipe_path_as_the_sole_optimize_recipe_argument():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure_root, \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ) as mock_probe_floor, \
-         patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT) as mock_optimize:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure_root,
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ) as mock_probe_floor,
+        patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT) as mock_optimize,
+    ):
         result = optimize(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure_root.assert_called_once_with(_ROOT)
     mock_probe_floor.assert_called_once_with(_INTERPRETER.path)
     mock_optimize.assert_called_once_with(
-        ["recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        ["recipes/foo"],
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
     assert result is _OPTIMIZE_RESULT
 
 
 def test_optimize_passes_an_explicit_cfe_timeout_arg_straight_through():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ), \
-         patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT) as mock_optimize:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ),
+        patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT) as mock_optimize,
+    ):
         optimize(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=42.0,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_optimize.call_args.kwargs["timeout"] == 42.0
@@ -803,18 +960,23 @@ def test_optimize_passes_an_explicit_cfe_timeout_arg_straight_through():
 def test_optimize_returns_the_cfe_result_verbatim_no_reinterpretation():
     """Spec Never boundary: `optimize()` returns `cfe.optimize_recipe`'s
     `CfeResult` directly -- no new model, no field renaming, no wrapping."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ), \
-         patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ),
+        patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT),
+    ):
         result = optimize(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result is _OPTIMIZE_RESULT
@@ -822,20 +984,27 @@ def test_optimize_returns_the_cfe_result_verbatim_no_reinterpretation():
 
 
 def test_optimize_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root, \
-         patch.object(
-             recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER,
-         ) as mock_interp, \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ), \
-         patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root,
+        patch.object(
+            recipe_module,
+            "resolve_cfe_interpreter",
+            return_value=_INTERPRETER,
+        ) as mock_interp,
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ),
+        patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT),
+    ):
         optimize(
             "recipes/foo",
-            cfe_root_arg="/explicit/root", cfe_python_arg="/explicit/python",
-            cfe_timeout_arg=None, environ={"X": "1"}, start_directory=Path("/start"),
+            cfe_root_arg="/explicit/root",
+            cfe_python_arg="/explicit/python",
+            cfe_timeout_arg=None,
+            environ={"X": "1"},
+            start_directory=Path("/start"),
         )
 
     mock_root.assert_called_once_with("/explicit/root", {"X": "1"}, Path("/start"))
@@ -847,18 +1016,23 @@ def test_optimize_calls_probe_import_floor_with_the_resolved_interpreter():
     `test_diagnose_never_calls_ensure_import_floor`: `optimize()` is the
     first `recipe` verb that MUST probe CFE's import floor (module
     docstring), so this pins that it actually does, not just that it could."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ) as mock_probe_floor, \
-         patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ) as mock_probe_floor,
+        patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT),
+    ):
         optimize(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_probe_floor.assert_called_once_with(_INTERPRETER.path)
@@ -869,21 +1043,26 @@ def test_optimize_is_not_rejected_when_only_an_unrelated_floor_entry_is_missing(
     UNRELATED to `optimize()` (everything except `ruamel.yaml`) must NOT be
     rejected -- `cfe.optimize_recipe` is still called and no
     `CfeImportFloorError` is raised."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(
-                 interpreter=_INTERPRETER.path,
-                 missing=("packaging", "truststore", "conda-forge-metadata"),
-             ),
-         ), \
-         patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT) as mock_optimize:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(
+                interpreter=_INTERPRETER.path,
+                missing=("packaging", "truststore", "conda-forge-metadata"),
+            ),
+        ),
+        patch("pyforge.mason.cfe.optimize_recipe", return_value=_OPTIMIZE_RESULT) as mock_optimize,
+    ):
         result = optimize(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_optimize.assert_called_once()
@@ -892,16 +1071,24 @@ def test_optimize_is_not_rejected_when_only_an_unrelated_floor_entry_is_missing(
 
 # --- CFE-unresolved propagation: raises before any subprocess spawns -------
 
+
 def test_optimize_raises_cfe_unresolved_error_when_root_is_not_found():
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+    ):
         with pytest.raises(CfeUnresolvedError):
             optimize(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
 
@@ -909,17 +1096,24 @@ def test_optimize_never_calls_optimize_recipe_when_root_is_unresolved():
     """The `CfeUnresolvedError` path must short-circuit before
     `cfe.optimize_recipe` (and therefore `cfe.probe_import_floor`) is ever
     reached."""
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor, \
-         patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize:
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,
+        patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize,
+    ):
         with pytest.raises(CfeUnresolvedError):
             optimize(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     mock_probe_floor.assert_not_called()
@@ -940,14 +1134,18 @@ def test_optimize_raises_before_any_subprocess_spawns_against_a_real_unresolved_
         with pytest.raises(CfeUnresolvedError):
             optimize(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=tmp_path,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=tmp_path,
             )
 
     mock_run.assert_not_called()
 
 
 # --- Import-floor-missing propagation: rejected on the relevant floor gap --
+
 
 def test_optimize_is_rejected_when_the_relevant_floor_entry_is_missing():
     """`_OPTIMIZE_RELEVANT_FLOOR` is exactly `("ruamel.yaml",)` -- mocks
@@ -969,21 +1167,27 @@ def test_optimize_is_rejected_when_the_relevant_floor_entry_is_missing():
     specific raise (see `test_scan_is_rejected_when_only_one_relevant_
     floor_entry_is_missing`'s docstring for `scan()`'s parallel, already-
     mocked coverage of the same class of gap)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(
-                 interpreter=_INTERPRETER.path, missing=("ruamel.yaml",),
-             ),
-         ), \
-         patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(
+                interpreter=_INTERPRETER.path,
+                missing=("ruamel.yaml",),
+            ),
+        ),
+        patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize,
+    ):
         with pytest.raises(CfeImportFloorError) as exc_info:
             optimize(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     assert exc_info.value.missing == ("ruamel.yaml",)
@@ -992,8 +1196,10 @@ def test_optimize_is_rejected_when_the_relevant_floor_entry_is_missing():
 
 # --- Real end-to-end against fake_cfe_root, floor faked (AD-16, Design Notes)
 
+
 def test_optimize_against_fake_cfe_root_returns_the_fixtures_canned_suggestions(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     """Design Notes: patches `cfe.probe_import_floor`'s return value, not
     `subprocess.run` wholesale -- a blanket `subprocess.run` patch would
@@ -1009,8 +1215,11 @@ def test_optimize_against_fake_cfe_root_returns_the_fixtures_canned_suggestions(
 
     result = optimize(
         "recipes/example",
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert isinstance(result, CfeResult)
@@ -1035,46 +1244,62 @@ _SCAN_RESULT = CfeResult(
 
 # --- Composition (mocked) ----------------------------------------------------
 
+
 def test_scan_passes_json_flag_then_recipe_path_as_scan_for_vulnerabilities_args():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure_root, \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ) as mock_probe_floor, \
-         patch(
-             "pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT,
-         ) as mock_scan:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure_root,
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ) as mock_probe_floor,
+        patch(
+            "pyforge.mason.cfe.scan_for_vulnerabilities",
+            return_value=_SCAN_RESULT,
+        ) as mock_scan,
+    ):
         result = scan(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure_root.assert_called_once_with(_ROOT)
     mock_probe_floor.assert_called_once_with(_INTERPRETER.path)
     mock_scan.assert_called_once_with(
-        ["--json", "recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        ["--json", "recipes/foo"],
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
     assert result is _SCAN_RESULT
 
 
 def test_scan_passes_an_explicit_cfe_timeout_arg_straight_through():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ), \
-         patch(
-             "pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT,
-         ) as mock_scan:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ),
+        patch(
+            "pyforge.mason.cfe.scan_for_vulnerabilities",
+            return_value=_SCAN_RESULT,
+        ) as mock_scan,
+    ):
         scan(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=42.0,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_scan.call_args.kwargs["timeout"] == 42.0
@@ -1084,18 +1309,23 @@ def test_scan_returns_the_cfe_result_verbatim_no_reinterpretation():
     """Spec Never boundary: `scan()` returns `cfe.scan_for_vulnerabilities`'s
     `CfeResult` directly -- no new model, no field renaming, no wrapping, no
     Mason-side severity/threshold policy."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ), \
-         patch("pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ),
+        patch("pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT),
+    ):
         result = scan(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result is _SCAN_RESULT
@@ -1103,20 +1333,27 @@ def test_scan_returns_the_cfe_result_verbatim_no_reinterpretation():
 
 
 def test_scan_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root, \
-         patch.object(
-             recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER,
-         ) as mock_interp, \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ), \
-         patch("pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root,
+        patch.object(
+            recipe_module,
+            "resolve_cfe_interpreter",
+            return_value=_INTERPRETER,
+        ) as mock_interp,
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ),
+        patch("pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT),
+    ):
         scan(
             "recipes/foo",
-            cfe_root_arg="/explicit/root", cfe_python_arg="/explicit/python",
-            cfe_timeout_arg=None, environ={"X": "1"}, start_directory=Path("/start"),
+            cfe_root_arg="/explicit/root",
+            cfe_python_arg="/explicit/python",
+            cfe_timeout_arg=None,
+            environ={"X": "1"},
+            start_directory=Path("/start"),
         )
 
     mock_root.assert_called_once_with("/explicit/root", {"X": "1"}, Path("/start"))
@@ -1127,18 +1364,23 @@ def test_scan_calls_probe_import_floor_with_the_resolved_interpreter():
     """Positive control, mirroring `optimize()`'s own -- `scan()` is the
     second `recipe` verb that MUST probe CFE's import floor (module
     docstring)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
-         ) as mock_probe_floor, \
-         patch("pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
+        ) as mock_probe_floor,
+        patch("pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT),
+    ):
         scan(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_probe_floor.assert_called_once_with(_INTERPRETER.path)
@@ -1149,23 +1391,29 @@ def test_scan_is_not_rejected_when_only_an_unrelated_floor_entry_is_missing():
     UNRELATED to `scan()` (everything except `requests`/`pyyaml`) must NOT be
     rejected -- `cfe.scan_for_vulnerabilities` is still called and no
     `CfeImportFloorError` is raised."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(
-                 interpreter=_INTERPRETER.path,
-                 missing=("packaging", "truststore", "ruamel.yaml", "conda-forge-metadata"),
-             ),
-         ), \
-         patch(
-             "pyforge.mason.cfe.scan_for_vulnerabilities", return_value=_SCAN_RESULT,
-         ) as mock_scan:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(
+                interpreter=_INTERPRETER.path,
+                missing=("packaging", "truststore", "ruamel.yaml", "conda-forge-metadata"),
+            ),
+        ),
+        patch(
+            "pyforge.mason.cfe.scan_for_vulnerabilities",
+            return_value=_SCAN_RESULT,
+        ) as mock_scan,
+    ):
         result = scan(
             "recipes/foo",
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_scan.assert_called_once()
@@ -1182,21 +1430,27 @@ def test_scan_is_rejected_when_only_one_relevant_floor_entry_is_missing(missing_
     OR-semantics in between. Mocks `probe_import_floor` to report exactly
     one relevant package missing (the other three floor entries present) and
     asserts the call is still rejected on that single entry alone."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.probe_import_floor",
-             return_value=ImportFloorResult(
-                 interpreter=_INTERPRETER.path, missing=(missing_package,),
-             ),
-         ), \
-         patch("pyforge.mason.cfe.scan_for_vulnerabilities") as mock_scan:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.probe_import_floor",
+            return_value=ImportFloorResult(
+                interpreter=_INTERPRETER.path,
+                missing=(missing_package,),
+            ),
+        ),
+        patch("pyforge.mason.cfe.scan_for_vulnerabilities") as mock_scan,
+    ):
         with pytest.raises(CfeImportFloorError) as exc_info:
             scan(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     assert exc_info.value.missing == (missing_package,)
@@ -1205,16 +1459,24 @@ def test_scan_is_rejected_when_only_one_relevant_floor_entry_is_missing(missing_
 
 # --- CFE-unresolved propagation: raises before any subprocess spawns -------
 
+
 def test_scan_raises_cfe_unresolved_error_when_root_is_not_found():
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+    ):
         with pytest.raises(CfeUnresolvedError):
             scan(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
 
@@ -1222,17 +1484,24 @@ def test_scan_never_calls_scan_for_vulnerabilities_when_root_is_unresolved():
     """The `CfeUnresolvedError` path must short-circuit before
     `cfe.scan_for_vulnerabilities` (and therefore `cfe.probe_import_floor`)
     is ever reached."""
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor, \
-         patch("pyforge.mason.cfe.scan_for_vulnerabilities") as mock_scan:
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,
+        patch("pyforge.mason.cfe.scan_for_vulnerabilities") as mock_scan,
+    ):
         with pytest.raises(CfeUnresolvedError):
             scan(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     mock_probe_floor.assert_not_called()
@@ -1248,8 +1517,11 @@ def test_scan_raises_before_any_subprocess_spawns_against_a_real_unresolved_root
         with pytest.raises(CfeUnresolvedError):
             scan(
                 "recipes/foo",
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=tmp_path,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=tmp_path,
             )
 
     mock_run.assert_not_called()
@@ -1272,8 +1544,10 @@ def test_scan_raises_before_any_subprocess_spawns_against_a_real_unresolved_root
 
 # --- Real end-to-end against fake_cfe_root, floor faked (AD-16, Design Notes)
 
+
 def test_scan_against_fake_cfe_root_returns_the_fixtures_canned_clean_scan(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     """Mirrors `optimize()`'s own real-fixture round-trip test: patches
     `cfe.probe_import_floor`'s return value, not `subprocess.run`
@@ -1287,8 +1561,11 @@ def test_scan_against_fake_cfe_root_returns_the_fixtures_canned_clean_scan(
 
     result = scan(
         "recipes/example",
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert isinstance(result, CfeResult)
@@ -1318,15 +1595,13 @@ _SUBMIT_DRY_RUN_RESULT = CfeResult(
     ),
     stderr="",
     json_body={
-        "success": True, "dry_run": True, "recipe": "foo",
-        "branch": "add-recipe-foo", "github_user": "example-user",
-        "fork_branch_url": (
-            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
-        ),
-        "message": (
-            "Dry run OK -- would push branch 'add-recipe-foo' to "
-            "example-user/staged-recipes."
-        ),
+        "success": True,
+        "dry_run": True,
+        "recipe": "foo",
+        "branch": "add-recipe-foo",
+        "github_user": "example-user",
+        "fork_branch_url": ("https://github.com/example-user/staged-recipes/tree/add-recipe-foo"),
+        "message": ("Dry run OK -- would push branch 'add-recipe-foo' to example-user/staged-recipes."),
     },
 )
 
@@ -1335,7 +1610,9 @@ _SUBMIT_FULL_SUCCESS_RESULT = CfeResult(
     stdout="{...}",
     stderr="",
     json_body={
-        "success": True, "recipe": "foo", "branch": "add-recipe-foo",
+        "success": True,
+        "recipe": "foo",
+        "branch": "add-recipe-foo",
         "github_user": "example-user",
         "pr_url": "https://github.com/conda-forge/staged-recipes/pull/123",
         "message": "PR created: https://github.com/conda-forge/staged-recipes/pull/123",
@@ -1347,12 +1624,15 @@ _SUBMIT_PREPARE_ONLY_RESULT = CfeResult(
     stdout="{...}",
     stderr="",
     json_body={
-        "success": True, "recipe": "foo", "branch": "add-recipe-foo",
+        "success": True,
+        "recipe": "foo",
+        "branch": "add-recipe-foo",
         "github_user": "example-user",
-        "fork_branch_url": (
-            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
-        ),
-        "head_sha": "abc123", "synced_commits": 0, "pushed": True, "force": True,
+        "fork_branch_url": ("https://github.com/example-user/staged-recipes/tree/add-recipe-foo"),
+        "head_sha": "abc123",
+        "synced_commits": 0,
+        "pushed": True,
+        "force": True,
         "message": (
             "Branch 'add-recipe-foo' is ready on example-user/staged-recipes "
             "(pushed=True, fork-was-behind=0 commits). Inspect: "
@@ -1366,11 +1646,10 @@ _SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT = CfeResult(
     stdout="{...}",
     stderr="",
     json_body={
-        "success": False, "error": "PR creation failed: some gh error",
+        "success": False,
+        "error": "PR creation failed: some gh error",
         "branch": "add-recipe-foo",
-        "fork_branch_url": (
-            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
-        ),
+        "fork_branch_url": ("https://github.com/example-user/staged-recipes/tree/add-recipe-foo"),
         "hint": "Run open_pr separately to retry the PR step.",
     },
 )
@@ -1378,23 +1657,31 @@ _SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT = CfeResult(
 
 # --- I/O matrix: the five state-mapping branches (mocked cfe.submit_pr) ----
 
+
 def test_submit_dry_run_appends_dry_run_flag_and_returns_not_attempted():
     """Dry run (default): no `--yes` -> `confirm=False` -> `--dry-run`
     forwarded; `ShipTargetResult(state=NOT_ATTEMPTED, reference=None)` even
     though the stub's own JSON carries a `fork_branch_url` -- a dry run's
     branch URL is hypothetical and never rendered as if real (spec Always
     boundary)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
-         patch(
-             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
-         ) as mock_submit_pr:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=_SUBMIT_DRY_RUN_RESULT,
+        ) as mock_submit_pr,
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=False, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=False,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure.assert_called_once_with(_ROOT)
@@ -1404,7 +1691,9 @@ def test_submit_dry_run_appends_dry_run_flag_and_returns_not_attempted():
     assert kwargs["interpreter"] == _INTERPRETER.path
     assert kwargs["timeout"] is None
     assert result == ShipTargetResult(
-        target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None,
+        target="conda-forge",
+        state=ShipState.NOT_ATTEMPTED,
+        reference=None,
         message=_SUBMIT_DRY_RUN_RESULT.json_body["message"],
     )
 
@@ -1413,22 +1702,30 @@ def test_submit_confirmed_full_flow_returns_pending_with_pr_url():
     """Confirmed, full flow: `--yes` -> `confirm=True` -> no `--dry-run`;
     CFE reports `pr_url` -> `ShipTargetResult(state=PENDING,
     reference=pr_url)` -- never `TERMINAL` (AD-9/AD-10)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_FULL_SUCCESS_RESULT,
-         ) as mock_submit_pr:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=_SUBMIT_FULL_SUCCESS_RESULT,
+        ) as mock_submit_pr,
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=True, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=True,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_submit_pr.call_args.args[0] == ["foo"]
     assert result == ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING,
+        target="conda-forge",
+        state=ShipState.PENDING,
         reference="https://github.com/conda-forge/staged-recipes/pull/123",
         message=_SUBMIT_FULL_SUCCESS_RESULT.json_body["message"],
     )
@@ -1440,25 +1737,31 @@ def test_submit_confirmed_prepare_only_appends_the_flag_and_returns_pending_with
     the body -> `ShipTargetResult(state=PENDING, reference=fork_branch_url)`
     (AD-10: "if a target cannot be interrogated, the result is pending with
     the reason")."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_PREPARE_ONLY_RESULT,
-         ) as mock_submit_pr:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=_SUBMIT_PREPARE_ONLY_RESULT,
+        ) as mock_submit_pr,
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=True, prepare_only=True,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=True,
+            prepare_only=True,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_submit_pr.call_args.args[0] == ["foo", "--prepare-only"]
     assert result == ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING,
-        reference=(
-            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
-        ),
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference=("https://github.com/example-user/staged-recipes/tree/add-recipe-foo"),
         message=_SUBMIT_PREPARE_ONLY_RESULT.json_body["message"],
     )
 
@@ -1468,25 +1771,30 @@ def test_submit_confirmed_push_succeeded_pr_failed_returns_failed_with_branch_ur
     false` with `fork_branch_url` present (the push happened; only `open_pr`
     failed afterward) -> `ShipTargetResult(state=FAILED,
     reference=fork_branch_url)` -- data, not raised (AD-4)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr",
-             return_value=_SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT,
-         ):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=_SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT,
+        ),
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=True, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=True,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result == ShipTargetResult(
-        target="conda-forge", state=ShipState.FAILED,
-        reference=(
-            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
-        ),
+        target="conda-forge",
+        state=ShipState.FAILED,
+        reference=("https://github.com/example-user/staged-recipes/tree/add-recipe-foo"),
         message=_SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT.json_body["error"],
     )
 
@@ -1498,17 +1806,24 @@ def test_submit_computes_cfe_recipes_root_from_the_recipe_paths_parent_for_an_ou
     branching (spec Always boundary). Asserted on the `env=` argv reaching
     the mocked `cfe.submit_pr` call, mirroring `run_streamed`'s own
     documented contract that the caller builds the whole dict."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
-         ) as mock_submit_pr:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=_SUBMIT_DRY_RUN_RESULT,
+        ) as mock_submit_pr,
+    ):
         submit(
             "/tmp/out-of-tree-gen/my-package",
-            confirm=False, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={"PATH": "/usr/bin"}, start_directory=Path("/start"),
+            confirm=False,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={"PATH": "/usr/bin"},
+            start_directory=Path("/start"),
         )
 
     env = mock_submit_pr.call_args.kwargs["env"]
@@ -1527,16 +1842,22 @@ def test_submit_overrides_a_pre_existing_cfe_recipes_root_in_environ():
     in the real inherited `environ` (e.g. leaked from a parent shell) must
     still be replaced by the one `submit()` computes from `recipe_path`'s own
     parent, never merged or left alone."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
-         ) as mock_submit_pr:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=_SUBMIT_DRY_RUN_RESULT,
+        ) as mock_submit_pr,
+    ):
         submit(
             "/tmp/out-of-tree-gen/my-package",
-            confirm=False, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            confirm=False,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             environ={"CFE_RECIPES_ROOT": "/totally/wrong/stale/root", "PATH": "/usr/bin"},
             start_directory=Path("/start"),
         )
@@ -1553,17 +1874,24 @@ def test_submit_dry_run_prepare_only_composes_both_flags():
     `--dry-run` and `--prepare-only`, not just one. Every other
     `--prepare-only` test in this file pairs it with `confirm=True`; this
     pins the confirm=False pairing specifically (review pass, 2026-08-12)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
-         ) as mock_submit_pr:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=_SUBMIT_DRY_RUN_RESULT,
+        ) as mock_submit_pr,
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=False, prepare_only=True,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=False,
+            prepare_only=True,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_submit_pr.call_args.args[0] == ["foo", "--dry-run", "--prepare-only"]
@@ -1581,24 +1909,36 @@ def test_submit_confirmed_unparseable_body_falls_back_to_returncode(returncode, 
     always prints its JSON body before exiting 0 -- but the fallback exists
     and must not crash), `returncode != 0` -> FAILED. Both leave `reference`
     and `message` as `None` -- there is no body to read either from."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr",
-             return_value=CfeResult(
-                 returncode=returncode, stdout="not json", stderr="", json_body=None,
-             ),
-         ):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=CfeResult(
+                returncode=returncode,
+                stdout="not json",
+                stderr="",
+                json_body=None,
+            ),
+        ),
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=True, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=True,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result == ShipTargetResult(
-        target="conda-forge", state=expected_state, reference=None, message=None,
+        target="conda-forge",
+        state=expected_state,
+        reference=None,
+        message=None,
     )
 
 
@@ -1608,21 +1948,29 @@ def test_submit_treats_a_missing_success_key_as_failure():
     treated as failure -- `dict.get("success")` returns `None` (falsy) for
     an absent key, the same fail-closed outcome as an explicit `false`, but
     no prior test constructed a body with the key missing altogether."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr",
-             return_value=CfeResult(
-                 returncode=1, stdout="{...}", stderr="",
-                 json_body={"error": "some unexpected shape"},
-             ),
-         ):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=CfeResult(
+                returncode=1,
+                stdout="{...}",
+                stderr="",
+                json_body={"error": "some unexpected shape"},
+            ),
+        ),
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=True, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=True,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result.state == ShipState.FAILED
@@ -1636,21 +1984,29 @@ def test_submit_preserves_an_explicit_empty_string_message_instead_of_falling_ba
     explicit empty string) in favor of `"error"`. `dict.get(key, default)`
     only substitutes `default` when `key` is absent, so a present empty
     string now survives as `""`, not `"error"`'s text."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.submit_pr",
-             return_value=CfeResult(
-                 returncode=1, stdout="{...}", stderr="",
-                 json_body={"success": False, "message": "", "error": "should not win"},
-             ),
-         ):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.submit_pr",
+            return_value=CfeResult(
+                returncode=1,
+                stdout="{...}",
+                stderr="",
+                json_body={"success": False, "message": "", "error": "should not win"},
+            ),
+        ),
+    ):
         result = submit(
             "/fake/cfe/recipes/foo",
-            confirm=True, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=True,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result.message == ""
@@ -1665,25 +2021,34 @@ def test_submit_recovers_from_an_unresolvable_recipe_path_as_a_failed_result():
     itself (AD-4: an anticipated failure is data, never a raised exception)
     rather than let a raw `OSError`/`ValueError` escape to `cli.py`'s
     generic `except Exception` handler. No subprocess may spawn afterward."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch.object(
-             recipe_module.Path, "resolve",
-             side_effect=OSError("symlink loop detected"),
-         ), \
-         patch("pyforge.mason.cfe.submit_pr") as mock_submit_pr:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch.object(
+            recipe_module.Path,
+            "resolve",
+            side_effect=OSError("symlink loop detected"),
+        ),
+        patch("pyforge.mason.cfe.submit_pr") as mock_submit_pr,
+    ):
         result = submit(
             "/fake/cfe/recipes/loopy",
-            confirm=True, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=True,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_submit_pr.assert_not_called()
     assert result == ShipTargetResult(
-        target="conda-forge", state=ShipState.FAILED,
-        reference=None, message="symlink loop detected",
+        target="conda-forge",
+        state=ShipState.FAILED,
+        reference=None,
+        message="symlink loop detected",
     )
 
 
@@ -1692,17 +2057,23 @@ def test_submit_never_calls_probe_import_floor():
     is stdlib-only (confirmed by reading it), the same exemption
     `diagnose()` established -- `submit()` has no scoped-probe gate either
     (module docstring; unlike `optimize()`/`scan()`)."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT), \
-         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor, \
-         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT),
+        patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,
+        patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
+    ):
         submit(
             "/fake/cfe/recipes/foo",
-            confirm=False, prepare_only=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            confirm=False,
+            prepare_only=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_probe_floor.assert_not_called()
@@ -1711,34 +2082,51 @@ def test_submit_never_calls_probe_import_floor():
 
 # --- CFE-unresolved propagation: raises before any subprocess spawns -------
 
+
 def test_submit_raises_cfe_unresolved_error_when_root_is_not_found():
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+    ):
         with pytest.raises(CfeUnresolvedError):
             submit(
                 "/fake/cfe/recipes/foo",
-                confirm=False, prepare_only=False,
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                confirm=False,
+                prepare_only=False,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
 
 def test_submit_never_calls_submit_pr_when_root_is_unresolved():
     """The `CfeUnresolvedError` path must short-circuit before `cfe.
     submit_pr` is ever reached."""
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.submit_pr") as mock_submit_pr:
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.submit_pr") as mock_submit_pr,
+    ):
         with pytest.raises(CfeUnresolvedError):
             submit(
                 "/fake/cfe/recipes/foo",
-                confirm=False, prepare_only=False,
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                confirm=False,
+                prepare_only=False,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     mock_submit_pr.assert_not_called()
@@ -1754,9 +2142,13 @@ def test_submit_raises_before_any_subprocess_spawns_against_a_real_unresolved_ro
         with pytest.raises(CfeUnresolvedError):
             submit(
                 "/fake/cfe/recipes/foo",
-                confirm=False, prepare_only=False,
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=tmp_path,
+                confirm=False,
+                prepare_only=False,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=tmp_path,
             )
 
     mock_run.assert_not_called()
@@ -1764,8 +2156,10 @@ def test_submit_raises_before_any_subprocess_spawns_against_a_real_unresolved_ro
 
 # --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
 
+
 def test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     """`confirm=True, prepare_only=False` -- the stub's static canned JSON
     already includes `pr_url`, matching the full-flow-success shape exactly
@@ -1775,9 +2169,13 @@ def test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success(
 
     result = submit(
         str(fake_cfe_root / "recipes" / "example-recipe"),
-        confirm=True, prepare_only=False,
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        confirm=True,
+        prepare_only=False,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert result == ShipTargetResult(
@@ -1806,105 +2204,160 @@ _UPDATE_RESULT = CfeResult(
 
 
 def test_update_default_apply_calls_update_recipe_with_recipe_path_only():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
-         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update, \
-         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
+        patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh,
+    ):
         result = update(
             "recipes/foo",
-            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=False,
+            github=False,
+            github_repo=None,
+            allow_prerelease=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure.assert_called_once_with(_ROOT)
     mock_update.assert_called_once_with(
-        ["recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        ["recipes/foo"],
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
     mock_update_gh.assert_not_called()
     assert result is _UPDATE_RESULT
 
 
 def test_update_dry_run_appends_the_dry_run_flag():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
+    ):
         update(
             "recipes/foo",
-            dry_run=True, github=False, github_repo=None, allow_prerelease=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=True,
+            github=False,
+            github_repo=None,
+            allow_prerelease=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_update.assert_called_once_with(
         ["recipes/foo", "--dry-run"],
-        root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
 
 
 def test_update_github_flag_dispatches_to_update_recipe_from_github():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.update_recipe") as mock_update, \
-         patch(
-             "pyforge.mason.cfe.update_recipe_from_github", return_value=_UPDATE_RESULT,
-         ) as mock_update_gh:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.update_recipe") as mock_update,
+        patch(
+            "pyforge.mason.cfe.update_recipe_from_github",
+            return_value=_UPDATE_RESULT,
+        ) as mock_update_gh,
+    ):
         result = update(
             "recipes/foo",
-            dry_run=True, github=True, github_repo=None, allow_prerelease=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=True,
+            github=True,
+            github_repo=None,
+            allow_prerelease=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_update.assert_not_called()
     mock_update_gh.assert_called_once_with(
         ["recipes/foo", "--dry-run"],
-        root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
     assert result is _UPDATE_RESULT
 
 
 def test_update_github_repo_and_pre_are_forwarded_only_with_github():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.update_recipe_from_github", return_value=_UPDATE_RESULT,
-         ) as mock_update_gh:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.update_recipe_from_github",
+            return_value=_UPDATE_RESULT,
+        ) as mock_update_gh,
+    ):
         update(
             "recipes/foo",
-            dry_run=False, github=True, github_repo="owner/repo", allow_prerelease=True,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=False,
+            github=True,
+            github_repo="owner/repo",
+            allow_prerelease=True,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_update_gh.assert_called_once_with(
         ["recipes/foo", "--repo", "owner/repo", "--pre"],
-        root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
 
 
 def test_update_github_repo_falsy_is_not_forwarded():
     """`github_repo=""` (falsy but not `None`) must not append a bare
     `--repo` with no value -- mirrors the spec's "if truthy" wording."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch(
-             "pyforge.mason.cfe.update_recipe_from_github", return_value=_UPDATE_RESULT,
-         ) as mock_update_gh:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch(
+            "pyforge.mason.cfe.update_recipe_from_github",
+            return_value=_UPDATE_RESULT,
+        ) as mock_update_gh,
+    ):
         update(
             "recipes/foo",
-            dry_run=False, github=True, github_repo="", allow_prerelease=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=False,
+            github=True,
+            github_repo="",
+            allow_prerelease=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_update_gh.assert_called_once_with(
-        ["recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        ["recipes/foo"],
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
 
 
@@ -1912,35 +2365,54 @@ def test_update_repo_and_pre_are_inert_without_github():
     """`--repo`/`--pre` given without `--github` never reach CFE argv at all
     (spec I/O matrix: "inert, not rejected") -- `update_recipe` (PyPI) is
     still called."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update, \
-         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
+        patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh,
+    ):
         result = update(
             "recipes/foo",
-            dry_run=False, github=False, github_repo="owner/repo", allow_prerelease=True,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=False,
+            github=False,
+            github_repo="owner/repo",
+            allow_prerelease=True,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_update.assert_called_once_with(
-        ["recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+        ["recipes/foo"],
+        root=_ROOT.root,
+        interpreter=_INTERPRETER.path,
+        timeout=None,
     )
     mock_update_gh.assert_not_called()
     assert result is _UPDATE_RESULT
 
 
 def test_update_passes_an_explicit_cfe_timeout_arg_straight_through():
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
+    ):
         update(
             "recipes/foo",
-            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
-            environ={}, start_directory=Path("/start"),
+            dry_run=False,
+            github=False,
+            github_repo=None,
+            allow_prerelease=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=42.0,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert mock_update.call_args.kwargs["timeout"] == 42.0
@@ -1950,15 +2422,23 @@ def test_update_returns_the_cfe_result_verbatim_no_reinterpretation():
     """Spec Never boundary: `update()` returns `cfe.update_recipe`'s
     `CfeResult` directly -- no new model, no field renaming, no wrapping,
     unlike `submit()`'s `ShipTargetResult`."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT):
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT),
+    ):
         result = update(
             "recipes/foo",
-            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=False,
+            github=False,
+            github_repo=None,
+            allow_prerelease=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     assert result is _UPDATE_RESULT
@@ -1970,17 +2450,25 @@ def test_update_never_calls_ensure_import_floor():
     autotick scripts already degrade a missing dependency to JSON error data
     on their own (module docstring), so `update()` gates on neither the
     whole floor nor a scoped subset."""
-    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
-         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.ensure_cfe_root"), \
-         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT), \
-         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor, \
-         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor:
+    with (
+        patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT),
+        patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
+        patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,
+    ):
         update(
             "recipes/foo",
-            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-            environ={}, start_directory=Path("/start"),
+            dry_run=False,
+            github=False,
+            github_repo=None,
+            allow_prerelease=False,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            environ={},
+            start_directory=Path("/start"),
         )
 
     mock_ensure_floor.assert_not_called()
@@ -1989,17 +2477,28 @@ def test_update_never_calls_ensure_import_floor():
 
 # --- CFE-unresolved propagation: raises before any subprocess spawns -------
 
+
 def test_update_raises_cfe_unresolved_error_when_root_is_not_found():
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+    ):
         with pytest.raises(CfeUnresolvedError):
             update(
                 "recipes/foo",
-                dry_run=False, github=False, github_repo=None, allow_prerelease=False,
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                dry_run=False,
+                github=False,
+                github_repo=None,
+                allow_prerelease=False,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
 
@@ -2007,18 +2506,28 @@ def test_update_never_calls_either_adapter_when_root_is_unresolved():
     """The `CfeUnresolvedError` path must short-circuit before either
     `cfe.update_recipe`/`cfe.update_recipe_from_github` is ever reached --
     checked with `github=True` so both adapters are proven unreachable."""
-    with patch.object(
-        recipe_module, "resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
-         patch("pyforge.mason.cfe.update_recipe") as mock_update, \
-         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh:
+    with (
+        patch.object(
+            recipe_module,
+            "resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ),
+        patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
+        patch("pyforge.mason.cfe.update_recipe") as mock_update,
+        patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh,
+    ):
         with pytest.raises(CfeUnresolvedError):
             update(
                 "recipes/foo",
-                dry_run=False, github=True, github_repo=None, allow_prerelease=False,
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=Path("/start"),
+                dry_run=False,
+                github=True,
+                github_repo=None,
+                allow_prerelease=False,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=Path("/start"),
             )
 
     mock_update.assert_not_called()
@@ -2035,9 +2544,15 @@ def test_update_raises_before_any_subprocess_spawns_against_a_real_unresolved_ro
         with pytest.raises(CfeUnresolvedError):
             update(
                 "recipes/foo",
-                dry_run=False, github=False, github_repo=None, allow_prerelease=False,
-                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
-                environ={}, start_directory=tmp_path,
+                dry_run=False,
+                github=False,
+                github_repo=None,
+                allow_prerelease=False,
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                environ={},
+                start_directory=tmp_path,
             )
 
     mock_run.assert_not_called()
@@ -2045,17 +2560,25 @@ def test_update_raises_before_any_subprocess_spawns_against_a_real_unresolved_ro
 
 # --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
 
+
 def test_update_against_fake_cfe_root_returns_the_fixtures_canned_json(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
     result = update(
         "recipes/example",
-        dry_run=False, github=False, github_repo=None, allow_prerelease=False,
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        dry_run=False,
+        github=False,
+        github_repo=None,
+        allow_prerelease=False,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert isinstance(result, CfeResult)
@@ -2065,16 +2588,23 @@ def test_update_against_fake_cfe_root_returns_the_fixtures_canned_json(
 
 
 def test_update_github_against_fake_cfe_root_returns_the_fixtures_canned_json(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
     result = update(
         "recipes/example",
-        dry_run=True, github=True, github_repo="owner/repo", allow_prerelease=True,
-        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+        dry_run=True,
+        github=True,
+        github_repo="owner/repo",
+        allow_prerelease=True,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=fake_cfe_root,
     )
 
     assert isinstance(result, CfeResult)

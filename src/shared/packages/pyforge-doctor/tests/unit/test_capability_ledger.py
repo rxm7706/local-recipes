@@ -49,8 +49,7 @@ def test_extract_sees_cap_9_not_unique_why_sentence():
 def test_parse_case_list_ids_from_54_1_surface():
     repo = Path(__file__).resolve().parents[6]
     text = (
-        repo
-        / "_bmad-output/projects/pyforge-steward/planning-artifacts/"
+        repo / "_bmad-output/projects/pyforge-steward/planning-artifacts/"
         "specs/spec-foundry-regenerate-not-fold/case-list.md"
     ).read_text(encoding="utf-8")
     ids = parse_case_list_ids(text)
@@ -86,10 +85,7 @@ def _write_ledger(root: Path, capabilities: list[dict], source_sha: str = "") ->
 
 
 def test_unclassified_cap_is_hard(tmp_path: Path):
-    rel = (
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/"
-        "specs/spec-fixture-ledger-spec/SPEC.md"
-    )
+    rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-fixture-ledger-spec/SPEC.md"
     _write_spec(tmp_path, rel, _FIXTURE_SPEC)
     _write_ledger(tmp_path, [])
     findings = gather(tmp_path)
@@ -100,10 +96,7 @@ def test_unclassified_cap_is_hard(tmp_path: Path):
 
 
 def test_a_only_without_expiry_is_hard(tmp_path: Path):
-    rel = (
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/"
-        "specs/spec-fixture-ledger-spec/SPEC.md"
-    )
+    rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-fixture-ledger-spec/SPEC.md"
     _write_spec(tmp_path, rel, _FIXTURE_SPEC)
     _write_ledger(
         tmp_path,
@@ -122,10 +115,7 @@ def test_a_only_without_expiry_is_hard(tmp_path: Path):
 
 
 def test_classified_a_only_with_expiry_is_ok(tmp_path: Path):
-    rel = (
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/"
-        "specs/spec-fixture-ledger-spec/SPEC.md"
-    )
+    rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-fixture-ledger-spec/SPEC.md"
     _write_spec(tmp_path, rel, _FIXTURE_SPEC)
     _write_ledger(
         tmp_path,
@@ -144,13 +134,9 @@ def test_classified_a_only_with_expiry_is_ok(tmp_path: Path):
 
 
 _CASE_LIST_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/"
-    "specs/spec-foundry-regenerate-not-fold/case-list.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md"
 )
-_SPEC_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/"
-    "specs/spec-fixture-ledger-spec/SPEC.md"
-)
+_SPEC_REL = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-fixture-ledger-spec/SPEC.md"
 
 
 def _write_case_list(root: Path, ids: tuple[str, ...] = ("k-core-cutover-default",)) -> None:
@@ -240,10 +226,7 @@ def test_post_pin_spec_without_row_is_append(tmp_path: Path):
     _git(repo, "commit", "-m", "pin")
     pin = _git(repo, "rev-parse", "HEAD")
 
-    rel = (
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/"
-        "specs/spec-fixture-ledger-spec/SPEC.md"
-    )
+    rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-fixture-ledger-spec/SPEC.md"
     _write_spec(repo, rel, _FIXTURE_SPEC)
     _write_ledger(repo, [], source_sha=pin)
     _git(repo, "add", ".")

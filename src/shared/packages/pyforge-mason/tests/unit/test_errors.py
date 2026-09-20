@@ -62,14 +62,26 @@ import pickle
 import pytest
 
 from pyforge.mason.errors import (
-    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
-    EngineAbsentError, EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
-    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError,
-    EnvironmentManifestsNotFoundError, InvalidShipTargetError,
-    MasonError, PackageBuildTimeoutError, PackageProjectPathError, PackageVersionMismatchError,
-    ShipChannelCredentialMissingError, ShipChannelUploadTimeoutError,
-    ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
-    ShipCredentialMissingError, ShipUploadTimeoutError,
+    CfeImportFloorError,
+    CfeTimeoutError,
+    CfeUnresolvedError,
+    EngineAbsentError,
+    EnvironmentCheckTimeoutError,
+    EnvironmentLockfileMalformedError,
+    EnvironmentLockfileMissingError,
+    EnvironmentLockTimeoutError,
+    EnvironmentManifestsNotFoundError,
+    InvalidShipTargetError,
+    MasonError,
+    PackageBuildTimeoutError,
+    PackageProjectPathError,
+    PackageVersionMismatchError,
+    ShipChannelCredentialMissingError,
+    ShipChannelUploadTimeoutError,
+    ShipCondaForgeRecipeLocationError,
+    ShipCondaForgeRecipeMissingError,
+    ShipCredentialMissingError,
+    ShipUploadTimeoutError,
 )
 
 
@@ -79,32 +91,38 @@ def test_valid_identifier_constructs_and_stores_attributes():
     assert exc.message == "the CFE root could not be found"
 
 
-@pytest.mark.parametrize("identifier", [
-    "cfe:unresolved",
-    "ship:credential-missing",
-    "engine:absent",
-    "a:b",
-    "multi-part-name:multi-part-message",
-])
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "cfe:unresolved",
+        "ship:credential-missing",
+        "engine:absent",
+        "a:b",
+        "multi-part-name:multi-part-message",
+    ],
+)
 def test_valid_identifiers_from_the_architecture_spine(identifier):
     MasonError(identifier, "message")  # must not raise
 
 
-@pytest.mark.parametrize("identifier", [
-    "Bad Id",
-    "NoColon",
-    "cfe:",
-    ":unresolved",
-    "cfe:Unresolved",
-    "CFE:unresolved",
-    "cfe :unresolved",
-    "cfe: unresolved",
-    "cfe:un_resolved",
-    "cfe--bad:unresolved",
-    "cfe:unresolved:extra",
-    "",
-    "cfe:unresolved\n",  # a trailing newline must not slip past `$`-style anchoring
-])
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "Bad Id",
+        "NoColon",
+        "cfe:",
+        ":unresolved",
+        "cfe:Unresolved",
+        "CFE:unresolved",
+        "cfe :unresolved",
+        "cfe: unresolved",
+        "cfe:un_resolved",
+        "cfe--bad:unresolved",
+        "cfe:unresolved:extra",
+        "",
+        "cfe:unresolved\n",  # a trailing newline must not slip past `$`-style anchoring
+    ],
+)
 def test_invalid_identifiers_raise_value_error(identifier):
     with pytest.raises(ValueError):
         MasonError(identifier, "msg")
@@ -146,6 +164,7 @@ def test_mason_error_is_an_exception_subclass():
 
 
 # --- Story 1.6: CfeImportFloorError -----------------------------------------
+
 
 def test_cfe_import_floor_error_identifier():
     exc = CfeImportFloorError(missing=("truststore", "ruamel.yaml"), interpreter="/opt/py")
@@ -196,6 +215,7 @@ def test_cfe_import_floor_error_coerces_missing_to_a_tuple():
 
 
 # --- Story 1.7: CfeUnresolvedError -------------------------------------------
+
 
 def test_cfe_unresolved_error_identifier():
     exc = CfeUnresolvedError()
@@ -255,6 +275,7 @@ def test_cfe_unresolved_error_survives_pickle_round_trip():
 
 # --- Story 2.1: CfeTimeoutError -----------------------------------------------
 
+
 def test_cfe_timeout_error_identifier():
     exc = CfeTimeoutError(script="validate_recipe", timeout=120.0)
     assert exc.identifier == "cfe:timeout"
@@ -313,6 +334,7 @@ def test_cfe_timeout_error_survives_pickle_round_trip():
 
 
 # --- Story 3.1: EngineAbsentError --------------------------------------------
+
 
 def test_engine_absent_error_identifier():
     exc = EngineAbsentError(name="conda-lock", conda_package="conda-lock")
@@ -391,14 +413,20 @@ _CONDA_PATH = "/proj/dist-conda/pkg-0.2.0-abc123_0.conda"
 
 def test_package_version_mismatch_error_identifier():
     exc = PackageVersionMismatchError(
-        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        wheel_version="0.1.0",
+        conda_version="0.2.0",
+        wheel_path=_WHEEL_PATH,
+        conda_path=_CONDA_PATH,
     )
     assert exc.identifier == "package:version-mismatch"
 
 
 def test_package_version_mismatch_error_stores_attributes():
     exc = PackageVersionMismatchError(
-        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        wheel_version="0.1.0",
+        conda_version="0.2.0",
+        wheel_path=_WHEEL_PATH,
+        conda_path=_CONDA_PATH,
     )
     assert exc.wheel_version == "0.1.0"
     assert exc.conda_version == "0.2.0"
@@ -408,7 +436,10 @@ def test_package_version_mismatch_error_stores_attributes():
 
 def test_package_version_mismatch_error_message_names_both_versions_and_both_paths():
     exc = PackageVersionMismatchError(
-        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        wheel_version="0.1.0",
+        conda_version="0.2.0",
+        wheel_path=_WHEEL_PATH,
+        conda_path=_CONDA_PATH,
     )
     message = str(exc)
     assert "0.1.0" in message
@@ -430,7 +461,10 @@ def test_package_version_mismatch_error_is_a_mason_error():
 
 def test_package_version_mismatch_error_str_format_is_identifier_colon_space_message():
     exc = PackageVersionMismatchError(
-        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        wheel_version="0.1.0",
+        conda_version="0.2.0",
+        wheel_path=_WHEEL_PATH,
+        conda_path=_CONDA_PATH,
     )
     assert str(exc) == f"{exc.identifier}: {exc.message}"
 
@@ -438,14 +472,20 @@ def test_package_version_mismatch_error_str_format_is_identifier_colon_space_mes
 def test_package_version_mismatch_error_rejects_empty_wheel_version():
     with pytest.raises(ValueError):
         PackageVersionMismatchError(
-            wheel_version="", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+            wheel_version="",
+            conda_version="0.2.0",
+            wheel_path=_WHEEL_PATH,
+            conda_path=_CONDA_PATH,
         )
 
 
 def test_package_version_mismatch_error_rejects_empty_conda_version():
     with pytest.raises(ValueError):
         PackageVersionMismatchError(
-            wheel_version="0.1.0", conda_version="", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+            wheel_version="0.1.0",
+            conda_version="",
+            wheel_path=_WHEEL_PATH,
+            conda_path=_CONDA_PATH,
         )
 
 
@@ -462,14 +502,20 @@ def test_package_version_mismatch_error_rejects_whitespace_only_wheel_version():
 def test_package_version_mismatch_error_rejects_empty_wheel_path():
     with pytest.raises(ValueError):
         PackageVersionMismatchError(
-            wheel_version="0.1.0", conda_version="0.2.0", wheel_path="", conda_path=_CONDA_PATH,
+            wheel_version="0.1.0",
+            conda_version="0.2.0",
+            wheel_path="",
+            conda_path=_CONDA_PATH,
         )
 
 
 def test_package_version_mismatch_error_rejects_empty_conda_path():
     with pytest.raises(ValueError):
         PackageVersionMismatchError(
-            wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path="",
+            wheel_version="0.1.0",
+            conda_version="0.2.0",
+            wheel_path=_WHEEL_PATH,
+            conda_path="",
         )
 
 
@@ -480,7 +526,10 @@ def test_package_version_mismatch_error_survives_deepcopy():
     `conda_version` bound to the built message string, corrupting the
     clone's `.args`/`repr()` instead of failing loudly."""
     original = PackageVersionMismatchError(
-        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        wheel_version="0.1.0",
+        conda_version="0.2.0",
+        wheel_path=_WHEEL_PATH,
+        conda_path=_CONDA_PATH,
     )
     clone = copy.deepcopy(original)
     assert isinstance(clone, PackageVersionMismatchError)
@@ -494,7 +543,10 @@ def test_package_version_mismatch_error_survives_deepcopy():
 
 def test_package_version_mismatch_error_survives_pickle_round_trip():
     original = PackageVersionMismatchError(
-        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        wheel_version="0.1.0",
+        conda_version="0.2.0",
+        wheel_path=_WHEEL_PATH,
+        conda_path=_CONDA_PATH,
     )
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, PackageVersionMismatchError)
@@ -507,6 +559,7 @@ def test_package_version_mismatch_error_survives_pickle_round_trip():
 
 
 # --- Story 3.2 (review pass, 2026-08-13): PackageBuildTimeoutError -----------
+
 
 def test_package_build_timeout_error_identifier():
     exc = PackageBuildTimeoutError(engine="build", timeout=600.0)
@@ -563,6 +616,7 @@ def test_package_build_timeout_error_survives_pickle_round_trip():
 
 
 # --- Story 3.2 (review pass, 2026-08-13): PackageProjectPathError ------------
+
 
 def test_package_project_path_error_identifier():
     exc = PackageProjectPathError(project_path="/no/such/dir", reason="No such file or directory")
@@ -635,6 +689,7 @@ def test_package_project_path_error_survives_pickle_round_trip():
 
 # --- Story 3.3: InvalidShipTargetError ----------------------------------------
 
+
 def test_invalid_ship_target_error_identifier():
     exc = InvalidShipTargetError("bogus")
     assert exc.identifier == "ship:invalid-target"
@@ -705,6 +760,7 @@ def test_invalid_ship_target_error_survives_pickle_round_trip():
 
 
 # --- Story 3.4: ShipCredentialMissingError ------------------------------------
+
 
 def test_ship_credential_missing_error_identifier():
     exc = ShipCredentialMissingError(missing=("TWINE_USERNAME", "TWINE_PASSWORD"))
@@ -797,6 +853,7 @@ def test_ship_credential_missing_error_survives_pickle_round_trip():
 
 # --- Story 3.4: ShipUploadTimeoutError -----------------------------------------
 
+
 def test_ship_upload_timeout_error_identifier():
     exc = ShipUploadTimeoutError(timeout=300.0)
     assert exc.identifier == "ship:upload-timeout"
@@ -846,6 +903,7 @@ def test_ship_upload_timeout_error_survives_pickle_round_trip():
 
 
 # --- Story 3.5: ShipChannelCredentialMissingError ------------------------------
+
 
 def test_ship_channel_credential_missing_error_identifier():
     exc = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
@@ -923,6 +981,7 @@ def test_ship_channel_credential_missing_error_survives_pickle_round_trip():
 
 # --- Story 3.5: ShipChannelUploadTimeoutError -----------------------------------
 
+
 def test_ship_channel_upload_timeout_error_identifier():
     exc = ShipChannelUploadTimeoutError(timeout=300.0)
     assert exc.identifier == "ship:channel-upload-timeout"
@@ -972,6 +1031,7 @@ def test_ship_channel_upload_timeout_error_survives_pickle_round_trip():
 
 
 # --- Story 3.6: ShipCondaForgeRecipeMissingError -------------------------------
+
 
 def test_ship_conda_forge_recipe_missing_error_identifier():
     exc = ShipCondaForgeRecipeMissingError()
@@ -1111,6 +1171,7 @@ def test_ship_conda_forge_recipe_location_error_survives_pickle_round_trip():
 
 # --- Story 4.1: EnvironmentLockTimeoutError -------------------------------------
 
+
 def test_environment_lock_timeout_error_identifier():
     exc = EnvironmentLockTimeoutError(timeout=600.0)
     assert exc.identifier == "environment:lock-timeout"
@@ -1160,6 +1221,7 @@ def test_environment_lock_timeout_error_survives_pickle_round_trip():
 
 
 # --- Story 4.4: EnvironmentLockfileMissingError -------------------------------
+
 
 def test_environment_lockfile_missing_error_identifier():
     exc = EnvironmentLockfileMissingError("/no/such/lock.yml")
@@ -1233,6 +1295,7 @@ def test_environment_lockfile_missing_error_survives_pickle_round_trip():
 
 # --- Story 4.4 (review pass, 2026-08-15): EnvironmentLockfileMalformedError ---
 
+
 def test_environment_lockfile_malformed_error_identifier():
     exc = EnvironmentLockfileMalformedError("lock.yml", "'metadata'")
     assert exc.identifier == "environment:lockfile-malformed"
@@ -1293,6 +1356,7 @@ def test_environment_lockfile_malformed_error_survives_pickle_round_trip():
 
 
 # --- Story 4.4: EnvironmentCheckTimeoutError ----------------------------------
+
 
 def test_environment_check_timeout_error_identifier():
     exc = EnvironmentCheckTimeoutError(timeout=600.0)

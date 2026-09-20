@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-import pytest
 import pyforge.marshal
 
 _PACKAGE_FILE = pyforge.marshal.__file__

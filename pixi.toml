@@ -828,6 +828,12 @@ pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 63.6 (
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }      # scribe capture / recall from the session default (scribe Story 19.2, spec-pyforge-scribe CAP-28, 2026-09-19): the CORE package only (run-deps typer + pydantic + pyforge-core); the heavy compile extras (graphifyy, cocoindex, psycopg) stay in -e pyforge-scribe, so `scribe graph compile` with an extra still runs there
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }
 headroom-ai = ">=0.37.0"          # wire-compression layer (marshal-token-economy); absent -> silent MRS-DISP-033, so it is on the floor
+# Story 66.1 / 66.2 (spec-pyforge-steward CAP-153 / CAP-154, 2026-09-20): the lint / type gate and the
+# pre-commit set run from the session default, so `pixi run -e pyforge-guild ruff|ruff-format|mypy` is the
+# same invocation CI runs and `steward setup`'s hooks step can `pre-commit install` from here.
+ruff = ">=0.16.7"
+mypy = ">=2.3.1"
+pre-commit = ">=4.6.2"
 # The adopted bmad-suite members (adoption-register § 2, spec-bmad-suite-lifecycle AD-2) -- ~13 MB
 # together; `marshal seed check` reports each one missing as "referenced dependency is not
 # installed", so the Guild env carries them at the same pins local-recipes does. bmad-method itself
@@ -1187,6 +1193,39 @@ cmd = "bash scripts/platform-ci-local.sh"
 description = "Advisory host check (scribe Story 19.3, spec-pyforge-scribe CAP-29): is this machine's Claude Code >= 2.1.277 (the built-in agents-md mod) and is the mod pinned to instructionFiles=claude-md-and-agents-md in ~/.claude/settings.json? The mod's DEFAULT mode stays out of any project that has a CLAUDE.md, so without the pin AGENTS.md still arrives only through CLAUDE.md's @AGENTS.md import (the floor on every runtime) and nested AGENTS.md files (src/shared/packages/pyforge-atlas/AGENTS.md) never load in interactive sessions. Warn-only, never gating; silent when no claude binary is on the host; runtime scope (reads the host, never joins detectors-ci). Dispatched sessions are pinned by marshal's claude harness profile (Story 46.11, --settings), so this is about the operator's own sessions. Override the settings path with -- --settings <file>."
 cmd = "python scripts/claude_instruction_mode_check.py"
 
+# Story 66.1 (spec-pyforge-steward CAP-153): the ten pyforge-* packages' lint / type gate. ONE set of tasks,
+# called verbatim by `.github/workflows/lint-types.yml` and by the `pr-preflight` leg below, so local and
+# runner cannot diverge. Each package's own `[tool.ruff]` / `[tool.mypy]` (py314 targets; mypy strict for
+# pyforge-core; the 2026-09-20 baseline disabled PER MODULE, PER ERROR CODE -- never `ignore_errors`) is
+# what ruff/mypy read; these tasks only name the trees. `src/platform` keeps its own platform-ci lane.
+[feature.guild-tasks.tasks.ruff]
+cmd = "python scripts/lint_types.py ruff"
+description = "Story 66.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten src/shared/packages/pyforge-*/ packages (src + tests), each read with its own [tool.ruff]. The CI lane and pr-preflight call this task verbatim."
+
+[feature.guild-tasks.tasks.ruff-format]
+cmd = "python scripts/lint_types.py ruff-format"
+description = "Story 66.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* packages. Fix with `pixi run -e pyforge-guild ruff-format-fix`."
+
+[feature.guild-tasks.tasks.ruff-format-fix]
+cmd = "python scripts/lint_types.py ruff-format --fix"
+description = "Story 66.1: mutator twin of `ruff-format` -- rewrites files in place. Never in CI."
+
+[feature.guild-tasks.tasks.mypy]
+cmd = "python scripts/lint_types.py mypy"
+description = "Story 66.1 (spec-pyforge-steward CAP-153): `mypy -p pyforge.<station>` inside each of the ten pyforge-* packages, each read with its own [tool.mypy] (strict for pyforge-core). The CI lane and pr-preflight call this task verbatim."
+
+[feature.guild-tasks.tasks.target-version-check]
+cmd = "python scripts/target_version_check.py"
+description = "Story 66.1 (spec-pyforge-steward CAP-153): every pyforge-* package's [tool.ruff] target-version and [tool.mypy] python_version match the interpreter pinned in pixi.toml (the registry shape of pixi-version-check). Exit 0 clean, 1 drift, 2 could-not-run."
+
+[feature.guild-tasks.tasks.precommit-config-check]
+cmd = "python scripts/precommit_config_check.py"
+description = "Story 66.2 (spec-pyforge-steward CAP-154): .pre-commit-config.yaml exists at the repo root, declares the commit-msg and pre-push hook types, and carries the two local hooks (commit-msg attribution refusal; pre-push pr-preflight). Exit 0 clean, 1 findings."
+
+[feature.guild-tasks.tasks.lint-types]
+depends-on = ["ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"]
+description = "Story 66.1 / 66.2: the whole hygiene lane in one task -- exactly what .github/workflows/lint-types.yml runs and what pr-preflight's `lint-types` leg runs."
+
 [feature.guild-tasks.tasks.loop-stall-check]
 description = "Watchdog: a live bmad-loop run has stopped making progress. `bmad-loop status` reports the last phase it WROTE, so a session blocked on an interactive startup dialog reads `dev-running` forever — and the dialog never reaches the session log, it renders only in the tmux pane, so the log just stops growing. The supervisor's stall ladder does not fire either. Live cost 2026-07-31: scribe 1.3 sat 74 min on the CLAUDE.md external-import dialog, seven times its 600s grace, while five siblings wrote every second. Compares now against the newest mtime across a run's logs + journal, for runs whose state.json says neither finished, stopped, paused, nor parked-only (a paused run is SUPPOSED to sit still, and since Story 25.5 a parked-only run — every task awaiting-operator — reports awaiting-operator (run bmad-loop confirm) and exits 0 instead of reading as a stall). Threshold 15m, override with -- --minutes N. Catches any cause: folder-trust prompt, external-import prompt, wedged model call, hung nested CLI. Contract: spec-bmad-loop-governance."
 cmd = "python scripts/loop_stall_check.py"
@@ -1374,7 +1413,7 @@ Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivale
 NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
 
 Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) mirrors the new `docsite-check.yml` `pull_request` lane -- until then no `pr-preflight` leg, and no PR-gating CI lane at all, ran `docsite/build.py`, so a broken family-page template could merge with every gate green. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping."""
-depends-on = ["detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, "docs-map-render-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }]
+depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, "docs-map-render-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }]
 
 [feature.local-recipes.tasks.eval-quality-smoke]
 description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."

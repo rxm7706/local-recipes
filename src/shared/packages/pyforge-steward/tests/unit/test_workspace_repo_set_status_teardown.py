@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.workspace import (
     WorkspaceError,
@@ -20,9 +21,7 @@ from pyforge.steward.workspace import (
 
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
-    )
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
 def _make_repo(tmp_path: Path, name: str) -> Path:
@@ -73,16 +72,12 @@ def two_repos(tmp_path: Path) -> tuple[Path, Path]:
 
 
 @pytest.fixture
-def open_set(
-    two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
-) -> tuple[Path, Path, Path]:
+def open_set(two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path, Path]:
     primary, secondary = two_repos
     config = primary / ".steward" / "repo-sets.yaml"
     _write_repo_sets(config, primary=primary, secondary=secondary)
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
     start_repo_set("fleet-feature", from_ref="origin/main")
     return primary, secondary, config
 
@@ -214,9 +209,7 @@ def test_clean_repo_set_archives_not_deletes_when_clean(
     assert len(result["archived"]) == 2
     import tarfile
 
-    primary_archive = Path(
-        next(r["archive"] for r in result["archived"] if r["member"] == "primary")
-    )
+    primary_archive = Path(next(r["archive"] for r in result["archived"] if r["member"] == "primary"))
     with tarfile.open(primary_archive, "r:gz") as tar:
         names = tar.getnames()
     assert any(n.endswith("keep-me.txt") for n in names)
@@ -269,9 +262,7 @@ def test_cli_status_and_clean_repo_set(
 ) -> None:
     primary, _secondary, config = open_set
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
 
     rc = main(["workspace", "status", "fleet-feature", "--json"])
     assert rc == EXIT_OK

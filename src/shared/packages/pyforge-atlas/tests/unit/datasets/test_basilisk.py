@@ -22,8 +22,8 @@ from pyforge.atlas.datasets.basilisk import (
 )
 from pyforge.atlas.datasets.rate_limit import FetchError, RateLimitedScheduler
 
-
 # --- chunk_queries (the ≤1,000-query discipline, AC-1) ----------------------
+
 
 def test_chunk_queries_splits_at_1000_no_drop_no_dupe():
     purls = [f"pkg:conda/conda-forge/p{i}" for i in range(2500)]
@@ -53,6 +53,7 @@ def test_build_conda_purl_cep63_form():
 
 # --- BasiliskBatchDataset (querybatch chunking + AD-13) ---------------------
 
+
 def _batch(tmp_path, **kw):
     return BasiliskBatchDataset(
         url="https://api.basilisk.prefix.dev/v1/querybatch",
@@ -67,10 +68,7 @@ def test_batch_query_population_chunks_and_concatenates(tmp_path):
     def fetcher(chunk):
         seen_chunk_sizes.append(len(chunk))
         # one advisory record per queried package (conda_name derived from the purl)
-        return [
-            {"conda_name": p.rsplit("/", 1)[-1].split("@")[0], "advisories": []}
-            for p in chunk
-        ]
+        return [{"conda_name": p.rsplit("/", 1)[-1].split("@")[0], "advisories": []} for p in chunk]
 
     ds = _batch(tmp_path, fetcher=fetcher)
     purls = [build_conda_purl(f"p{i}") for i in range(2300)]
@@ -84,9 +82,7 @@ def test_batch_query_population_chunks_and_concatenates(tmp_path):
 def test_batch_query_population_uses_the_scheduler(tmp_path):
     # one rate-limit token per chunk-request. Frozen clock -> no time-based refill, so the
     # token count is deterministic; bucket >> chunks -> never throttles (no sleep).
-    sched = RateLimitedScheduler(
-        rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None
-    )
+    sched = RateLimitedScheduler(rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None)
     start_tokens = sched.tokens
     ds = _batch(tmp_path, fetcher=lambda chunk: [], scheduler=sched)
     ds.query_population([build_conda_purl(f"p{i}") for i in range(2500)])
@@ -97,7 +93,7 @@ def test_batch_query_population_uses_the_scheduler(tmp_path):
 def test_batch_query_population_1001_boundary(tmp_path):
     # the ≤1,000 discipline at the exact off-by-one boundary, at the DATASET (IO owner)
     seen: list[int] = []
-    ds = _batch(tmp_path, fetcher=lambda chunk: (seen.append(len(chunk)) or []))
+    ds = _batch(tmp_path, fetcher=lambda chunk: seen.append(len(chunk)) or [])
     ds.query_population([build_conda_purl(f"p{i}") for i in range(1001)])
     assert seen == [1000, 1]  # never a 1001-query request
 
@@ -107,7 +103,7 @@ def test_batch_query_population_accepts_series_without_crash(tmp_path):
     import pandas as pd
 
     seen: list[int] = []
-    ds = _batch(tmp_path, fetcher=lambda chunk: (seen.append(len(chunk)) or []))
+    ds = _batch(tmp_path, fetcher=lambda chunk: seen.append(len(chunk)) or [])
     ds.query_population(pd.Series([build_conda_purl(f"p{i}") for i in range(3)]))
     assert seen == [3]
 
@@ -188,6 +184,7 @@ def test_batch_url_from_basilisk_base_url(tmp_path):
 
 # --- BasiliskDetailDataset (bounded rate-limit discipline + AD-13) ----------
 
+
 def _detail(tmp_path, **kw):
     return BasiliskDetailDataset(
         url="https://api.basilisk.prefix.dev/v1/vulns",
@@ -198,9 +195,7 @@ def _detail(tmp_path, **kw):
 
 def test_detail_fetch_acquires_token_per_request(tmp_path):
     calls: list[str] = []
-    sched = RateLimitedScheduler(
-        rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None
-    )
+    sched = RateLimitedScheduler(rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None)
     start = sched.tokens
 
     def fetcher(aid):
@@ -253,7 +248,7 @@ def test_detail_fetch_dedupes_advisory_ids(tmp_path):
     calls: list[str] = []
     ds = _detail(
         tmp_path,
-        fetcher=lambda aid: (calls.append(aid) or {"advisory_id": aid, "affected": []}),
+        fetcher=lambda aid: calls.append(aid) or {"advisory_id": aid, "affected": []},
     )
     out = ds.fetch_details(["BAS-1", "BAS-2", "BAS-1", "BAS-1"])
     assert calls == ["BAS-1", "BAS-2"]  # deduped, order preserved

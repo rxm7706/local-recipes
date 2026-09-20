@@ -5,22 +5,20 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from pyforge.steward.cli import EXIT_OK, main
 from pyforge.steward.suite import (
     BASELINE_2026_08_22,
     BASELINE_ID_2026_08_22,
     SUITE_PACKAGES,
+    PackageTruth,
     ProbeHooks,
     StageProbe,
     SuiteDuty,
     SuitePackageDef,
     build_pipeline_truth_report,
+    fetch_github_latest,
     hooks_from_baseline,
     name_drifts,
-    PackageTruth,
-    fetch_github_latest,
     read_recipe_version,
 )
 
@@ -225,18 +223,14 @@ def test_wired_census_detects_skill_prefix(tmp_path: Path):
 def test_read_recipe_version_rejects_yaml_float(tmp_path: Path):
     recipe = tmp_path / "recipes" / "pkg"
     recipe.mkdir(parents=True)
-    (recipe / "recipe.yaml").write_text(
-        "context:\n  version: 1.2\n", encoding="utf-8"
-    )
+    (recipe / "recipe.yaml").write_text("context:\n  version: 1.2\n", encoding="utf-8")
     assert read_recipe_version(tmp_path, "pkg") is None
 
 
 def test_read_recipe_version_accepts_int(tmp_path: Path):
     recipe = tmp_path / "recipes" / "pkg"
     recipe.mkdir(parents=True)
-    (recipe / "recipe.yaml").write_text(
-        "context:\n  version: 2\n", encoding="utf-8"
-    )
+    (recipe / "recipe.yaml").write_text("context:\n  version: 2\n", encoding="utf-8")
     assert read_recipe_version(tmp_path, "pkg") == "2"
 
 
@@ -264,9 +258,7 @@ def test_fetch_github_latest_non_dict_body_fail_open(monkeypatch):
 def _write_manifest(repo: Path, version: str) -> None:
     manifest = repo / "_bmad" / "_config" / "manifest.yaml"
     manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text(
-        f"installation:\n  version: {version}\n", encoding="utf-8"
-    )
+    manifest.write_text(f"installation:\n  version: {version}\n", encoding="utf-8")
 
 
 def _write_conda_meta(repo: Path, version: str) -> None:

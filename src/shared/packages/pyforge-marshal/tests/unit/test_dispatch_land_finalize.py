@@ -28,9 +28,7 @@ class _StubVcs:
 def _read_finalize_resync_entry(tmp_path: Path, slug: str) -> dict:
     """Read back the single ``_FINALIZE_RESYNC_KIND`` journal entry written
     under ``tmp_path``'s real (unstubbed) ``LocalFs`` for this test run."""
-    runs_dir = (
-        tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
-    )
+    runs_dir = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
     run_dirs = list(runs_dir.iterdir())
     assert len(run_dirs) == 1
     lines = (run_dirs[0] / "journal.jsonl").read_text(encoding="utf-8").splitlines()
@@ -40,9 +38,7 @@ def _read_finalize_resync_entry(tmp_path: Path, slug: str) -> dict:
     return matches[0]
 
 
-def test_finalize_passes_base_main_to_isolated_promote(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_passes_base_main_to_isolated_promote(tmp_path: Path, monkeypatch) -> None:
     seen: dict[str, object] = {}
 
     class _Scan:
@@ -90,9 +86,7 @@ def test_finalize_passes_base_main_to_isolated_promote(
     assert seen["kwargs"]["base"] == "main"
 
 
-def test_finalize_forwards_worktree_to_scan_promotions(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_forwards_worktree_to_scan_promotions(tmp_path: Path, monkeypatch) -> None:
     """Story 51.2: the landing record follows the session's write, not the
     primary's directory. When a worktree is given, ``finalize_dispatch_land``
     must thread it into ``_scan_promotions`` so a spec written into the
@@ -186,9 +180,7 @@ def test_finalize_defaults_worktree_to_none(tmp_path: Path, monkeypatch) -> None
     assert seen["scan_kwargs"]["worktree"] is None
 
 
-def test_finalize_resyncs_the_primary_after_ledger_promotion(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_resyncs_the_primary_after_ledger_promotion(tmp_path: Path, monkeypatch) -> None:
     """Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` never touches
     the primary checkout's own working tree (CAP-5), so nothing else picked
     up that promotion either. `dispatch_land_finalize` must reuse
@@ -260,9 +252,7 @@ def test_finalize_resyncs_the_primary_after_ledger_promotion(
     assert entry["payload"]["resynced"] is True
 
 
-def test_finalize_skips_resync_on_a_dirty_primary(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_skips_resync_on_a_dirty_primary(tmp_path: Path, monkeypatch) -> None:
     """Story 51.9 (review pass 2026-09-19, Group 1): `_resync_home_branch`
     only checks SHA-match, never dirtiness -- a dirty checkout sitting
     exactly at local `main`'s own tip would pass that check unchanged and

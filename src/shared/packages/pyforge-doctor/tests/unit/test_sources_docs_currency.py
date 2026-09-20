@@ -39,9 +39,7 @@ def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _git(repo: Path, *args: str) -> str:
-    result = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, text=True, check=True
-    )
+    result = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
     return result.stdout
 
 
@@ -82,17 +80,11 @@ def _write_map_md(repo: Path, registry_section: str | None) -> None:
     docs.mkdir(parents=True, exist_ok=True)
     body = "# map\n\nsome narrative\n\n## Page registry (generated)\n\n"
     if registry_section is not None:
-        body += (
-            "<!-- docs-map:registry:begin -->\n"
-            + registry_section
-            + "<!-- docs-map:registry:end -->\n"
-        )
+        body += "<!-- docs-map:registry:begin -->\n" + registry_section + "<!-- docs-map:registry:end -->\n"
     (docs / "MAP.md").write_text(body, encoding="utf-8")
 
 
-def _write_authored_page(
-    repo: Path, rel: str, *, frontmatter: str = "", body: str = "content\n"
-) -> None:
+def _write_authored_page(repo: Path, rel: str, *, frontmatter: str = "", body: str = "content\n") -> None:
     path = repo / "docs" / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     text = (f"---\n{frontmatter}---\n\n" if frontmatter else "") + body
@@ -151,12 +143,15 @@ def test_map_render_missing_markers_counts_as_mismatch(tmp_path: Path):
 
 def test_authored_page_with_stale_source_emits_warn(tmp_path: Path):
     _init_repo(tmp_path)
-    pages = [_POINTER_PAGE, {
-        "path": "how-to/example.md",
-        "quadrant": "how-to",
-        "owner": "fleet",
-        "kind": "authored",
-    }]
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/example.md",
+            "quadrant": "how-to",
+            "owner": "fleet",
+            "kind": "authored",
+        },
+    ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
     tracked = tmp_path / "tracked.txt"
@@ -181,12 +176,15 @@ def test_authored_page_with_stale_source_emits_warn(tmp_path: Path):
 
 def test_authored_page_with_current_source_reports_no_stale_finding(tmp_path: Path):
     _init_repo(tmp_path)
-    pages = [_POINTER_PAGE, {
-        "path": "how-to/example.md",
-        "quadrant": "how-to",
-        "owner": "fleet",
-        "kind": "authored",
-    }]
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/example.md",
+            "quadrant": "how-to",
+            "owner": "fleet",
+            "kind": "authored",
+        },
+    ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
     (tmp_path / "tracked.txt").write_text("v1\n", encoding="utf-8")
@@ -203,12 +201,15 @@ def test_authored_page_with_current_source_reports_no_stale_finding(tmp_path: Pa
 
 def test_authored_page_with_source_never_in_git_history_emits_warn(tmp_path: Path):
     _init_repo(tmp_path)
-    pages = [_POINTER_PAGE, {
-        "path": "how-to/example.md",
-        "quadrant": "how-to",
-        "owner": "fleet",
-        "kind": "authored",
-    }]
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/example.md",
+            "quadrant": "how-to",
+            "owner": "fleet",
+            "kind": "authored",
+        },
+    ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
     _write_authored_page(
@@ -238,12 +239,15 @@ def test_authored_page_with_source_never_in_git_history_emits_warn(tmp_path: Pat
 
 def test_authored_page_with_dead_reference_emits_warn(tmp_path: Path):
     _init_repo(tmp_path)
-    pages = [_POINTER_PAGE, {
-        "path": "how-to/example.md",
-        "quadrant": "how-to",
-        "owner": "fleet",
-        "kind": "authored",
-    }]
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/example.md",
+            "quadrant": "how-to",
+            "owner": "fleet",
+            "kind": "authored",
+        },
+    ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
     _write_authored_page(
@@ -261,12 +265,15 @@ def test_authored_page_with_dead_reference_emits_warn(tmp_path: Path):
 
 def test_authored_page_dead_reference_inside_ignore_marker_is_skipped(tmp_path: Path):
     _init_repo(tmp_path)
-    pages = [_POINTER_PAGE, {
-        "path": "how-to/example.md",
-        "quadrant": "how-to",
-        "owner": "fleet",
-        "kind": "authored",
-    }]
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/example.md",
+            "quadrant": "how-to",
+            "owner": "fleet",
+            "kind": "authored",
+        },
+    ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
     _write_authored_page(
@@ -286,17 +293,18 @@ def test_authored_page_dead_reference_inside_ignore_marker_is_skipped(tmp_path: 
 
 def test_dead_looking_reference_covered_by_gitignore_is_not_flagged(tmp_path: Path):
     _init_repo(tmp_path)
-    pages = [_POINTER_PAGE, {
-        "path": "how-to/example.md",
-        "quadrant": "how-to",
-        "owner": "fleet",
-        "kind": "authored",
-    }]
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/example.md",
+            "quadrant": "how-to",
+            "owner": "fleet",
+            "kind": "authored",
+        },
+    ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    (tmp_path / ".gitignore").write_text(
-        "docs/generated-ignored.md\n", encoding="utf-8"
-    )
+    (tmp_path / ".gitignore").write_text("docs/generated-ignored.md\n", encoding="utf-8")
     _write_authored_page(
         tmp_path,
         "how-to/example.md",
@@ -421,6 +429,4 @@ def test_render_map_registry_groups_by_quadrant_sorted_by_path():
 
 def test_render_map_registry_is_deterministic():
     pages = [_POINTER_PAGE]
-    assert docs_currency.render_map_registry(pages) == docs_currency.render_map_registry(
-        list(pages)
-    )
+    assert docs_currency.render_map_registry(pages) == docs_currency.render_map_registry(list(pages))

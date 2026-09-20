@@ -28,10 +28,7 @@ def sibling_station_dirs(exclude: frozenset[str] = frozenset()) -> list[Path]:
     return sorted(
         p
         for p in PACKAGES_ROOT.iterdir()
-        if p.is_dir()
-        and p.name.startswith("pyforge-")
-        and p.name != "pyforge-core"
-        and p.name not in exclude
+        if p.is_dir() and p.name.startswith("pyforge-") and p.name != "pyforge-core" and p.name not in exclude
     )
 
 

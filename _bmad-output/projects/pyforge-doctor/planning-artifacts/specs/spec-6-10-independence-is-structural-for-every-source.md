@@ -2,7 +2,7 @@
 title: "Story 6-10: Independence is structural, for every source"
 type: "feature"
 created: "2026-08-09"
-status: "ready-for-dev"
+status: "done"
 authored: "spec-first, ahead of implementation (operator instruction 2026-08-09: seed -> Dream -> Spec -> code)"
 owner-dream: docs/dreams/pyforge-doctor.md
 context:
@@ -99,3 +99,17 @@ dependency is tidiness, not correctness.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `6-10-independence-is-structural-for-every-source: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready-for-dev` → `done` (ledger row `6-10-independence-is-structural-for-every-source: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

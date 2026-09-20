@@ -10,6 +10,7 @@ layout" is for. Sibling-imports `_stub_support` via `Path(__file__).parent`
 one). Invocable as `[interpreter, script, *extra_argv]`; extra argv is
 ignored, never rejected.
 """
+
 import sys
 from pathlib import Path
 
@@ -17,7 +18,4 @@ sys.path.insert(0, str(Path(__file__).parent))
 import _stub_support  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(_stub_support.emit(
-        '{"passed": true, "errors": [], "warnings": [], "info": [], '
-        '"rattler_lint_ran": true}'
-    ))
+    sys.exit(_stub_support.emit('{"passed": true, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": true}'))

@@ -170,8 +170,7 @@ def test_missing_required_field_raises_validation_error(tmp_path):
     path = tmp_path / ".warden-waivers.yaml"
     _write(
         path,
-        "version: 1\nwaivers:\n  - id: 'hygiene:DEP002:requests'\n"
-        "    reason: 'x'\n",
+        "version: 1\nwaivers:\n  - id: 'hygiene:DEP002:requests'\n    reason: 'x'\n",
     )
     with pytest.raises(WaiverValidationError):
         load_waivers(path)
@@ -333,12 +332,8 @@ def test_unquoted_timestamp_parsed_as_native_datetime_is_accepted(tmp_path):
     (entry,) = load_waivers(path)
     assert isinstance(entry.accepted_at, str)
     assert isinstance(entry.expires_at, str)
-    assert datetime.fromisoformat(entry.accepted_at) == datetime(
-        2026, 1, 1, tzinfo=UTC
-    )
-    assert datetime.fromisoformat(entry.expires_at) == datetime(
-        2026, 12, 31, tzinfo=UTC
-    )
+    assert datetime.fromisoformat(entry.accepted_at) == datetime(2026, 1, 1, tzinfo=UTC)
+    assert datetime.fromisoformat(entry.expires_at) == datetime(2026, 12, 31, tzinfo=UTC)
 
 
 # --- load_waivers: the valid round trip ---------------------------------
@@ -570,9 +565,7 @@ def test_bypass_blocking_leaves_driverless_rungs_untouched():
 
 @pytest.mark.parametrize("status", [Status.POLICY_VIOLATION, Status.INDETERMINATE])
 def test_warn_blocking_downgrades_policy_violation_and_indeterminate(status):
-    driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:pkg@1.0.0"
-    )
+    driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:pkg@1.0.0")
     rungs = [(status, driver)]
     updated, downgraded = warn_blocking(rungs)
     assert updated == [(Status.WARN, driver)]
@@ -588,9 +581,7 @@ def test_warn_blocking_leaves_error_rungs_untouched():
     assert downgraded == 0
 
 
-@pytest.mark.parametrize(
-    "status", [Status.WARN, Status.BYPASSED, Status.CLEAN, Status.NOT_APPLICABLE]
-)
+@pytest.mark.parametrize("status", [Status.WARN, Status.BYPASSED, Status.CLEAN, Status.NOT_APPLICABLE])
 def test_warn_blocking_leaves_already_non_blocking_or_warn_statuses_untouched(status):
     rungs = [_rung(status, "hygiene:DEP002:requests")]
     updated, downgraded = warn_blocking(rungs)
@@ -647,9 +638,7 @@ def test_warn_blocking_counts_distinct_findings_not_raw_rungs():
 
 
 def test_warn_blocking_preserves_driver_identity_on_a_downgraded_rung():
-    driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:pkg@1.0.0"
-    )
+    driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:pkg@1.0.0")
     updated, _ = warn_blocking([(Status.POLICY_VIOLATION, driver)])
     assert updated[0][1] is driver
 
@@ -761,13 +750,7 @@ def _valid_baseline_text(
     reason: str | None = "grandfathered at adoption",
 ) -> str:
     reason_line = f"    reason: {reason!r}\n" if reason is not None else ""
-    return (
-        "version: 1\n"
-        "baseline:\n"
-        f"  - id: {entry_id!r}\n"
-        f"    expires_at: {expires_at!r}\n"
-        f"{reason_line}"
-    )
+    return f"version: 1\nbaseline:\n  - id: {entry_id!r}\n    expires_at: {expires_at!r}\n{reason_line}"
 
 
 # --- load_baseline: missing file (diverges from load_waivers) ------------
@@ -997,9 +980,7 @@ def test_baseline_unquoted_timestamp_parsed_as_native_datetime_is_accepted(tmp_p
     )
     (entry,) = load_baseline(path)
     assert isinstance(entry.expires_at, str)
-    assert datetime.fromisoformat(entry.expires_at) == datetime(
-        2099, 1, 1, tzinfo=UTC
-    )
+    assert datetime.fromisoformat(entry.expires_at) == datetime(2099, 1, 1, tzinfo=UTC)
 
 
 # --- load_baseline: the valid round trip + optional reason defaulting ----
@@ -1028,13 +1009,9 @@ def test_baseline_reason_omitted_defaults_to_the_fixed_default_reason(tmp_path):
 
 
 def test_apply_waivers_baseline_only_exact_match_non_expired_bypasses_and_notices():
-    entry = BaselineEntry(
-        id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x"
-    )
+    entry = BaselineEntry(id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x")
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(
-        rungs, (), (entry,), now=_NOW
-    )
+    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(rungs, (), (entry,), now=_NOW)
     assert updated == [(Status.BYPASSED, rungs[0][1])]
     assert w_notices == []
     assert w_expired == []
@@ -1046,13 +1023,9 @@ def test_apply_waivers_baseline_only_exact_match_non_expired_bypasses_and_notice
 
 
 def test_apply_waivers_baseline_no_match_leaves_the_rung_untouched():
-    entry = BaselineEntry(
-        id="hygiene:DEP002:other", expires_at=_EXPIRES, reason="x"
-    )
+    entry = BaselineEntry(id="hygiene:DEP002:other", expires_at=_EXPIRES, reason="x")
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, _, _, b_notices, b_expired = apply_waivers(
-        rungs, (), (entry,), now=_NOW
-    )
+    updated, _, _, b_notices, b_expired = apply_waivers(rungs, (), (entry,), now=_NOW)
     assert updated == rungs
     assert b_notices == []
     assert b_expired == []
@@ -1065,9 +1038,7 @@ def test_apply_waivers_baseline_expired_match_leaves_the_rung_untouched():
         reason="x",
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, _, _, b_notices, b_expired = apply_waivers(
-        rungs, (), (entry,), now=_NOW
-    )
+    updated, _, _, b_notices, b_expired = apply_waivers(rungs, (), (entry,), now=_NOW)
     assert updated == rungs
     assert b_notices == []
     assert len(b_expired) == 1
@@ -1079,9 +1050,7 @@ def test_apply_waivers_baseline_default_argument_is_empty_never_matches():
     """Regression guarantee: omitting baseline= entirely (the pre-6.8
     call shape) must still work and never suppress anything via baseline."""
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(
-        rungs, (), now=_NOW
-    )
+    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(rungs, (), now=_NOW)
     assert updated == rungs
     assert (w_notices, w_expired, b_notices, b_expired) == ([], [], [], [])
 
@@ -1103,9 +1072,7 @@ def test_waiver_wins_over_a_valid_baseline_entry_on_the_same_id():
         reason="baseline reason",
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(
-        rungs, (waiver,), (baseline_entry,), now=_NOW
-    )
+    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(rungs, (waiver,), (baseline_entry,), now=_NOW)
     assert updated == [(Status.BYPASSED, rungs[0][1])]
     assert len(w_notices) == 1
     assert w_notices[0].reason == "waiver reason"
@@ -1149,13 +1116,9 @@ def test_baseline_never_touches_non_blocking_statuses(status):
     """Defense-in-depth guard, mirrors the waiver-side non-blocking-status
     test: apply_waivers must actually enforce _NON_BLOCKING_STATUSES for
     the baseline branch too, not merely by convention."""
-    entry = BaselineEntry(
-        id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x"
-    )
+    entry = BaselineEntry(id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x")
     rungs = [_rung(status, "hygiene:DEP002:requests")]
-    updated, _, _, b_notices, b_expired = apply_waivers(
-        rungs, (), (entry,), now=_NOW
-    )
+    updated, _, _, b_notices, b_expired = apply_waivers(rungs, (), (entry,), now=_NOW)
     assert updated == rungs
     assert b_notices == []
     assert b_expired == []
@@ -1163,9 +1126,7 @@ def test_baseline_never_touches_non_blocking_statuses(status):
 
 def test_baseline_driverless_rung_is_never_matched():
     rungs = [(Status.CLEAN, None)]
-    entry = BaselineEntry(
-        id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x"
-    )
+    entry = BaselineEntry(id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x")
     updated, _, _, b_notices, b_expired = apply_waivers(rungs, (), (entry,), now=_NOW)
     assert updated == rungs
     assert b_notices == []
@@ -1201,9 +1162,7 @@ def test_emit_baseline_stanza_omits_clean_and_error_and_already_bypassed_rungs()
         _rung(Status.ERROR, "error:config-parse:x", axis=AXIS_INGESTION),
         _rung(Status.BYPASSED, "hygiene:DEP002:already-waived"),
     ]
-    stanza = emit_baseline_stanza(
-        rungs, now=datetime(2026, 1, 1, tzinfo=UTC), expiry_days=14
-    )
+    stanza = emit_baseline_stanza(rungs, now=datetime(2026, 1, 1, tzinfo=UTC), expiry_days=14)
     document = yaml.safe_load(stanza)
     assert document["baseline"] == []
 
@@ -1219,9 +1178,7 @@ def test_emit_baseline_stanza_never_proposes_the_empty_extraction_sentinel():
         _rung(Status.INDETERMINATE, EMPTY_EXTRACTION_DRIVER_ID, axis=AXIS_INGESTION),
         _rung(Status.WARN, "hygiene:DEP002:requests"),
     ]
-    stanza = emit_baseline_stanza(
-        rungs, now=datetime(2026, 1, 1, tzinfo=UTC), expiry_days=14
-    )
+    stanza = emit_baseline_stanza(rungs, now=datetime(2026, 1, 1, tzinfo=UTC), expiry_days=14)
     document = yaml.safe_load(stanza)
     ids = [entry["id"] for entry in document["baseline"]]
     assert ids == ["hygiene:DEP002:requests"]

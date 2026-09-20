@@ -98,7 +98,7 @@ def _parse_event(raw: Mapping[str, Any]) -> UpstreamEvent | None:
         return None
     try:
         seq = int(raw["seq"])
-    except (KeyError, TypeError, ValueError):
+    except KeyError, TypeError, ValueError:
         return None
     if seq < 0:
         return None
@@ -115,7 +115,7 @@ def _cursor_to_seq(cursor: str | None) -> int:
         return -1
     try:
         return int(cursor)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return -1
 
 

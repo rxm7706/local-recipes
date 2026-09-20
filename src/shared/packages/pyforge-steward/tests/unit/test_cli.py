@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from pyforge.steward import __version__
 from pyforge.steward.cli import (
     _HELP,
@@ -144,13 +145,13 @@ def test_failing_duty_projects_to_exit_1(monkeypatch):
 
 
 def test_keyboard_interrupt_projects_to_130(monkeypatch):
-    monkeypatch.setattr("pyforge.steward.cli.build_parser",
-                        lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
+    monkeypatch.setattr("pyforge.steward.cli.build_parser", lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
     assert main([]) == EXIT_INTERRUPTED
 
 
 def test_crash_never_returns_bare_1(monkeypatch):
     """A crash must be distinguishable from a duty that legitimately failed."""
+
     class Crashing:
         name = "keys"
 

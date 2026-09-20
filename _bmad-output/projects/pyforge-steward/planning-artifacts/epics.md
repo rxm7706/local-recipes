@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-20'   # chain-currency cascade after Stories 61.1–61.3 landed (PRs #1528, #1532, #1539; spine re-stamped 2026-09-20). Prior '2026-09-17'   # chain-currency arch→epics after the 2026-09-17 one-chain fold remint; Fold provenance heading already names CAP-1..145
+updated: '2026-09-20'   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade after Stories 61.1–61.3 landed (PRs #1528, #1532, #1539; spine re-stamped 2026-09-20). Prior '2026-09-17'   # chain-currency arch→epics after the 2026-09-17 one-chain fold remint; Fold provenance heading already names CAP-1..145
 currency_review: "Reviewed 2026-09-17 (arch→epics cascade after the spec→prd→arch re-stamps for the one-chain steward fold) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-17): no AD added or changed. Fold provenance heading already cites spec-pyforge-steward CAP-1..145; historical stories keep sequential epic numbers 1..64. Every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -4283,3 +4283,52 @@ doctor Story 30.1's authored-page convention), `tests/unit/test_sprint_ledger_qu
 `get_runnable_backlog()`, and `--running` equals the watch payload's running rows
 **And** steward never imports `pyforge.marshal` or parses its journal; with marshal unreachable `next` reads `?` with one WARN and the exit code is
 unchanged; the per-clone scope of the running fact is stated in `--help`, in the skill and in the how-to
+
+## Epic 66: Lint, types and the pre-push gate are checks, not prose (spec-pyforge-steward CAP-153..154)
+
+Minted 2026-09-20 (evening) from the Dream entry of the same name: two `TODO:` lines had stood in `AGENTS.md`'s managed
+block since 2026-09-04 because they were prose, never a Story. Verified 2026-09-20: CI lints/types only `src/platform`;
+the ten `pyforge-*` packages have no `[tool.ruff]` / `[tool.mypy]`, no task and no lane; the commit-message rule has
+no hook; and PR #1551 went red the same day on a coverage floor `pr-preflight` would have caught locally.
+**HARD boundaries:** `src/platform`'s `platform-ci` lane and its local twin are untouched; the CI lane and the
+`pr-preflight` leg call the SAME pixi tasks (no second invocation to drift); the `pre-push` hook has one documented
+opt-out env var and no silent skip; the block's two `TODO:` lines go only in the landing that makes them enforced.
+
+### Story 66.1: Lint and types gate the ten packages, locally and on the runners alike
+
+As a contributor to any `pyforge-*` package,
+I want `ruff`, `ruff format --check` and `mypy` to run over all ten packages from one pixi task, in CI and in `pr-preflight`,
+So that a lint or type regression reds the PR the same way locally and on the runners, instead of not at all.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-153 • Dream 2026-09-20 (evening)
+**Surface:** `src/shared/packages/pyforge-*/pyproject.toml` (`[tool.ruff]`, `[tool.mypy]`, py314 targets; strict for `pyforge-core`), `pixi.toml` (`[feature.guild-tasks.tasks.ruff]`, `ruff-format`, `mypy`, `target-version-check`, `lint-types`; a `pr-preflight` leg), `scripts/lint_types.py`, `scripts/target_version_check.py` (registry, like `pixi_version_registry.py`), `.github/workflows/lint-types.yml` (one lane calling the same task), `tests/scripts/test_lint_types_gate.py`.
+**Given** the ten packages have no lint or type gate anywhere while `src/platform` has one in CI and a step-for-step local twin
+**When** this story lands
+**Then** `pixi run -e pyforge-guild ruff` / `ruff-format` / `mypy` exit 0 on `main`, the CI lane and the `pr-preflight` leg invoke exactly those tasks, a planted violation in any package reds both, and `src/platform`'s lane is unchanged
+**And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green; `pyforge-station-tests` green (the `pixi.toml` change is shared surface)
+**Outcome (2026-09-20):** done, hand-driven in PR #1553 — see the tracked spec's Auto Run Result.
+
+### Story 66.2: The pre-commit set — attribution lines and un-preflighted pushes are refused by hooks
+
+As the operator who found today's coverage-floor miss and a `Co-Authored-By` rule that lives only in prose,
+I want a `.pre-commit-config.yaml` whose `commit-msg` hook refuses attribution trailers and whose `pre-push` hook runs `pr-preflight`, installed by `steward setup` / `initrepo`,
+So that the two rules are enforced where the mistake happens and the block's `TODO:` lines can finally retire.
+
+**Type:** feature • **Effort:** M • **Deps:** S-66.1 • **FR/AD:** spec-pyforge-steward CAP-154 • Dream 2026-09-20 (evening); observed evidence: PR #1551 (2026-09-20)
+**Surface:** `.pre-commit-config.yaml` (new; both hooks `language: script`), `scripts/commit_msg_hook.py`, `scripts/pre_push_preflight.sh` (one documented opt-out env var, journaled; `dispatch/*` skip, journaled), `scripts/precommit_config_check.py` (repo detector), `src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py` (the hooks step now looks for the canonical dotfile), `.gitignore` (the skip journal), `AGENTS.md` managed block (the two `TODO:` lines retire under ground 2 via `bmad-project-context`), `tests/scripts/test_lint_types_gate.py`.
+**Given** neither rule is enforced anywhere and `steward setup`'s hooks step skips for want of the config file
+**When** this story lands
+**Then** a commit carrying `Co-Authored-By:` is refused locally with the rule named; a push whose `pr-preflight` is red is refused unless the documented opt-out is set; `steward setup` on a fresh clone installs both hooks; CI reds a missing file or hook; the two managed-block `TODO:` lines are gone
+**And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Outcome (2026-09-20):** done, hand-driven in PR #1553 — see the tracked spec's Auto Run Result.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
+check ran.*

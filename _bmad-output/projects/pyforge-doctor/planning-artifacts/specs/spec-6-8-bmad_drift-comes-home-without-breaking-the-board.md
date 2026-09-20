@@ -2,7 +2,7 @@
 title: "Story 6-8: `bmad_drift` comes home without breaking the board"
 type: "change"
 created: "2026-08-09"
-status: "ready-for-dev"
+status: "done"
 authored: "spec-first, ahead of implementation (operator instruction 2026-08-09: seed -> Dream -> Spec -> code)"
 owner-dream: docs/dreams/pyforge-doctor.md
 context:
@@ -124,3 +124,17 @@ rather than pre-emptively.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `607007caa1` (2026-08-09, "doctor 6.8 (part 1): the Guild vocabulary gets exactly one home"); also `8b9cefcb8f` (2026-08-07, "marshal: Story 6.8 — Upstream contribution register"). Ledger row `6-8-bmad_drift-comes-home-without-breaking-the-board: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/.memlog.md`, `docs/dashboard/data.js`, `docs/dashboard/generate.py`, `docs/governance/guild-roster.json`, `scripts/.spec-surface-baseline.json`, `scripts/bmad_drift_check.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready-for-dev` → `done` (ledger row `6-8-bmad_drift-comes-home-without-breaking-the-board: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

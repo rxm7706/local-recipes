@@ -185,11 +185,11 @@ import os
 import shutil
 import subprocess
 import tempfile
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-import tomllib
 import yaml
 from pyforge.core.atomic_write import atomic_write
 
@@ -270,15 +270,11 @@ def format_environments(environments: dict[str, tuple[str, ...]], *, as_json: bo
     plain sentence for no environments.
     """
     if as_json:
-        return json.dumps(
-            {name: list(environments[name]) for name in sorted(environments)}, indent=2
-        )
+        return json.dumps({name: list(environments[name]) for name in sorted(environments)}, indent=2)
     if not environments:
         return "provision --list: no environments found in pixi.toml"
     width = max(len(name) for name in environments)
-    lines = [
-        f"{name:<{width}}  {', '.join(environments[name])}" for name in sorted(environments)
-    ]
+    lines = [f"{name:<{width}}  {', '.join(environments[name])}" for name in sorted(environments)]
     return "\n".join(lines)
 
 
@@ -306,13 +302,12 @@ def materialize_environment(name: str, *, cwd: str | Path) -> subprocess.Complet
 
 # ── Runner provisioning (FR-13, Story 3.2) ──────────────────────────────────
 
+
 def _run_list(ns: argparse.Namespace) -> DutyResult:
     """`provision --list [--json]` (Story 3.3)."""
     root = repo_root()
     environments = load_pixi_environments(cwd=root)
-    return DutyResult(
-        ok=True, summary=format_environments(environments, as_json=getattr(ns, "json", False))
-    )
+    return DutyResult(ok=True, summary=format_environments(environments, as_json=getattr(ns, "json", False)))
 
 
 # ── Sync-gate check (FR-15, Story 3.4) ──────────────────────────────────────
@@ -362,9 +357,7 @@ def _run_verify(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
     root = repo_root()
     in_sync, diff = check_environment_sync(cwd=root)
     if in_sync:
-        return DutyResult(
-            ok=True, summary="provision --verify: environment.yaml is in sync with pixi.toml"
-        )
+        return DutyResult(ok=True, summary="provision --verify: environment.yaml is in sync with pixi.toml")
     return DutyResult(
         ok=False,
         summary=(
@@ -565,9 +558,7 @@ def _module_variable_defaults(module_yaml: dict[str, object]) -> dict[str, objec
     skipped). Assembled verbatim into the answers JSON; never prompts (this
     path is non-interactive by construction, AD-1)."""
     return {
-        key: value["default"]
-        for key, value in module_yaml.items()
-        if isinstance(value, dict) and "default" in value
+        key: value["default"] for key, value in module_yaml.items() if isinstance(value, dict) and "default" in value
     }
 
 
@@ -594,9 +585,7 @@ def _module_yaml_answers(module_yaml: dict[str, object]) -> dict[str, object]:
     return answers
 
 
-def _materialize_module_output_dirs(
-    module_yaml: dict[str, object], *, cwd: str | Path
-) -> tuple[str, ...]:
+def _materialize_module_output_dirs(module_yaml: dict[str, object], *, cwd: str | Path) -> tuple[str, ...]:
     """`mkdir -p` every `module.yaml` variable whose value -- after the same
     `{value}`-template substitution `merge-config.py`'s own
     `apply_result_templates` performs -- is a `{project-root}`-prefixed
@@ -620,9 +609,7 @@ def _materialize_module_output_dirs(
         try:
             (root / relative).mkdir(parents=True, exist_ok=True)
         except FileExistsError as exc:
-            raise RuntimeError(
-                f"module output path {relative!r} already exists and is not a directory"
-            ) from exc
+            raise RuntimeError(f"module output path {relative!r} already exists and is not a directory") from exc
         created.append(relative)
     return tuple(created)
 
@@ -722,9 +709,7 @@ def _check_skill_name_collisions(
     if already_installed or not skill_names:
         return
     skills_root = cwd / _CLAUDE_SKILLS_RELATIVE_PATH
-    collisions = sorted(
-        skill for skill in skill_names if (skills_root / skill).exists()
-    )
+    collisions = sorted(skill for skill in skill_names if (skills_root / skill).exists())
     if collisions:
         raise RuntimeError(
             f"{kind} {name!r}: skill-name collision(s) under "
@@ -735,9 +720,7 @@ def _check_skill_name_collisions(
         )
 
 
-def _flatten_nested_skill_dirs(
-    name: str, backend: CondaInstallBackend, *, share_root: Path, dest: Path
-) -> None:
+def _flatten_nested_skill_dirs(name: str, backend: CondaInstallBackend, *, share_root: Path, dest: Path) -> None:
     """Post-install fixup for a `flatten_nested_dirs` source (Story 46.3):
     `bmad-tea-install`'s own upstream layout copies each `workflows/<container>`
     (e.g. `testarch`, holding all nine workflow skills) to `dest/<container>`
@@ -859,9 +842,7 @@ def _render_module_toml_section(
         try:
             lines.append(f"{key} = {_toml_value(answers[key])}\n")
         except TypeError as exc:
-            raise TypeError(
-                f"module {name!r}: module.yaml variable {key!r}: {exc}"
-            ) from exc
+            raise TypeError(f"module {name!r}: module.yaml variable {key!r}: {exc}") from exc
     return "".join(lines)
 
 
@@ -916,17 +897,12 @@ def _record_module_manifest(
             tomllib.loads(original)
         except tomllib.TOMLDecodeError as exc:
             raise RuntimeError(
-                f"cannot record module {name!r}: {_BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH} "
-                f"is not valid TOML ({exc})"
+                f"cannot record module {name!r}: {_BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH} is not valid TOML ({exc})"
             ) from exc
-    section_text = _render_module_toml_section(
-        name, installer=installer, skills=skills, answers=answers
-    )
+    section_text = _render_module_toml_section(name, installer=installer, skills=skills, answers=answers)
     header = f"[modules.{name}]"
     lines = original.splitlines(keepends=True)
-    header_idx = next(
-        (i for i, line in enumerate(lines) if line.rstrip("\r\n") == header), None
-    )
+    header_idx = next((i for i, line in enumerate(lines) if line.rstrip("\r\n") == header), None)
     if header_idx is not None:
         end_idx = header_idx + 1
         while end_idx < len(lines):
@@ -949,9 +925,7 @@ def _record_module_manifest(
     atomic_write(config_path, _write)
 
 
-def _copy_setup_skill_dirs(
-    skills_source_dir: Path, skill_names: tuple[str, ...], *, dest: Path
-) -> None:
+def _copy_setup_skill_dirs(skills_source_dir: Path, skill_names: tuple[str, ...], *, dest: Path) -> None:
     """Copy each of `skill_names` from `skills_source_dir` into `dest/<name>`
     (Story 46.4) -- a full `rmtree`-then-`copytree` replace, never a merge,
     so a re-provision after a real bmad-builder version bump picks up
@@ -965,10 +939,7 @@ def _copy_setup_skill_dirs(
     for skill_name in skill_names:
         target = dest / skill_name
         if target.exists() and not target.is_dir():
-            raise RuntimeError(
-                f"cannot copy skill {skill_name!r}: {target} exists and is "
-                "not a directory"
-            )
+            raise RuntimeError(f"cannot copy skill {skill_name!r}: {target} exists and is not a directory")
         if target.is_dir():
             shutil.rmtree(target)
         shutil.copytree(skills_source_dir / skill_name, target)
@@ -1025,9 +996,7 @@ def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) 
                 f"(skills_source_dir={backend.skills_source_dir!r})"
             )
         already_installed = _module_install_state_or_none(name, cwd=cwd) == "installed"
-        _check_skill_name_collisions(
-            name, skill_names, cwd=cwd, already_installed=already_installed
-        )
+        _check_skill_name_collisions(name, skill_names, cwd=cwd, already_installed=already_installed)
 
     answers = {"module": _module_variable_defaults(module_yaml)}
     bmad_dir = cwd / _BMAD_RELATIVE_PATH
@@ -1098,9 +1067,7 @@ def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) 
     }
 
 
-def _provision_conda_install(
-    name: str, backend: CondaInstallBackend, *, cwd: Path
-) -> dict[str, object]:
+def _provision_conda_install(name: str, backend: CondaInstallBackend, *, cwd: Path) -> dict[str, object]:
     """Story 15.3 path: drive the package's `*-install` entry point, then
     record a `_bmad/custom/config.toml` `[modules.<name>]` manifest section
     (Story 46.2, AD-9) so `--list-modules` and Story 6.3's post-success gate
@@ -1130,9 +1097,7 @@ def _provision_conda_install(
         )
 
     already_installed = _module_install_state_or_none(name, cwd=cwd) == "installed"
-    _check_skill_name_collisions(
-        name, skill_names, cwd=cwd, already_installed=already_installed
-    )
+    _check_skill_name_collisions(name, skill_names, cwd=cwd, already_installed=already_installed)
 
     dest = cwd / _CLAUDE_SKILLS_RELATIVE_PATH
     dest.mkdir(parents=True, exist_ok=True)
@@ -1168,14 +1133,10 @@ def _provision_conda_install(
         with module_yaml_path.open("r", encoding="utf-8") as f:
             module_yaml = yaml.safe_load(f)
         if not isinstance(module_yaml, dict):
-            raise RuntimeError(
-                f"{module_yaml_path} did not parse to a mapping -- malformed module.yaml"
-            )
+            raise RuntimeError(f"{module_yaml_path} did not parse to a mapping -- malformed module.yaml")
         answers = _module_yaml_answers(module_yaml)
 
-    _record_module_manifest(
-        name, cwd=cwd, installer=backend.installer, skills=skill_names, answers=answers
-    )
+    _record_module_manifest(name, cwd=cwd, installer=backend.installer, skills=skill_names, answers=answers)
 
     return {
         "installer": backend.installer,
@@ -1247,7 +1208,7 @@ def _module_install_state_or_none(name: str, *, cwd: str | Path) -> str | None:
     than letting it propagate uncaught (review finding)."""
     try:
         return module_install_states(cwd=cwd).get(name)
-    except (yaml.YAMLError, tomllib.TOMLDecodeError, UnicodeDecodeError, OSError):
+    except yaml.YAMLError, tomllib.TOMLDecodeError, UnicodeDecodeError, OSError:
         return None
 
 
@@ -1300,9 +1261,7 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
     leaving the module unimportable" clause)."""
     name = ns.module
     if name in _SKIPPED_MODULES:
-        return DutyResult(
-            ok=False, summary=ProvisionDuty._render_error(ns, _SKIPPED_MODULES[name])
-        )
+        return DutyResult(ok=False, summary=ProvisionDuty._render_error(ns, _SKIPPED_MODULES[name]))
     if name not in _SUPPORTED_MODULES:
         supported = ", ".join(sorted(_SUPPORTED_MODULES))
         message = f"{name!r} is not a supported module. Supported modules: {supported}"
@@ -1312,11 +1271,7 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
     try:
         steps = provision_module(name, cwd=root)
     except (subprocess.CalledProcessError, RuntimeError) as exc:
-        message = (
-            _format_called_process_error(exc)
-            if isinstance(exc, subprocess.CalledProcessError)
-            else str(exc)
-        )
+        message = _format_called_process_error(exc) if isinstance(exc, subprocess.CalledProcessError) else str(exc)
         state_after = _module_install_state_or_none(name, cwd=root)
         manifest_label = _manifest_location_label(name)
         if state_after == "installed" and state_before != "installed":
@@ -1347,11 +1302,7 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
         )
     if getattr(ns, "json", False):
         return DutyResult(ok=True, summary=json.dumps(steps, indent=2))
-    dirs_note = (
-        f"; created {', '.join(steps['output_dirs_created'])}"
-        if steps.get("output_dirs_created")
-        else ""
-    )
+    dirs_note = f"; created {', '.join(steps['output_dirs_created'])}" if steps.get("output_dirs_created") else ""
     backend = _SUPPORTED_MODULES[name]
     if isinstance(backend, CondaInstallBackend):
         skill_count = len(steps.get("skills_installed") or ())
@@ -1362,14 +1313,9 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
         )
     else:
         skills_copied = steps.get("skills_copied") or ()
-        skills_note = (
-            f" ({len(skills_copied)} skill(s) → {_CLAUDE_SKILLS_RELATIVE_PATH})"
-            if skills_copied
-            else ""
-        )
+        skills_note = f" ({len(skills_copied)} skill(s) → {_CLAUDE_SKILLS_RELATIVE_PATH})" if skills_copied else ""
         summary = (
-            f"provision --module: {name!r} provisioned (merge-config.py, merge-help-csv.py)"
-            f"{skills_note}{dirs_note}"
+            f"provision --module: {name!r} provisioned (merge-config.py, merge-help-csv.py){skills_note}{dirs_note}"
         )
     return DutyResult(ok=True, summary=summary)
 
@@ -1424,16 +1370,11 @@ def provision_plugin_skill(plugin: str, skill: str, *, cwd: str | Path) -> dict[
     """
     if plugin not in _SUPPORTED_PLUGINS:
         supported = ", ".join(sorted(_SUPPORTED_PLUGINS))
-        raise FileNotFoundError(
-            f"plugin {plugin!r} is not registered. Supported plugins: {supported}"
-        )
+        raise FileNotFoundError(f"plugin {plugin!r} is not registered. Supported plugins: {supported}")
     backend = _SUPPORTED_PLUGINS[plugin]
     if skill not in backend.allowed_skills:
         allowed = ", ".join(backend.allowed_skills)
-        raise RuntimeError(
-            f"skill {skill!r} is not on the {plugin!r} consent list. "
-            f"Allowed skills: {allowed}"
-        )
+        raise RuntimeError(f"skill {skill!r} is not on the {plugin!r} consent list. Allowed skills: {allowed}")
 
     root = Path(cwd)
     prefix = _conda_prefix(cwd=root, share_package=backend.share_package)
@@ -1447,17 +1388,13 @@ def provision_plugin_skill(plugin: str, skill: str, *, cwd: str | Path) -> dict[
         )
 
     already_installed = skill in _module_toml_skills(plugin, cwd=root)
-    _check_skill_name_collisions(
-        plugin, (skill,), cwd=root, already_installed=already_installed, kind="plugin"
-    )
+    _check_skill_name_collisions(plugin, (skill,), cwd=root, already_installed=already_installed, kind="plugin")
 
     # Record the roster BEFORE copying — see the docstring's "review finding"
     # paragraph for why the reverse order self-locks a retry after a
     # manifest-write failure.
     accumulated = tuple(sorted({*_module_toml_skills(plugin, cwd=root), skill}))
-    _record_module_manifest(
-        plugin, cwd=root, installer=_LABS_INSTALLER_LABEL, skills=accumulated
-    )
+    _record_module_manifest(plugin, cwd=root, installer=_LABS_INSTALLER_LABEL, skills=accumulated)
 
     dest = root / _CLAUDE_SKILLS_RELATIVE_PATH
     dest.mkdir(parents=True, exist_ok=True)
@@ -1496,9 +1433,7 @@ def _run_plugin(ns: argparse.Namespace) -> DutyResult:
     if skill is None:
         return DutyResult(
             ok=False,
-            summary=ProvisionDuty._render_error(
-                ns, "--skill is required together with --plugin"
-            ),
+            summary=ProvisionDuty._render_error(ns, "--skill is required together with --plugin"),
         )
     root = repo_root()
     try:
@@ -1627,9 +1562,7 @@ def _run_list_modules(ns: argparse.Namespace) -> DutyResult:
     config.yaml` or any other file."""
     root = repo_root()
     states = module_install_states(cwd=root)
-    return DutyResult(
-        ok=True, summary=format_module_states(states, as_json=getattr(ns, "json", False))
-    )
+    return DutyResult(ok=True, summary=format_module_states(states, as_json=getattr(ns, "json", False)))
 
 
 # ── ProvisionDuty (Duty-protocol adapter) ───────────────────────────────────
@@ -1661,15 +1594,10 @@ def _run_env(ns: argparse.Namespace) -> DutyResult:
         valid = ", ".join(sorted(environments))
         return DutyResult(
             ok=False,
-            summary=(
-                f"provision --env: {name!r} is not a valid pixi environment. "
-                f"Valid environments: {valid}"
-            ),
+            summary=(f"provision --env: {name!r} is not a valid pixi environment. Valid environments: {valid}"),
         )
     materialize_environment(name, cwd=root)
-    return DutyResult(
-        ok=True, summary=f"provision --env: {name!r} materialized (pixi install -e {name})"
-    )
+    return DutyResult(ok=True, summary=f"provision --env: {name!r} materialized (pixi install -e {name})")
 
 
 def _run_runner(ns: argparse.Namespace) -> DutyResult:
@@ -1763,9 +1691,7 @@ class ProvisionDuty:
                 return _run_env(ns)
             return DutyResult(ok=True, summary=f"provision: {_PROVISION_HELP}")
         except subprocess.CalledProcessError as exc:
-            return DutyResult(
-                ok=False, summary=self._render_error(ns, _format_called_process_error(exc))
-            )
+            return DutyResult(ok=False, summary=self._render_error(ns, _format_called_process_error(exc)))
         except (
             RuntimeError,
             FileNotFoundError,

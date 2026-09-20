@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 383
+# stories: 421
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -260,6 +260,8 @@ development_status:
   45-3-the-pilot-pair-uses-task-when-available-and-halts-when-it-is-not: done
   46-1-a-bare-clone-bootstraps-the-substrate: backlog
   46-10-the-matrix-tells-the-truth-copilot-wrapper-gemini-probe-per-currency-cells: backlog
+  46-11-the-dispatched-claude-session-is-launched-with-the-instruction-file-mode-pinned: done
+  46-12-marshal-s-shell-outs-name-the-guild-env: done
   46-2-the-canonical-context-bundle-is-digest-pinned: backlog
   46-3-scribe-capture-is-the-blessed-session-close-ritual: backlog
   46-4-wire-auto-resolves-against-the-declared-wrapper: done
@@ -268,34 +270,10 @@ development_status:
   46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
-  46-11-the-dispatched-claude-session-is-launched-with-the-instruction-file-mode-pinned: done
-  46-12-marshal-s-shell-outs-name-the-guild-env: done
   47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: backlog
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: backlog
   47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: backlog
   47-4-a-genuine-recall-miss-injects-nothing-never-a-fabricated-confidence-claim: backlog
-  50-1-a-landing-never-re-dispatches-the-story-it-just-landed: done
-  50-2-a-harness-s-own-usage-wall-wording-is-a-transient-outcome: done
-  50-3-harness-outranks-a-dead-tier-map-harness: done
-  50-4-landing-evidence-carries-the-station-in-every-shape: done
-  50-5-the-promoter-reads-a-spec-through-its-banner: done
-  51-1-verification-sees-the-merge-result: done
-  51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory: done
-  51-3-the-campaign-reads-the-ledger-it-just-promoted: done
-  51-4-a-blocked-outcome-never-lands: done
-  51-5-mrs-disp-043-speaks-for-an-uncatalogued-model: done
-  51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station: done
-  51-7-landing-evidence-is-intent-scoped-not-just-station-scoped: done
-  51-8-the-banner-skip-family-is-complete: done
-  51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3: done
-  51-10-the-watch-s-marshal-status-probe-is-executable-and-proven-against-the-real-interpreter: done
-  51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop: done
-  51-12-a-dispatch-only-checkout-still-has-fleet-rows: done
-  51-13-the-watch-reads-the-dispatch-verdict-in-the-supervisor-s-own-vocabulary: done
-  52-1-the-six-accumulated-violations-are-cleared: done
-  52-2-the-conformance-suite-is-a-pr-gate: done
-  53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: done
-  53-2-the-landing-reconciles-from-git-facts-and-runs-intake: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -307,6 +285,28 @@ development_status:
   5-7-the-board-answers-how-much-is-left: done
   5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine: done
   5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger: done
+  50-1-a-landing-never-re-dispatches-the-story-it-just-landed: done
+  50-2-a-harness-s-own-usage-wall-wording-is-a-transient-outcome: done
+  50-3-harness-outranks-a-dead-tier-map-harness: done
+  50-4-landing-evidence-carries-the-station-in-every-shape: done
+  50-5-the-promoter-reads-a-spec-through-its-banner: done
+  51-1-verification-sees-the-merge-result: done
+  51-10-the-watch-s-marshal-status-probe-is-executable-and-proven-against-the-real-interpreter: done
+  51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop: done
+  51-12-a-dispatch-only-checkout-still-has-fleet-rows: done
+  51-13-the-watch-reads-the-dispatch-verdict-in-the-supervisor-s-own-vocabulary: done
+  51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory: done
+  51-3-the-campaign-reads-the-ledger-it-just-promoted: done
+  51-4-a-blocked-outcome-never-lands: done
+  51-5-mrs-disp-043-speaks-for-an-uncatalogued-model: done
+  51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station: done
+  51-7-landing-evidence-is-intent-scoped-not-just-station-scoped: done
+  51-8-the-banner-skip-family-is-complete: done
+  51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3: done
+  52-1-the-six-accumulated-violations-are-cleared: done
+  52-2-the-conformance-suite-is-a-pr-gate: done
+  53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: done
+  53-2-the-landing-reconciles-from-git-facts-and-runs-intake: backlog
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done
@@ -413,20 +413,20 @@ development_status:
   epic-44-retrospective: optional
   epic-45: done
   epic-45-retrospective: optional
-  epic-46: backlog
+  epic-46: in-progress
   epic-46-retrospective: optional
   epic-47: backlog
   epic-47-retrospective: optional
+  epic-5: done
+  epic-5-retrospective: done
   epic-50: done
   epic-50-retrospective: optional
   epic-51: done
   epic-51-retrospective: optional
   epic-52: done
   epic-52-retrospective: optional
-  epic-53: backlog
+  epic-53: in-progress
   epic-53-retrospective: optional
-  epic-5: done
-  epic-5-retrospective: done
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

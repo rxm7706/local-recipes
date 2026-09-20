@@ -696,9 +696,7 @@ def _scan_promotions(
             except PolicyIOError as exc:
                 findings.append(exc.finding)
 
-    effective, policy_findings = policy.compose(
-        project_slug=project_slug, project=project_data, flags={}
-    )
+    effective, policy_findings = policy.compose(project_slug=project_slug, project=project_data, flags={})
     findings.extend(policy_findings)
 
     # An empty/malformed slug already produced its own MRS-POLICY-005/006
@@ -706,18 +704,14 @@ def _scan_promotions(
     # behavior, predating this story) -- nothing further to discover
     # without a real project directory to look in.
     if not project_slug or not policy._is_valid_project_slug(project_slug):
-        return _PromotionScan(
-            plan=None, findings=tuple(findings), combined_subjects=(), template=""
-        )
+        return _PromotionScan(plan=None, findings=tuple(findings), combined_subjects=(), template="")
 
     tier3_dir = root / "_bmad-output" / "projects" / project_slug / "implementation-artifacts"
     specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
 
     candidates = _discover_candidates(fs, tier3_dir)
     if worktree is not None:
-        worktree_tier3_dir = (
-            worktree / "_bmad-output" / "projects" / project_slug / "implementation-artifacts"
-        )
+        worktree_tier3_dir = worktree / "_bmad-output" / "projects" / project_slug / "implementation-artifacts"
         candidates = candidates + _discover_candidates(fs, worktree_tier3_dir)
     already_promoted = _already_promoted_keys(fs, vcs, root, specs_dir, candidates)
 
@@ -740,15 +734,10 @@ def _scan_promotions(
             Finding(
                 code=_MRS_DEPLOY_003,
                 severity=Severity.ERROR,
-                message=(
-                    "cannot read local main's commit history to determine "
-                    f"promotion durability: {exc}"
-                ),
+                message=(f"cannot read local main's commit history to determine promotion durability: {exc}"),
             )
         )
-        return _PromotionScan(
-            plan=None, findings=tuple(findings), combined_subjects=(), template=""
-        )
+        return _PromotionScan(plan=None, findings=tuple(findings), combined_subjects=(), template="")
 
     template = effective.merge_subject_template.value
     combined_subjects = tuple(origin_subjects) + tuple(main_subjects)
@@ -937,8 +926,7 @@ def _execute_promotion_plan(
                         code=_MRS_DEPLOY_003,
                         severity=Severity.ERROR,
                         message=(
-                            f"cannot copy {spec_candidate.path!r} into "
-                            f"the tracked archive at {str(dest)!r}: {exc}"
+                            f"cannot copy {spec_candidate.path!r} into the tracked archive at {str(dest)!r}: {exc}"
                         ),
                     )
                 )
@@ -947,10 +935,7 @@ def _execute_promotion_plan(
             promoted.append(str(spec_candidate.story_key))
 
         if commit_targets:
-            message = (
-                f"marshal: promote {len(commit_targets)} story spec(s) to "
-                "tracked artifacts"
-            )
+            message = f"marshal: promote {len(commit_targets)} story spec(s) to tracked artifacts"
             # Story 4.6 (AD-6): an `intent` entry BEFORE the irreversible
             # `commit_paths` call, an `outcome` AFTER it succeeds. A
             # journal-write failure for the intent itself means no paper
@@ -1014,9 +999,7 @@ def run_promote(
 
     # Same is-not-None precedence as cli/gate.py::run_evaluate -- an
     # explicit `--project ""` must win over BMAD_ACTIVE_PROJECT.
-    project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
-    )
+    project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
 
     root = repo_root()
     data: dict[str, object] = {"slug": project_slug, "root": str(root)}
@@ -1067,9 +1050,7 @@ def run_promote(
     if scan.plan is not None:
         plan = scan.plan
         subjects_examined = len(scan.combined_subjects)
-        subjects_matched = promotion.count_conforming_subjects(
-            scan.combined_subjects, scan.template, project_slug
-        )
+        subjects_matched = promotion.count_conforming_subjects(scan.combined_subjects, scan.template, project_slug)
         findings.extend(plan.gaps)
         gap_count = len(plan.gaps)
 
@@ -1108,12 +1089,10 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     lines = [
         f"deploy promote: {slug!r}",
         f"root: {str(data['root'])!r}",
-        f"promoted: {data['promoted_count']} "
-        f"({', '.join(promoted) if promoted else 'none'})",
+        f"promoted: {data['promoted_count']} ({', '.join(promoted) if promoted else 'none'})",
         f"already promoted: {len(data['already_promoted'])}",
         f"gaps: {data['gap_count']}",
-        f"subjects examined: {data['subjects_examined']} "
-        f"(matched: {data['subjects_matched']})",
+        f"subjects examined: {data['subjects_examined']} (matched: {data['subjects_matched']})",
     ]
     if data.get("lock_contended"):
         lines.append("lock contended: promotion lock busy -- nothing promoted, re-run later")
@@ -1263,9 +1242,7 @@ def _run_snapshot_candidates(root: Path, project_slug: str, story_key: identity.
     # -- filtered here rather than trusting the glob alone.
     _boundary_re = re.compile(re.escape(stem) + r"(?:-.*)?\.md")
     try:
-        matches = sorted(
-            path for path in runs_dir.glob(f"*/{stem}*.md") if _boundary_re.fullmatch(path.name)
-        )
+        matches = sorted(path for path in runs_dir.glob(f"*/{stem}*.md") if _boundary_re.fullmatch(path.name))
     except OSError:
         matches = []
     dated: list[tuple[float, Path]] = []
@@ -1344,9 +1321,7 @@ def run_recover_spec(
         data["already_present"] = True
         return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
 
-    epics_path = (
-        root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "epics.md"
-    )
+    epics_path = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "epics.md"
     try:
         epics_text = fs.read_text(epics_path)
     except FsError:
@@ -1390,9 +1365,7 @@ def run_recover_spec(
     # hollow recovery silently. Warn, naming what came back empty, rather
     # than reporting success with no caveat.
     empty_parts = [
-        name
-        for name, text in (("Intent", intent), ("Acceptance Criteria", acceptance_criteria))
-        if not text.strip()
+        name for name, text in (("Intent", intent), ("Acceptance Criteria", acceptance_criteria)) if not text.strip()
     ]
     if empty_parts:
         findings.append(
@@ -1474,7 +1447,7 @@ def _land_redact_text(text: str) -> str | None:
     try:
         redacted = to_redacted({"text": text})
         return json.loads(redacted.text)["text"]
-    except (ValueError, LookupError, TypeError):
+    except ValueError, LookupError, TypeError:
         return None
 
 
@@ -1512,15 +1485,7 @@ def _journal_manual_landing(
     journal."""
     moment = datetime.now(timezone.utc)
     run_id = mint_run_id(slug, _land_format_utc_compact(moment), _land_random_token())
-    run_dir = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-        / run_id
-    )
+    run_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     try:
         fs.ensure_dir(run_dir.parent)
         fs.create_dir_exclusive(run_dir)
@@ -1561,9 +1526,7 @@ def _journal_manual_landing(
     try:
         prepared = prepare_for_write(entry)
         if prepared.sidecar_relative_path is not None:
-            fs.write_text_atomic(
-                run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
-            )
+            fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
         fs.append_line(run_dir / _LAND_JOURNAL_FILENAME, prepared.line, fsync=True)
     except FsError as exc:
         return Finding(
@@ -1634,9 +1597,7 @@ def _mint_deploy_run(fs: FsPort, root: Path, slug: str) -> tuple[Path, str] | Fi
     (never raises) on any I/O failure."""
     moment = datetime.now(timezone.utc)
     run_id = mint_run_id(slug, _land_format_utc_compact(moment), _land_random_token())
-    run_dir = (
-        root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
-    )
+    run_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     try:
         fs.ensure_dir(run_dir.parent)
         fs.create_dir_exclusive(run_dir)
@@ -1649,9 +1610,7 @@ def _mint_deploy_run(fs: FsPort, root: Path, slug: str) -> tuple[Path, str] | Fi
     return run_dir, run_id
 
 
-def _fold_deploy_journal(
-    fs: FsPort, root: Path, slug: str, findings: list[Finding]
-) -> FoldResult:
+def _fold_deploy_journal(fs: FsPort, root: Path, slug: str, findings: list[Finding]) -> FoldResult:
     """The GLOBAL fold (AD-28) over EVERY run directory this slug's Tier-3
     store carries under ``implementation-artifacts/runs/*/journal.jsonl``.
 
@@ -1770,9 +1729,7 @@ def _write_deploy_entry(
     try:
         prepared = prepare_for_write(entry)
         if prepared.sidecar_relative_path is not None:
-            fs.write_text_atomic(
-                run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
-            )
+            fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
         fs.append_line(run_dir / _LAND_JOURNAL_FILENAME, prepared.line, fsync=True)
     except FsError as exc:
         return entry_id, Finding(
@@ -1969,10 +1926,7 @@ def run_land_story(
             Finding(
                 code=_MRS_DEPLOY_006,
                 severity=Severity.ERROR,
-                message=(
-                    "--justification is required and must be non-empty to "
-                    "land a story manually"
-                ),
+                message=("--justification is required and must be non-empty to land a story manually"),
             )
         )
         return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
@@ -2013,10 +1967,7 @@ def run_land_story(
             Finding(
                 code=_MRS_DEPLOY_007,
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot resolve the loop-home station branch {branch!r} "
-                    f"to land {story_key}: {exc}"
-                ),
+                message=(f"cannot resolve the loop-home station branch {branch!r} to land {story_key}: {exc}"),
             )
         )
         return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
@@ -2025,9 +1976,7 @@ def run_land_story(
             Finding(
                 code=_MRS_DEPLOY_007,
                 severity=Severity.ERROR,
-                message=(
-                    f"{branch!r} does not exist -- nothing to land for {story_key}"
-                ),
+                message=(f"{branch!r} does not exist -- nothing to land for {story_key}"),
             )
         )
         return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
@@ -2044,10 +1993,7 @@ def run_land_story(
                 Finding(
                     code=_MRS_DEPLOY_007,
                     severity=Severity.ERROR,
-                    message=(
-                        f"cannot compute the merge base of {branch!r} and "
-                        f"{_MERGE_BASE_BRANCH!r}: {exc}"
-                    ),
+                    message=(f"cannot compute the merge base of {branch!r} and {_MERGE_BASE_BRANCH!r}: {exc}"),
                 )
             )
             return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
@@ -2124,9 +2070,7 @@ def run_land_story(
     # logic as a function call (Story 4.3's own Always bullet), never a
     # shelled-out re-invocation of the `marshal` CLI and never a second,
     # independently-drifting gate implementation.
-    gate_args = argparse.Namespace(
-        project=slug, run_id=None, scope_check=True, story=str(story_key)
-    )
+    gate_args = argparse.Namespace(project=slug, run_id=None, scope_check=True, story=str(story_key))
     gate_envelope = evaluate_gate(gate_args, process=process, vcs=vcs, fs=fs)
     data["gate_verdict"] = gate_envelope.verdict.value
     findings.extend(gate_envelope.findings)
@@ -2236,9 +2180,7 @@ def run_land_story(
         },
     )
     try:
-        merge_sha = vcs.merge_branch(
-            git_repo_root, branch_tip_after_gate, into=_MERGE_BASE_BRANCH, subject=subject
-        )
+        merge_sha = vcs.merge_branch(git_repo_root, branch_tip_after_gate, into=_MERGE_BASE_BRANCH, subject=subject)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -2295,8 +2237,7 @@ def run_land_story(
                 code=_MRS_DEPLOY_009,
                 severity=Severity.WARN,
                 message=(
-                    f"conformance audit could not enumerate commits between "
-                    f"{since_ref!r} and {merge_sha!r}: {exc}"
+                    f"conformance audit could not enumerate commits between {since_ref!r} and {merge_sha!r}: {exc}"
                 ),
             )
         )
@@ -2337,10 +2278,7 @@ def _render_text_land_story(data: Mapping[str, object], findings: tuple[Finding,
     if non_conforming is None and "merge_sha" in data:
         lines.append("conformance audit: could not enumerate (see findings)")
     elif non_conforming is not None:
-        lines.append(
-            f"conformance audit: {len(non_conforming)} non-conforming merge(s) "
-            f"since {data.get('since')!r}"
-        )
+        lines.append(f"conformance audit: {len(non_conforming)} non-conforming merge(s) since {data.get('since')!r}")
         for subject_line in non_conforming:
             lines.append(f"  {subject_line!r}")
     if findings:
@@ -2462,9 +2400,7 @@ def _gather_gate_verdicts(fs: FsPort, root: Path, slug: str) -> dict[str, str]:
     runs_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
     verdicts: dict[str, str] = {}
     try:
-        run_dirs = sorted(
-            (path for path in runs_dir.iterdir() if path.is_dir()), key=_run_dir_sort_key
-        )
+        run_dirs = sorted((path for path in runs_dir.iterdir() if path.is_dir()), key=_run_dir_sort_key)
     except OSError:
         return verdicts
     for run_dir in run_dirs:
@@ -2484,7 +2420,7 @@ def _gather_gate_verdicts(fs: FsPort, root: Path, slug: str) -> dict[str, str]:
                 sidecars[f"blobs/{blob_path.name}"] = None
         try:
             fold_result = fold(text.split("\n"), sidecars=sidecars)
-        except (TypeError, ValueError, KeyError, OSError):
+        except TypeError, ValueError, KeyError, OSError:
             continue
         for entry in fold_result.entries:
             if entry.kind != _LAND_KIND:
@@ -2547,9 +2483,7 @@ def _evaluate_hygiene(
         satisfied = True
         if rule.required_check is not None:
             try:
-                status = forge.check_run_status(
-                    repo_ref, ForgeRef(head_sha), ForgeRef(rule.required_check)
-                )
+                status = forge.check_run_status(repo_ref, ForgeRef(head_sha), ForgeRef(rule.required_check))
             except ForgeCommandError as exc:
                 satisfied = False
                 entry["satisfied"] = False
@@ -2638,10 +2572,7 @@ def run_batch_pr(
             Finding(
                 code=_MRS_DEPLOY_007,
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot resolve the loop-home station branch {head_branch!r} "
-                    f"for {slug!r}'s batch PR: {exc}"
-                ),
+                message=(f"cannot resolve the loop-home station branch {head_branch!r} for {slug!r}'s batch PR: {exc}"),
             )
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
@@ -2681,10 +2612,7 @@ def run_batch_pr(
     # even checked). Refused HERE, before `landing_rules`/`base` are even
     # read below, and before the forge is ever touched -- never a softer
     # degrade to "ran with whatever policy composed to".
-    if any(
-        finding.severity is Severity.ERROR and "'landing_rules'" in finding.message
-        for finding in policy_findings
-    ):
+    if any(finding.severity is Severity.ERROR and "'landing_rules'" in finding.message for finding in policy_findings):
         findings.append(
             Finding(
                 code=_MRS_DEPLOY_015,
@@ -2719,10 +2647,7 @@ def run_batch_pr(
             Finding(
                 code=_MRS_DEPLOY_007,
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot compute the merge base of {head_branch!r} and "
-                    f"{base!r}: {exc}"
-                ),
+                message=(f"cannot compute the merge base of {head_branch!r} and {base!r}: {exc}"),
             )
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
@@ -2733,10 +2658,7 @@ def run_batch_pr(
             Finding(
                 code=_MRS_DEPLOY_007,
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot enumerate commits between {merge_base_sha!r} and "
-                    f"{head_branch!r}: {exc}"
-                ),
+                message=(f"cannot enumerate commits between {merge_base_sha!r} and {head_branch!r}: {exc}"),
             )
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
@@ -2869,8 +2791,7 @@ def run_batch_pr(
                 code=_MRS_DEPLOY_014,
                 severity=Severity.ERROR,
                 message=(
-                    "cannot redact the batch PR title/body -- refusing to "
-                    "write unredacted text through ForgePort"
+                    "cannot redact the batch PR title/body -- refusing to write unredacted text through ForgePort"
                 ),
             )
         )
@@ -2964,10 +2885,7 @@ def run_batch_pr(
             Finding(
                 code=_MRS_DEPLOY_016,
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot reconfirm {head_branch!r}'s own tip immediately "
-                    f"before the PR write: {exc}"
-                ),
+                message=(f"cannot reconfirm {head_branch!r}'s own tip immediately before the PR write: {exc}"),
             )
         )
         data["opened"] = False
@@ -3003,9 +2921,7 @@ def run_batch_pr(
     )
     try:
         if existing is None:
-            pr = forge.create_pr(
-                repo_ref, ForgeRef(base), head_branch_ref, title_redacted, body_redacted
-            )
+            pr = forge.create_pr(repo_ref, ForgeRef(base), head_branch_ref, title_redacted, body_redacted)
             data["opened"] = True
             data["updated"] = False
         else:
@@ -3086,9 +3002,7 @@ def _render_text_batch_pr(data: Mapping[str, object], findings: tuple[Finding, .
     if hygiene_rules:
         lines.append("hygiene rules:")
         for entry in hygiene_rules:
-            lines.append(
-                f"  {entry['name']!r} applies={entry['applies']} satisfied={entry['satisfied']}"
-            )
+            lines.append(f"  {entry['name']!r} applies={entry['applies']} satisfied={entry['satisfied']}")
     if data.get("opened"):
         lines.append(f"opened: PR #{data.get('pr_number')} ({data.get('pr_url')})")
     elif data.get("updated"):
@@ -3150,7 +3064,7 @@ def _gather_claimed_commits(
     # does not honor that internal convention).
     try:
         home_present = fs.exists(home)
-    except (FsError, OSError):
+    except FsError, OSError:
         home_present = False
     if not home_present:
         return ()
@@ -3176,7 +3090,7 @@ def _gather_claimed_commits(
     # the whole `refresh-feed` invocation.
     try:
         snapshot = harness.run_status_snapshot(home, harness_run_id)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError, RecursionError):
+    except OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError, RecursionError:
         return ()
     if snapshot is None:
         return ()
@@ -3253,9 +3167,7 @@ def _run_resync_commands(
             report, finding = status.classify_resync_outcome(
                 command,
                 None,
-                failure_reason=(
-                    f"cannot parse landing_resync_commands entry {command!r}: {exc}"
-                ),
+                failure_reason=(f"cannot parse landing_resync_commands entry {command!r}: {exc}"),
             )
         else:
             if not tokens:
@@ -3301,10 +3213,7 @@ def _run_resync_commands(
                     report, finding = status.classify_resync_outcome(
                         command,
                         None,
-                        failure_reason=(
-                            f"landing_resync_commands entry {command!r} could "
-                            f"not be run: {exc}"
-                        ),
+                        failure_reason=(f"landing_resync_commands entry {command!r} could not be run: {exc}"),
                     )
                 else:
                     report, finding = status.classify_resync_outcome(command, result)
@@ -3351,9 +3260,7 @@ def reconcile_feed(
     # Local import -- see `_gather_claimed_commits`'s own comment.
     from .init import _home_path
 
-    project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
-    )
+    project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
     root = repo_root()
     data: dict[str, object] = {"slug": project_slug, "root": str(root)}
     # Code review (2026-08-06, P5, Blind Hunter): `resync_skipped`/
@@ -3381,9 +3288,7 @@ def reconcile_feed(
                 findings.append(exc.finding)
                 data["stories"] = []
                 return data, findings
-    effective, policy_findings = policy.compose(
-        project_slug=project_slug, project=project_data, flags={}
-    )
+    effective, policy_findings = policy.compose(project_slug=project_slug, project=project_data, flags={})
     findings.extend(policy_findings)
 
     if not project_slug or not policy._is_valid_project_slug(project_slug):
@@ -3412,8 +3317,7 @@ def reconcile_feed(
                 code=_MRS_DEPLOY_003,
                 severity=Severity.ERROR,
                 message=(
-                    "cannot read local main's commit history to determine "
-                    f"repository facts for refresh-feed: {exc}"
+                    f"cannot read local main's commit history to determine repository facts for refresh-feed: {exc}"
                 ),
             )
         )
@@ -3451,9 +3355,7 @@ def reconcile_feed(
     # off". No behavior change needed -- this comment is the fix.
     if effective.landing_resync.value:
         data["resync_skipped"] = False
-        resync_reports, resync_findings = _run_resync_commands(
-            process, root, effective.landing_resync_commands.value
-        )
+        resync_reports, resync_findings = _run_resync_commands(process, root, effective.landing_resync_commands.value)
         data["resync_commands"] = resync_reports
         findings.extend(resync_findings)
     else:
@@ -3604,14 +3506,7 @@ def _repair_tier3_feed(
     every failure shape that chain can produce -- the contract here is
     "never let a failure in this best-effort repair step propagate out of
     `run_reconcile_completions`", identically absolute."""
-    feed_path = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / project_slug
-        / "implementation-artifacts"
-        / "sprint-status.yaml"
-    )
+    feed_path = root / "_bmad-output" / "projects" / project_slug / "implementation-artifacts" / "sprint-status.yaml"
     try:
         promote_mod = _load_promote_sprint_status()
         gen = promote_mod._load_generate()
@@ -3650,9 +3545,7 @@ def run_reconcile_completions(
     # Same is-not-None precedence as `run_promote`/`cli/gate.py::
     # run_evaluate` -- an explicit `--project ""` must win over
     # BMAD_ACTIVE_PROJECT.
-    project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
-    )
+    project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
 
     root = repo_root()
     data: dict[str, object] = {"slug": project_slug, "root": str(root)}
@@ -3684,8 +3577,7 @@ def run_reconcile_completions(
     # `Verdict.UNEVALUABLE` dominate the run's verdict naturally, with no
     # special-cased early return needed.
     corroborated_keys = frozenset(
-        str(candidate.story_key)
-        for candidate in (scan.plan.to_promote if scan.plan is not None else ())
+        str(candidate.story_key) for candidate in (scan.plan.to_promote if scan.plan is not None else ())
     ) | frozenset(str(key) for key in scan.already_promoted)
 
     # CAP-1 (AD-24, AD-33): the FULL three-pattern reachability answer --
@@ -3700,8 +3592,7 @@ def run_reconcile_completions(
     # Reuses the SAME `scan.combined_subjects`/`scan.template` `_scan_
     # promotions` already gathered -- no second git read.
     full_merged_keys = frozenset(
-        str(key)
-        for key in promotion.merged_story_keys(scan.combined_subjects, scan.template, project_slug)
+        str(key) for key in promotion.merged_story_keys(scan.combined_subjects, scan.template, project_slug)
     )
 
     # CAP-1 (AD-24, AD-33): the two Marshal-DRIVEN merge-subject patterns
@@ -3710,10 +3601,7 @@ def run_reconcile_completions(
     # already owns (this story's own Never bullet: "never fold this into
     # ... Story 5.4's own sync").
     marshal_native_keys = frozenset(
-        str(key)
-        for key in promotion.marshal_native_merged_keys(
-            scan.combined_subjects, scan.template, project_slug
-        )
+        str(key) for key in promotion.marshal_native_merged_keys(scan.combined_subjects, scan.template, project_slug)
     )
 
     # This story's own Boundaries, both directions: corroborated by a
@@ -3892,9 +3780,7 @@ def run_reconcile_completions(
             # promoted spec paths.
             if advanced_dot_keys:
                 raw_keys_to_advance = frozenset(
-                    raw_key_by_dot[dot_key]
-                    for dot_key in advanced_dot_keys
-                    if dot_key in raw_key_by_dot
+                    raw_key_by_dot[dot_key] for dot_key in advanced_dot_keys if dot_key in raw_key_by_dot
                 )
 
                 # Story 5.9's own review-fix pass, mirroring
@@ -3955,9 +3841,7 @@ def run_reconcile_completions(
                         ledger_text = None
                         read_failure = str(exc)
                     else:
-                        read_failure = (
-                            None if ledger_text is not None else "file no longer exists"
-                        )
+                        read_failure = None if ledger_text is not None else "file no longer exists"
 
                     if ledger_text is None:
                         findings.append(
@@ -3984,9 +3868,7 @@ def run_reconcile_completions(
                         # harness-parsed read above and this raw-text
                         # re-read) still emits a finding per key rather
                         # than silently doing and reporting nothing.
-                        new_text, matched_raw_keys = status.render_ledger_advancements(
-                            ledger_text, raw_keys_to_advance
-                        )
+                        new_text, matched_raw_keys = status.render_ledger_advancements(ledger_text, raw_keys_to_advance)
                         unmatched_raw_keys = raw_keys_to_advance - matched_raw_keys
                         for raw_key in sorted(unmatched_raw_keys):
                             unmatched_dot_key = dot_key_by_raw.get(raw_key, raw_key)
@@ -4016,16 +3898,12 @@ def run_reconcile_completions(
                                     Finding(
                                         code=_MRS_DEPLOY_025,
                                         severity=Severity.ERROR,
-                                        message=(
-                                            f"cannot write the advanced "
-                                            f"ledger at {ledger_path}: {exc}"
-                                        ),
+                                        message=(f"cannot write the advanced ledger at {ledger_path}: {exc}"),
                                     )
                                 )
                             else:
                                 advanced_story_keys = sorted(
-                                    dot_key_by_raw.get(raw_key, raw_key)
-                                    for raw_key in matched_raw_keys
+                                    dot_key_by_raw.get(raw_key, raw_key) for raw_key in matched_raw_keys
                                 )
                                 message = (
                                     f"marshal: advance {len(matched_raw_keys)} "
@@ -4156,14 +4034,10 @@ def run_reconcile_completions(
     data["promoted"] = sorted(promoted)
     data["promoted_count"] = len(promoted)
 
-    return _emit(
-        args, "deploy reconcile-completions", data, findings, _render_text_reconcile_completions
-    )
+    return _emit(args, "deploy reconcile-completions", data, findings, _render_text_reconcile_completions)
 
 
-def _render_text_reconcile_completions(
-    data: Mapping[str, object], findings: tuple[Finding, ...]
-) -> str:
+def _render_text_reconcile_completions(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching this module's own
     ``_render_text``/``_render_text_refresh_feed`` convention."""
@@ -4182,9 +4056,7 @@ def _render_text_reconcile_completions(
             f"({', '.join(missing_from_ledger)}) -- see MRS-DEPLOY-026 below"
         )
     if data.get("lock_contended"):
-        lines.append(
-            "lock contended: promotion lock busy -- spec promotion skipped, re-run later"
-        )
+        lines.append("lock contended: promotion lock busy -- spec promotion skipped, re-run later")
     if findings:
         lines.append("findings:")
         for finding in findings:

@@ -333,9 +333,7 @@ def resolve_factory_island(
 
     abs_recipe = (factory_root / "recipes" / slug).resolve()
     if not abs_recipe.exists():
-        raise FactoryIslandMissingError(
-            f"factory recipe not found at {abs_recipe} (resolved from {recipe_path!r})"
-        )
+        raise FactoryIslandMissingError(f"factory recipe not found at {abs_recipe} (resolved from {recipe_path!r})")
 
     return ResolvedFactoryIsland(
         foundry_root=foundry,

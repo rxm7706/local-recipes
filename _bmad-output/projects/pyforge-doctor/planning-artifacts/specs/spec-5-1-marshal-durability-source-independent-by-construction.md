@@ -79,3 +79,16 @@ validated. That is the split working as designed.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `18a5ac49f0` (2026-08-08, "doctor: split Story 5.1 — the source shipped, the wiring did not"); also `bbd4b9f891` (2026-08-07, "herald: Story 5.1 — push regenerated exports with etag guard (CAP-5)"); also `1666be6cde` (2026-08-07, "marshal: manually promote Story 5.1's spec (squash-merge blind spot)"). Ledger row `5-1-marshal-durability-source-independent-by-construction: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`, `docs/dashboard/data.js`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

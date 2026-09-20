@@ -214,8 +214,7 @@ def test_fr_new_without_citation_fails(tmp_path: Path) -> None:
 
 def test_fr_new_with_resolving_citation_same_line_or_first_body_line(tmp_path: Path) -> None:
     root = _fr_tree(tmp_path)
-    _prd(root, "pyforge-marshal",
-         "## FR-1: old\n\n## FR-2: same line ← CAP-1\n\n- **FR-3** new\n  ← CAP-2\n")
+    _prd(root, "pyforge-marshal", "## FR-1: old\n\n## FR-2: same line ← CAP-1\n\n- **FR-3** new\n  ← CAP-2\n")
     (f,) = one_chain.gather_fr_without_cap(root)
     assert f.status is DoctorStatus.OK and f.evidence["new_frs"] == 2
 
@@ -241,8 +240,7 @@ def test_fr_rebaseline_one_project_carries_the_others(tmp_path: Path) -> None:
     _prd(root, "pyforge-doctor", "## FR-5: doctor\n")
     existing = json.loads((root / one_chain.FR_BASELINE_REL).read_text())
     existing["projects"]["pyforge-doctor"] = ["FR-1"]  # stale on purpose
-    data = one_chain.snapshot_fr_baseline(root, ruling_sha="abc123", only_project="pyforge-marshal",
-                                          existing=existing)
+    data = one_chain.snapshot_fr_baseline(root, ruling_sha="abc123", only_project="pyforge-marshal", existing=existing)
     assert data["projects"]["pyforge-doctor"] == ["FR-1"]  # untouched
     assert data["projects"]["pyforge-marshal"] == ["FR-1"]
 
@@ -302,5 +300,8 @@ def test_live_roster_declares_the_closed_list() -> None:
     root = _live_root()
     data = json.loads((root / "docs/governance/guild-roster.json").read_text())
     assert data["fold_exemptions"] == [
-        "different-owner", "different-lifecycle", "cross-station-seam", "governance",
+        "different-owner",
+        "different-lifecycle",
+        "cross-station-seam",
+        "governance",
     ]

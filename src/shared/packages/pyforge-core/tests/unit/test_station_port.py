@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import pytest
+
 from pyforge.core.errors import PyforgeError
-from pyforge.core.station_port import StationPortError
-from pyforge.core.station_port import invoke_in_process
-from pyforge.core.station_port import is_station_remote
-from pyforge.core.station_port import register_in_process_invoker
-from pyforge.core.station_port import reset_in_process_invoker
+from pyforge.core.station_port import (
+    StationPortError,
+    invoke_in_process,
+    is_station_remote,
+    register_in_process_invoker,
+    reset_in_process_invoker,
+)
 
 
 @pytest.fixture(autouse=True)

@@ -2,7 +2,7 @@
 title: 'Workbook-free metrics universe: Kedro `inventory_universe` + `--analysis-xlsx` optional (Story 23.8, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'c9db13fa23cc9d39e2a149b3cfc47bc7a1f77690'
@@ -302,3 +302,17 @@ this pass (no `docs/Analysis_Dataset-2026-08-12.xlsx` present in this worktree t
 run the workbook-mode baseline against); the frozen fixture pair's own parity test
 (`test_parity_workbook_vs_live_catalog_universe`) is the byte-level proof this
 story's `done_checkpoint` actually relies on.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `22-8-workbook-free-metrics-universe-kedro-inventory_universe-analysis-xlsx-optional: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `22-8-workbook-free-metrics-universe-kedro-inventory_universe-analysis-xlsx-optional: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

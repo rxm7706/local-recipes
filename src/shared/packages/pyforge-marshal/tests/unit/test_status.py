@@ -320,7 +320,12 @@ def test_missing_canonical_store_without_a_backlink_is_not_a_violation():
     """The dangling-backlink check only applies when a backlink exists --
     an unprovisioned home whose canonical store also doesn't exist yet is
     still just 'never provisioned'."""
-    home = _home(marker="acme\n", symlink=Path("projects/acme/planning-artifacts"), tier3_local=None, tier3_canonical_is_dir=False)
+    home = _home(
+        marker="acme\n",
+        symlink=Path("projects/acme/planning-artifacts"),
+        tier3_local=None,
+        tier3_canonical_is_dir=False,
+    )
     result = status.evaluate_homes((home,), _CLEAN_MAIN)
     assert result.findings == ()
     assert result.homes[0]["desynced"] is False
@@ -441,9 +446,7 @@ def test_slug_from_symlink_target_matches_cli_init_copy():
         Path("wrong/depth"),
         Path("projects/acme/nested/planning-artifacts"),
     ):
-        assert status._slug_from_symlink_target(
-            target
-        ) == init_cli._slug_from_symlink_target(target)
+        assert status._slug_from_symlink_target(target) == init_cli._slug_from_symlink_target(target)
 
 
 # =============================================================================
@@ -473,9 +476,7 @@ def test_reconcile_claimed_commit_matching_merged_keys_is_no_finding():
     row = report.stories[0]
     assert row["story_key"] == "1.2"
     assert row["durable"] == status.DomainField(value=True, domain="git")
-    assert row["claimed_commit_sha"] == status.DomainField(
-        value="deadbeef", domain="journal"
-    )
+    assert row["claimed_commit_sha"] == status.DomainField(value="deadbeef", domain="journal")
 
 
 def test_reconcile_claimed_commit_not_in_merged_keys_is_mrs_status_001():
@@ -500,9 +501,9 @@ def test_reconcile_claimed_commit_not_in_merged_keys_is_mrs_status_001():
 
 def test_reconcile_claimed_commit_none_is_no_finding_git_stands_alone():
     key = normalize("3.1")
-    report = status.reconcile_feed_domains(frozenset({key}), (
-        status.ClaimedCommit(story_key=key, claimed_commit_sha=None),
-    ))
+    report = status.reconcile_feed_domains(
+        frozenset({key}), (status.ClaimedCommit(story_key=key, claimed_commit_sha=None),)
+    )
     assert report.findings == ()
     row = report.stories[0]
     assert row["durable"].value is True
@@ -539,12 +540,8 @@ def test_reconcile_duplicate_story_key_prefers_later_phase_non_none_sha():
     an explicit, deterministic precedence, never by which happened to be
     LAST in a dict comprehension's own iteration order."""
     key = normalize("5.1")
-    earlier = status.ClaimedCommit(
-        story_key=key, claimed_commit_sha="earliersha", phase="review-verify"
-    )
-    later = status.ClaimedCommit(
-        story_key=key, claimed_commit_sha="donesha", phase="done"
-    )
+    earlier = status.ClaimedCommit(story_key=key, claimed_commit_sha="earliersha", phase="review-verify")
+    later = status.ClaimedCommit(story_key=key, claimed_commit_sha="donesha", phase="done")
     # Feed them in BOTH orders -- the result must not depend on input order.
     report_forward = status.reconcile_feed_domains(frozenset({key}), (earlier, later))
     report_reverse = status.reconcile_feed_domains(frozenset({key}), (later, earlier))
@@ -555,9 +552,7 @@ def test_reconcile_duplicate_story_key_prefers_later_phase_non_none_sha():
 def test_reconcile_duplicate_story_key_prefers_non_none_sha_over_none():
     key = normalize("5.2")
     no_claim = status.ClaimedCommit(story_key=key, claimed_commit_sha=None, phase="done")
-    has_claim = status.ClaimedCommit(
-        story_key=key, claimed_commit_sha="sha123", phase="dev-running"
-    )
+    has_claim = status.ClaimedCommit(story_key=key, claimed_commit_sha="sha123", phase="dev-running")
     report = status.reconcile_feed_domains(frozenset({key}), (no_claim, has_claim))
     assert report.stories[0]["claimed_commit_sha"].value == "sha123"
 
@@ -566,9 +561,7 @@ def test_reconcile_duplicate_story_key_prefers_non_none_sha_over_none():
 
 
 def test_classify_resync_outcome_never_ran_reports_mrs_deploy_019():
-    report, finding = status.classify_resync_outcome(
-        "echo hi", None, failure_reason="could not launch"
-    )
+    report, finding = status.classify_resync_outcome("echo hi", None, failure_reason="could not launch")
     assert report == {"command": "echo hi", "resolvable": False, "returncode": None}
     assert finding.code == "MRS-DEPLOY-019"
     assert finding.severity is Severity.ERROR
@@ -610,9 +603,7 @@ def test_classify_resync_outcome_success_is_no_finding():
 
 
 def _task(story_key: str = "1.1", phase: str = "dev-running") -> TaskPhaseSnapshot:
-    return TaskPhaseSnapshot(
-        story_key=story_key, phase=phase, commit_sha=None, branch=""
-    )
+    return TaskPhaseSnapshot(story_key=story_key, phase=phase, commit_sha=None, branch="")
 
 
 class TestDeriveHomeState:
@@ -634,9 +625,7 @@ class TestDeriveHomeState:
         """A finished run's own supervisor sidecar naturally exits once its
         watched harness process does -- liveness is never consulted once
         finished is True."""
-        state = status.derive_home_state(
-            finished=True, paused_stage=None, tasks=(), supervisor_alive=False
-        )
+        state = status.derive_home_state(finished=True, paused_stage=None, tasks=(), supervisor_alive=False)
         assert state == "stopped"
 
     def test_paused_on_escalation(self):
@@ -662,9 +651,7 @@ class TestDeriveHomeState:
             _task(story_key="1.1", phase="done"),
             _task(story_key="1.2", phase="dev-running"),
         )
-        state = status.derive_home_state(
-            finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True
-        )
+        state = status.derive_home_state(finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True)
         assert state == "running"
 
     def test_deferred_task_alone_is_not_running(self):
@@ -686,9 +673,7 @@ class TestDeriveHomeState:
         assert state == "idle"
 
     def test_no_tasks_at_all_is_idle(self):
-        state = status.derive_home_state(
-            finished=False, paused_stage=None, tasks=(), supervisor_alive=True
-        )
+        state = status.derive_home_state(finished=False, paused_stage=None, tasks=(), supervisor_alive=True)
         assert state == "idle"
 
     def test_supervisor_alive_none_never_triggers_unsupervised(self):
@@ -795,9 +780,7 @@ class TestDeriveHomeState:
             _task(story_key="25.1", phase="done"),
             _task(story_key="25.2", phase="awaiting-operator"),
         )
-        state = status.derive_home_state(
-            finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True
-        )
+        state = status.derive_home_state(finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True)
         assert state == "awaiting-operator"
 
     def test_parked_plus_active_stays_running(self):
@@ -807,9 +790,7 @@ class TestDeriveHomeState:
             _task(story_key="25.2", phase="awaiting-operator"),
             _task(story_key="25.3", phase="dev-running"),
         )
-        state = status.derive_home_state(
-            finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True
-        )
+        state = status.derive_home_state(finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True)
         assert state == "running"
 
     def test_parked_plus_finished_is_awaiting_operator_not_stopped(self):
@@ -872,9 +853,7 @@ class TestIsRunLive:
     def test_journal_unreadable_is_conservatively_live(self):
         """Liveness cannot be proven either way -- mirrors core/retire.py's
         own 'an unprovable fact is refused, never defaulted to delete'."""
-        facts = status.FleetHomeFacts(
-            slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
-        )
+        facts = status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True)
         assert status.is_run_live(facts) is True
 
     def test_journal_unreadable_is_live_even_if_finished_also_claims_true(self):
@@ -981,9 +960,7 @@ class TestBuildFleetRow:
 
     def test_missing_spec_escalation_overrides_idle_with_awaiting_operator(self):
         """Story 28.19: remaining backlog + MRS-DISP-005 must not read idle."""
-        spec_glob = (
-            "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-39-4-*.md"
-        )
+        spec_glob = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-39-4-*.md"
         facts = status.FleetHomeFacts(
             slug="pyforge-marshal",
             branch="loop/pyforge-marshal",
@@ -999,9 +976,7 @@ class TestBuildFleetRow:
         assert "missing tracked spec" in row["awaiting_operator_remedy"]
 
     def test_journal_unreadable_reports_unknown_and_warns(self):
-        facts = status.FleetHomeFacts(
-            slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
-        )
+        facts = status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True)
         row, finding = status.build_fleet_row(facts)
         assert row["state"] == "unknown"
         assert row["current_story"] is None
@@ -1533,37 +1508,25 @@ class TestSortFleetRows:
 
 class TestReconcileLedgerVsGit:
     def test_full_agreement_reports_no_discrepancies(self):
-        result = status.reconcile_ledger_vs_git(
-            frozenset({"1.1", "1.2"}), frozenset({"1.1", "1.2"})
-        )
+        result = status.reconcile_ledger_vs_git(frozenset({"1.1", "1.2"}), frozenset({"1.1", "1.2"}))
         assert result == ()
 
     def test_empty_both_sides_reports_no_discrepancies(self):
         assert status.reconcile_ledger_vs_git(frozenset(), frozenset()) == ()
 
     def test_done_in_ledger_not_merged(self):
-        result = status.reconcile_ledger_vs_git(
-            frozenset({"1.1"}), frozenset()
-        )
-        assert result == (
-            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
-        )
+        result = status.reconcile_ledger_vs_git(frozenset({"1.1"}), frozenset())
+        assert result == ({"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},)
 
     def test_merged_not_done_in_ledger(self):
         """The live incident this story exists to catch: a story git
         confirms as durably merged whose ledger status is anything other
         than done -- including absent entirely, the case exercised here."""
-        result = status.reconcile_ledger_vs_git(
-            frozenset(), frozenset({"4.1"})
-        )
-        assert result == (
-            {"story_key": "4.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},
-        )
+        result = status.reconcile_ledger_vs_git(frozenset(), frozenset({"4.1"}))
+        assert result == ({"story_key": "4.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},)
 
     def test_both_directions_at_once_sorted_by_key_within_each_kind(self):
-        result = status.reconcile_ledger_vs_git(
-            frozenset({"1.2", "1.1"}), frozenset({"2.2", "2.1"})
-        )
+        result = status.reconcile_ledger_vs_git(frozenset({"1.2", "1.1"}), frozenset({"2.2", "2.1"}))
         assert result == (
             {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
             {"story_key": "1.2", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
@@ -1572,12 +1535,8 @@ class TestReconcileLedgerVsGit:
         )
 
     def test_result_is_deterministic_regardless_of_set_construction_order(self):
-        first = status.reconcile_ledger_vs_git(
-            frozenset({"3.1", "1.1", "2.1"}), frozenset({"9.9", "5.5"})
-        )
-        second = status.reconcile_ledger_vs_git(
-            frozenset({"2.1", "3.1", "1.1"}), frozenset({"5.5", "9.9"})
-        )
+        first = status.reconcile_ledger_vs_git(frozenset({"3.1", "1.1", "2.1"}), frozenset({"9.9", "5.5"}))
+        second = status.reconcile_ledger_vs_git(frozenset({"2.1", "3.1", "1.1"}), frozenset({"5.5", "9.9"}))
         assert first == second
 
 
@@ -1742,16 +1701,12 @@ class TestRenderLedgerAdvancements:
         assert matched == raw_keys
 
     def test_a_key_already_done_is_rewritten_to_done_again_idempotently(self):
-        result, matched = status.render_ledger_advancements(
-            self._LEDGER, frozenset({"1-1-package-spine"})
-        )
+        result, matched = status.render_ledger_advancements(self._LEDGER, frozenset({"1-1-package-spine"}))
         assert result == self._LEDGER  # `done` -> `done` is byte-identical
         assert matched == frozenset({"1-1-package-spine"})
 
     def test_unmatched_raw_key_is_silently_ignored_never_raises(self):
-        result, matched = status.render_ledger_advancements(
-            self._LEDGER, frozenset({"99-9-nonexistent"})
-        )
+        result, matched = status.render_ledger_advancements(self._LEDGER, frozenset({"99-9-nonexistent"}))
         assert result == self._LEDGER
         assert matched == frozenset()
 
@@ -1760,9 +1715,7 @@ class TestRenderLedgerAdvancements:
         exist in the ledger text -- the caller must see it as UNMATCHED,
         never over-reported as advanced."""
         raw_key = "5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger"
-        result, matched = status.render_ledger_advancements(
-            self._LEDGER, frozenset({raw_key, "99-9-nonexistent"})
-        )
+        result, matched = status.render_ledger_advancements(self._LEDGER, frozenset({raw_key, "99-9-nonexistent"}))
         assert f"{raw_key}: done" in result
         assert matched == frozenset({raw_key})
 
@@ -2039,9 +1992,7 @@ def _resume_outcome_line(
     return prepare_for_write(entry).line
 
 
-def _supervisor_attach_line(
-    run_id: str, *, pid: int, ts: str = "2026-08-06T00:00:30.000Z"
-) -> str:
+def _supervisor_attach_line(run_id: str, *, pid: int, ts: str = "2026-08-06T00:00:30.000Z") -> str:
     """A minimal, valid ``"supervisor-attach"`` journal line -- the SAME
     shape ``supervisor/__main__.py`` itself journals (``{"pid": ...,
     "watched_pid": ...}``). Code review (2026-08-07, Blind Hunter): this is
@@ -2196,10 +2147,7 @@ class TestDiscoverHarnessRunIdByFilesystem:
 
     def test_no_runs_directory_returns_none(self, tmp_path):
         launched_at = datetime(2026, 8, 6, tzinfo=timezone.utc)
-        assert (
-            status_cli._discover_harness_run_id_by_filesystem(tmp_path, launched_at)
-            is None
-        )
+        assert status_cli._discover_harness_run_id_by_filesystem(tmp_path, launched_at) is None
 
     def test_launched_at_none_returns_none_without_touching_disk(self, tmp_path):
         # No `.bmad-loop/runs/` created at all -- if this read the
@@ -2331,9 +2279,7 @@ class TestRunStatus:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_home_with_running_supervisor_and_in_flight_task_is_running(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_home_with_running_supervisor_and_in_flight_task_is_running(self, tmp_path, capsys, monkeypatch):
         run_dir = _seed_run_journal(
             tmp_path,
             run_id="acme-run1",
@@ -2351,9 +2297,7 @@ class TestRunStatus:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         process = _FakeProcess(alive_pids=frozenset({5252}))
@@ -2387,9 +2331,7 @@ class TestRunStatus:
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
-        harness = _FakeHarness(
-            snapshots={(str(home), "hrid-1"): _snapshot(paused_stage="escalation")}
-        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _snapshot(paused_stage="escalation")})
         process = _FakeProcess(alive_pids=frozenset({5252}))
 
         exit_code = status_cli.run_status(
@@ -2414,9 +2356,7 @@ class TestRunStatus:
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
-        harness = _FakeHarness(
-            snapshots={(str(home), "hrid-1"): _snapshot(finished=True)}
-        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _snapshot(finished=True)})
         # Supervisor already exited -- must NOT report unsupervised.
         process = _FakeProcess(alive_pids=frozenset())
 
@@ -2433,9 +2373,7 @@ class TestRunStatus:
         assert payload["data"]["homes"][0]["state"] == "stopped"
         assert exit_code == 0
 
-    def test_home_with_dead_supervisor_but_alive_engine_is_not_unsupervised(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_home_with_dead_supervisor_but_alive_engine_is_not_unsupervised(self, tmp_path, capsys, monkeypatch):
         """Story 5.8 (2026-08-11 incident): the supervisor pid (5252) is
         journaled and dead while the DIFFERENT harness/launch pid (4242,
         the engine) is alive -- this test used to assert `unsupervised`
@@ -2458,9 +2396,7 @@ class TestRunStatus:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         # 4242 (the harness/engine) is alive; 5252 (the supervisor) is NOT.
@@ -2479,9 +2415,7 @@ class TestRunStatus:
         assert payload["data"]["homes"][0]["state"] == "running"
         assert exit_code == 0
 
-    def test_home_with_supervisor_and_engine_both_dead_is_unsupervised(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_home_with_supervisor_and_engine_both_dead_is_unsupervised(self, tmp_path, capsys, monkeypatch):
         """The genuinely-stalled case this story must NOT soften: both the
         supervisor pid (5252) and the harness/engine pid (4242) are dead
         -- `engine_alive` reads `False`, which never softens the branch,
@@ -2500,9 +2434,7 @@ class TestRunStatus:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         # Neither 4242 (the engine) nor 5252 (the supervisor) is alive.
@@ -2543,9 +2475,7 @@ class TestRunStatus:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         # Only 4242 (the engine) is alive -- no supervisor pid was ever
@@ -2567,9 +2497,7 @@ class TestRunStatus:
         assert state == "running"
         assert exit_code == 0
 
-    def test_home_with_supervisor_never_attached_and_engine_dead_is_unsupervised(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_home_with_supervisor_never_attached_and_engine_dead_is_unsupervised(self, tmp_path, capsys, monkeypatch):
         """Acceptance criterion: the IDENTICAL scenario to the 2026-08-11
         reproduction above (no supervisor pid ever journaled) except the
         engine process has ALSO exited -- the row must still report
@@ -2585,9 +2513,7 @@ class TestRunStatus:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         # Neither pid is alive: no supervisor pid was ever journaled, and
@@ -2607,9 +2533,7 @@ class TestRunStatus:
         assert payload["data"]["homes"][0]["state"] == "unsupervised"
         assert exit_code == 0
 
-    def test_engine_alive_reflects_the_resumed_pid_not_the_original_launch_pid(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_engine_alive_reflects_the_resumed_pid_not_the_original_launch_pid(self, tmp_path, capsys, monkeypatch):
         """Code review (2026-08-12, Blind Hunter, Story 5.8): a run that
         was launched, then resumed under a NEW pid (the original launch
         process exited, `bmad-loop resume` spawned a different one) --
@@ -2631,9 +2555,7 @@ class TestRunStatus:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         # 4242 (the ORIGINAL launch pid) is dead; 7777 (the resumed pid)
@@ -2653,9 +2575,7 @@ class TestRunStatus:
         assert payload["data"]["homes"][0]["state"] == "running"
         assert exit_code == 0
 
-    def test_dead_supervisor_alive_engine_state_matches_across_text_and_json(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_dead_supervisor_alive_engine_state_matches_across_text_and_json(self, tmp_path, capsys, monkeypatch):
         """Acceptance criterion (AD-14 parity): a dead-supervisor-alive-
         engine row must carry the SAME derived state under both
         `--format text` and `--format json` -- the text view is a pure
@@ -2674,9 +2594,7 @@ class TestRunStatus:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         process = _FakeProcess(alive_pids=frozenset({4242}))
@@ -2706,9 +2624,7 @@ class TestRunStatus:
         assert json_state == "running"
         assert f": {json_state} " in text_out
 
-    def test_missing_journal_reports_unknown_and_warns(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_missing_journal_reports_unknown_and_warns(self, tmp_path, capsys, monkeypatch):
         run_dir = tmp_path / "runs" / "acme-run1"
         run_dir.mkdir(parents=True)  # no journal.jsonl written at all
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
@@ -2732,9 +2648,7 @@ class TestRunStatus:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_poisoned_harness_run_id_recovers_via_filesystem_discovery(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_poisoned_harness_run_id_recovers_via_filesystem_discovery(self, tmp_path, capsys, monkeypatch):
         """2026-08-15, ``spec-marshal-status-harness-run-id-poisoning``
         CAP-1: a launch-time poll timeout (``MRS-SPIN-004``) journals
         ``harness_run_id: null`` PERMANENTLY -- reproduced live against a
@@ -2795,9 +2709,7 @@ class TestRunStatus:
         assert "MRS-STATUS-002" not in codes
         assert exit_code == 0
 
-    def test_poisoned_harness_run_id_with_no_run_dir_still_reports_unknown(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_poisoned_harness_run_id_with_no_run_dir_still_reports_unknown(self, tmp_path, capsys, monkeypatch):
         """CAP-2 regression guard: the filesystem fallback must not turn
         a GENUINELY unrecoverable poisoned journal into a false-positive
         state. No `.bmad-loop/runs/` directory exists at all here --
@@ -2830,9 +2742,7 @@ class TestRunStatus:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_poisoned_harness_run_id_only_stale_siblings_still_reports_unknown(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_poisoned_harness_run_id_only_stale_siblings_still_reports_unknown(self, tmp_path, capsys, monkeypatch):
         """CAP-2 regression guard, disambiguation variant: real
         `.bmad-loop/runs/` entries exist, but ALL of them fall outside the
         correlation window -- the fallback must refuse to guess rather
@@ -2872,12 +2782,8 @@ class TestRunStatus:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_malformed_journal_no_recoverable_pid_reports_unknown_and_warns(
-        self, tmp_path, capsys, monkeypatch
-    ):
-        run_dir = _seed_run_journal(
-            tmp_path, run_id="acme-run1", lines=["{not valid json at all"]
-        )
+    def test_malformed_journal_no_recoverable_pid_reports_unknown_and_warns(self, tmp_path, capsys, monkeypatch):
+        run_dir = _seed_run_journal(tmp_path, run_id="acme-run1", lines=["{not valid json at all"])
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
@@ -2899,9 +2805,7 @@ class TestRunStatus:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_budget_consumed_reads_last_journaled_usage_observation(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_budget_consumed_reads_last_journaled_usage_observation(self, tmp_path, capsys, monkeypatch):
         run_dir = _seed_run_journal(
             tmp_path,
             run_id="acme-run1",
@@ -2909,17 +2813,13 @@ class TestRunStatus:
                 _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
                 _supervisor_attach_line("acme-run1", pid=5252),
                 _budget_usage_line("acme-run1", cost_estimate=1000),
-                _budget_usage_line(
-                    "acme-run1", cost_estimate=2500, ts="2026-08-06T00:10:00.000Z"
-                ),
+                _budget_usage_line("acme-run1", cost_estimate=2500, ts="2026-08-06T00:10:00.000Z"),
             ],
         )
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
-        harness = _FakeHarness(
-            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())}
-        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())})
         process = _FakeProcess(alive_pids=frozenset({5252}))
 
         exit_code = status_cli.run_status(
@@ -2947,9 +2847,7 @@ class TestRunStatus:
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
-        harness = _FakeHarness(
-            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())}
-        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())})
         process = _FakeProcess(alive_pids=frozenset({5252}))
 
         exit_code = status_cli.run_status(
@@ -2993,10 +2891,7 @@ class TestRunStatus:
     def test_seven_homes_all_reported(self, tmp_path, capsys, monkeypatch):
         slugs = [f"proj{i}" for i in range(7)]
         _stub_latest_run_dir(monkeypatch, run_dir_map={slug: None for slug in slugs})
-        worktrees = tuple(
-            WorktreeEntry(path=tmp_path / "loop-homes" / slug, branch=f"loop/{slug}")
-            for slug in slugs
-        )
+        worktrees = tuple(WorktreeEntry(path=tmp_path / "loop-homes" / slug, branch=f"loop/{slug}") for slug in slugs)
         vcs = _FakeVcs(worktrees=worktrees)
 
         exit_code = status_cli.run_status(
@@ -3015,12 +2910,8 @@ class TestRunStatus:
 
     # --- Story 5.3 (FR-38): --escalations + fleet-summary sort -------------
 
-    def test_fleet_summary_sorts_escalated_rows_first(
-        self, tmp_path, capsys, monkeypatch
-    ):
-        _stub_latest_run_dir(
-            monkeypatch, run_dir_map={"acme": None, "beta": None, "gamma": None}
-        )
+    def test_fleet_summary_sorts_escalated_rows_first(self, tmp_path, capsys, monkeypatch):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None, "gamma": None})
         run_dir_beta = _seed_run_journal(
             tmp_path,
             run_id="beta-run1",
@@ -3033,13 +2924,10 @@ class TestRunStatus:
             monkeypatch,
             run_dir_map={"acme": None, "beta": run_dir_beta, "gamma": None},
         )
-        homes = {
-            slug: tmp_path / "loop-homes" / slug for slug in ("acme", "beta", "gamma")
-        }
+        homes = {slug: tmp_path / "loop-homes" / slug for slug in ("acme", "beta", "gamma")}
         vcs = _FakeVcs(
             worktrees=tuple(
-                WorktreeEntry(path=homes[slug], branch=f"loop/{slug}")
-                for slug in ("acme", "beta", "gamma")
+                WorktreeEntry(path=homes[slug], branch=f"loop/{slug}") for slug in ("acme", "beta", "gamma")
             )
         )
         harness = _FakeHarness(
@@ -3070,9 +2958,7 @@ class TestRunStatus:
         assert homes_rows[0]["escalation_artifact"] == "spec-1.2.md"
         assert exit_code == 0
 
-    def test_escalations_flag_with_zero_matches_is_a_clean_empty_list(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_escalations_flag_with_zero_matches_is_a_clean_empty_list(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
         vcs = _FakeVcs(
             worktrees=(
@@ -3095,9 +2981,7 @@ class TestRunStatus:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_escalations_flag_with_matches_filters_to_only_escalated(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_escalations_flag_with_matches_filters_to_only_escalated(self, tmp_path, capsys, monkeypatch):
         run_dir_beta = _seed_run_journal(
             tmp_path,
             run_id="beta-run1",
@@ -3106,9 +2990,7 @@ class TestRunStatus:
                 _supervisor_attach_line("beta-run1", pid=5252),
             ],
         )
-        _stub_latest_run_dir(
-            monkeypatch, run_dir_map={"acme": None, "beta": run_dir_beta}
-        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": run_dir_beta})
         homes = {slug: tmp_path / "loop-homes" / slug for slug in ("acme", "beta")}
         vcs = _FakeVcs(
             worktrees=(
@@ -3145,9 +3027,7 @@ class TestRunStatus:
         assert homes_rows[0]["escalation_artifact"] == "dev-running"
         assert exit_code == 0
 
-    def test_escalations_flag_combined_with_project_scope(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_escalations_flag_combined_with_project_scope(self, tmp_path, capsys, monkeypatch):
         run_dir_beta = _seed_run_journal(
             tmp_path,
             run_id="beta-run1",
@@ -3156,9 +3036,7 @@ class TestRunStatus:
                 _supervisor_attach_line("beta-run1", pid=5252),
             ],
         )
-        _stub_latest_run_dir(
-            monkeypatch, run_dir_map={"acme": None, "beta": run_dir_beta}
-        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": run_dir_beta})
         homes = {slug: tmp_path / "loop-homes" / slug for slug in ("acme", "beta")}
         vcs = _FakeVcs(
             worktrees=(
@@ -3325,13 +3203,7 @@ def _write_dispatch_run_journal(
     ``harness_profile``, then one ``budget-usage`` entry carrying
     ``layer_savings`` -- mirrors ``test_layer_savings_sources.py::
     _write_run_journal``'s shape."""
-    run_dir = (
-        repo_root
-        / "_bmad-output/projects"
-        / slug
-        / "implementation-artifacts/dispatch-runs"
-        / run_id
-    )
+    run_dir = repo_root / "_bmad-output/projects" / slug / "implementation-artifacts/dispatch-runs" / run_id
     run_dir.mkdir(parents=True)
     lines = [
         json.dumps(
@@ -3358,18 +3230,8 @@ class TestFormatRollupByHarness:
 
     def test_empty_and_no_data_statuses_render_blank(self) -> None:
         assert status_cli._format_rollup_by_harness({}) == ""
-        assert (
-            status_cli._format_rollup_by_harness(
-                {"status": "no-dispatch-journals", "harnesses": {}}
-            )
-            == ""
-        )
-        assert (
-            status_cli._format_rollup_by_harness(
-                {"status": "no-savings-samples", "harnesses": {}}
-            )
-            == ""
-        )
+        assert status_cli._format_rollup_by_harness({"status": "no-dispatch-journals", "harnesses": {}}) == ""
+        assert status_cli._format_rollup_by_harness({"status": "no-savings-samples", "harnesses": {}}) == ""
 
     def test_renders_both_harnesses_own_currency_no_blended_total(self) -> None:
         rollup = {
@@ -3432,9 +3294,7 @@ class TestFormatRollupByHarness:
 class TestSavingsRollupByHarness:
     """Story 46.5 (CAP-193): ``run_status``-level envelope wiring."""
 
-    def test_project_scoped_status_carries_rollup(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_project_scoped_status_carries_rollup(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(
@@ -3484,9 +3344,7 @@ class TestSavingsRollupByHarness:
         assert "usd" in text_out
         assert "quota-burn" in text_out
 
-    def test_whole_fleet_status_has_no_rollup_key(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_whole_fleet_status_has_no_rollup_key(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(
@@ -3558,17 +3416,13 @@ class TestBuildRunDetail:
         assert "acme-run1" in finding.message
 
     def test_empty_tasks_is_no_crash_empty_stories_no_finding(self):
-        facts = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=True
-        )
+        facts = status.RunDetailFacts(project="acme", run_id="acme-run1", found=True, state_readable=True)
         row, finding = status.build_run_detail(facts)
         assert row["stories"] == []
         assert finding is None
 
     def test_story_with_gate_verdict_is_named(self):
-        task = TaskPhaseSnapshot(
-            story_key="1.1", phase="done", commit_sha="cafe123", branch=""
-        )
+        task = TaskPhaseSnapshot(story_key="1.1", phase="done", commit_sha="cafe123", branch="")
         facts = status.RunDetailFacts(
             project="acme",
             run_id="acme-run1",
@@ -3613,7 +3467,10 @@ class TestBuildRunDetail:
             TaskPhaseSnapshot(story_key="1.2", phase="review-verify", commit_sha="bbb"),
         )
         facts = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
             tasks=tasks,
         )
         row, _ = status.build_run_detail(facts)
@@ -3718,7 +3575,10 @@ class TestBuildRunDetail:
             preserve_ref="attempt-preserve/run1-abc123",
         )
         facts = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
             tasks=(task,),
         )
         row, _ = status.build_run_detail(facts)
@@ -3735,20 +3595,23 @@ class TestBuildRunDetail:
             preserve_ref="refs/attempt-preserve-dirty/run1-def456",
         )
         facts = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
             deferred=(deferred_story,),
         )
         row, _ = status.build_run_detail(facts)
-        assert (
-            row["deferred"][0]["preserve_ref"]
-            == "refs/attempt-preserve-dirty/run1-def456"
-        )
+        assert row["deferred"][0]["preserve_ref"] == "refs/attempt-preserve-dirty/run1-def456"
 
     def test_sweeps_refused_dict_is_carried_verbatim(self):
         """Matrix row 'sweeps_refused': trigger -> reason slug, the closed
         `SWEEP_REFUSED_*` vocabulary, reported as-is."""
         facts = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
             sweeps_refused={"epic-1": "dirty"},
         )
         row, _ = status.build_run_detail(facts)
@@ -3758,7 +3621,10 @@ class TestBuildRunDetail:
         """Matrix row 'sweeps_refused empty': `{}` = a READABLE state that
         refused nothing -- distinct from null (unreadable)."""
         facts = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
             sweeps_refused={},
         )
         row, _ = status.build_run_detail(facts)
@@ -3770,13 +3636,19 @@ class TestBuildRunDetail:
         `state_readable=False` (the same gating every sibling
         snapshot-sourced field already follows)."""
         no_snapshot = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=False,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=False,
         )
         row, _ = status.build_run_detail(no_snapshot)
         assert row["sweeps_refused"] is None
 
         stale_dict = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=False,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=False,
             sweeps_refused={"epic-1": "dirty"},
         )
         row, _ = status.build_run_detail(stale_dict)
@@ -3787,9 +3659,7 @@ class TestBuildRunDetail:
         assert status._render_story_key_best_effort(str(key)) == "1.2"
 
     def test_render_story_key_best_effort_falls_back_to_raw_on_unparseable(self):
-        assert status._render_story_key_best_effort("not-a-story-key") == (
-            "not-a-story-key"
-        )
+        assert status._render_story_key_best_effort("not-a-story-key") == ("not-a-story-key")
 
 
 # =============================================================================
@@ -3804,20 +3674,10 @@ def _run_detail_dir(tmp_path: Path, *, slug: str, run_id: str) -> Path:
     project's own canonical Tier-3 store, never a home-relative path (this
     command reads run directories directly off the repo root/slug, mirroring
     ``cli/deploy.py::_gather_gate_verdicts``'s own identical convention)."""
-    return (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-        / run_id
-    )
+    return tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
 
 
-def _seed_run_detail_journal(
-    tmp_path: Path, *, slug: str, run_id: str, lines: list[str]
-) -> Path:
+def _seed_run_detail_journal(tmp_path: Path, *, slug: str, run_id: str, lines: list[str]) -> Path:
     run_dir = _run_detail_dir(tmp_path, slug=slug, run_id=run_id)
     run_dir.mkdir(parents=True)
     (run_dir / "journal.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -3840,9 +3700,7 @@ class TestRunDetail:
         assert payload["verdict"] == "unevaluable"
         assert exit_code == 1
 
-    def test_repo_root_failure_never_fabricates_a_confirmed_absent_run(
-        self, capsys
-    ):
+    def test_repo_root_failure_never_fabricates_a_confirmed_absent_run(self, capsys):
         """Code review (2026-08-07, Edge Case Hunter): a `VcsCommandError`
         resolving the repo root means the filesystem was never consulted
         -- whether the run exists is genuinely UNKNOWN, not confirmed
@@ -3864,9 +3722,7 @@ class TestRunDetail:
         assert "found" not in payload["data"]
         assert exit_code == 0
 
-    def test_run_id_with_no_matching_directory_reports_mrs_status_004(
-        self, tmp_path, capsys
-    ):
+    def test_run_id_with_no_matching_directory_reports_mrs_status_004(self, tmp_path, capsys):
         vcs = _FakeVcs(repo_root_value=tmp_path)
         exit_code = status_cli.run_status(
             _args(project="acme", run="acme-run-does-not-exist"),
@@ -3883,9 +3739,7 @@ class TestRunDetail:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_full_run_detail_reports_stories_gate_verdicts_budget_and_open_intent(
-        self, tmp_path, capsys
-    ):
+    def test_full_run_detail_reports_stories_gate_verdicts_budget_and_open_intent(self, tmp_path, capsys):
         slug = "acme"
         run_id = "acme-run1"
         _seed_run_detail_journal(
@@ -3896,15 +3750,21 @@ class TestRunDetail:
                 _outcome_line(run_id, pid=4242, harness_run_id="hrid-1"),
                 _manual_landing_line(run_id, story_key="1.1", gate_verdict="clean"),
                 _budget_usage_line(
-                    run_id, story_key="1.1", cost_estimate=1000,
+                    run_id,
+                    story_key="1.1",
+                    cost_estimate=1000,
                     ts="2026-08-06T00:05:00.000Z",
                 ),
                 _budget_usage_line(
-                    run_id, story_key="1.1", cost_estimate=1500,
+                    run_id,
+                    story_key="1.1",
+                    cost_estimate=1500,
                     ts="2026-08-06T00:06:00.000Z",
                 ),
                 _budget_usage_line(
-                    run_id, story_key="1.2", cost_estimate=300,
+                    run_id,
+                    story_key="1.2",
+                    cost_estimate=300,
                     ts="2026-08-06T00:06:30.000Z",
                 ),
                 _open_intent_line(run_id),
@@ -3919,9 +3779,7 @@ class TestRunDetail:
             _task(story_key="1.1", phase="done"),
             _task(story_key="1.2", phase="dev-running"),
         )
-        harness = _FakeHarness(
-            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=tasks)}
-        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=tasks)})
 
         exit_code = status_cli.run_status(
             _args(project=slug, run=run_id),
@@ -3950,9 +3808,7 @@ class TestRunDetail:
         assert data["open_intents"][0]["kind"] == "story-spec-commit"
         assert exit_code == 0
 
-    def test_run_detail_threads_sweeps_refused_from_the_snapshot(
-        self, tmp_path, capsys
-    ):
+    def test_run_detail_threads_sweeps_refused_from_the_snapshot(self, tmp_path, capsys):
         """Story 25.5 (CAP-5): `_run_detail` threads the snapshot's own
         `sweeps_refused` dict through to the row; with NO snapshot at all
         (no attached loop home) the field reports null -- never a
@@ -4007,9 +3863,7 @@ class TestRunDetail:
         assert payload["data"]["sweeps_refused"] is None
         assert exit_code == 0
 
-    def test_run_paused_on_escalation_names_reason_and_artifact(
-        self, tmp_path, capsys
-    ):
+    def test_run_paused_on_escalation_names_reason_and_artifact(self, tmp_path, capsys):
         slug = "acme"
         run_id = "acme-run1"
         _seed_run_detail_journal(
@@ -4108,9 +3962,7 @@ class TestRunDetail:
         ]
         assert exit_code == 0
 
-    def test_run_with_empty_tasks_reports_empty_stories_no_crash(
-        self, tmp_path, capsys
-    ):
+    def test_run_with_empty_tasks_reports_empty_stories_no_crash(self, tmp_path, capsys):
         slug = "acme"
         run_id = "acme-run1"
         _seed_run_detail_journal(
@@ -4124,9 +3976,7 @@ class TestRunDetail:
             repo_root_value=tmp_path,
             worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
         )
-        harness = _FakeHarness(
-            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())}
-        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())})
 
         exit_code = status_cli.run_status(
             _args(project=slug, run=run_id),
@@ -4142,9 +3992,7 @@ class TestRunDetail:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_no_loop_home_attached_degrades_state_readable_but_keeps_journal_facts(
-        self, tmp_path, capsys
-    ):
+    def test_no_loop_home_attached_degrades_state_readable_but_keeps_journal_facts(self, tmp_path, capsys):
         """No ``loop/acme`` worktree currently attached -- ``state.json``
         cannot be read at all, but the run's own journal-sourced facts
         (gate verdicts, consumption, open intents) stay populated (a dead/
@@ -4196,9 +4044,7 @@ class TestRunDetail:
             repo_root_value=tmp_path,
             worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
         )
-        harness = _FakeHarness(
-            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())}
-        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())})
 
         exit_code = status_cli.run_status(
             _args(project=slug, run=run_id, format="text"),
@@ -4220,9 +4066,7 @@ class TestRunDetail:
         precedent) -- a run id naming nothing real for a project naming
         nothing real stays a clean, reportable 'not found', never a
         crash."""
-        exit_code = status_cli.run_status(
-            _args(project="no-such-project-xyz", run="no-such-run-xyz")
-        )
+        exit_code = status_cli.run_status(_args(project="no-such-project-xyz", run="no-such-run-xyz"))
 
         assert isinstance(exit_code, int)
         payload = _payload(capsys)
@@ -4302,9 +4146,7 @@ class TestReconcileLedgerCli:
         assert payload["data"]["discrepancies"] == []
         _validate_against_status_schema(payload["data"])
 
-    def test_missing_ledger_file_reports_mrs_status_005(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_missing_ledger_file_reports_mrs_status_005(self, tmp_path, capsys, monkeypatch):
         monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
         vcs = _FakeVcs()
         harness = _FakeHarness(
@@ -4327,9 +4169,7 @@ class TestReconcileLedgerCli:
         assert exit_code == 0
         assert payload["data_version"] == 2
 
-    def test_git_history_unreadable_reports_mrs_status_007(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_git_history_unreadable_reports_mrs_status_007(self, tmp_path, capsys, monkeypatch):
         monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
         vcs = _FakeVcs(commit_subjects_raises=True)
         harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
@@ -4348,9 +4188,7 @@ class TestReconcileLedgerCli:
         assert payload["verdict"] == "unevaluable"
         assert exit_code == 1
 
-    def test_git_failure_still_reports_this_project_policy_diagnostics(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_git_failure_still_reports_this_project_policy_diagnostics(self, tmp_path, capsys, monkeypatch):
         """Story 4.14 review finding (2026-08-10, pass 2): this view's own
         project-policy diagnostics must survive a git-read failure. The
         pre-4.14 shipped code resolved the policy BEFORE reading git, so a
@@ -4360,9 +4198,7 @@ class TestReconcileLedgerCli:
         monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
         bad_policy = tmp_path / "bad-policy.toml"
         bad_policy.write_text("not [ valid toml", encoding="utf-8")
-        monkeypatch.setattr(
-            status_cli, "conventional_project_policy_path", lambda slug: bad_policy
-        )
+        monkeypatch.setattr(status_cli, "conventional_project_policy_path", lambda slug: bad_policy)
         vcs = _FakeVcs(commit_subjects_raises=True)
         harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
         exit_code = status_cli.run_status(
@@ -4387,9 +4223,7 @@ class TestReconcileLedgerCli:
         # added policy finding changes what is REPORTED, never the tier.
         assert exit_code == 1
 
-    def test_full_agreement_is_clean_with_no_discrepancies(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_full_agreement_is_clean_with_no_discrepancies(self, tmp_path, capsys, monkeypatch):
         monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
         vcs = _FakeVcs(commit_subjects_value=(_merged_subject("1.1"),))
         harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
@@ -4407,9 +4241,7 @@ class TestReconcileLedgerCli:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_done_in_ledger_not_merged_is_reported_never_a_finding(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_done_in_ledger_not_merged_is_reported_never_a_finding(self, tmp_path, capsys, monkeypatch):
         """The "silent stale ledger" case, in reverse of the live incident:
         a story the ledger claims done that git does not confirm. Named in
         `data.discrepancies`, never a `Finding` (the spec's own I/O
@@ -4433,9 +4265,7 @@ class TestReconcileLedgerCli:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_merged_not_done_in_ledger_is_reported_never_a_finding(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_merged_not_done_in_ledger_is_reported_never_a_finding(self, tmp_path, capsys, monkeypatch):
         """The live incident this story exists to catch: Epic 4's own
         stories sat at ``review`` in the tracked ledger for hours after
         their PRs had actually merged."""
@@ -4458,9 +4288,7 @@ class TestReconcileLedgerCli:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_malformed_ledger_key_is_skipped_never_a_crash(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_malformed_ledger_key_is_skipped_never_a_crash(self, tmp_path, capsys, monkeypatch):
         monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
         vcs = _FakeVcs(commit_subjects_value=())
         harness = _FakeHarness(
@@ -4545,7 +4373,10 @@ def _unpushed_result(*findings: dict[str, object], base: str = "origin/main") ->
 
 
 def _unpushed_finding(
-    ref: str, *, files: int = 3, stat: str = "3 files changed, 40 insertions(+)",
+    ref: str,
+    *,
+    files: int = 3,
+    stat: str = "3 files changed, 40 insertions(+)",
     remedy: str | None = None,
 ) -> dict[str, object]:
     return {
@@ -4558,9 +4389,7 @@ def _unpushed_finding(
 
 
 class TestUnpushedWork:
-    def test_no_unpushed_work_anywhere_is_null_with_no_finding(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_no_unpushed_work_anywhere_is_null_with_no_finding(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
@@ -4589,9 +4418,7 @@ class TestUnpushedWork:
         assert argv[0] == sys.executable
         assert argv[-2:] == ("--json", "--branches-only")
 
-    def test_matching_branch_folds_evidence_onto_the_row_and_warns(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_matching_branch_folds_evidence_onto_the_row_and_warns(self, tmp_path, capsys, monkeypatch):
         run_dir = _seed_run_journal(
             tmp_path,
             run_id="acme-run1",
@@ -4605,9 +4432,7 @@ class TestUnpushedWork:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         process = _FakeProcess(
@@ -4636,9 +4461,7 @@ class TestUnpushedWork:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_finding_ref_matching_no_known_home_is_ignored(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_finding_ref_matching_no_known_home_is_ignored(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
@@ -4662,9 +4485,7 @@ class TestUnpushedWork:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_detector_script_launch_failure_reports_null_and_warns(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_detector_script_launch_failure_reports_null_and_warns(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
@@ -4687,9 +4508,7 @@ class TestUnpushedWork:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_detector_unknown_exit_code_is_treated_as_unavailable(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_detector_unknown_exit_code_is_treated_as_unavailable(self, tmp_path, capsys, monkeypatch):
         """The documented UNKNOWN/exit-2 case prints PLAIN TEXT even with
         --json passed -- never JSON-parseable; this test's own `run_result`
         mirrors that shape exactly (non-JSON stdout, returncode 2)."""
@@ -4721,15 +4540,11 @@ class TestUnpushedWork:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_malformed_json_output_is_treated_as_unavailable(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_malformed_json_output_is_treated_as_unavailable(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
-        process = _FakeProcess(
-            run_result=ProcessResult(returncode=0, stdout="{not valid json", stderr="")
-        )
+        process = _FakeProcess(run_result=ProcessResult(returncode=0, stdout="{not valid json", stderr=""))
 
         exit_code = status_cli.run_status(
             _args(),
@@ -4748,9 +4563,7 @@ class TestUnpushedWork:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_journal_unreadable_row_still_surfaces_real_unpushed_work(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_journal_unreadable_row_still_surfaces_real_unpushed_work(self, tmp_path, capsys, monkeypatch):
         """Code review (2026-08-07, Blind Hunter, the single most severe
         finding against this story, independently confirmed): unlike
         `escalation_reason`/`escalation_artifact` (Story 5.3), whose ONLY
@@ -4762,9 +4575,7 @@ class TestUnpushedWork:
         exact false-green this story exists to eliminate, for precisely
         the population most likely to carry real, unrescued local-only
         work (a home whose journal write itself got interrupted)."""
-        run_dir = _seed_run_journal(
-            tmp_path, run_id="acme-run1", lines=["{not valid json at all"]
-        )
+        run_dir = _seed_run_journal(tmp_path, run_id="acme-run1", lines=["{not valid json at all"])
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
@@ -4792,9 +4603,7 @@ class TestUnpushedWork:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_has_run_false_row_still_surfaces_real_unpushed_work(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_has_run_false_row_still_surfaces_real_unpushed_work(self, tmp_path, capsys, monkeypatch):
         """Same root cause and fix as the journal-unreadable case above,
         for the `has_run=False` ("idle", no run yet) row shape -- a
         brand-new home that has never run bmad-loop can still have a real,
@@ -4842,9 +4651,7 @@ class TestUnpushedWork:
         assert process.run_calls == []
         assert exit_code == 0
 
-    def test_text_format_matches_json_presence_of_unpushed_work(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_text_format_matches_json_presence_of_unpushed_work(self, tmp_path, capsys, monkeypatch):
         # An idle (has_run=False) row hardcodes unpushed_work: None
         # regardless of a matching finding (see
         # test_has_run_false_row_never_surfaces_unpushed_work above) -- a
@@ -4864,16 +4671,12 @@ class TestUnpushedWork:
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
         harness = _FakeHarness(
             snapshots={
-                (str(home), "hrid-1"): _snapshot(
-                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
-                )
+                (str(home), "hrid-1"): _snapshot(finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),))
             }
         )
         process = _FakeProcess(
             alive_pids=frozenset({5252}),
-            run_result=_unpushed_result(
-                _unpushed_finding("loop/acme", files=5, stat="5 files changed")
-            ),
+            run_result=_unpushed_result(_unpushed_finding("loop/acme", files=5, stat="5 files changed")),
         )
 
         exit_code = status_cli.run_status(
@@ -4960,14 +4763,10 @@ class TestFailedPatches:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_landed_patch_is_spent_and_confirmed_no_finding(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_landed_patch_is_spent_and_confirmed_no_finding(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        patch_path = _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
+        patch_path = _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(_merged_subject("4.11"),),
@@ -5002,16 +4801,12 @@ class TestFailedPatches:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_two_digit_epic_story_dir_parses_and_classifies(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_two_digit_epic_story_dir_parses_and_classifies(self, tmp_path, capsys, monkeypatch):
         """A two-digit epic (`12-1-...`, live on `pyforge-atlas`) must
         normalize to `12.1`, never to `1.2` or the raw dir name."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"atlas": None})
         home = tmp_path / "loop-homes" / "atlas"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_TWO_DIGIT_EPIC_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/atlas"),),
             commit_subjects_value=(_merged_subject("12.1", project_slug="atlas"),),
@@ -5034,9 +4829,7 @@ class TestFailedPatches:
         assert [f["code"] for f in payload["findings"]] == []
         assert exit_code == 0
 
-    def test_unlanded_patch_warns_as_unconfirmed_naming_the_run(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_unlanded_patch_warns_as_unconfirmed_naming_the_run(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 2, the finding that reverted this
         story's first implementation): the ABSENCE of a `merged_story_keys`
         match proves nothing (`core/status.py`'s own `CONFIDENCE_UNCONFIRMED`
@@ -5048,9 +4841,7 @@ class TestFailedPatches:
         distinguishable only by a long absolute path)."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(),
@@ -5073,9 +4864,7 @@ class TestFailedPatches:
         assert entry["confidence"] == status.CONFIDENCE_UNCONFIRMED
         codes = [f["code"] for f in payload["findings"]]
         assert codes.count("MRS-STATUS-010") == 1
-        message = next(
-            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-010"
-        )
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-010")
         # States the UNCONFIRMED direction and why -- never the flat
         # assertion the reverted implementation emitted.
         assert "UNCONFIRMED" in message
@@ -5088,18 +4877,12 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_git_read_failure_degrades_every_patch_and_warns_once(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_git_read_failure_degrades_every_patch_and_warns_once(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
         home_a = tmp_path / "loop-homes" / "acme"
         home_b = tmp_path / "loop-homes" / "beta"
-        _seed_failed_patch(
-            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
-        _seed_failed_patch(
-            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
         vcs = _FakeVcs(
             worktrees=(
                 WorktreeEntry(path=home_a, branch="loop/acme"),
@@ -5131,14 +4914,10 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_unparseable_story_dir_name_treated_as_pending(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_unparseable_story_dir_name_treated_as_pending(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir="not-a-story-name"
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir="not-a-story-name")
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(),
@@ -5164,9 +4943,7 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_malformed_project_policy_degrades_to_warn_not_error(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_malformed_project_policy_degrades_to_warn_not_error(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 1, Blind Hunter): a malformed
         project policy for `slug` -- entirely unrelated to this durability
         check -- used to inject `_merged_keys_for_slug`'s raw `PolicyIOError`
@@ -5177,14 +4954,10 @@ class TestFailedPatches:
         `MRS-STATUS-011` WARN, exactly like an unreadable `main`."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
         bad_policy = tmp_path / "bad-policy.toml"
         bad_policy.write_text("not [ valid toml", encoding="utf-8")
-        monkeypatch.setattr(
-            status_cli, "conventional_project_policy_path", lambda slug: bad_policy
-        )
+        monkeypatch.setattr(status_cli, "conventional_project_policy_path", lambda slug: bad_policy)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(),
@@ -5213,9 +4986,7 @@ class TestFailedPatches:
         # finding pass 3: the intent contract's Always bullet requires a
         # patch whose landed-status could not be determined to be raised by
         # "exactly one WARN naming it").
-        message = next(
-            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
-        )
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011")
         assert "acme" in message
         assert "this project's own merge-subject policy" in message
         assert "every patch found this sweep" not in message
@@ -5223,9 +4994,7 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_one_bad_policy_never_suppresses_the_other_home(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_one_bad_policy_never_suppresses_the_other_home(self, tmp_path, capsys, monkeypatch):
         """Acceptance Criterion (previously untested, review finding pass 2):
         with two homes where only ONE slug's policy is malformed, the other
         home must still classify its own patches normally and still surface
@@ -5235,12 +5004,8 @@ class TestFailedPatches:
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
         home_a = tmp_path / "loop-homes" / "acme"
         home_b = tmp_path / "loop-homes" / "beta"
-        _seed_failed_patch(
-            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
-        _seed_failed_patch(
-            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
         bad_policy = tmp_path / "bad-policy.toml"
         bad_policy.write_text("not [ valid toml", encoding="utf-8")
         good_policy = tmp_path / "missing-policy.toml"
@@ -5282,9 +5047,7 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_project_scoping_only_scans_that_project(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_project_scoping_only_scans_that_project(self, tmp_path, capsys, monkeypatch):
         """Acceptance Criterion (previously untested, review finding pass 2):
         `--project SLUG` scopes the failed-patch scan to that project's own
         loop home -- the other home's patches are neither reported nor
@@ -5293,12 +5056,8 @@ class TestFailedPatches:
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
         home_a = tmp_path / "loop-homes" / "acme"
         home_b = tmp_path / "loop-homes" / "beta"
-        _seed_failed_patch(
-            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
-        _seed_failed_patch(
-            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
         vcs = _FakeVcs(
             worktrees=(
                 WorktreeEntry(path=home_a, branch="loop/acme"),
@@ -5323,15 +5082,11 @@ class TestFailedPatches:
         codes = [f["code"] for f in payload["findings"]]
         # Exactly ONE MRS-STATUS-010 -- acme's patch was never scanned.
         assert codes.count("MRS-STATUS-010") == 1
-        message = next(
-            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-010"
-        )
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-010")
         assert message.startswith("beta:")
         assert exit_code == 0
 
-    def test_directory_named_changes_patch_is_not_reported(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_directory_named_changes_patch_is_not_reported(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, Edge Case Hunter): `Path.glob` does
         not distinguish file kind, and `.stat()` on a directory succeeds
         rather than raising -- a directory literally named `changes.patch`
@@ -5342,10 +5097,7 @@ class TestFailedPatches:
         making that read RAISE: a gate that opened would warn)."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        patch_dir = (
-            home / ".bmad-loop" / "runs" / "20260809-231524-abb9" / "failed"
-            / _REAL_STORY_DIR
-        )
+        patch_dir = home / ".bmad-loop" / "runs" / "20260809-231524-abb9" / "failed" / _REAL_STORY_DIR
         (patch_dir / "changes.patch").mkdir(parents=True)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
@@ -5383,9 +5135,7 @@ class TestFailedPatches:
             story_dir=_REAL_STORY_DIR,
             content=b"",
         )
-        _seed_failed_patch(
-            home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(),
@@ -5407,9 +5157,7 @@ class TestFailedPatches:
         assert codes.count("MRS-STATUS-010") == 1
         assert exit_code == 0
 
-    def test_only_unreportable_patches_never_emits_an_orphaned_finding(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_only_unreportable_patches_never_emits_an_orphaned_finding(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 3, reproduced live): every
         reportability test belongs INSIDE `_gather_failed_patches`, not at
         the caller's per-entry loop. A home whose ONLY glob match is
@@ -5448,9 +5196,7 @@ class TestFailedPatches:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
 
-    def test_unreadable_main_warn_names_every_degraded_patch(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_unreadable_main_warn_names_every_degraded_patch(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 3): the intent contract's Always
         bullet requires a patch whose landed-status "could not be
         determined" to raise "exactly one WARN naming it". The single
@@ -5461,12 +5207,8 @@ class TestFailedPatches:
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
         home_a = tmp_path / "loop-homes" / "acme"
         home_b = tmp_path / "loop-homes" / "beta"
-        _seed_failed_patch(
-            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
-        _seed_failed_patch(
-            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
         vcs = _FakeVcs(
             worktrees=(
                 WorktreeEntry(path=home_a, branch="loop/acme"),
@@ -5487,18 +5229,14 @@ class TestFailedPatches:
         payload = _payload(capsys)
         codes = [f["code"] for f in payload["findings"]]
         assert codes.count("MRS-STATUS-011") == 1
-        message = next(
-            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
-        )
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011")
         # Both homes' patches named in the ONE sweep-wide WARN.
         assert "4.11" in message
         assert "12.1" in message
         assert "2 patch(es)" in message
         assert exit_code == 0
 
-    def test_journal_unreadable_row_still_reports_failed_patches(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_journal_unreadable_row_still_reports_failed_patches(self, tmp_path, capsys, monkeypatch):
         """`build_fleet_row`'s degraded (`journal_unreadable`) shape carries
         `failed_patches` verbatim rather than hardcoding it away the way it
         does `unpushed_work` -- this is an independent filesystem signal, so
@@ -5510,9 +5248,7 @@ class TestFailedPatches:
         run_dir.mkdir(parents=True)
         (run_dir / "journal.jsonl").write_text("{not json\n", encoding="utf-8")
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(),
@@ -5534,17 +5270,11 @@ class TestFailedPatches:
         assert codes.count("MRS-STATUS-010") == 1
         assert exit_code == 0
 
-    def test_text_format_renders_the_full_tri_state(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_text_format_renders_the_full_tri_state(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
-        _seed_failed_patch(
-            home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(_merged_subject("4.11"),),
@@ -5563,9 +5293,7 @@ class TestFailedPatches:
         assert "FAILED_PATCHES n=2 pending=1 unknown=0" in out
         assert exit_code == 0
 
-    def test_text_format_shows_unknown_when_main_is_unreadable(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_text_format_shows_unknown_when_main_is_unreadable(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 2): counting only `pending`
         rendered an all-`null` sweep as `FAILED_PATCHES n=2 pending=0` --
         byte-identical to all-landed, fabricating unknown as clean. The
@@ -5573,12 +5301,8 @@ class TestFailedPatches:
         the test whose absence let that false-green ship."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
-        _seed_failed_patch(
-            home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_raises=True,
@@ -5597,9 +5321,7 @@ class TestFailedPatches:
         assert "FAILED_PATCHES n=2 pending=0 unknown=2" in out
         assert exit_code == 0
 
-    def test_main_is_read_exactly_once_no_matter_how_many_homes(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_main_is_read_exactly_once_no_matter_how_many_homes(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 4): KEEP instruction #3 -- the
         `main` commit-subject read is lazy and cached ONCE for the whole
         sweep -- was asserted at four doc sites and observed by nothing.
@@ -5607,9 +5329,7 @@ class TestFailedPatches:
         `main_subjects_attempted` guard (turning one `git log`-scale walk
         per invocation into one per patch-carrying home) kept the suite
         green. Three patch-carrying homes, exactly one read."""
-        _stub_latest_run_dir(
-            monkeypatch, run_dir_map={"acme": None, "beta": None, "gamma": None}
-        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None, "gamma": None})
         homes = []
         for slug, story_dir in (
             ("acme", _REAL_STORY_DIR),
@@ -5617,13 +5337,9 @@ class TestFailedPatches:
             ("gamma", _REAL_STORY_DIR),
         ):
             home = tmp_path / "loop-homes" / slug
-            _seed_failed_patch(
-                home, run_id="20260809-231524-abb9", story_dir=story_dir
-            )
+            _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=story_dir)
             homes.append(WorktreeEntry(path=home, branch=f"loop/{slug}"))
-        vcs = _FakeVcs(
-            worktrees=tuple(homes), commit_subjects_value=(_merged_subject("4.11"),)
-        )
+        vcs = _FakeVcs(worktrees=tuple(homes), commit_subjects_value=(_merged_subject("4.11"),))
 
         exit_code = status_cli.run_status(
             _args(),
@@ -5637,9 +5353,7 @@ class TestFailedPatches:
         assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
         assert exit_code == 0
 
-    def test_main_is_never_read_when_no_home_carries_a_patch(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_main_is_never_read_when_no_home_carries_a_patch(self, tmp_path, capsys, monkeypatch):
         """The other half of the same invariant: the read is LAZY, so a
         genuinely patch-free fleet never pays for it at all."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
@@ -5659,9 +5373,7 @@ class TestFailedPatches:
         assert vcs.commit_subjects_calls == []
         assert exit_code == 0
 
-    def test_sweep_wide_warn_qualifies_a_repeated_story_key_by_home(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_sweep_wide_warn_qualifies_a_repeated_story_key_by_home(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 4): the sweep-wide
         `MRS-STATUS-011` named patches by BARE story key, and story numbers
         repeat across stations by construction -- live, `pyforge-doctor` and
@@ -5673,9 +5385,7 @@ class TestFailedPatches:
         homes = []
         for slug in ("acme", "beta"):
             home = tmp_path / "loop-homes" / slug
-            _seed_failed_patch(
-                home, run_id="20260809-231524-abb9", story_dir=shared_dir
-            )
+            _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=shared_dir)
             homes.append(WorktreeEntry(path=home, branch=f"loop/{slug}"))
         vcs = _FakeVcs(worktrees=tuple(homes), commit_subjects_raises=True)
 
@@ -5689,16 +5399,12 @@ class TestFailedPatches:
         )
 
         payload = _payload(capsys)
-        message = next(
-            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
-        )
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011")
         assert "acme/6.9" in message
         assert "beta/6.9" in message
         assert exit_code == 0
 
-    def test_unknown_policy_key_warn_names_the_withheld_code_honestly(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_unknown_policy_key_warn_names_the_withheld_code_honestly(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 4): the per-slug arm asserted
         "cannot resolve this project's own merge-subject policy", which is
         FALSE for most codes that reach it -- `MRS-POLICY-001` (an
@@ -5710,16 +5416,10 @@ class TestFailedPatches:
         all (it is invisible in the only view most sweeps ever run)."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
         odd_policy = tmp_path / "odd-policy.toml"
-        odd_policy.write_text(
-            "[core.promotion]\nno_such_key = 1\n", encoding="utf-8"
-        )
-        monkeypatch.setattr(
-            status_cli, "conventional_project_policy_path", lambda slug: odd_policy
-        )
+        odd_policy.write_text("[core.promotion]\nno_such_key = 1\n", encoding="utf-8")
+        monkeypatch.setattr(status_cli, "conventional_project_policy_path", lambda slug: odd_policy)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_value=(),
@@ -5739,9 +5439,7 @@ class TestFailedPatches:
         # Still withheld -- the exit code stays WARN-only (the Boundary).
         assert "MRS-POLICY-001" not in codes
         assert codes.count("MRS-STATUS-011") == 1
-        message = next(
-            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
-        )
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011")
         # Names the withheld code, and does NOT assert the cause it cannot
         # establish.
         assert "MRS-POLICY-001" in message
@@ -5750,9 +5448,7 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_newline_in_story_dir_cannot_forge_a_text_findings_line(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_newline_in_story_dir_cannot_forge_a_text_findings_line(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 4, reproduced live): a POSIX
         directory name may contain a newline, and BOTH the fallback story
         key and the patch path are interpolated into `MRS-STATUS-010`'s
@@ -5786,14 +5482,10 @@ class TestFailedPatches:
         # The forged text is still VISIBLE (nothing is censored) -- it just
         # cannot start its own line and impersonate a finding.
         assert "INJECTED" in out
-        assert not any(
-            line.lstrip().startswith("MRS-STATUS-999") for line in out.splitlines()
-        )
+        assert not any(line.lstrip().startswith("MRS-STATUS-999") for line in out.splitlines())
         assert exit_code == 0
 
-    def test_multiline_git_error_cannot_forge_a_text_findings_line(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_multiline_git_error_cannot_forge_a_text_findings_line(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 5): pass 4 sanitized
         `MRS-STATUS-010`'s operands and left `MRS-STATUS-011`'s -- even
         though THAT arm interpolates git's own stderr, which is routinely
@@ -5804,9 +5496,7 @@ class TestFailedPatches:
         `MRS-...` prefix."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
             commit_subjects_raises=True,
@@ -5834,16 +5524,12 @@ class TestFailedPatches:
         assert "git <command>" in out
         # ...but the WHOLE finding occupies exactly one line, so no line of
         # the findings block starts with git's text instead of a code.
-        finding_lines = [
-            line for line in out.splitlines() if "ambiguous argument" in line
-        ]
+        finding_lines = [line for line in out.splitlines() if "ambiguous argument" in line]
         assert len(finding_lines) == 1
         assert "MRS-STATUS-011" in finding_lines[0]
         assert exit_code == 0
 
-    def test_sweep_wide_warn_qualifies_a_repeated_story_key_by_run(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_sweep_wide_warn_qualifies_a_repeated_story_key_by_run(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 5): pass 4 closed the CROSS-HOME
         collision (`6.9, 6.9`) and left the CROSS-RUN one open. A home
         accumulates one `failed/<story>/` per killed attempt, so repeated
@@ -5870,9 +5556,7 @@ class TestFailedPatches:
         )
 
         payload = _payload(capsys)
-        message = next(
-            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
-        )
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011")
         assert "2 patch(es)" in message
         # Both attempts named, and DISTINGUISHABLE -- the run id is the only
         # thing that differs between them.
@@ -5880,9 +5564,7 @@ class TestFailedPatches:
         assert "acme/4.11@20260810-004512-c31f" in message
         assert exit_code == 0
 
-    def test_non_newline_line_breaks_cannot_forge_a_text_findings_line(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_non_newline_line_breaks_cannot_forge_a_text_findings_line(self, tmp_path, capsys, monkeypatch):
         """Review finding (2026-08-10, pass 5): `_one_line` collapsed only
         `\\n` and `\\r`, too narrow for its OWN stated threat model. If a
         `failed/<story>/` name may legally carry a newline it may equally
@@ -5912,23 +5594,17 @@ class TestFailedPatches:
 
         out = capsys.readouterr().out
         assert "INJECTED" in out
-        assert not any(
-            line.lstrip().startswith("MRS-STATUS-998") for line in out.splitlines()
-        )
+        assert not any(line.lstrip().startswith("MRS-STATUS-998") for line in out.splitlines())
         assert exit_code == 0
 
-    def test_repeated_sweep_is_identical_and_never_mutates_a_patch(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_repeated_sweep_is_identical_and_never_mutates_a_patch(self, tmp_path, capsys, monkeypatch):
         """Acceptance Criterion: the same fleet swept twice with no change in
         patches or merge history reports identical `failed_patches` data and
         finding counts -- a pure read that never clears, moves, or truncates
         a patch."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
-        patch_path = _seed_failed_patch(
-            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
-        )
+        patch_path = _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
         before = patch_path.read_bytes()
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
@@ -5950,9 +5626,7 @@ class TestFailedPatches:
 
         first, second = payloads
         assert first["data"]["homes"] == second["data"]["homes"]
-        assert [f["code"] for f in first["findings"]] == [
-            f["code"] for f in second["findings"]
-        ]
+        assert [f["code"] for f in first["findings"]] == [f["code"] for f in second["findings"]]
         assert patch_path.is_file()
         assert patch_path.read_bytes() == before
 
@@ -6012,9 +5686,7 @@ class TestAwaitingOperatorTextProjections:
 
     def test_missing_spec_remedy_projects_the_spec_glob_in_text(self):
         """Story 28.19: text status names the expected spec glob, not confirm."""
-        spec_glob = (
-            "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-39-4-*.md"
-        )
+        spec_glob = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-39-4-*.md"
         remedy = f"missing tracked spec: author {spec_glob}"
         text = status_cli._render_text_status(
             {
@@ -6034,9 +5706,7 @@ class TestAwaitingOperatorTextProjections:
         assert "run bmad-loop confirm" not in text
 
     def test_non_parked_states_render_without_a_suffix_or_parked_list(self):
-        text = status_cli._render_text_status(
-            {"project": None, "homes": [_fleet_row(state="running")]}, ()
-        )
+        text = status_cli._render_text_status({"project": None, "homes": [_fleet_row(state="running")]}, ())
         assert "running" in text
         assert "bmad-loop confirm" not in text
         assert "parked=" not in text
@@ -6047,9 +5717,7 @@ class TestAwaitingOperatorTextProjections:
             escalation_reason="needs a human decision",
             escalation_artifact="spec-1.2.md",
         )
-        without = status_cli._render_text_status(
-            {"project": None, "homes": [base]}, ()
-        )
+        without = status_cli._render_text_status({"project": None, "homes": [base]}, ())
         assert "preserve_ref=" not in without
 
         with_ref = status_cli._render_text_status(
@@ -6093,9 +5761,7 @@ class TestAwaitingOperatorTextProjections:
         assert "SCOPE_ADVISORY n=1 codes=MRS-GATE-012" in text
 
     def test_no_scope_advisory_renders_no_scope_advisory_marker(self):
-        text = status_cli._render_text_status(
-            {"project": None, "homes": [_fleet_row()]}, ()
-        )
+        text = status_cli._render_text_status({"project": None, "homes": [_fleet_row()]}, ())
         assert "SCOPE_ADVISORY" not in text
 
     def _detail(self, **overrides: object) -> dict[str, object]:
@@ -6127,14 +5793,10 @@ class TestAwaitingOperatorTextProjections:
         assert "deferred work is untouched" in text
 
     def test_run_detail_renders_empty_and_null_sweeps_refused_distinctly(self):
-        clean = status_cli._render_text_run_detail(
-            self._detail(sweeps_refused={}), ()
-        )
+        clean = status_cli._render_text_run_detail(self._detail(sweeps_refused={}), ())
         assert "sweeps_refused: (none)" in clean
 
-        unreadable = status_cli._render_text_run_detail(
-            self._detail(state_readable=False, sweeps_refused=None), ()
-        )
+        unreadable = status_cli._render_text_run_detail(self._detail(state_readable=False, sweeps_refused=None), ())
         assert "sweeps_refused: None" in unreadable
 
     def test_run_detail_story_and_deferred_lines_append_preserve_ref_when_set(self):
@@ -6180,9 +5842,7 @@ class TestAwaitingOperatorTextProjections:
         # The absent case renders NO suffix -- one occurrence per set ref.
         assert text.count("preserve_ref=") == 2
 
-    def test_end_to_end_parked_run_reports_awaiting_operator_in_json_and_text(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_end_to_end_parked_run_reports_awaiting_operator_in_json_and_text(self, tmp_path, capsys, monkeypatch):
         """AC 1 at the command level: a parked run sweeps through
         `run_status` as `awaiting-operator` (bare token in JSON, remedy
         suffix in text) with the parked story as current -- never
@@ -6254,9 +5914,7 @@ class TestRetiredRunState:
     """
 
     def test_retired_run_reports_idle_not_unknown(self):
-        facts = status.FleetHomeFacts(
-            slug="acme", branch="loop/acme", has_run=True, run_state_retired=True
-        )
+        facts = status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, run_state_retired=True)
         row, finding = status.build_fleet_row(facts)
         assert row["state"] == "idle"
         assert finding is not None
@@ -6267,14 +5925,10 @@ class TestRetiredRunState:
         """The two flags are distinct: an unreadable journal recovered NOTHING,
         so `unknown` stays correct there."""
         unreadable, _ = status.build_fleet_row(
-            status.FleetHomeFacts(
-                slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
-            )
+            status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True)
         )
         retired, _ = status.build_fleet_row(
-            status.FleetHomeFacts(
-                slug="acme", branch="loop/acme", has_run=True, run_state_retired=True
-            )
+            status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, run_state_retired=True)
         )
         assert unreadable["state"] == "unknown"
         assert retired["state"] == "idle"
@@ -6296,9 +5950,7 @@ class TestRetiredRunState:
         """`is_run_live` deliberately DISAGREES with the row above: the row says
         what an operator should see, this says whether a branch may be deleted.
         A retired run's state is gone, so a clean finish cannot be proven."""
-        facts = status.FleetHomeFacts(
-            slug="acme", branch="loop/acme", has_run=True, run_state_retired=True
-        )
+        facts = status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, run_state_retired=True)
         assert status.is_run_live(facts) is True
 
 
@@ -6325,9 +5977,7 @@ class TestHarnessNativeTerminalRun:
 
     def test_harness_native_terminal_is_not_confused_with_unreadable_journal(self):
         unreadable, _ = status.build_fleet_row(
-            status.FleetHomeFacts(
-                slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
-            )
+            status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True)
         )
         native, _ = status.build_fleet_row(
             status.FleetHomeFacts(
@@ -6351,9 +6001,7 @@ class TestHarnessNativeTerminalRun:
         )
         assert status.is_run_live(facts) is False
 
-    def test_harness_native_terminal_end_to_end(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_harness_native_terminal_end_to_end(self, tmp_path, capsys, monkeypatch):
         """Marshal journal readable but launch-pid-less; bmad-loop state says
         finished -- row must be `stopped` with MRS-STATUS-013, not `unknown`."""
         run_dir = _seed_run_journal(
@@ -6407,9 +6055,7 @@ class TestHarnessNativeTerminalRun:
         assert harness.terminal_verdict_calls == [(str(home), harness_run_id)]
         assert exit_code == 0
 
-    def test_non_terminal_verdict_stays_unknown(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_non_terminal_verdict_stays_unknown(self, tmp_path, capsys, monkeypatch):
         run_dir = _seed_run_journal(
             tmp_path,
             run_id="acme-run1",
@@ -6440,9 +6086,7 @@ class TestHarnessNativeTerminalRun:
         assert row["state"] == "unknown"
         assert "MRS-STATUS-002" in [f["code"] for f in payload["findings"]]
         assert status.is_run_live(
-            status.FleetHomeFacts(
-                slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
-            )
+            status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True)
         )
         assert exit_code == 0
 
@@ -6474,9 +6118,7 @@ class TestDispatchOnlyCheckoutRows:
     the marshal and steward clones reported ``homes: []`` while their
     dispatch sessions ran (2026-09-20 00:47Z)."""
 
-    def test_dispatch_only_station_gets_a_row_from_its_tier3_run(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_dispatch_only_station_gets_a_row_from_its_tier3_run(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         vcs = _FakeVcs(repo_root_value=tmp_path, worktrees=())
         _write_dispatch_run_journal(
@@ -6535,9 +6177,7 @@ class TestDispatchOnlyCheckoutRows:
             worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
         )
         for slug in ("acme", "beta"):
-            _write_dispatch_run_journal(
-                tmp_path, slug, f"{slug}-run", harness_profile="claude", layer_savings={}
-            )
+            _write_dispatch_run_journal(tmp_path, slug, f"{slug}-run", harness_profile="claude", layer_savings={})
         # Fleet sweep: the loop-home station appears once (overlaid, not
         # duplicated by its own Tier-3 run); the dispatch-only sibling appears too.
         exit_code = status_cli.run_status(

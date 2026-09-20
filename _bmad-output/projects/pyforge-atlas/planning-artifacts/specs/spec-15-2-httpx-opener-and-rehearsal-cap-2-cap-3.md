@@ -2,7 +2,7 @@
 title: 'Httpx opener and rehearsal (CAP-2, CAP-3)'
 type: 'feature'
 created: '2026-08-15'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 2
 followup_review_recommended: true
 context: []
@@ -678,3 +678,16 @@ by this story):
   verbatim, unchanged) and the prose resolves item 3 as described above.
 - Confirm the DW-H3 ledger entry's `status` field still reads `open`.
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `7a698babbb` (2026-09-11, "pyforge-mason Story 15.2: advance brief_mirrored_through to 90537c2391"); also `ea75f98fb1` (2026-09-11, "pyforge-mason Story 15.2: append review triage log and finalize spec"); also `4a69168555` (2026-09-11, "pyforge-mason Story 15.2: advance brief_mirrored_through to 2fca30c6b0"). Ledger row `15-2-httpx-opener-and-rehearsal-cap-2-cap-3: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-progress` → `done` (ledger row `15-2-httpx-opener-and-rehearsal-cap-2-cap-3: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -57,7 +57,7 @@ def _read_marker_slug(root: Path) -> str:
     path = root / _MARKER_REL
     try:
         text = path.read_text(encoding="utf-8").strip()
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return UNRECOGNIZED
     return text if text else UNRECOGNIZED
 

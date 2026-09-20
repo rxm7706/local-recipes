@@ -2,7 +2,7 @@
 title: 'marshal seed adopt'
 type: 'feature'
 created: '2026-08-21'
-status: 'in-review'
+status: 'done'
 baseline_revision: '573d2861ea837276b9d1f1d56898ab58af23dfa6'
 review_loop_iteration: 0
 followup_review_recommended: true
@@ -329,3 +329,7 @@ the module's own documented, disclosed limitation. The `_unexpected_dirt_since_p
 `_repo_is_dirty_now` split is a genuinely new design pattern in this package (no prior precedent)
 and, while now proven correct by execution and covered by regression tests, is exactly the kind of
 subtle git-state-timing logic worth a second independent read.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `10-6-marshal-seed-adopt: done`).

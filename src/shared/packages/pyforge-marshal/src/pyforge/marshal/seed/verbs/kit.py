@@ -76,7 +76,6 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError
 
 from ...ports.fs import FsPort
-
 from ..detect.findings import Finding, FindingType, Severity
 from ..detect.kit import (
     InstrumentProbe,
@@ -215,17 +214,13 @@ def render_deployed_skill(upstream: str, model_version: ModelVersion) -> str:
     Genesis's own content only. HTML comment markers because the file is
     Markdown (``RegionFormat.HTML``)."""
     body = articulate_region_body()
-    begin = render_begin(
-        RegionFormat.HTML, ARTICULATE_REGION, model_version, region_sha(body)
-    )
+    begin = render_begin(RegionFormat.HTML, ARTICULATE_REGION, model_version, region_sha(body))
     end = render_end(RegionFormat.HTML, ARTICULATE_REGION)
     prefix = upstream if upstream.endswith("\n") else f"{upstream}\n"
     return f"{prefix}\n{begin}\n{body}\n{end}\n"
 
 
-def build_codegraph_index(
-    repo_root: Path, *, stale: bool, process: PosixProcess | None = None
-) -> str | None:
+def build_codegraph_index(repo_root: Path, *, stale: bool, process: PosixProcess | None = None) -> str | None:
     """Build or resync the codegraph index in ``repo_root``. Returns
     ``None`` on success or a human-readable failure reason.
 
@@ -251,11 +246,7 @@ def build_codegraph_index(
     docstring -- the `init`-vs-`index` correction was found by running the
     real tool, and a "simplification" that reverted it must fail a test, not
     merely contradict a paragraph."""
-    argv = (
-        ["codegraph", "sync", "-q", str(repo_root)]
-        if stale
-        else ["codegraph", "init", "-y", str(repo_root)]
-    )
+    argv = ["codegraph", "sync", "-q", str(repo_root)] if stale else ["codegraph", "init", "-y", str(repo_root)]
     timeout = SYNC_TIMEOUT_S if stale else INDEX_TIMEOUT_S
     runner = process if process is not None else PosixProcess()
     try:
@@ -282,9 +273,7 @@ def _guarded_target(repo_root: Path, relpath: str) -> Path:
     root = repo_root.resolve()
     target = (root / relpath).resolve()
     if target != root and root not in target.parents:
-        raise ValueError(
-            f"kit path {relpath!r} resolves outside the loop home {str(root)!r}"
-        )
+        raise ValueError(f"kit path {relpath!r} resolves outside the loop home {str(root)!r}")
     return repo_root / relpath
 
 
@@ -322,10 +311,7 @@ def _apply_caveman_skill(
     target = _guarded_target(repo_root, item.relpath)
     fs.ensure_dir(target.parent)
     fs.write_text_atomic(target, render_deployed_skill(upstream, model_version))
-    return KitAction.APPLIED, (
-        f"deployed the caveman skill to {item.relpath} with the"
-        f" {ARTICULATE_REGION!r} carve-out"
-    )
+    return KitAction.APPLIED, (f"deployed the caveman skill to {item.relpath} with the {ARTICULATE_REGION!r} carve-out")
 
 
 def _apply_codegraph_index(
@@ -401,10 +387,7 @@ def run_kit(
     non-local port) and report its own successful applies as missing, and
     every check would shell out to a real ``git`` no test could pin."""
     before = {
-        check.item_id: check
-        for check in kit_checks(
-            repo_root, context_layers, probe=probe, process=process, fs=fs
-        )
+        check.item_id: check for check in kit_checks(repo_root, context_layers, probe=probe, process=process, fs=fs)
     }
     outcomes: list[KitOutcome] = []
 
@@ -440,10 +423,7 @@ def run_kit(
                     instrument=item.instrument,
                     path=item.relpath,
                     action=KitAction.PLANNED,
-                    detail=(
-                        f"would {verb} {item.relpath} ({item.summary}):"
-                        f" {check.detail}"
-                    ),
+                    detail=(f"would {verb} {item.relpath} ({item.summary}): {check.detail}"),
                 )
             )
             continue
@@ -458,9 +438,7 @@ def run_kit(
             if item.id is KitItemId.CCR_STORE:
                 action, detail = _apply_ccr_store(item, repo_root, fs=fs)
             elif item.id is KitItemId.CAVEMAN_SKILL:
-                action, detail = _apply_caveman_skill(
-                    item, repo_root, instrument, model_version, fs=fs
-                )
+                action, detail = _apply_caveman_skill(item, repo_root, instrument, model_version, fs=fs)
             else:
                 action, detail = _apply_codegraph_index(
                     item,
@@ -493,9 +471,7 @@ def run_kit(
         )
 
     after = (
-        kit_checks(repo_root, context_layers, probe=probe, process=process, fs=fs)
-        if apply
-        else tuple(before.values())
+        kit_checks(repo_root, context_layers, probe=probe, process=process, fs=fs) if apply else tuple(before.values())
     )
     findings = _result_findings(after, outcomes)
     return KitResult(
@@ -506,9 +482,7 @@ def run_kit(
     )
 
 
-def _result_findings(
-    checks: tuple[KitCheck, ...], outcomes: list[KitOutcome]
-) -> tuple[Finding, ...]:
+def _result_findings(checks: tuple[KitCheck, ...], outcomes: list[KitOutcome]) -> tuple[Finding, ...]:
     """The findings ``run_kit`` reports: ``kit_findings``'s own verdict on
     the post-apply state, with the failure text of any step that genuinely
     tried and could not folded in.
@@ -537,15 +511,9 @@ def _result_findings(
     told the kit is green. It reports as ``kit-item-stale`` (DRIFT): the
     artifact is there, but what produced it did not finish, so its content
     cannot be trusted and the remedy is the same re-run."""
-    failure_by_item = {
-        outcome.item_id: outcome.detail
-        for outcome in outcomes
-        if outcome.action is KitAction.FAILED
-    }
+    failure_by_item = {outcome.item_id: outcome.detail for outcome in outcomes if outcome.action is KitAction.FAILED}
     reportable = tuple(
-        check
-        for check in checks
-        if check.status is not KitStatus.OFF and check.status is not KitStatus.OK
+        check for check in checks if check.status is not KitStatus.OFF and check.status is not KitStatus.OK
     )
     findings: list[Finding] = []
     for check, finding in zip(reportable, kit_findings(checks), strict=True):

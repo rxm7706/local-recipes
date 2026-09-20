@@ -41,6 +41,7 @@ to this module; this story ships the grammar + conformance surface only.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -68,17 +69,11 @@ DISPATCH_BRANCH_PREFIX = "dispatch"
 
 # Leading ``<epic>[.-]<seq><suffix>?`` token -- mirrors marshal
 # ``core.identity``'s ``_KEY_RE`` without importing that package.
-_KEY_TOKEN_RE = re.compile(
-    r"(?P<epic>[0-9]+)[.\-](?P<seq>[0-9]+)(?P<suffix>[A-Za-z])?(?=$|[.\-])"
-)
+_KEY_TOKEN_RE = re.compile(r"(?P<epic>[0-9]+)[.\-](?P<seq>[0-9]+)(?P<suffix>[A-Za-z])?(?=$|[.\-])")
 
-_GITHUB_MERGE_SUBJECT_RE = re.compile(
-    r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$"
-)
+_GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$")
 
-_BMADLOOP_MERGE_SUBJECT_RE = re.compile(
-    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$"
-)
+_BMADLOOP_MERGE_SUBJECT_RE = re.compile(r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$")
 
 _RECOVERY_COMMIT_SUBJECT_RE = re.compile(
     r"^recover\s+(?P<station>\S+)\s+(?P<epic>\d+)[.\-](?P<seq>\d+)",
@@ -160,16 +155,18 @@ class StoryKeyRef:
 
 # One-time reviewed allowlist for pre-convention recovery landings (open
 # question resolution in spec-landing-evidence-grammar): never rewrite history.
-PRE_CONVENTION_RECOVERY_COMMITS: frozenset[str] = frozenset({
-    "accc097e6a",
-    "5290c9bcd2",
-    "03d8fc8c86",
-})
+PRE_CONVENTION_RECOVERY_COMMITS: frozenset[str] = frozenset(
+    {
+        "accc097e6a",
+        "5290c9bcd2",
+        "03d8fc8c86",
+    }
+)
 
 _RECOVERY_ALLOWLIST_KEYS: dict[str, StoryKeyRef] = {
-    "accc097e6a": StoryKeyRef(8, 2),   # marshal 8-2, Story 8.2 direct commit
+    "accc097e6a": StoryKeyRef(8, 2),  # marshal 8-2, Story 8.2 direct commit
     "5290c9bcd2": StoryKeyRef(10, 1),  # marshal 10-1 recovery
-    "03d8fc8c86": StoryKeyRef(3, 7),   # mason 3-7 recovery
+    "03d8fc8c86": StoryKeyRef(3, 7),  # mason 3-7 recovery
 }
 
 RECOVERY_LANDING_CONVENTION = """\
@@ -260,9 +257,7 @@ def _split_template(template: str) -> tuple[str, str] | None:
     return prefix, suffix
 
 
-def parse_templated_merge_subject(
-    subject: str, template: str, project_slug: str
-) -> StoryKeyRef | None:
+def parse_templated_merge_subject(subject: str, template: str, project_slug: str) -> StoryKeyRef | None:
     """AD-24 templated merge subject: exact prefix/suffix slice around ``{key}``.
 
     ``template``'s optional ``{slug}`` is filled with ``project_slug`` first
@@ -435,22 +430,27 @@ def classify_merge_subject(
     shape only -- every other shape is already self-scoping via
     ``project_slug`` alone.
     """
-    for parser, shape in (
-        (lambda s: parse_templated_merge_subject(s, template, project_slug), LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT),
+    parsers: tuple[tuple[Callable[[str], StoryKeyRef | None], LandingEvidenceShape], ...] = (
+        (
+            lambda s: parse_templated_merge_subject(s, template, project_slug),
+            LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT,
+        ),
         (lambda s: parse_github_pr_merge_subject(s, project_slug), LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT),
         (lambda s: parse_bmadloop_merge_subject(s, project_slug), LandingEvidenceShape.BMAD_LOOP_MERGE_SUBJECT),
         (lambda s: parse_recovery_commit_subject(s, project_slug), LandingEvidenceShape.RECOVERY_COMMIT_SUBJECT),
-        (lambda s: parse_story_direct_commit_subject(s, project_slug, branch=branch), LandingEvidenceShape.STORY_DIRECT_COMMIT_SUBJECT),
-    ):
+        (
+            lambda s: parse_story_direct_commit_subject(s, project_slug, branch=branch),
+            LandingEvidenceShape.STORY_DIRECT_COMMIT_SUBJECT,
+        ),
+    )
+    for parser, shape in parsers:
         key = parser(subject)
         if key is not None:
             branch_shape: BranchDerivedShape | None = None
             if shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT:
                 gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
                 if gh_match is not None:
-                    branch_shape = _branch_derived_shape(
-                        gh_match.group("branch"), project_slug
-                    )
+                    branch_shape = _branch_derived_shape(gh_match.group("branch"), project_slug)
             return LandingEvidenceMatch(key=key, shape=shape, branch_shape=branch_shape)
     return None
 
@@ -488,9 +488,7 @@ def classify_commit(
             key=key,
             shape=LandingEvidenceShape.RECOVERY_COMMIT_ALLOWLIST,
         )
-    return classify_merge_subject(
-        subject, template=template, project_slug=project_slug, branch=branch
-    )
+    return classify_merge_subject(subject, template=template, project_slug=project_slug, branch=branch)
 
 
 def merged_story_keys(

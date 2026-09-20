@@ -84,9 +84,7 @@ def test_sync_reconcile_dry_run_via_cli_threads_args_through_with_no_writes(tmp_
 
     monkeypatch.setattr("pyforge.steward.sync._default_transport", fake_transport)
 
-    rc = main(
-        ["sync", "reconcile", "--github-item", "ITEM_1", "--config", str(config_path), "--dry-run"]
-    )
+    rc = main(["sync", "reconcile", "--github-item", "ITEM_1", "--config", str(config_path), "--dry-run"])
 
     assert rc == EXIT_OK
     out = capsys.readouterr().out
@@ -127,9 +125,7 @@ def test_sync_reconcile_schedule_via_cli_dispatches_to_the_batch_reconciler(tmp_
     assert "0 candidates" in out
 
 
-def test_sync_reconcile_schedule_dry_run_via_cli_threads_through_with_no_writes(
-    tmp_path, monkeypatch, capsys
-):
+def test_sync_reconcile_schedule_dry_run_via_cli_threads_through_with_no_writes(tmp_path, monkeypatch, capsys):
     """Proves `--schedule`/`--dry-run` together actually reach
     `reconcile_schedule_batch` through `SyncDuty.run()`'s dispatch and
     argparse's own `--dry-run` flag, for a REAL non-empty batch -- not just
@@ -151,9 +147,7 @@ def test_sync_reconcile_schedule_dry_run_via_cli_threads_through_with_no_writes(
             if "fieldId" in variables:
                 write_calls.append(url)
                 item_id = variables["itemId"]
-                payload = {
-                    "data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": item_id}}}
-                }
+                payload = {"data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": item_id}}}}
                 return TransportResponse(status=200, body=json.dumps(payload).encode())
             if "itemId" in variables:
                 node = {
@@ -166,9 +160,7 @@ def test_sync_reconcile_schedule_dry_run_via_cli_threads_through_with_no_writes(
                         ]
                     },
                 }
-                return TransportResponse(
-                    status=200, body=json.dumps({"data": {"node": node}}).encode()
-                )
+                return TransportResponse(status=200, body=json.dumps({"data": {"node": node}}).encode())
             # The bulk-listing query ("projectId" present, "itemId" absent):
             # one linked item, one page.
             items_payload = {
@@ -179,9 +171,7 @@ def test_sync_reconcile_schedule_dry_run_via_cli_threads_through_with_no_writes(
                                 {
                                     "id": "ITEM_1",
                                     "updatedAt": "2026-08-13T00:00:00Z",
-                                    "fieldValues": {
-                                        "nodes": [{"text": "PROJ-1", "field": {"id": "gh_link"}}]
-                                    },
+                                    "fieldValues": {"nodes": [{"text": "PROJ-1", "field": {"id": "gh_link"}}]},
                                 }
                             ],
                             "pageInfo": {"hasNextPage": False, "endCursor": None},

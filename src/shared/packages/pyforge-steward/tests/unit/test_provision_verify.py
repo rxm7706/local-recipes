@@ -44,9 +44,7 @@ def test_check_environment_sync_ignores_trailing_whitespace_like_the_linter_does
 
 def test_check_environment_sync_reports_drift_with_a_unified_diff(tmp_path, monkeypatch):
     (tmp_path / "environment.yaml").write_text("name: build\ndependencies:\n  - python\n")
-    monkeypatch.setattr(
-        subprocess, "run", _fake_export("name: build\ndependencies:\n  - python\n  - pip\n")
-    )
+    monkeypatch.setattr(subprocess, "run", _fake_export("name: build\ndependencies:\n  - python\n  - pip\n"))
 
     in_sync, diff = check_environment_sync(cwd=tmp_path)
 
@@ -84,9 +82,7 @@ def test_provision_verify_via_cli_reports_clean_and_exits_ok(tmp_path, monkeypat
 def test_provision_verify_via_cli_reports_drift_and_exits_failed(tmp_path, monkeypatch):
     (tmp_path / "environment.yaml").write_text("name: build\ndependencies:\n  - python\n")
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        subprocess, "run", _fake_export("name: build\ndependencies:\n  - python\n  - pip\n")
-    )
+    monkeypatch.setattr(subprocess, "run", _fake_export("name: build\ndependencies:\n  - python\n  - pip\n"))
 
     rc = main(["provision", "--verify"])
 
@@ -96,9 +92,7 @@ def test_provision_verify_via_cli_reports_drift_and_exits_failed(tmp_path, monke
 def test_provision_verify_never_writes_environment_yaml(tmp_path, monkeypatch):
     (tmp_path / "environment.yaml").write_text("name: build\ndependencies:\n  - python\n")
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        subprocess, "run", _fake_export("name: build\ndependencies:\n  - python\n  - pip\n")
-    )
+    monkeypatch.setattr(subprocess, "run", _fake_export("name: build\ndependencies:\n  - python\n  - pip\n"))
     before = (tmp_path / "environment.yaml").read_text()
 
     main(["provision", "--verify"])

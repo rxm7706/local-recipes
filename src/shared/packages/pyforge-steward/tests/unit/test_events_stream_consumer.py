@@ -20,11 +20,15 @@ if str(_DJANGO_PYFORGE_SRC) not in sys.path:
 
 from django.conf import settings  # noqa: E402
 from django_pyforge.assertion.schema import CLAIM_SUB  # noqa: E402
-from django_pyforge.events.browser_relay import matches_subject  # noqa: E402
-from django_pyforge.events.browser_relay import tail_events  # noqa: E402
-from django_pyforge.events.constants import EVENT_FIELD  # noqa: E402
-from django_pyforge.events.constants import EVENT_SCHEMAS  # noqa: E402
-from django_pyforge.events.constants import STREAM  # noqa: E402
+from django_pyforge.events.browser_relay import (
+    matches_subject,  # noqa: E402
+    tail_events,  # noqa: E402
+)
+from django_pyforge.events.constants import (
+    EVENT_FIELD,  # noqa: E402
+    EVENT_SCHEMAS,  # noqa: E402
+    STREAM,  # noqa: E402
+)
 from django_pyforge.events.memory import MemoryRedis  # noqa: E402
 
 if not settings.configured:

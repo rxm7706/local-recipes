@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import DUTIES, build_parser, main, resolve_duty
 from pyforge.steward.interfaces import Duty
 from pyforge.steward.revoke import RevokeDuty, revoke_command, run_revoke

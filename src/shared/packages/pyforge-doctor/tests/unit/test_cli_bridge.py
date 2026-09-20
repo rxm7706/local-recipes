@@ -137,7 +137,8 @@ def _init_repo(repo: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     subprocess.run(
         ["git", "config", "user.email", "doctor-test@example.com"],
-        cwd=repo, check=True,
+        cwd=repo,
+        check=True,
     )
     subprocess.run(["git", "config", "user.name", "Doctor Test"], cwd=repo, check=True)
     subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
@@ -197,9 +198,7 @@ def test_run_pytest_all_passed_returns_zero(tmp_path: Path) -> None:
 
 
 def test_run_pytest_some_failed_returns_one_not_raise(tmp_path: Path) -> None:
-    (tmp_path / "test_fail.py").write_text(
-        "def test_fail():\n    assert False\n", encoding="utf-8"
-    )
+    (tmp_path / "test_fail.py").write_text("def test_fail():\n    assert False\n", encoding="utf-8")
 
     rc, output = run_pytest(Path(sys.executable), tmp_path, ["-q", "-p", "no:cacheprovider"])
 

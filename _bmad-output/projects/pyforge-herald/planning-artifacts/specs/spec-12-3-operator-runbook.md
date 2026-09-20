@@ -117,3 +117,16 @@ as a true "start here" rather than a third copy of the same content.
 - `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
 
 **Follow-up review recommendation:** none outstanding for this story.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `25d10d143e` (2026-09-10, "Merge latest main into Story 12.3 before landing"); also `bb50e36cf7` (2026-09-10, "pyforge-warden Story 12.3: promotion scans the shipped pixi lock closure"); also `c32ae60732` (2026-08-08, "herald: Story 12.3 — Operator runbook (getting started + FAQ)"). Ledger row `12-3-operator-runbook: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `AGENTS.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-1-the-ledger-syncer-guards-blocked-and-missing-keys.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `docs/dreams/pyforge-unifying-strategy.md`, `scripts/promote_sprint_status.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 import yaml
+
 from pyforge.marshal.seed.detect.findings import FindingType, Severity
 from pyforge.marshal.seed.detect.referenced_deps import referenced_dep_findings
 from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry

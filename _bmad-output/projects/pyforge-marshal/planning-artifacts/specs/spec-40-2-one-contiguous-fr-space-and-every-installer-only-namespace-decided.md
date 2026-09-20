@@ -49,3 +49,16 @@ Type / Effort / Deps: docs / L / S-40.1.
 ## Source
 
 Contract recovered from `epics.md` Story 40.2 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3b59d0ec38` (2026-09-02, "Make redis-broker durable and bounded (Story 40.2)."). Ledger row `40-2-one-contiguous-fr-space-and-every-installer-only-namespace-decided: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-40-2-redis-broker-is-durable-and-bounded.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `docs/dreams/pyforge-unifying-strategy.md`, `src/platform/config/settings/base.py`, `src/platform/deploy/README.md`, `src/platform/deploy/charts/platform/templates/_helpers.tpl`, `src/platform/deploy/charts/platform/templates/redis-broker-pvc.yaml`, `src/platform/deploy/charts/platform/templates/redis-deployment.yaml`, `src/platform/deploy/charts/platform/values.yaml`, `src/platform/deploy/overlays/ocp/cluster-bringup.md`, `src/platform/tests/test_chart_invariants.py`, `src/platform/tests/test_cloudevents_redis_broker.py` (+3 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

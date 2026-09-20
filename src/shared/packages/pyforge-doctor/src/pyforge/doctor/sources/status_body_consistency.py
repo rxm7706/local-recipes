@@ -94,9 +94,7 @@ def _load_terminal_statuses(target: Path) -> tuple[frozenset[str], Finding | Non
         raw_terminal = data["spec_statuses_terminal"]
         raw_ended_acts = data["spec_statuses_ended_acts"]
         if not isinstance(raw_terminal, list) or not isinstance(raw_ended_acts, list):
-            raise TypeError(
-                "spec_statuses_terminal/spec_statuses_ended_acts must be lists"
-            )
+            raise TypeError("spec_statuses_terminal/spec_statuses_ended_acts must be lists")
         terminal = frozenset(str(s) for s in raw_terminal)
         ended_acts = frozenset(str(s) for s in raw_ended_acts)
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
@@ -135,12 +133,8 @@ _LEDGER_STATUS_WORDS = (
     "optional",
 )
 _LEDGER_STATUS_ALT = "|".join(re.escape(word) for word in _LEDGER_STATUS_WORDS)
-_EPIC_STATUS_COMMENT_RE = re.compile(
-    rf"(?i)(?:\b|→\s*|\->\s*)epic\s+(\d+)\s+({_LEDGER_STATUS_ALT})\b"
-)
-_STORY_STATUS_COMMENT_RE = re.compile(
-    rf"(?i)\bstory\s+(\d+)[.\-](\d+)[a-z]?\s+({_LEDGER_STATUS_ALT})\b"
-)
+_EPIC_STATUS_COMMENT_RE = re.compile(rf"(?i)(?:\b|→\s*|\->\s*)epic\s+(\d+)\s+({_LEDGER_STATUS_ALT})\b")
+_STORY_STATUS_COMMENT_RE = re.compile(rf"(?i)\bstory\s+(\d+)[.\-](\d+)[a-z]?\s+({_LEDGER_STATUS_ALT})\b")
 
 _HEADING_LINE_RE = re.compile(r"^#{1,6}\s")
 
@@ -172,9 +166,7 @@ _PROMISSORY_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 )
 
 _HERALD_DREAM_REL = "docs/dreams/pyforge-herald.md"
-_HERALD_SPEC_REL_SUFFIX = (
-    "pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md"
-)
+_HERALD_SPEC_REL_SUFFIX = "pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md"
 
 _MEMLOG_ENTRY_RE = re.compile(r"^-\s+\((\w+)")
 
@@ -855,10 +847,7 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
                     source=Source.STATUS_BODY_CONSISTENCY,
                     check=_CHECK_UNPARSEABLE,
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{rel} could not be read — "
-                        f"{exc.__class__.__name__}: {exc}"
-                    ),
+                    message=(f"{rel} could not be read — {exc.__class__.__name__}: {exc}"),
                     evidence={"path": rel},
                 )
             )
@@ -875,11 +864,7 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
         scanned_documents += 1
         doc_fired = False
         owning_project = owning_project_for_doc(target, path, text)
-        project_ledger = (
-            load_project_ledger_statuses(target, owning_project)
-            if owning_project
-            else {}
-        )
+        project_ledger = load_project_ledger_statuses(target, owning_project) if owning_project else {}
         for ref in refs:
             # Resolve against the document's OWN project first — a ledger key
             # like "epic-14" is not fleet-unique, every station numbers its
@@ -979,8 +964,7 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
                 check=_CHECK_STATUS_COMMENT,
                 status=DoctorStatus.OK,
                 message=(
-                    "no status-comment/ledger contradictions across "
-                    f"{scanned_documents} document(s) with named keys"
+                    f"no status-comment/ledger contradictions across {scanned_documents} document(s) with named keys"
                 ),
                 evidence=tier_stats,
             ),
@@ -998,9 +982,7 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
     )
 
 
-def _append_spec_if_terminal(
-    spec_md: Path, docs: list[tuple[Path, str]], terminal_statuses: frozenset[str]
-) -> None:
+def _append_spec_if_terminal(spec_md: Path, docs: list[tuple[Path, str]], terminal_statuses: frozenset[str]) -> None:
     try:
         text = spec_md.read_text(encoding="utf-8")
     except OSError:
@@ -1022,9 +1004,7 @@ def _rel_path(path: Path, target: Path) -> str:
 
 
 def _progress_phrase_message(*, rel: str, line_no: int, status: str, matched: str) -> str:
-    return (
-        f"{rel}:{line_no} reads {matched!r} under status: {status!r}"
-    )
+    return f"{rel}:{line_no} reads {matched!r} under status: {status!r}"
 
 
 def gather_progress_phrase(target: Path) -> tuple[Finding, ...]:
@@ -1048,10 +1028,7 @@ def gather_progress_phrase(target: Path) -> tuple[Finding, ...]:
                     source=Source.STATUS_BODY_CONSISTENCY,
                     check=_CHECK_UNPARSEABLE,
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{rel} could not be read — "
-                        f"{exc.__class__.__name__}: {exc}"
-                    ),
+                    message=(f"{rel} could not be read — {exc.__class__.__name__}: {exc}"),
                     evidence={"path": rel},
                 )
             )
@@ -1117,10 +1094,7 @@ def gather_progress_phrase(target: Path) -> tuple[Finding, ...]:
                 source=Source.STATUS_BODY_CONSISTENCY,
                 check="status-body-consistency",
                 status=DoctorStatus.OK,
-                message=(
-                    "no incomplete progress phrases under terminal status "
-                    f"across {scanned_terminal} document(s)"
-                ),
+                message=(f"no incomplete progress phrases under terminal status across {scanned_terminal} document(s)"),
                 evidence=tier_stats,
             ),
         )
@@ -1173,10 +1147,7 @@ def gather_open_questions_reconcile(target: Path) -> tuple[Finding, ...]:
                     source=Source.STATUS_BODY_CONSISTENCY,
                     check=_CHECK_UNPARSEABLE,
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{rel} or its companion memlog could not be read — "
-                        f"{exc.__class__.__name__}: {exc}"
-                    ),
+                    message=(f"{rel} or its companion memlog could not be read — {exc.__class__.__name__}: {exc}"),
                     evidence={"path": rel},
                 )
             )
@@ -1240,8 +1211,7 @@ def gather_open_questions_reconcile(target: Path) -> tuple[Finding, ...]:
                 check="status-body-open-questions",
                 status=DoctorStatus.OK,
                 message=(
-                    "no open_questions/memlog contradictions across "
-                    f"{scanned_specs} spec(s) with companion memlogs"
+                    f"no open_questions/memlog contradictions across {scanned_specs} spec(s) with companion memlogs"
                 ),
                 evidence=tier_stats,
             ),
@@ -1260,10 +1230,7 @@ def gather_open_questions_reconcile(target: Path) -> tuple[Finding, ...]:
 
 
 def _promissory_message(*, rel: str, line_no: int, status: str, pattern_id: str) -> str:
-    return (
-        f"{rel}:{line_no} reads forward-looking ({pattern_id!r}) "
-        f"under status: {status!r}"
-    )
+    return f"{rel}:{line_no} reads forward-looking ({pattern_id!r}) under status: {status!r}"
 
 
 def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
@@ -1310,10 +1277,7 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
                     source=Source.STATUS_BODY_CONSISTENCY,
                     check=_CHECK_UNPARSEABLE,
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{rel} could not be read — "
-                        f"{exc.__class__.__name__}: {exc}"
-                    ),
+                    message=(f"{rel} could not be read — {exc.__class__.__name__}: {exc}"),
                     evidence={"path": rel},
                 )
             )
@@ -1379,10 +1343,7 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
                 source=Source.STATUS_BODY_CONSISTENCY,
                 check=_CHECK_PROMISSORY,
                 status=DoctorStatus.OK,
-                message=(
-                    "no promissory language under terminal status "
-                    f"across {scanned_terminal} document(s)"
-                ),
+                message=(f"no promissory language under terminal status across {scanned_terminal} document(s)"),
                 evidence=tier_stats,
             ),
         )
@@ -1431,15 +1392,9 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
     cap2_warns = [f for f in cap2 if f.status != DoctorStatus.OK]
     cap3_warns = [f for f in cap3 if f.status != DoctorStatus.OK]
     cap4_warns = [f for f in cap4 if f.status != DoctorStatus.OK]
-    cap3_rejected = [
-        f
-        for f in cap3
-        if f.status == DoctorStatus.OK and f.evidence.get("accepted") is False
-    ]
+    cap3_rejected = [f for f in cap3 if f.status == DoctorStatus.OK and f.evidence.get("accepted") is False]
     if cap1_warns or cap2_warns or cap3_warns or cap4_warns:
-        return _dedupe_unparseable_findings(
-            tuple(cap1_warns + cap2_warns + cap3_warns + cap4_warns)
-        )
+        return _dedupe_unparseable_findings(tuple(cap1_warns + cap2_warns + cap3_warns + cap4_warns))
     if cap3_rejected:
         return tuple(cap3_rejected)
     return (

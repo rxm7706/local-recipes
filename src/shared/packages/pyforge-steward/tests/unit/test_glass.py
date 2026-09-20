@@ -84,9 +84,7 @@ def _clean_corridor_loads():
 
 
 def _create_row(*, waybill: str, batch_sha: str, direction: str = "inbound", days_ago: int = 0) -> CorridorLoad:
-    row = CorridorLoad.objects.create(
-        direction=direction, batch_sha=batch_sha, waybill=waybill, transport="app-upload"
-    )
+    row = CorridorLoad.objects.create(direction=direction, batch_sha=batch_sha, waybill=waybill, transport="app-upload")
     if days_ago:
         earlier = datetime.now(timezone.utc) - timedelta(days=days_ago)
         CorridorLoad.objects.filter(pk=row.pk).update(loaded_at=earlier)
@@ -210,6 +208,7 @@ def test_read_latest_corridor_load_refuses_on_operational_error(monkeypatch):
 
 def test_read_latest_corridor_load_refuses_on_data_and_programming_errors(monkeypatch):
     for exc_cls in (DataError, ProgrammingError):
+
         def _raise(**kwargs):
             raise exc_cls("boom")
 
@@ -245,23 +244,37 @@ def test_every_glass_state_literal_used_by_compute_glass_reading_is_a_member():
 
 def _fresh_reading(waybill: str = "WB-1") -> GlassReading:
     return GlassReading(
-        status="ok", direction="inbound", state="fresh", waybill=waybill,
-        batch_sha="c" * 64, loaded_at="2026-09-19T00:00:00+00:00", message="",
+        status="ok",
+        direction="inbound",
+        state="fresh",
+        waybill=waybill,
+        batch_sha="c" * 64,
+        loaded_at="2026-09-19T00:00:00+00:00",
+        message="",
     )
 
 
 def _stale_reading() -> GlassReading:
     return GlassReading(
-        status="ok", direction="inbound", state="stale", waybill="WB-2",
-        batch_sha="d" * 64, loaded_at="2026-09-17T00:00:00+00:00",
+        status="ok",
+        direction="inbound",
+        state="stale",
+        waybill="WB-2",
+        batch_sha="d" * 64,
+        loaded_at="2026-09-17T00:00:00+00:00",
         message="no drop yet today -- showing the last known waybill",
     )
 
 
 def _refused_reading() -> GlassReading:
     return GlassReading(
-        status="refused", direction="inbound", state=None, waybill=None,
-        batch_sha=None, loaded_at=None, message="pyforge-steward[dashboard] extra not installed",
+        status="refused",
+        direction="inbound",
+        state=None,
+        waybill=None,
+        batch_sha=None,
+        loaded_at=None,
+        message="pyforge-steward[dashboard] extra not installed",
     )
 
 
@@ -353,9 +366,7 @@ def test_glass_duty_export_flag_off_by_default_names_the_flag():
 @pytest.mark.parametrize("fmt", GLASS_EXPORT_FORMATS)
 def test_glass_duty_export_with_flag_on_succeeds(fmt):
     _create_row(waybill="WB-EXPORT", batch_sha="f" * 64)
-    ns = build_parser().parse_args(
-        ["glass", "export", "--format", fmt, "--flag", "enable_glass_export=true"]
-    )
+    ns = build_parser().parse_args(["glass", "export", "--format", fmt, "--flag", "enable_glass_export=true"])
     result = GlassDuty().run(ns)
     assert result.ok is True
     assert "WB-EXPORT" in result.details["table"]
@@ -382,9 +393,7 @@ def test_glass_duty_json_on_bare_failure():
 
 def test_glass_duty_json_on_export_success():
     _create_row(waybill="WB-C", batch_sha="2" * 64)
-    ns = build_parser().parse_args(
-        ["glass", "--json", "export", "--flag", "enable_glass_export=true"]
-    )
+    ns = build_parser().parse_args(["glass", "--json", "export", "--flag", "enable_glass_export=true"])
     result = GlassDuty().run(ns)
     assert result.ok is True
     payload = json.loads(result.summary)

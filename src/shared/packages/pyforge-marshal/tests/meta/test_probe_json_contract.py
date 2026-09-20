@@ -65,9 +65,7 @@ def test_probe_schema_version_matches_the_pinned_value():
 def test_probe_json_document_has_exactly_the_pinned_key_set():
     import json
 
-    finding = probe.ProfileFinding(
-        cli="claude", mode="scan", known_profile=True, binary="claude", parser="none"
-    )
+    finding = probe.ProfileFinding(cli="claude", mode="scan", known_profile=True, binary="claude", parser="none")
     document = json.loads(probe.render_json(finding))
     assert set(document.keys()) == _EXPECTED_KEYS, (
         "bmad-loop probe-adapter --json's own key set drifted from what this "

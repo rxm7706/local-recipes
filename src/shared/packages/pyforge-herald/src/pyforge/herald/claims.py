@@ -224,13 +224,9 @@ def _load_legacy_document(claims_path: Path) -> list[object]:
     except FileNotFoundError:
         return []
     except (ValueError, OSError, RecursionError) as exc:
-        raise errors.HeraldError(
-            f"claims file {claims_path} could not be read: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"claims file {claims_path} could not be read: {exc}") from exc
     if not isinstance(document, list):
-        raise errors.HeraldError(
-            f"claims file {claims_path} does not hold a JSON array at its top level"
-        )
+        raise errors.HeraldError(f"claims file {claims_path} does not hold a JSON array at its top level")
     return document
 
 
@@ -240,9 +236,7 @@ def _evidence_from_dict(claims_path: Path, claim_id: object, entry: object) -> E
         raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
     unknown = sorted(set(entry) - _EVIDENCE_FIELDS)
     if unknown:
-        raise errors.HeraldError(
-            f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}")
     try:
         return Evidence(
             type=entry["type"],
@@ -255,17 +249,13 @@ def _evidence_from_dict(claims_path: Path, claim_id: object, entry: object) -> E
         raise errors.HeraldError(f"{malformed}: missing field {exc}") from exc
 
 
-def _thesis_version_from_dict(
-    claims_path: Path, claim_id: object, entry: object
-) -> ThesisVersion:
+def _thesis_version_from_dict(claims_path: Path, claim_id: object, entry: object) -> ThesisVersion:
     malformed = f"claims file {claims_path} has a malformed edit_history entry for claim {claim_id!r}"
     if not isinstance(entry, dict):
         raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
     unknown = sorted(set(entry) - _THESIS_VERSION_FIELDS)
     if unknown:
-        raise errors.HeraldError(
-            f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}")
     try:
         return ThesisVersion(thesis=entry["thesis"], edited_at=entry["edited_at"])
     except KeyError as exc:
@@ -278,18 +268,12 @@ def _claim_from_dict(claims_path: Path, entry: object) -> Claim:
         raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
     unknown = sorted(set(entry) - _CLAIM_FIELDS)
     if unknown:
-        raise errors.HeraldError(
-            f"{malformed} ({entry.get('id')!r}): unknown field(s) {', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"{malformed} ({entry.get('id')!r}): unknown field(s) {', '.join(map(repr, unknown))}")
     try:
         claim_id = entry["id"]
-        evidence = tuple(
-            _evidence_from_dict(claims_path, claim_id, item)
-            for item in entry.get("evidence", [])
-        )
+        evidence = tuple(_evidence_from_dict(claims_path, claim_id, item) for item in entry.get("evidence", []))
         edit_history = tuple(
-            _thesis_version_from_dict(claims_path, claim_id, item)
-            for item in entry.get("edit_history", [])
+            _thesis_version_from_dict(claims_path, claim_id, item) for item in entry.get("edit_history", [])
         )
         return Claim(
             id=claim_id,
@@ -314,10 +298,7 @@ def _read_legacy_json(claims_path: Path) -> list[Claim]:
     (``db.py``'s ``_import_legacy_v1``) -- so a legacy ``claims.json`` that
     fails this exact validation still raises the identical
     ``errors.HeraldError`` at migration time (Boundaries & Constraints)."""
-    return [
-        _claim_from_dict(claims_path, entry)
-        for entry in _load_legacy_document(claims_path)
-    ]
+    return [_claim_from_dict(claims_path, entry) for entry in _load_legacy_document(claims_path)]
 
 
 def _to_params(c: Claim) -> tuple[object, ...]:
@@ -346,9 +327,7 @@ def _to_params(c: Claim) -> tuple[object, ...]:
                 for e in c.evidence
             ]
         ),
-        json.dumps(
-            [{"thesis": v.thesis, "edited_at": v.edited_at} for v in c.edit_history]
-        ),
+        json.dumps([{"thesis": v.thesis, "edited_at": v.edited_at} for v in c.edit_history]),
     )
 
 
@@ -358,13 +337,11 @@ def _row_to_claim(claims_path: Path, row) -> Claim:
         edit_history_raw = json.loads(row["edit_history"])
     except ValueError as exc:
         raise errors.HeraldError(
-            f"claims record {row['id']!r} in {claims_path} has malformed "
-            f"evidence/edit_history JSON: {exc}"
+            f"claims record {row['id']!r} in {claims_path} has malformed evidence/edit_history JSON: {exc}"
         ) from exc
     if not isinstance(evidence_raw, list) or not isinstance(edit_history_raw, list):
         raise errors.HeraldError(
-            f"claims record {row['id']!r} in {claims_path} has malformed "
-            f"evidence/edit_history: expected a JSON array"
+            f"claims record {row['id']!r} in {claims_path} has malformed evidence/edit_history: expected a JSON array"
         )
     entry = {
         "id": row["id"],
@@ -456,9 +433,7 @@ def _write_transaction(claims_path: Path) -> Iterator[None]:
         raise
     except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         # Same set, same reason, as `_write_all` -- see the comment there.
-        raise errors.HeraldError(
-            f"claims could not be written to {claims_path}: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"claims could not be written to {claims_path}: {exc}") from exc
 
 
 def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
@@ -513,9 +488,7 @@ def create(
         raise errors.HeraldError("project_name must not be empty")
     for e in evidence:
         if e.type not in EVIDENCE_TYPES:
-            raise errors.HeraldError(
-                f"evidence type {e.type!r} must be one of {EVIDENCE_TYPES}"
-            )
+            raise errors.HeraldError(f"evidence type {e.type!r} must be one of {EVIDENCE_TYPES}")
     # `_write_transaction`, not a bare `db.transaction`, for the AD-6
     # reason its docstring gives: the ambient `read_all` below is covered
     # by nothing else.
@@ -526,9 +499,7 @@ def create(
             project_name=project_name,
             status="draft",
             thesis=None,
-            shipped_date=(
-                shipped_date if shipped_date is not None else today().isoformat()
-            ),
+            shipped_date=(shipped_date if shipped_date is not None else today().isoformat()),
             created_at=timestamp,
             published_at=None,
             closed_at=None,
@@ -642,27 +613,21 @@ def publish(
 
     with _write_transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
-        fresh_index = next(
-            (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
-        )
+        fresh_index = next((i for i, c in enumerate(fresh_claims) if c.id == claim_id), None)
         if fresh_index is None:
             raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
         fresh_claim = fresh_claims[fresh_index]
         if fresh_claim.status != "draft":
             raise errors.ClaimStateError(
-                f"claim {claim_id!r} is already {fresh_claim.status!r}; only a "
-                f"draft claim can be published"
+                f"claim {claim_id!r} is already {fresh_claim.status!r}; only a draft claim can be published"
             )
         # Apply this call's results by INDEX, and only where the fresh
         # entry at that index is still exactly the entry that was validated
         # (the discard-stale rule -- see the module docstring).
         carried = tuple(
-            i < len(original_evidence) and e == original_evidence[i]
-            for i, e in enumerate(fresh_claim.evidence)
+            i < len(original_evidence) and e == original_evidence[i] for i, e in enumerate(fresh_claim.evidence)
         )
-        validated_evidence = tuple(
-            results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence)
-        )
+        validated_evidence = tuple(results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence))
         if not all(carried):
             # Discarding a stale result is right for `revalidate`, whose
             # job is to RECORD breakage. It is not enough here: passing a
@@ -722,8 +687,7 @@ def _require_unique_ids(claims_path: Path, claims: list[Claim]) -> None:
     because a duplicate can be written between the two."""
     if len({c.id for c in claims}) != len(claims):
         raise errors.HeraldError(
-            f"{claims_path} holds duplicate claim ids; refusing to revalidate "
-            f"until they are unique"
+            f"{claims_path} holds duplicate claim ids; refusing to revalidate until they are unique"
         )
 
 
@@ -777,23 +741,15 @@ def revalidate(
     timestamp = now()
     timestamp_iso = timestamp.isoformat()
     original_evidence = claim.evidence
-    results = tuple(
-        _revalidated_entry(e, validate=validate, timestamp_iso=timestamp_iso)
-        for e in original_evidence
-    )
+    results = tuple(_revalidated_entry(e, validate=validate, timestamp_iso=timestamp_iso) for e in original_evidence)
 
     with _write_transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
-        fresh_index = next(
-            (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
-        )
+        fresh_index = next((i for i, c in enumerate(fresh_claims) if c.id == claim_id), None)
         if fresh_index is None:
             raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
         fresh_claim = fresh_claims[fresh_index]
-        carried = [
-            i < len(original_evidence) and e == original_evidence[i]
-            for i, e in enumerate(fresh_claim.evidence)
-        ]
+        carried = [i < len(original_evidence) and e == original_evidence[i] for i, e in enumerate(fresh_claim.evidence)]
         if (original_evidence or fresh_claim.evidence) and not any(carried):
             # Not one of this run's results survived onto the claim about to
             # be written, so `updated_at` would assert a validation that
@@ -818,12 +774,8 @@ def revalidate(
             # so it still gets its ordinary `updated_at` stamp, unchanged
             # from before this story.
             return fresh_claim
-        revalidated_evidence = tuple(
-            results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence)
-        )
-        updated = replace(
-            fresh_claim, evidence=revalidated_evidence, updated_at=timestamp_iso
-        )
+        revalidated_evidence = tuple(results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence))
+        updated = replace(fresh_claim, evidence=revalidated_evidence, updated_at=timestamp_iso)
         fresh_claims[fresh_index] = updated
         _write_all(claims_path, fresh_claims)
         return updated
@@ -867,10 +819,7 @@ def revalidate_all(
     validated_by_claim: dict[str, tuple[tuple[Evidence, ...], tuple[Evidence, ...]]] = {
         c.id: (
             c.evidence,
-            tuple(
-                _revalidated_entry(e, validate=validate, timestamp_iso=timestamp_iso)
-                for e in c.evidence
-            ),
+            tuple(_revalidated_entry(e, validate=validate, timestamp_iso=timestamp_iso) for e in c.evidence),
         )
         for c in claims
     }
@@ -896,10 +845,7 @@ def revalidate_all(
                 updated_claims.append(claim)
                 continue
             original_evidence, results = validated_by_claim[claim.id]
-            carried = [
-                i < len(original_evidence) and e == original_evidence[i]
-                for i, e in enumerate(claim.evidence)
-            ]
+            carried = [i < len(original_evidence) and e == original_evidence[i] for i, e in enumerate(claim.evidence)]
             if (original_evidence or claim.evidence) and not any(carried):
                 # Not one of this run's results for this claim survived --
                 # either every entry it validated was changed/removed
@@ -911,19 +857,13 @@ def revalidate_all(
                 # guard reads both tuples rather than either one alone.
                 updated_claims.append(claim)
                 continue
-            revalidated_evidence = tuple(
-                results[i] if carried[i] else e for i, e in enumerate(claim.evidence)
-            )
-            updated_claims.append(
-                replace(claim, evidence=revalidated_evidence, updated_at=timestamp_iso)
-            )
+            revalidated_evidence = tuple(results[i] if carried[i] else e for i, e in enumerate(claim.evidence))
+            updated_claims.append(replace(claim, evidence=revalidated_evidence, updated_at=timestamp_iso))
         _write_all(claims_path, updated_claims)
         return updated_claims
 
 
-def is_stale(
-    evidence_item: Evidence, *, now: datetime, stale_after=evidence_mod.STALE_AFTER
-) -> bool:
+def is_stale(evidence_item: Evidence, *, now: datetime, stale_after=evidence_mod.STALE_AFTER) -> bool:
     """Whether ``evidence_item`` is overdue for re-validation -- computed
     from ``validated_at`` against ``now``, never stored (see module
     docstring). An evidence link never validated (``validated_at is None``)
@@ -934,9 +874,7 @@ def is_stale(
     return (now - validated_at) > stale_after
 
 
-def to_dict(
-    claim: Claim, *, now: Callable[[], datetime] = _default_now
-) -> dict[str, Any]:
+def to_dict(claim: Claim, *, now: Callable[[], datetime] = _default_now) -> dict[str, Any]:
     """The JSON-serializable shape used by both the CLI's ``--json`` output
     and the web snapshot exporter -- includes each evidence entry's
     computed ``is_stale`` (see ``is_stale``)."""
@@ -962,9 +900,7 @@ def to_dict(
             }
             for e in claim.evidence
         ],
-        "edit_history": [
-            {"thesis": v.thesis, "edited_at": v.edited_at} for v in claim.edit_history
-        ],
+        "edit_history": [{"thesis": v.thesis, "edited_at": v.edited_at} for v in claim.edit_history],
     }
 
 
@@ -987,9 +923,7 @@ def snapshot(
     return [to_dict(c, now=now) for c in matching]
 
 
-def referenced_by_claims(
-    claims_path: Path, component: str, *, aliases: Sequence[str] = ()
-) -> list[Claim]:
+def referenced_by_claims(claims_path: Path, component: str, *, aliases: Sequence[str] = ()) -> list[Claim]:
     """Story 11.3's backlink: every stored claim carrying a ``type="notice"``
     evidence entry whose ``url`` names ``component`` (or one of ``aliases``)
     -- the computed, un-persisted view a Notice's ``get`` output uses to
@@ -1006,9 +940,5 @@ def referenced_by_claims(
     claim citing the pre-rename name would silently and permanently drop
     out of this backlink the moment the notice it cites gets renamed."""
     names = {component, *aliases}
-    matching = [
-        c
-        for c in read_all(claims_path)
-        if any(e.type == "notice" and e.url in names for e in c.evidence)
-    ]
+    matching = [c for c in read_all(claims_path) if any(e.type == "notice" and e.url in names for e in c.evidence)]
     return sorted(matching, key=lambda c: c.created_at)

@@ -1,4 +1,5 @@
 """Story 28.23: fleet-picture ATTENTION names stranded dispatch work."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -13,9 +14,7 @@ _BRANCH = f"dispatch/pyforge-marshal/{_STORY}"
 
 
 def _load_fleet_picture():
-    spec = importlib.util.spec_from_file_location(
-        "fleet_picture_stranded_work_test", FLEET_PICTURE
-    )
+    spec = importlib.util.spec_from_file_location("fleet_picture_stranded_work_test", FLEET_PICTURE)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["fleet_picture_stranded_work_test"] = mod
     spec.loader.exec_module(mod)
@@ -77,9 +76,7 @@ def test_open_pr_attention_line_when_no_unpushed_signal():
         slug="marshal",
         story=_STORY,
         live_row=_terminal_live_row(),
-        open_prs_by_head={
-            _BRANCH: {"number": 1000, "title": "dispatch marshal 28.23", "headRefName": _BRANCH}
-        },
+        open_prs_by_head={_BRANCH: {"number": 1000, "title": "dispatch marshal 28.23", "headRefName": _BRANCH}},
     )
     assert len(lines) == 1
     assert "open unmerged PR #1000" in lines[0]

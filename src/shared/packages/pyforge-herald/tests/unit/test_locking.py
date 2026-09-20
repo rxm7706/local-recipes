@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import locking
 from pyforge.herald.errors import HeraldError
 
@@ -124,16 +125,13 @@ def test_locked_releases_when_the_holding_process_is_killed(tmp_path: Path):
         assert waiting.wait(timeout=5), "waiter thread never started"
         time.sleep(0.2)
         assert not acquired.is_set(), (
-            "waiter acquired the lock while the holder was still alive -- "
-            "the lock is not excluding across processes"
+            "waiter acquired the lock while the holder was still alive -- the lock is not excluding across processes"
         )
 
         proc.kill()
         proc.wait(timeout=5)
         t.join(timeout=5)
-        assert acquired.is_set(), (
-            "lock was not released after the holding process was killed"
-        )
+        assert acquired.is_set(), "lock was not released after the holding process was killed"
     finally:
         if proc.stdout is not None:
             proc.stdout.close()
@@ -182,13 +180,9 @@ def test_locked_excludes_a_second_os_process(tmp_path: Path):
         t.start()
         # The other PROCESS holds the lock, so this must not succeed.
         assert not acquired.wait(timeout=1.0), (
-            "acquired a lock held by another OS process -- the lock is "
-            "thread-local, not process-level"
+            "acquired a lock held by another OS process -- the lock is thread-local, not process-level"
         )
-        assert not failures, (
-            f"locked() raised instead of blocking on a lock another process "
-            f"holds: {failures[0]!r}"
-        )
+        assert not failures, f"locked() raised instead of blocking on a lock another process holds: {failures[0]!r}"
     finally:
         release.set()
         if proc.stdout is not None:
@@ -226,9 +220,7 @@ def test_locked_releases_when_the_guarded_block_raises(tmp_path: Path):
     t = threading.Thread(target=_reacquire, daemon=True)
     t.start()
     t.join(timeout=5)
-    assert acquired_again.is_set(), (
-        "lock stayed held after the guarded block raised -- next acquire wedged"
-    )
+    assert acquired_again.is_set(), "lock stayed held after the guarded block raised -- next acquire wedged"
 
 
 def test_a_failing_teardown_never_masks_the_guarded_block(tmp_path: Path, monkeypatch):
@@ -291,9 +283,7 @@ def test_lock_path_for_refuses_a_path_with_no_file_name():
             locking.lock_path_for(bad)
 
 
-def test_locked_raises_herald_error_when_the_lock_call_itself_fails(
-    tmp_path: Path, monkeypatch
-):
+def test_locked_raises_herald_error_when_the_lock_call_itself_fails(tmp_path: Path, monkeypatch):
     """The OTHER acquisition-failure wrap: everything else here trips on
     ``mkdir``/``os.open``, so nothing drove the ``_acquire`` branch -- the
     one the Windows ``EDEADLOCK``-only retry exists to make reachable. A

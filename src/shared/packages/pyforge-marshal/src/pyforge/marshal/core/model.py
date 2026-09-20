@@ -150,22 +150,11 @@ class Envelope:
             or not isinstance(self.schema_version, int)
             or self.schema_version != SCHEMA_VERSION
         ):
-            raise ValueError(
-                f"schema_version must be {SCHEMA_VERSION}, got "
-                f"{self.schema_version!r}"
-            )
+            raise ValueError(f"schema_version must be {SCHEMA_VERSION}, got {self.schema_version!r}")
         if not isinstance(self.command, str) or not self.command:
-            raise ValueError(
-                f"command must be a non-empty str, got {self.command!r}"
-            )
-        if (
-            isinstance(self.data_version, bool)
-            or not isinstance(self.data_version, int)
-            or self.data_version < 1
-        ):
-            raise ValueError(
-                f"data_version must be an int >= 1, got {self.data_version!r}"
-            )
+            raise ValueError(f"command must be a non-empty str, got {self.command!r}")
+        if isinstance(self.data_version, bool) or not isinstance(self.data_version, int) or self.data_version < 1:
+            raise ValueError(f"data_version must be an int >= 1, got {self.data_version!r}")
         if not isinstance(self.data, dict):
             raise ValueError(f"data must be a dict, got {self.data!r}")
         object.__setattr__(self, "verdict", Verdict(self.verdict))
@@ -174,10 +163,7 @@ class Envelope:
         # nine one-char "assumptions" that each pass the str member check
         # below -- reject it before the coercion.
         if isinstance(self.assumptions, str):
-            raise ValueError(
-                "assumptions must be a sequence of str, not a bare str -- "
-                f"got {self.assumptions!r}"
-            )
+            raise ValueError(f"assumptions must be a sequence of str, not a bare str -- got {self.assumptions!r}")
         object.__setattr__(self, "findings", tuple(self.findings))
         object.__setattr__(self, "assumptions", tuple(self.assumptions))
         # Member-type checks BEFORE any invariant that touches the elements:
@@ -186,14 +172,10 @@ class Envelope:
         # error path -- validation strictness must not depend on the verdict.
         for finding in self.findings:
             if not isinstance(finding, Finding):
-                raise ValueError(
-                    f"findings must contain only Finding instances, got {finding!r}"
-                )
+                raise ValueError(f"findings must contain only Finding instances, got {finding!r}")
         for assumption in self.assumptions:
             if not isinstance(assumption, str):
-                raise ValueError(
-                    f"assumptions must contain only str, got {assumption!r}"
-                )
+                raise ValueError(f"assumptions must contain only str, got {assumption!r}")
         # Deep copy -- frozen=True only blocks attribute reassignment, not
         # mutation of a referenced mutable value (same rationale as
         # pyforge-doctor's Finding.evidence, extended to nested structures
@@ -219,9 +201,7 @@ class Envelope:
                 f"status {self.status.value!r} does not match "
                 f"status_for({self.verdict.value!r}) = {expected_status.value!r}"
             )
-        if self.status is Status.OK and any(
-            finding.severity is Severity.ERROR for finding in self.findings
-        ):
+        if self.status is Status.OK and any(finding.severity is Severity.ERROR for finding in self.findings):
             raise ValueError(
                 "status 'ok' but at least one finding has severity 'error' "
                 "-- an 'ok' envelope may carry no error-severity finding"

@@ -124,12 +124,8 @@ def _require_pair_list(value: Any, *, context: str) -> list[Any]:
     cannot preserve `chosen_anchor`'s deliberate duplicate-region-name-safe
     ordering, and neither field is keyed by anything unique enough to be a
     JSON object key in the general case)."""
-    if not isinstance(value, list) or not all(
-        isinstance(item, list) and len(item) == 2 for item in value
-    ):
-        raise ValueError(
-            f"{context}: expected a list of 2-element [key, value] pairs, got {value!r}"
-        )
+    if not isinstance(value, list) or not all(isinstance(item, list) and len(item) == 2 for item in value):
+        raise ValueError(f"{context}: expected a list of 2-element [key, value] pairs, got {value!r}")
     return value
 
 
@@ -210,19 +206,13 @@ class Action:
             for name, anchor in raw_pairs
         )
         return cls(
-            artifact_id=_require_str(
-                _require_key(data, "artifact_id", context="Action"), context="Action.artifact_id"
-            ),
+            artifact_id=_require_str(_require_key(data, "artifact_id", context="Action"), context="Action.artifact_id"),
             artifact_class=ArtifactClass(_require_key(data, "artifact_class", context="Action")),
             current_state=ArtifactState(_require_key(data, "current_state", context="Action")),
             target_state=ArtifactState(_require_key(data, "target_state", context="Action")),
-            target_path=_require_str(
-                _require_key(data, "target_path", context="Action"), context="Action.target_path"
-            ),
+            target_path=_require_str(_require_key(data, "target_path", context="Action"), context="Action.target_path"),
             chosen_anchor=chosen_anchor,
-            rationale=_require_str(
-                _require_key(data, "rationale", context="Action"), context="Action.rationale"
-            ),
+            rationale=_require_str(_require_key(data, "rationale", context="Action"), context="Action.rationale"),
         )
 
 
@@ -425,13 +415,9 @@ class Plan:
         skipped = tuple(SkippedArtifact.from_json_dict(entry) for entry in raw_skipped)
         skipped_ids = [entry.artifact_id for entry in skipped]
         if len(set(skipped_ids)) != len(skipped_ids):
-            raise ValueError(
-                f"Plan.skipped: artifact_id values must be unique, got {skipped_ids!r}"
-            )
+            raise ValueError(f"Plan.skipped: artifact_id values must be unique, got {skipped_ids!r}")
         if skipped_ids != sorted(skipped_ids):
-            raise ValueError(
-                f"Plan.skipped: entries must be ordered by artifact_id, got {skipped_ids!r}"
-            )
+            raise ValueError(f"Plan.skipped: entries must be ordered by artifact_id, got {skipped_ids!r}")
         # Disjointness: `apply_skips` MOVES an action into `skipped`, so an
         # id appearing on both sides means the file was hand-edited into a
         # state no producer can reach -- and one whose meaning is genuinely
@@ -439,8 +425,5 @@ class Plan:
         # not load at all rather than resolve silently in either direction.
         shared = sorted(set(ids) & set(skipped_ids))
         if shared:
-            raise ValueError(
-                "Plan: an artifact_id may appear in actions or skipped, never both, "
-                f"got {shared!r}"
-            )
+            raise ValueError(f"Plan: an artifact_id may appear in actions or skipped, never both, got {shared!r}")
         return cls(actions=actions, repo_fingerprint=fingerprint, skipped=skipped)

@@ -12,6 +12,7 @@ import stat
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.registry import (
     DESIGN_SYSTEM_PROJECT_NAMES,
@@ -150,11 +151,7 @@ def test_read_of_a_two_line_body_not_matching_the_canonical_first_line_raises(
     original version of this test did not actually exercise (it wrote only
     one body line, which tripped the line-count check instead)."""
     readme_path = tmp_path / "README.md"
-    readme_path.write_text(
-        "## Design project (the bridge's far end)\n"
-        "not the canonical shape\n"
-        "https://example.com/p\n"
-    )
+    readme_path.write_text("## Design project (the bridge's far end)\nnot the canonical shape\nhttps://example.com/p\n")
 
     with pytest.raises(HeraldError, match="does not match the canonical"):
         read(readme_path)
@@ -194,9 +191,7 @@ def test_read_tolerates_trailing_blank_lines_at_end_of_file(tmp_path: Path):
         "https://example.com/p\n\n\n"
     )
 
-    assert read(readme_path) == DesignProject(
-        project_name="N", project_id="i", file_url="https://example.com/p"
-    )
+    assert read(readme_path) == DesignProject(project_name="N", project_id="i", file_url="https://example.com/p")
 
 
 @pytest.mark.parametrize(
@@ -213,9 +208,7 @@ def test_read_tolerates_trailing_blank_lines_at_end_of_file(tmp_path: Path):
         (123, "id-1", "https://example.com/p"),
     ],
 )
-def test_register_refuses_an_empty_multiline_or_non_string_field(
-    tmp_path: Path, project_name, project_id, file_url
-):
+def test_register_refuses_an_empty_multiline_or_non_string_field(tmp_path: Path, project_name, project_id, file_url):
     """An empty, newline-carrying, or non-string field would write a body
     ``read`` could not parse back -- refused up front instead, so
     ``register`` can never unilaterally break its own round-trip guarantee.
@@ -240,9 +233,7 @@ def test_register_refuses_an_empty_multiline_or_non_string_field(
         ('A"** (`B', "C"),
     ],
 )
-def test_register_refuses_fields_embedding_the_template_delimiters(
-    tmp_path: Path, project_name, project_id
-):
+def test_register_refuses_fields_embedding_the_template_delimiters(tmp_path: Path, project_name, project_id):
     """A ``project_name`` embedding the template's closing envelope
     (``"** (`` + backtick) shifts the non-greedy parse: register would
     succeed and read would return *silently wrong* fields -- worse than any
@@ -330,9 +321,7 @@ def test_both_functions_wrap_a_binary_corrupt_readme_as_herald_error(
         register(readme_path, "Name", "id-1", "https://example.com/p")
 
 
-def test_register_wraps_a_failed_replace_and_leaks_no_temp_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_register_wraps_a_failed_replace_and_leaks_no_temp_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """A filesystem refusal mid-write surfaces as ``HeraldError``, leaves
     the original README byte-identical, and unlinks the temp file.
 
@@ -376,9 +365,7 @@ def test_read_counts_a_blank_line_under_the_heading_as_a_body_line(
         "https://example.com/p\n"
     )
 
-    with pytest.raises(
-        HeraldError, match=r"found 3 \(blank lines inside the section count"
-    ):
+    with pytest.raises(HeraldError, match=r"found 3 \(blank lines inside the section count"):
         read(readme_path)
 
 
@@ -419,10 +406,7 @@ def test_read_after_register_potx_template_round_trips(tmp_path: Path):
 
     register_potx_template(readme_path, "presentations/pyforge-demo/project/deck.potx")
 
-    assert (
-        read_potx_template(readme_path)
-        == "presentations/pyforge-demo/project/deck.potx"
-    )
+    assert read_potx_template(readme_path) == "presentations/pyforge-demo/project/deck.potx"
 
 
 def test_register_potx_template_updates_in_place_without_duplicating_the_heading(
@@ -480,10 +464,7 @@ def test_potx_template_section_coexists_with_the_design_project_section(
         project_id="proj-1",
         file_url="https://example.com/p",
     )
-    assert (
-        read_potx_template(readme_path)
-        == "presentations/pyforge-demo/project/deck.potx"
-    )
+    assert read_potx_template(readme_path) == "presentations/pyforge-demo/project/deck.potx"
 
 
 def test_register_potx_template_against_a_missing_file_raises_herald_error(
@@ -500,9 +481,7 @@ def test_register_potx_template_against_a_missing_file_raises_herald_error(
     "template_path",
     ["", "multi\nline", 123],
 )
-def test_register_potx_template_refuses_an_empty_multiline_or_non_string_path(
-    tmp_path: Path, template_path
-):
+def test_register_potx_template_refuses_an_empty_multiline_or_non_string_path(tmp_path: Path, template_path):
     readme_path = tmp_path / "README.md"
     readme_path.write_text("# My Deck\n")
 
@@ -524,9 +503,7 @@ def test_register_potx_template_refuses_a_path_starting_with_a_hash(tmp_path: Pa
     "template_path",
     ["/etc/passwd", "../../escape.potx", "presentations/pyforge-demo/../../escape.potx"],
 )
-def test_register_potx_template_refuses_an_absolute_or_dot_dot_path(
-    tmp_path: Path, template_path
-):
+def test_register_potx_template_refuses_an_absolute_or_dot_dot_path(tmp_path: Path, template_path):
     """``deck_pipeline.py``'s ``PptxTemplateExporter.export`` does
     ``repo_root / template_rel`` -- for an absolute ``template_rel`` that
     pathlib ``/`` silently discards ``repo_root`` entirely, resolving
@@ -543,9 +520,7 @@ def test_register_potx_template_refuses_an_absolute_or_dot_dot_path(
     "template_path",
     ["/etc/passwd", "../../escape.potx", "presentations/pyforge-demo/../../escape.potx"],
 )
-def test_read_potx_template_refuses_an_absolute_or_dot_dot_path(
-    tmp_path: Path, template_path
-):
+def test_read_potx_template_refuses_an_absolute_or_dot_dot_path(tmp_path: Path, template_path):
     """``register_potx_template`` guards this at write time, but the
     section can also be hand-edited directly (Story 23.3's own Auto Run
     Result: it has no production caller today) -- bypassing that guard
@@ -553,9 +528,7 @@ def test_read_potx_template_refuses_an_absolute_or_dot_dot_path(
     ``deck_pipeline.py``'s ``PptxTemplateExporter.export`` joins whatever
     it returns straight onto ``repo_root`` unguarded."""
     readme_path = tmp_path / "README.md"
-    readme_path.write_text(
-        f"# My Deck\n\n## PowerPoint template (the .potx path)\n{template_path}\n"
-    )
+    readme_path.write_text(f"# My Deck\n\n## PowerPoint template (the .potx path)\n{template_path}\n")
 
     with pytest.raises(HeraldError, match="repo-root-relative"):
         read_potx_template(readme_path)
@@ -566,9 +539,7 @@ def test_read_potx_template_of_a_section_with_two_body_lines_raises_herald_error
 ):
     readme_path = tmp_path / "README.md"
     readme_path.write_text(
-        "## PowerPoint template (the .potx path)\n"
-        "presentations/pyforge-demo/deck.potx\n"
-        "one line too many\n"
+        "## PowerPoint template (the .potx path)\npresentations/pyforge-demo/deck.potx\none line too many\n"
     )
 
     with pytest.raises(HeraldError, match="expected exactly one body line"):
@@ -606,9 +577,7 @@ def test_register_potx_template_collapses_multiple_trailing_blank_lines_before_a
     register_potx_template(readme_path, "presentations/pyforge-demo/deck.potx")
 
     assert readme_path.read_text() == (
-        "# My Deck\n\n"
-        "## PowerPoint template (the .potx path)\n"
-        "presentations/pyforge-demo/deck.potx\n"
+        "# My Deck\n\n## PowerPoint template (the .potx path)\npresentations/pyforge-demo/deck.potx\n"
     )
 
 
@@ -616,10 +585,7 @@ def test_read_potx_template_tolerates_trailing_blank_lines_at_end_of_file(
     tmp_path: Path,
 ):
     readme_path = tmp_path / "README.md"
-    readme_path.write_text(
-        "## PowerPoint template (the .potx path)\n"
-        "presentations/pyforge-demo/deck.potx\n\n\n"
-    )
+    readme_path.write_text("## PowerPoint template (the .potx path)\npresentations/pyforge-demo/deck.potx\n\n\n")
 
     assert read_potx_template(readme_path) == "presentations/pyforge-demo/deck.potx"
 
@@ -872,12 +838,7 @@ def test_read_exclusions_stops_at_the_next_heading(tmp_path: Path):
 
 def test_read_exclusions_raises_on_a_malformed_row(tmp_path: Path):
     readme_path = tmp_path / "README.md"
-    readme_path.write_text(
-        f"{_EXCLUDED_HEADING}\n\n"
-        "| Project | Reason |\n"
-        "|---|---|\n"
-        "| Missing the reason cell |\n"
-    )
+    readme_path.write_text(f"{_EXCLUDED_HEADING}\n\n| Project | Reason |\n|---|---|\n| Missing the reason cell |\n")
 
     with pytest.raises(HeraldError, match="not a two-cell"):
         read_exclusions(readme_path)

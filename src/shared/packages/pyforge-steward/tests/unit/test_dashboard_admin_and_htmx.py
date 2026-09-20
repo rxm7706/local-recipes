@@ -120,15 +120,15 @@ def _clean_db():
     CorridorLoad.objects.all().delete()
 
 
-def _create_corridor_row(*, waybill: str, batch_sha: str, direction: str = "inbound", days_ago: int = 0) -> CorridorLoad:
+def _create_corridor_row(
+    *, waybill: str, batch_sha: str, direction: str = "inbound", days_ago: int = 0
+) -> CorridorLoad:
     """Story 61.3 fixture helper: `loaded_at` is `auto_now_add`, so an
     "earlier day" row needs a queryset-level `.update()` (bypasses
     `auto_now_add`'s save-time behavior), mirroring `test_glass.py`."""
     from datetime import datetime, timedelta, timezone
 
-    row = CorridorLoad.objects.create(
-        direction=direction, batch_sha=batch_sha, waybill=waybill, transport="app-upload"
-    )
+    row = CorridorLoad.objects.create(direction=direction, batch_sha=batch_sha, waybill=waybill, transport="app-upload")
     if days_ago:
         earlier = datetime.now(timezone.utc) - timedelta(days=days_ago)
         CorridorLoad.objects.filter(pk=row.pk).update(loaded_at=earlier)
@@ -138,8 +138,15 @@ def _create_corridor_row(*, waybill: str, batch_sha: str, direction: str = "inbo
 
 def _story(**overrides) -> WorkPassportItem:
     base = dict(
-        passport_id="test-uuid-sync-123", story_id="63.5", station="pyforge-steward", epic_id="63",
-        title="Sync Story", status="done", jira_key="JIRA-55", github_item_id="GH-99", effort="M",
+        passport_id="test-uuid-sync-123",
+        story_id="63.5",
+        station="pyforge-steward",
+        epic_id="63",
+        title="Sync Story",
+        status="done",
+        jira_key="JIRA-55",
+        github_item_id="GH-99",
+        effort="M",
     )
     base.update(overrides)
     return WorkPassportItem(**base)
@@ -147,14 +154,21 @@ def _story(**overrides) -> WorkPassportItem:
 
 # --- models + admin ---
 
+
 def test_work_passport_model_and_admin() -> None:
     site = AdminSite()
     wp_admin = WorkPassportAdmin(WorkPassport, site)
     audit_admin = AuditEntryAdmin(AuditEntry, site)
 
     assert wp_admin.list_display == (
-        "passport_id", "station", "story_id", "status", "jira_key", "github_item_id",
-        "vendor_id", "title",
+        "passport_id",
+        "station",
+        "story_id",
+        "status",
+        "jira_key",
+        "github_item_id",
+        "vendor_id",
+        "title",
     )
     assert wp_admin.list_filter == ("station", "status", "vendor_id")
     assert "vendor_id" in wp_admin.search_fields
@@ -188,20 +202,23 @@ def test_audit_entry_admin_is_read_only() -> None:
 
 # --- HTMX view ---
 
+
 def test_backlog_htmx_view_renders_fixture_rows_from_the_engine(env_root: Path) -> None:
     res = backlog_htmx_view(RequestFactory().get("/dashboard/backlog/"))
     assert res.status_code == 200
     assert res["Cache-Control"] == "no-store"
     body = res.content.decode("utf-8")
     assert "Found <strong>3</strong> matching stories" in body
-    assert body.count("<tr id=\"story-fixture-station-") == 3
+    assert body.count('<tr id="story-fixture-station-') == 3
     assert "Plain Done Story" in body and ">DONE<" in body and ">BLOCKED<" in body
     assert 'id="story-fixture-station-1-2"' in body
 
 
 def test_backlog_htmx_view_filters_via_query_params(env_root: Path) -> None:
     factory = RequestFactory()
-    res = backlog_htmx_view(factory.get("/dashboard/backlog/?station=fixture-station&unimplemented=true&unlinked=on&search=one"))
+    res = backlog_htmx_view(
+        factory.get("/dashboard/backlog/?station=fixture-station&unimplemented=true&unlinked=on&search=one")
+    )
     body = res.content.decode("utf-8")
     assert res.status_code == 200
     assert "Found <strong>1</strong> matching stories" in body
@@ -232,7 +249,9 @@ def test_backlog_htmx_view_rejects_station_traversal_with_400(env_root: Path, st
     assert not (env_root / "_bmad-output" / "projects" / station).exists()
 
 
-def test_backlog_htmx_view_reads_root_from_settings_before_env(fixture_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_backlog_htmx_view_reads_root_from_settings_before_env(
+    fixture_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     empty = tmp_path / "empty-root"
     (empty / "_bmad-output" / "projects").mkdir(parents=True)
     monkeypatch.setenv("PYFORGE_REPO_ROOT", str(empty))
@@ -297,9 +316,9 @@ def test_standup_and_shipped_views_share_the_identical_inbound_reading_labels_on
         assert ">FRESH<" in body
 
     assert "Standup — any news from the vendor?" in standup_body
-    assert "id=\"glass-standup\"" in standup_body
+    assert 'id="glass-standup"' in standup_body
     assert "Shipped — what testers can currently rely on" in shipped_body
-    assert "id=\"glass-shipped\"" in shipped_body
+    assert 'id="glass-shipped"' in shipped_body
 
 
 def test_backlog_htmx_view_records_one_load_audit_row(env_root: Path) -> None:
@@ -308,7 +327,11 @@ def test_backlog_htmx_view_records_one_load_audit_row(env_root: Path) -> None:
     backlog_htmx_view(req)
     entry = AuditEntry.objects.get()
     assert (entry.actor, entry.role, entry.action, entry.target, entry.row_count) == (
-        "alice", "ops", AuditAction.LOAD, "sprint-backlog", 2,
+        "alice",
+        "ops",
+        AuditAction.LOAD,
+        "sprint-backlog",
+        2,
     )
     backlog_htmx_view(RequestFactory().get("/dashboard/backlog/"))
     anonymous = AuditEntry.objects.order_by("-id").first()
@@ -316,6 +339,7 @@ def test_backlog_htmx_view_records_one_load_audit_row(env_root: Path) -> None:
 
 
 # --- passport sync ---
+
 
 def test_sync_work_passports_db_success() -> None:
     res = sync_work_passports_db([_story()])
@@ -326,18 +350,48 @@ def test_sync_work_passports_db_success() -> None:
 
 def test_sync_keeps_existing_aliases_when_the_ledger_carries_none() -> None:
     WorkPassport.objects.create(
-        passport_id="p-1", story_id="1.1", station="s", epic_id="1", title="T", status="backlog",
-        jira_key="ADMIN-7", github_item_id="4242",
+        passport_id="p-1",
+        story_id="1.1",
+        station="s",
+        epic_id="1",
+        title="T",
+        status="backlog",
+        jira_key="ADMIN-7",
+        github_item_id="4242",
     )
-    res = sync_work_passports_db([_story(passport_id="p-1", story_id="1.1", station="s", epic_id="1",
-                                         title="T renamed", status="done", jira_key=None, github_item_id=None)])
+    res = sync_work_passports_db(
+        [
+            _story(
+                passport_id="p-1",
+                story_id="1.1",
+                station="s",
+                epic_id="1",
+                title="T renamed",
+                status="done",
+                jira_key=None,
+                github_item_id=None,
+            )
+        ]
+    )
     assert res["status"] == "success"
     row = WorkPassport.objects.get(passport_id="p-1")
     assert (row.jira_key, row.github_item_id) == ("ADMIN-7", "4242")
     assert (row.title, row.status) == ("T renamed", "done")
 
-    sync_work_passports_db([_story(passport_id="p-1", story_id="1.1", station="s", epic_id="1",
-                                   title="T", status="done", jira_key="LEDGER-1", github_item_id=None)])
+    sync_work_passports_db(
+        [
+            _story(
+                passport_id="p-1",
+                story_id="1.1",
+                station="s",
+                epic_id="1",
+                title="T",
+                status="done",
+                jira_key="LEDGER-1",
+                github_item_id=None,
+            )
+        ]
+    )
     row.refresh_from_db()
     assert (row.jira_key, row.github_item_id) == ("LEDGER-1", "4242")
 
@@ -374,6 +428,7 @@ def test_sync_falls_back_when_the_orm_is_unavailable(monkeypatch: pytest.MonkeyP
 
 
 # --- Story 48.6 surfaces (self-sufficient: sys.path + importorskip above) ---
+
 
 def test_dashboard_asgi_and_routing() -> None:
     pytest.importorskip("channels")

@@ -125,6 +125,15 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   scribe capability. Also closed this date on `spec-pyforge-scribe`'s memlog: the ADR-numbering
   question (kept Scribe's own vocabulary; the read-a-target-repo's-`docs/adr/` half split off as
   deferred work), and the two remaining body questions, both answered in code.
+- **2026-09-20 (evening) — The managed instruction block carries no aspiration.** Found at the
+  bmad-project-context refresh closing the fleet consistency pass: two `TODO:` lines had stood in
+  `AGENTS.md`'s `bmad:context` block since 2026-09-04 (a commit-msg hook; repo-level ruff/mypy tasks),
+  never minted as a Story, so nothing ever scheduled them — exactly the "aspirational state" the
+  skill's own best-practices exclude ("describe what is; intent belongs in specs"). Steward now owns
+  the two capabilities (CAP-153 / CAP-154, Epic 66); scribe owns the guard: the instruction-surface
+  parity meta-test (CAP-27) reds a `TODO:` / `FIXME:` / "not yet landed" inside the managed block, so a
+  decision that has no Story cannot hide as a line agents pay for every session. Kinships:
+  `spec-pyforge-scribe` CAP-30 → Epic 20; steward CAP-154 retires the two lines it guards.
 - **2026-09-20 — Claude Code reads `AGENTS.md` natively now; the surface must be version-aware,
   not version-dependent.** Operator ask 09:35Z after Claude Code 2.1.277 (2026-09-18) shipped
   a built-in `agents-md` mod (research: the mod's README and source in `anthropics/claude-code

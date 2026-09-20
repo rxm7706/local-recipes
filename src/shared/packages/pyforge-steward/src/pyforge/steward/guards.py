@@ -37,9 +37,7 @@ FIRST_LIBRARY_CATEGORY = "source_grounding"
 VERDICT = "never"
 
 _SOURCE_RE = re.compile(r"\[source:\s*([^\]\n]+)\]")
-_HUB_GUARDS_RE = re.compile(
-    r"(?m)^hub_guards:\s*\n((?:[ \t]*-[ \t]+\S+[ \t]*\n)+)"
-)
+_HUB_GUARDS_RE = re.compile(r"(?m)^hub_guards:\s*\n((?:[ \t]*-[ \t]+\S+[ \t]*\n)+)")
 _GUARDS_VERBS: tuple[str, ...] = ("catalog", "lacking", "source-ground")
 
 
@@ -107,9 +105,7 @@ class SourceGroundResult:
 
 def library_gaps() -> tuple[str, ...]:
     """Paper categories that still have no library entry."""
-    return tuple(
-        name for name in PAPER_CATEGORIES if not LIBRARY[name].in_library
-    )
+    return tuple(name for name in PAPER_CATEGORIES if not LIBRARY[name].in_library)
 
 
 def spec_gaps(declared: frozenset[str]) -> tuple[str, ...]:
@@ -222,11 +218,7 @@ class GuardsDuty:
         result = source_ground(text, root)
         return DutyResult(
             ok=result.grounded,
-            summary=(
-                "source-ground: ok"
-                if result.grounded
-                else f"source-ground: {result.reason}"
-            ),
+            summary=("source-ground: ok" if result.grounded else f"source-ground: {result.reason}"),
             details={
                 "grounded": result.grounded,
                 "citations": list(result.citations),

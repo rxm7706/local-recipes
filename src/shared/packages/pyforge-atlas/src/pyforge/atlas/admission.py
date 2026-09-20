@@ -212,7 +212,7 @@ def _format_epoch(value: float | None) -> str:
         return "unknown"
     try:
         return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(value))
-    except (OverflowError, OSError, ValueError):
+    except OverflowError, OSError, ValueError:
         return f"unparseable({value!r})"
 
 
@@ -264,8 +264,7 @@ def default_lock_root(project_path: Any = None) -> Path:
     """
     if project_path is not None and str(project_path) != "" and not Path(project_path).is_absolute():
         raise AdmissionConfigError(
-            f"project_path must be absolute so the lock root cannot become "
-            f"CWD-relative; got {project_path!r}"
+            f"project_path must be absolute so the lock root cannot become CWD-relative; got {project_path!r}"
         )
     override = (os.environ.get("PYFORGE_ATLAS_LOCK_ROOT") or "").strip()
     if not override:
@@ -346,8 +345,7 @@ def _resolve_base(project_path: Any) -> Path:
         base = Path(project_path)
         if not base.is_absolute():
             raise AdmissionConfigError(
-                f"project_path must be absolute so the lock root cannot become "
-                f"CWD-relative; got {project_path!r}"
+                f"project_path must be absolute so the lock root cannot become CWD-relative; got {project_path!r}"
             )
         return base
     if not (_PROJECT_ROOT / "conf" / "base" / "catalog.yml").is_file():
@@ -377,8 +375,7 @@ def _lock_names(datasets: Any) -> tuple[str, ...]:
     """
     if isinstance(datasets, (str, bytes)):
         raise AdmissionConfigError(
-            f"datasets must be an iterable of dataset names, not a bare "
-            f"{type(datasets).__name__}: {datasets!r}"
+            f"datasets must be an iterable of dataset names, not a bare {type(datasets).__name__}: {datasets!r}"
         )
     try:
         names = {str(name).split("@", 1)[0] for name in datasets}
@@ -409,17 +406,12 @@ def _validate_wait_seconds(wait_seconds: Any) -> float:
         value = float(wait_seconds)
     except (TypeError, ValueError, OverflowError) as exc:
         raise AdmissionConfigError(
-            f"{WAIT_PARAM} must be a finite non-negative number of seconds, "
-            f"got {wait_seconds!r}"
+            f"{WAIT_PARAM} must be a finite non-negative number of seconds, got {wait_seconds!r}"
         ) from exc
     if value != value or value in (float("inf"), float("-inf")):
-        raise AdmissionConfigError(
-            f"{WAIT_PARAM} must be finite, got {wait_seconds!r}"
-        )
+        raise AdmissionConfigError(f"{WAIT_PARAM} must be finite, got {wait_seconds!r}")
     if value < 0:
-        raise AdmissionConfigError(
-            f"{WAIT_PARAM} must be >= 0, got {wait_seconds!r}"
-        )
+        raise AdmissionConfigError(f"{WAIT_PARAM} must be >= 0, got {wait_seconds!r}")
     return value
 
 
@@ -444,7 +436,7 @@ def _pid_alive(pid: int) -> bool:
         os.kill(pid, 0)
     except ProcessLookupError:
         return False
-    except (OSError, OverflowError, ValueError):
+    except OSError, OverflowError, ValueError:
         return True
     return True
 
@@ -459,7 +451,7 @@ def _read_holder(path: Path) -> dict[str, Any]:
     blank: dict[str, Any] = {"holder_run_id": None, "holder_pid": None, "held_since": None}
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return blank
     if not isinstance(raw, dict):
         return blank
@@ -480,9 +472,7 @@ def _read_holder(path: Path) -> dict[str, Any]:
     # "alive" for a record that names no process at all.
     return {
         "holder_run_id": str(run_id) if isinstance(run_id, (str, int)) else None,
-        "holder_pid": (
-            pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None
-        ),
+        "holder_pid": (pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None),
         "held_since": held_since,
     }
 
@@ -561,8 +551,7 @@ def acquire(
             # locks to the CWD — precisely the defect the first implementation of this story
             # shipped and was reverted for — and does it silently.
             raise AdmissionConfigError(
-                f"lock_root must be absolute so the locks cannot become CWD-relative; "
-                f"got {lock_root!r}"
+                f"lock_root must be absolute so the locks cannot become CWD-relative; got {lock_root!r}"
             )
     else:
         root = default_lock_root()
@@ -610,9 +599,7 @@ def acquire(
                     _format_epoch(holder["held_since"]),
                     list(names),
                 )
-                raise RunAdmissionRejected(
-                    datasets=names, conflicting=name, **holder
-                ) from None
+                raise RunAdmissionRejected(datasets=names, conflicting=name, **holder) from None
             held.append(lock)
             # We hold the flock, so any sidecar still here belongs to a holder that did not
             # release: the kernel dropped its flock when it died (D5). Record the reclaim —
@@ -649,8 +636,7 @@ def acquire(
                 holder_path.unlink(missing_ok=True)
             except OSError as exc:  # a stuck sidecar must not mask the original cause
                 logger.warning(
-                    "run admission: could not remove holder record %s during rollback "
-                    "(%s: %s)",
+                    "run admission: could not remove holder record %s during rollback (%s: %s)",
                     holder_path,
                     type(exc).__name__,
                     exc,
@@ -705,8 +691,7 @@ def release(ticket: AdmissionTicket) -> None:
                 holder_path.unlink(missing_ok=True)
             except OSError as exc:
                 logger.warning(
-                    "run admission: could not remove holder record for %r (%s: %s); "
-                    "continuing",
+                    "run admission: could not remove holder record for %r (%s: %s); continuing",
                     name,
                     type(exc).__name__,
                     exc,

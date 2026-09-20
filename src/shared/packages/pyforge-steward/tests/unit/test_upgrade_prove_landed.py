@@ -25,9 +25,7 @@ def _make_homes(root: Path, n: int = WORKED_EXAMPLE_LOOP_HOME_COUNT) -> list[Pat
     for i in range(n):
         home = root / f"station-{i}"
         (home / ".bmad-loop").mkdir(parents=True)
-        (home / ".bmad-loop" / "policy.toml").write_text(
-            "[limits]\n", encoding="utf-8"
-        )
+        (home / ".bmad-loop" / "policy.toml").write_text("[limits]\n", encoding="utf-8")
         homes.append(home)
     return homes
 
@@ -85,12 +83,8 @@ def test_single_failing_gate_fails_verdict(tmp_path: Path):
         repo=repo,
         loops_home=loops,
         refresh_relays=False,
-        drift_runner=lambda: GateResult(
-            name="bmad-drift-integrity", ok=True, detail="clean"
-        ),
-        cfe_runner=lambda: GateResult(
-            name="cfe-meta-tests", ok=False, detail="meta red", exit_code=1
-        ),
+        drift_runner=lambda: GateResult(name="bmad-drift-integrity", ok=True, detail="clean"),
+        cfe_runner=lambda: GateResult(name="cfe-meta-tests", ok=False, detail="meta red", exit_code=1),
         loop_home_runner=lambda home, refresh: GateResult(
             name=f"loop-home:{home.name}",
             ok=True,
@@ -122,9 +116,7 @@ def test_loop_home_warning_fails_that_home(tmp_path: Path):
         repo=repo,
         loops_home=loops,
         refresh_relays=False,
-        drift_runner=lambda: GateResult(
-            name="bmad-drift-integrity", ok=True, detail="clean"
-        ),
+        drift_runner=lambda: GateResult(name="bmad-drift-integrity", ok=True, detail="clean"),
         cfe_runner=lambda: GateResult(name="cfe-meta-tests", ok=True, detail="green"),
         loop_home_runner=loop_home,
     )
@@ -145,9 +137,7 @@ def test_no_init_skips_relay_mutation_marker(tmp_path: Path):
         repo=repo,
         loops_home=loops,
         refresh_relays=False,
-        drift_runner=lambda: GateResult(
-            name="bmad-drift-integrity", ok=True, detail="clean"
-        ),
+        drift_runner=lambda: GateResult(name="bmad-drift-integrity", ok=True, detail="clean"),
         cfe_runner=lambda: GateResult(name="cfe-meta-tests", ok=True, detail="green"),
         loop_home_runner=lambda home, refresh: GateResult(
             name=f"loop-home:{home.name}",
@@ -178,12 +168,8 @@ def test_format_and_cli_json(tmp_path: Path, capsys, monkeypatch):
             repo=kwargs["repo"],
             loops_home=kwargs.get("loops_home"),
             refresh_relays=kwargs.get("refresh_relays", True),
-            drift_runner=lambda: GateResult(
-                name="bmad-drift-integrity", ok=True, detail="clean"
-            ),
-            cfe_runner=lambda: GateResult(
-                name="cfe-meta-tests", ok=True, detail="green"
-            ),
+            drift_runner=lambda: GateResult(name="bmad-drift-integrity", ok=True, detail="clean"),
+            cfe_runner=lambda: GateResult(name="cfe-meta-tests", ok=True, detail="green"),
             loop_home_runner=lambda home, refresh: GateResult(
                 name=f"loop-home:{home.name}",
                 ok=True,
@@ -236,12 +222,8 @@ def test_cli_fail_exit(tmp_path: Path, capsys, monkeypatch):
             repo=kwargs["repo"],
             loops_home=kwargs.get("loops_home"),
             refresh_relays=False,
-            drift_runner=lambda: GateResult(
-                name="bmad-drift-integrity", ok=False, detail="HARD"
-            ),
-            cfe_runner=lambda: GateResult(
-                name="cfe-meta-tests", ok=True, detail="green"
-            ),
+            drift_runner=lambda: GateResult(name="bmad-drift-integrity", ok=False, detail="HARD"),
+            cfe_runner=lambda: GateResult(name="cfe-meta-tests", ok=True, detail="green"),
         ),
     )
     code = main(

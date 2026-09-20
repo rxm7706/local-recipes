@@ -7,9 +7,7 @@ from pathlib import Path
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import general_docs_consistency
 
-_FIXTURES = (
-    Path(__file__).resolve().parents[1] / "fixtures" / "general_docs_consistency"
-)
+_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "general_docs_consistency"
 
 
 def _write_station_tree(
@@ -44,9 +42,7 @@ def test_pre_story_22_1_doctor_readme_fires_against_skill_brief(tmp_path: Path):
     brief = (_FIXTURES / "doctor-skill-brief.yaml").read_text(encoding="utf-8")
     _write_station_tree(tmp_path, station="doctor", readme_text=readme, skill_brief_text=brief)
 
-    findings = general_docs_consistency.find_station_gate_advisory_contradictions(
-        tmp_path
-    )
+    findings = general_docs_consistency.find_station_gate_advisory_contradictions(tmp_path)
     assert len(findings) == 1
     finding = findings[0]
     assert finding.source == Source.GENERAL_DOCS_CONSISTENCY
@@ -61,9 +57,7 @@ def test_post_story_22_1_doctor_readme_is_silent(tmp_path: Path):
     brief = (_FIXTURES / "doctor-skill-brief.yaml").read_text(encoding="utf-8")
     _write_station_tree(tmp_path, station="doctor", readme_text=readme, skill_brief_text=brief)
 
-    findings = general_docs_consistency.find_station_gate_advisory_contradictions(
-        tmp_path
-    )
+    findings = general_docs_consistency.find_station_gate_advisory_contradictions(tmp_path)
     assert findings == ()
 
 
@@ -72,9 +66,7 @@ def test_pre_story_22_1_agents_herald_fires_against_herald_dream(tmp_path: Path)
     dream = (_FIXTURES / "pyforge-herald-dream.md").read_text(encoding="utf-8")
     _write_agents_and_herald_dream(tmp_path, agents_text=agents, dream_text=dream)
 
-    findings = general_docs_consistency.find_agents_herald_marshal_contradiction(
-        tmp_path
-    )
+    findings = general_docs_consistency.find_agents_herald_marshal_contradiction(tmp_path)
     assert len(findings) == 1
     finding = findings[0]
     assert finding.check == "general-docs-agents-herald-marshal"
@@ -88,17 +80,13 @@ def test_post_story_22_1_agents_herald_is_silent(tmp_path: Path):
     dream = (_FIXTURES / "pyforge-herald-dream.md").read_text(encoding="utf-8")
     _write_agents_and_herald_dream(tmp_path, agents_text=agents, dream_text=dream)
 
-    findings = general_docs_consistency.find_agents_herald_marshal_contradiction(
-        tmp_path
-    )
+    findings = general_docs_consistency.find_agents_herald_marshal_contradiction(tmp_path)
     assert findings == ()
 
 
 def test_clean_station_warden_does_not_false_positive(tmp_path: Path):
     readme = (_FIXTURES / "clean" / "warden" / "README.md").read_text(encoding="utf-8")
-    brief = (_FIXTURES / "clean" / "warden" / "skill-brief.yaml").read_text(
-        encoding="utf-8"
-    )
+    brief = (_FIXTURES / "clean" / "warden" / "skill-brief.yaml").read_text(encoding="utf-8")
     _write_station_tree(tmp_path, station="warden", readme_text=readme, skill_brief_text=brief)
     agents = (_FIXTURES / "post" / "AGENTS.md").read_text(encoding="utf-8")
     dream = (_FIXTURES / "pyforge-herald-dream.md").read_text(encoding="utf-8")
@@ -123,9 +111,7 @@ def test_unreadable_source_emits_named_finding(tmp_path: Path):
     )
     readme.chmod(0o000)
     try:
-        findings = general_docs_consistency.find_station_gate_advisory_contradictions(
-            tmp_path
-        )
+        findings = general_docs_consistency.find_station_gate_advisory_contradictions(tmp_path)
     finally:
         readme.chmod(0o644)
     assert len(findings) == 1
@@ -141,9 +127,7 @@ def test_ambiguous_station_without_comparable_claims_is_silent(tmp_path: Path):
         skill_brief_text="name: pyforge-atlas\ndescription: Atlas station.\n",
     )
 
-    findings = general_docs_consistency.find_station_gate_advisory_contradictions(
-        tmp_path
-    )
+    findings = general_docs_consistency.find_station_gate_advisory_contradictions(tmp_path)
     assert findings == ()
 
 

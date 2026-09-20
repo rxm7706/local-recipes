@@ -808,6 +808,12 @@ capabilities:
     heading: "the instruction surface is version-aware, not version-dependent (Claude Code's built-in agents-md mod, 2.1.277+)"
     mode: rebuild
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-30
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "the managed instruction block carries no aspiration"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward
@@ -4089,6 +4095,18 @@ capabilities:
     spec: pyforge-steward
     station: pyforge-steward
     heading: "no station code assumes the local-recipes environment at runtime"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-153
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "lint and types gate the ten pyforge-* packages, locally and on the runners alike"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-154
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the pre-commit set: attribution lines and un-preflighted pushes are refused by hooks, not prose"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 

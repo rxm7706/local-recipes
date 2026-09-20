@@ -130,7 +130,7 @@ def parse_purl_associator_index(payload: Any) -> list[dict]:
     if isinstance(data, (str, bytes)):
         try:
             data = json.loads(data)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
     if not isinstance(data, dict):
         return []
@@ -208,9 +208,7 @@ class PurlAssociatorMappingsDataset(ExternalRefreshDataset):
             return pd.DataFrame(columns=list(_PURL_ASSOC_COLUMNS))
         rows = parse_purl_associator_index(payload)
         if not rows:
-            logger.warning(
-                "purl associator index parsed zero packages (layout break?) — keeping last-good"
-            )
+            logger.warning("purl associator index parsed zero packages (layout break?) — keeping last-good")
         return pd.DataFrame(rows, columns=list(_PURL_ASSOC_COLUMNS))
 
     def fetch_shard(self, key: str, *, fetcher: Callable[[str], Any] | None = None) -> dict:
@@ -232,7 +230,7 @@ class PurlAssociatorMappingsDataset(ExternalRefreshDataset):
         if isinstance(payload, (str, bytes)):
             try:
                 payload = json.loads(payload)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 return {}
         return payload if isinstance(payload, dict) else {}
 
@@ -323,7 +321,7 @@ def _as_json(payload: Any) -> dict | None:
         return None
     try:
         parsed = json.loads(text)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     return parsed if isinstance(parsed, dict) else None
 
@@ -432,13 +430,10 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
                     cursor,
                 )
                 break
-            conn = (
-                ((parsed.get("data") or {}).get("organization") or {}).get("projectV2") or {}
-            ).get("items")
+            conn = (((parsed.get("data") or {}).get("organization") or {}).get("projectV2") or {}).get("items")
             if not isinstance(conn, dict):
                 logger.warning(
-                    "OpenTeams board GraphQL response missing items connection (cursor=%r) — "
-                    "stopping pagination",
+                    "OpenTeams board GraphQL response missing items connection (cursor=%r) — stopping pagination",
                     cursor,
                 )
                 break
@@ -480,9 +475,7 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
 
     def load(self) -> pd.DataFrame:
         if not self._store_exists():
-            self._mark_stale(
-                "OpenTeams board store absent (never refreshed / offline)", only_if_absent=True
-            )
+            self._mark_stale("OpenTeams board store absent (never refreshed / offline)", only_if_absent=True)
             return pd.DataFrame(columns=list(_BOARD_COLUMNS))
         try:
             return pd.read_parquet(self._store_path)
@@ -532,7 +525,7 @@ def parse_staged_pr_page(payload: Any) -> list[dict]:
     if isinstance(data, (str, bytes)):
         try:
             data = json.loads(data)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
     if not isinstance(data, list):
         return []
@@ -565,15 +558,11 @@ def parse_pr_files_response(payload: Any) -> list[str]:
     if isinstance(data, (str, bytes)):
         try:
             data = json.loads(data)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
     if not isinstance(data, list):
         return []
-    return [
-        item["filename"]
-        for item in data
-        if isinstance(item, dict) and isinstance(item.get("filename"), str)
-    ]
+    return [item["filename"] for item in data if isinstance(item, dict) and isinstance(item.get("filename"), str)]
 
 
 class StagedRecipesPRDataset(ExternalRefreshDataset):
@@ -697,9 +686,7 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
 
     def load(self) -> pd.DataFrame:
         if not self._store_exists():
-            self._mark_stale(
-                "staged-recipes PR store absent (never refreshed / offline)", only_if_absent=True
-            )
+            self._mark_stale("staged-recipes PR store absent (never refreshed / offline)", only_if_absent=True)
             return pd.DataFrame(columns=list(_STAGED_PR_COLUMNS))
         try:
             return pd.read_parquet(self._store_path)
@@ -829,9 +816,7 @@ class LocalRecipesOverlayDataset(AbstractDataset):
         try:
             if not recipes_dir.is_dir():
                 return pd.DataFrame(columns=list(_LOCAL_RECIPES_COLUMNS))
-            dirs = sorted(
-                p for p in recipes_dir.iterdir() if p.is_dir() and not p.name.startswith(".")
-            )
+            dirs = sorted(p for p in recipes_dir.iterdir() if p.is_dir() and not p.name.startswith("."))
         except OSError as exc:  # never raise: a permission-denied/exotic fs error
             # degrades to empty exactly like a missing directory (AD-13-style).
             logger.warning(

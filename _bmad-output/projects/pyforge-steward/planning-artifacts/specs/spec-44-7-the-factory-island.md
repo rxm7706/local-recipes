@@ -2,7 +2,7 @@
 title: 'The factory island'
 type: 'feature'
 created: '2026-09-13'
-status: 'backlog'
+status: 'done'
 difficulty: heavy
 story: 44.7
 spec: python-foundry-cutover
@@ -68,3 +68,17 @@ instead of inventing a new CI shape.
 3. `mason recipe build factory/recipes/<r>` matches today's CFE wrap (or a documented equivalent on the empty island).
 4. `DW-RT-2026-09-02-1` marked resolved.
 5. Ledger key `44-7-the-factory-island` is the only 44.x key this Story may mark `done`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3f6504a964` (2026-09-13, "Merge pull request #1338 from rxm7706/steward-44-7-factory-island"). Ledger row `44-7-the-factory-island: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/scripts/conda-forge-expert/native-build.sh`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/errors.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/recipe.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py`, `src/shared/packages/pyforge-mason/tests/unit/test_factory_island.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `backlog` → `done` (ledger row `44-7-the-factory-island: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

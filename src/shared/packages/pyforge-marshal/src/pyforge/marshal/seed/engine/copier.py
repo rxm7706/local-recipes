@@ -246,14 +246,10 @@ def _git_clone_local(dst_path: Path, stage_path: Path) -> None:
         )
     except ProcessError as exc:
         raise CopierEngineError(
-            f"could not stage {dst_path} for update/recopy via a local git clone: "
-            f"{exc.__cause__ or exc}"
+            f"could not stage {dst_path} for update/recopy via a local git clone: {exc.__cause__ or exc}"
         ) from exc
     if result.returncode != 0:
-        raise CopierEngineError(
-            f"could not stage {dst_path} for update/recopy via a local git clone: "
-            f"{result.stderr}"
-        )
+        raise CopierEngineError(f"could not stage {dst_path} for update/recopy via a local git clone: {result.stderr}")
 
 
 def _git_changed_paths(stage_path: Path) -> list[str]:
@@ -272,13 +268,9 @@ def _git_changed_paths(stage_path: Path) -> list[str]:
             timeout_s=_GIT_TIMEOUT_S,
         )
     except ProcessError as exc:
-        raise CopierEngineError(
-            f"could not read staged changes in {stage_path}: {exc.__cause__ or exc}"
-        ) from exc
+        raise CopierEngineError(f"could not read staged changes in {stage_path}: {exc.__cause__ or exc}") from exc
     if result.returncode != 0:
-        raise CopierEngineError(
-            f"could not read staged changes in {stage_path}: {result.stderr}"
-        )
+        raise CopierEngineError(f"could not read staged changes in {stage_path}: {result.stderr}")
     changed: list[str] = []
     for line in result.stdout.splitlines():
         if len(line) < 4:

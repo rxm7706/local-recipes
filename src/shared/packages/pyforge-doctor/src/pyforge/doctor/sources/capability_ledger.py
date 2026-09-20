@@ -49,9 +49,7 @@ _CASE_ID_RE = re.compile(r"^\|\s*(k-[a-z0-9-]+)\s*\|", re.MULTILINE)
 _FRAME_CLAIM_RE = re.compile(r"(?:docs/foundry/frames/|\.frame\.md)", re.IGNORECASE)
 
 # Story 55.2 AC-1: fixture Why text the extract must drop.
-UNIQUE_WHY_FIXTURE_SENTENCE = (
-    "UNIQUE_WHY_55_2_the-capability-section-must-survive-this-sentence"
-)
+UNIQUE_WHY_FIXTURE_SENTENCE = "UNIQUE_WHY_55_2_the-capability-section-must-survive-this-sentence"
 
 _HEADING_BOLD = re.compile(
     r"^\s*[-*]?\s*\*\*CAP-(\d+)\s+[—–-]\s*(.+?)\*\*",
@@ -229,7 +227,7 @@ def _added_after_pin(target: Path, pin_sha: str) -> set[str]:
             target,
             ["diff", "--name-only", "--diff-filter=A", f"{pin_sha}..HEAD"],
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return set()
     return {line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()}
 

@@ -18,9 +18,7 @@ from pyforge.atlas.factory.personas import (
 
 
 def test_exactly_the_five_spec_personas():
-    assert PERSONA_NAMES == frozenset(
-        {"Ingester", "Compiler", "Linker", "Linter", "Oracle"}
-    )
+    assert PERSONA_NAMES == frozenset({"Ingester", "Compiler", "Linker", "Linter", "Oracle"})
     assert set(DEFAULT_PERSONAS) == PERSONA_NAMES
 
 

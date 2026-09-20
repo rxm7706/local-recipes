@@ -154,15 +154,11 @@ def commits_since(
 
 
 def commit_subject(root: Path, sha: str) -> str:
-    return subprocess.check_output(
-        ["git", "log", "-1", "--format=%s", sha], cwd=root, text=True
-    ).strip()
+    return subprocess.check_output(["git", "log", "-1", "--format=%s", sha], cwd=root, text=True).strip()
 
 
 def commit_files(root: Path, sha: str) -> list[str]:
-    return subprocess.check_output(
-        ["git", "show", "--format=", "--name-only", sha], cwd=root, text=True
-    ).split()
+    return subprocess.check_output(["git", "show", "--format=", "--name-only", sha], cwd=root, text=True).split()
 
 
 # `retro:` or `retro(<scope>):` -- see unsanctioned_commits.__doc__.
@@ -199,9 +195,7 @@ def unsanctioned_commits(
         files = commit_files(root, sha)
         if not (_RETRO_SUBJECT.match(subject) and changelog_path in files):
             bad.append(f"{sha[:10]} {subject}")
-    dirty = subprocess.check_output(
-        ["git", "diff", "--name-only", "HEAD", "--", pathspec], cwd=root, text=True
-    ).split()
+    dirty = subprocess.check_output(["git", "diff", "--name-only", "HEAD", "--", pathspec], cwd=root, text=True).split()
     if dirty:
         bad.append("uncommitted: " + ", ".join(dirty))
     return bad

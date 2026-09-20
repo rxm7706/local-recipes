@@ -66,6 +66,7 @@ class _StrictSafeLoader(yaml.SafeLoader):
             seen.add(key)
         return super().construct_mapping(node, deep=deep)
 
+
 #: The visible stale banner stamped into a compiled body when the source is stale. LintCrew
 #: checks for this exact prefix so a stale page that drops the banner is a reported violation.
 STALE_BANNER_PREFIX = "> ⚠️ STALE"
@@ -119,7 +120,7 @@ def _read_staleness(raw_doc: Path) -> dict[str, Any] | None:
         return None
     try:
         marker = json.loads(sidecar.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return {"stale": True, "reason": f"unreadable staleness sidecar {sidecar.name}"}
     if not isinstance(marker, dict) or not marker.get("stale"):
         return None
@@ -297,18 +298,12 @@ class LintCrew:
             except (yaml.YAMLError, ValueError) as exc:
                 # Lint REPORTS on a bad page, never raises (docstring contract) — a single
                 # malformed page must not DoS the whole pass and hide other violations.
-                report.violations.append(
-                    LintViolation(name, "malformed-frontmatter", f"{type(exc).__name__}: {exc}")
-                )
+                report.violations.append(LintViolation(name, "malformed-frontmatter", f"{type(exc).__name__}: {exc}"))
                 continue
             if not meta:
-                report.violations.append(
-                    LintViolation(name, "missing-frontmatter", "no YAML frontmatter block")
-                )
+                report.violations.append(LintViolation(name, "missing-frontmatter", "no YAML frontmatter block"))
             elif not meta.get("title"):
-                report.violations.append(
-                    LintViolation(name, "missing-title", "frontmatter has no 'title'")
-                )
+                report.violations.append(LintViolation(name, "missing-title", "frontmatter has no 'title'"))
             if not body.strip():
                 report.violations.append(LintViolation(name, "empty-body", "body is empty"))
             if meta.get("stale") and STALE_BANNER_PREFIX not in body:
@@ -385,9 +380,7 @@ Retriever = Callable[[str, Sequence[tuple[str, str]]], list["Grounding"]]
 Synthesizer = Callable[[str, Sequence["Grounding"]], str]
 
 
-def keyword_retriever(
-    question: str, docs: Sequence[tuple[str, str]], *, k: int = 3
-) -> list[Grounding]:
+def keyword_retriever(question: str, docs: Sequence[tuple[str, str]], *, k: int = 3) -> list[Grounding]:
     """Deterministic keyword-overlap retrieval (offline; no vss needed). Scores each doc by the
     number of DISTINCT question terms it contains, drops zero-overlap docs, and returns the top
     ``k`` (ties broken by doc name for determinism). The snippet is the first line mentioning a
@@ -448,7 +441,7 @@ class QACrew:
         for doc in sorted(compiled_dir.rglob("*.md")):
             try:
                 _meta, body = parse_frontmatter(doc.read_text(encoding="utf-8"))
-            except (yaml.YAMLError, ValueError):
+            except yaml.YAMLError, ValueError:
                 # A malformed page can't be grounded on — skip it rather than crash the whole
                 # answer (an operator's question must still be answered from the good pages).
                 continue

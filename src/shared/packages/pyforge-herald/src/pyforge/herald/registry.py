@@ -101,10 +101,7 @@ class DesignProject:
 def _canonical_body(project_name: str, project_id: str, file_url: str) -> list[str]:
     """The section's exact two body lines, in the template ``register``
     writes and ``read`` parses back."""
-    line1 = (
-        f'Prototype lives in Claude Design project **"{project_name}"** '
-        f"(`{project_id}`):"
-    )
+    line1 = f'Prototype lives in Claude Design project **"{project_name}"** (`{project_id}`):'
     return [line1, file_url]
 
 
@@ -134,9 +131,7 @@ def _section_span_end(lines: list[str], heading_index: int) -> int:
     return len(lines)
 
 
-def register(
-    readme_path: Path, project_name: str, project_id: str, file_url: str
-) -> None:
+def register(readme_path: Path, project_name: str, project_id: str, file_url: str) -> None:
     """Append or replace the § *Design project* section in ``readme_path``.
 
     Against a README with no existing section, appends the canonical section
@@ -182,17 +177,14 @@ def register(
     ):
         if not isinstance(value, str) or not value or value.splitlines() != [value]:
             raise errors.HeraldError(
-                f"{could_not}: {field_name} must be a non-empty, single-line "
-                f"string, got {value!r}"
+                f"{could_not}: {field_name} must be a non-empty, single-line string, got {value!r}"
             )
         try:
             value.encode("utf-8")
         except UnicodeEncodeError as exc:
             # A lone surrogate (json.loads('"\ud800"') can produce one)
             # survives the line checks but would crash the UTF-8 write.
-            raise errors.HeraldError(
-                f"{could_not}: {field_name} is not encodable as UTF-8 ({exc})"
-            ) from exc
+            raise errors.HeraldError(f"{could_not}: {field_name} is not encodable as UTF-8 ({exc})") from exc
     if file_url.startswith("#"):
         raise errors.HeraldError(
             f"{could_not}: file_url must not start with '#' -- the URL sits "
@@ -201,11 +193,7 @@ def register(
         )
     body = _canonical_body(project_name, project_id, file_url)
     parsed = _BODY_LINE1_RE.match(body[0])
-    if (
-        parsed is None
-        or parsed.group("project_name") != project_name
-        or parsed.group("project_id") != project_id
-    ):
+    if parsed is None or parsed.group("project_name") != project_name or parsed.group("project_id") != project_id:
         raise errors.HeraldError(
             f"{could_not}: project_name/project_id embed the template's own "
             f"delimiters and would not read back as themselves, got "
@@ -265,9 +253,7 @@ def read(readme_path: Path) -> DesignProject | None:
     except FileNotFoundError:
         return None
     except (OSError, UnicodeDecodeError) as exc:
-        raise errors.HeraldError(
-            f"design project could not be read from {readme_path}: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"design project could not be read from {readme_path}: {exc}") from exc
 
     lines = text.splitlines()
     heading_index = _find_heading(lines, _SECTION_HEADING)
@@ -331,21 +317,14 @@ def register_potx_template(readme_path: Path, template_path: str) -> None:
     ends the section), when the file does not exist, or when the
     filesystem otherwise refuses the read or the write."""
     could_not = f"potx template could not be registered in {readme_path}"
-    if (
-        not isinstance(template_path, str)
-        or not template_path
-        or template_path.splitlines() != [template_path]
-    ):
+    if not isinstance(template_path, str) or not template_path or template_path.splitlines() != [template_path]:
         raise errors.HeraldError(
-            f"{could_not}: template_path must be a non-empty, single-line "
-            f"string, got {template_path!r}"
+            f"{could_not}: template_path must be a non-empty, single-line string, got {template_path!r}"
         )
     try:
         template_path.encode("utf-8")
     except UnicodeEncodeError as exc:
-        raise errors.HeraldError(
-            f"{could_not}: template_path is not encodable as UTF-8 ({exc})"
-        ) from exc
+        raise errors.HeraldError(f"{could_not}: template_path is not encodable as UTF-8 ({exc})") from exc
     if template_path.startswith("#"):
         raise errors.HeraldError(
             f"{could_not}: template_path must not start with '#' -- it sits "
@@ -408,9 +387,7 @@ def read_potx_template(readme_path: Path) -> str | None:
     except FileNotFoundError:
         return None
     except (OSError, UnicodeDecodeError) as exc:
-        raise errors.HeraldError(
-            f"potx template could not be read from {readme_path}: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"potx template could not be read from {readme_path}: {exc}") from exc
 
     lines = text.splitlines()
     heading_index = _find_heading(lines, _POTX_SECTION_HEADING)
@@ -423,8 +400,7 @@ def read_potx_template(readme_path: Path) -> str | None:
 
     if len(body) != 1:
         raise errors.HeraldError(
-            f"potx template section in {readme_path} is malformed: expected "
-            f"exactly one body line, found {len(body)}"
+            f"potx template section in {readme_path} is malformed: expected exactly one body line, found {len(body)}"
         )
     template_path = body[0]
     posix_path = PurePosixPath(template_path)
@@ -465,9 +441,7 @@ def _format_ledger_row(filename: str, size: int) -> str:
     return f"| {filename} | {size:,} | identical ✓ |"
 
 
-def append_push_ledger_row(
-    readme_path: Path, *, date: str, rows: Sequence[tuple[str, int]]
-) -> None:
+def append_push_ledger_row(readme_path: Path, *, date: str, rows: Sequence[tuple[str, int]]) -> None:
     """Append one Ledger row per ``(filename, size)`` in ``rows`` to
     ``readme_path``'s dated ``## Ledger — {date} push-and-prove
     (spec-design-sync-loop CAP-6)`` section (Story 23.4's ``herald deck push
@@ -599,9 +573,7 @@ def read_exclusions(readme_path: Path) -> dict[str, str]:
     except FileNotFoundError:
         return {}
     except (OSError, UnicodeDecodeError) as exc:
-        raise errors.HeraldError(
-            f"excluded-projects list could not be read from {readme_path}: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"excluded-projects list could not be read from {readme_path}: {exc}") from exc
 
     lines = text.splitlines()
     heading_index = _find_heading(lines, _EXCLUDED_SECTION_HEADING)
@@ -626,8 +598,7 @@ def read_exclusions(readme_path: Path) -> dict[str, str]:
         project, reason = cells
         if project in exclusions:
             raise errors.HeraldError(
-                f"excluded-projects list in {readme_path} is malformed: "
-                f"project {project!r} appears more than once"
+                f"excluded-projects list in {readme_path} is malformed: project {project!r} appears more than once"
             )
         exclusions[project] = reason
     return exclusions

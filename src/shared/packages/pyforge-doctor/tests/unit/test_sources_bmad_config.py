@@ -13,6 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import bmad_config
 
@@ -21,7 +22,7 @@ from pyforge.doctor.sources import bmad_config
 
 def test_load_layer_returns_parsed_table_on_success(tmp_path: Path):
     path = tmp_path / "config.toml"
-    path.write_text('[core]\na = 1\n', encoding="utf-8")
+    path.write_text("[core]\na = 1\n", encoding="utf-8")
 
     assert bmad_config._load_layer(path) == {"core": {"a": 1}}
 
@@ -37,14 +38,10 @@ def test_load_layer_malformed_toml_folds_to_empty(tmp_path: Path):
     assert bmad_config._load_layer(path) == {}
 
 
-def test_load_layer_non_table_toml_folds_to_empty(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_load_layer_non_table_toml_folds_to_empty(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     path = tmp_path / "config.toml"
     path.write_text("a = 1\n", encoding="utf-8")
-    monkeypatch.setattr(
-        bmad_config.tomllib, "load", lambda stream: ["not", "a", "table"]
-    )
+    monkeypatch.setattr(bmad_config.tomllib, "load", lambda stream: ["not", "a", "table"])
 
     assert bmad_config._load_layer(path) == {}
 
@@ -148,7 +145,7 @@ def test_gather_on_empty_target_returns_ok_with_zero_checked(tmp_path: Path):
 
 
 def test_missing_user_layers_are_treated_as_empty(tmp_path: Path):
-    _write(tmp_path / "_bmad" / "config.toml", '[core]\na = 1\n')
+    _write(tmp_path / "_bmad" / "config.toml", "[core]\na = 1\n")
     # No config.user.toml, no custom/ dir at all.
 
     findings = bmad_config.gather(tmp_path)
@@ -330,9 +327,7 @@ forge_data_folder = "{project-root}/_bmad-output/projects/pyforge-atlas/implemen
 
 def test_real_tracked_config_reports_ok_with_eleven_checked(tmp_path: Path):
     _write(tmp_path / "_bmad" / "config.toml", _REAL_BMAD_CONFIG_TOML)
-    _write(
-        tmp_path / "_bmad" / "custom" / "config.toml", _REAL_BMAD_CUSTOM_CONFIG_TOML
-    )
+    _write(tmp_path / "_bmad" / "custom" / "config.toml", _REAL_BMAD_CUSTOM_CONFIG_TOML)
 
     findings = bmad_config.gather(tmp_path)
 

@@ -1,0 +1,25 @@
+# The repo's policy hooks (steward Story 66.2, spec-pyforge-steward CAP-154).
+# `steward setup` / `initrepo` install them through `pre-commit install`;
+# `default_install_hook_types` makes that bare call install the two stages
+# below. `pixi run -e pyforge-guild precommit-config-check` (detectors-ci)
+# reds this file going missing or losing either hook. Both hooks are `language: script` on
+# purpose: pre-commit stashes unstaged changes while a hook runs, so a hook that invoked pixi
+# could re-sync an env against a momentarily reverted pixi.lock (seen 2026-09-20).
+default_install_hook_types: [commit-msg, pre-push]
+repos:
+  - repo: local
+    hooks:
+      - id: commit-msg-no-attribution
+        name: "commit message carries no Co-Authored-By or AI-attribution line (AGENTS.md § Policy)"
+        entry: scripts/commit_msg_hook.py
+        language: script
+        stages: [commit-msg]
+        always_run: true
+        pass_filenames: true
+      - id: pre-push-preflight
+        name: "pr-preflight is green before a push leaves the machine (PYFORGE_PREFLIGHT_SKIP=1 to opt out, journaled)"
+        entry: scripts/pre_push_preflight.sh
+        language: script
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false

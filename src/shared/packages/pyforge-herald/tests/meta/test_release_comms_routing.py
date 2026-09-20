@@ -34,8 +34,7 @@ PRODUCER_SKILL_DIRS = (
     ".claude/skills/bmad-os-changelog-social",
 )
 REGISTER_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-lifecycle/adoption-register.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md"
 )
 
 
@@ -55,9 +54,7 @@ def _routing_section(text: str) -> str:
     pattern = r"(?ms)^## Utility skill routing \(AD-2\)\s*\n(.*?)(?=^## |\Z)"
     match = re.search(pattern, text)
     if not match:
-        raise AssertionError(
-            "persona SKILL.md has no 'Utility skill routing (AD-2)' section"
-        )
+        raise AssertionError("persona SKILL.md has no 'Utility skill routing (AD-2)' section")
     return match.group(1)
 
 
@@ -90,9 +87,7 @@ def test_producer_check_would_fail_and_name_a_missing_producer_dir(tmp_path):
         (fake_root / present_dir / "SKILL.md").write_text("stub", encoding="utf-8")
     # absent_dir is deliberately never created.
 
-    missing = [
-        d for d in PRODUCER_SKILL_DIRS if not (fake_root / d / "SKILL.md").is_file()
-    ]
+    missing = [d for d in PRODUCER_SKILL_DIRS if not (fake_root / d / "SKILL.md").is_file()]
     assert missing == [absent_dir]
 
 
@@ -126,8 +121,7 @@ def test_routing_section_is_a_numbered_procedure_not_a_bare_mention():
     section = _routing_section(_persona_text(root))
     numbered_steps = re.findall(r"^\s*\d+\.\s", section, flags=re.MULTILINE)
     assert len(numbered_steps) >= 4, (
-        "routing section is not a numbered procedure "
-        f"(found {len(numbered_steps)} numbered lines)"
+        f"routing section is not a numbered procedure (found {len(numbered_steps)} numbered lines)"
     )
 
 
@@ -143,9 +137,7 @@ def test_adoption_register_combined_row_still_names_herald():
         flags=re.MULTILINE,
     )
     assert match, "adoption-register.md's combined changelog/social row not found"
-    assert "herald" in match.group(0), (
-        "combined changelog/social row no longer names herald as wielder"
-    )
+    assert "herald" in match.group(0), "combined changelog/social row no longer names herald as wielder"
 
 
 # ── (e) CLAUDE.md stays silent on both producer skills (AD-2) ───────────────

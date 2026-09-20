@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness
 from pyforge.marshal.core.policy import REDACTED_SENTINEL
 from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot
@@ -463,9 +464,7 @@ def test_resolution_reference_returns_the_posix_path_when_the_marker_exists(harn
     marker_dir.mkdir(parents=True)
     (marker_dir / "resolution.json").write_text("{}", encoding="utf-8")
 
-    result = harness.resolution_reference(
-        tmp_path, "acme-run-1", "3-7-escalation-deferral-and-resume"
-    )
+    result = harness.resolution_reference(tmp_path, "acme-run-1", "3-7-escalation-deferral-and-resume")
 
     assert result == (marker_dir / "resolution.json").as_posix()
 
@@ -473,9 +472,7 @@ def test_resolution_reference_returns_the_posix_path_when_the_marker_exists(harn
 def test_resolution_reference_returns_none_when_the_marker_is_absent(harness, tmp_path):
     """A ``--no-interactive`` resolve is never guaranteed to leave a
     marker -- documented as a limitation, not a defect."""
-    result = harness.resolution_reference(
-        tmp_path, "acme-run-1", "3-7-escalation-deferral-and-resume"
-    )
+    result = harness.resolution_reference(tmp_path, "acme-run-1", "3-7-escalation-deferral-and-resume")
 
     assert result is None
 
@@ -497,9 +494,7 @@ def test_tasks_carries_commit_sha_and_branch_for_every_task(harness, tmp_path):
         tmp_path,
         "acme-run-1",
         tasks={
-            "3.8": _task(
-                "3.8", "committing", commit_sha="abc123", branch="loop/3.8"
-            ),
+            "3.8": _task("3.8", "committing", commit_sha="abc123", branch="loop/3.8"),
             "3.7": _task("3.7", "deferred", defer_reason="verify exhausted"),
         },
     )
@@ -614,21 +609,14 @@ def test_escalated_preserve_ref_reads_the_paused_storys_own_ref(harness, tmp_pat
     snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
 
     assert snapshot is not None
-    assert (
-        snapshot.escalated_preserve_ref
-        == "refs/attempt-preserve-dirty/20260822-def456"
-    )
+    assert snapshot.escalated_preserve_ref == "refs/attempt-preserve-dirty/20260822-def456"
 
 
 def test_escalated_preserve_ref_is_none_without_an_escalation(harness, tmp_path):
     _write_state(
         tmp_path,
         "acme-run-1",
-        tasks={
-            "3.6": _task(
-                "3.6", "deferred", preserve_ref="attempt-preserve/20260822-abc123"
-            )
-        },
+        tasks={"3.6": _task("3.6", "deferred", preserve_ref="attempt-preserve/20260822-abc123")},
     )
 
     snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")

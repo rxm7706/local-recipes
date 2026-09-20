@@ -2,7 +2,7 @@
 title: 'The suite watched set matches the channel catalog and upstream follows recipe registry'
 type: 'feature'
 created: '2026-09-01'
-status: 'shipped'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -120,3 +120,17 @@ for "npm miss → GitHub"; this story is the deliberate follow-on authorized by 
 doctor relays ambient WARNs for installed/pinned members only.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `770672a156` (2026-09-01, "doctor: Story 19.1 manifest-driven suite drift + steward Epic 39 ledger"). Ledger row `19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry/.memlog.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-metapackage/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-metapackage/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `scripts/.spec-surface-baseline.json`, `scripts/fleet_picture.py` (+4 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

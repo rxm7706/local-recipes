@@ -13,7 +13,7 @@ import os
 import time
 from collections.abc import Callable, Mapping
 
-from pyforge.core.assertion import HostMintClient, MAX_TTL_SECONDS
+from pyforge.core.assertion import MAX_TTL_SECONDS, HostMintClient
 from pyforge.core.client import PyForgeStationClient, Transport
 
 from ..core.publish import shape_heartbeat

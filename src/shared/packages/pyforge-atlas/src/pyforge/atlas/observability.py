@@ -219,11 +219,11 @@ class AtlasObservabilityHooks:
         cls = self.__class__
         new = cls.__new__(cls)
         memo[id(self)] = new
-        new._provider = self._provider          # shared by reference (survives; un-deepcopyable)
-        new._ol = self._ol                       # shared by reference (same backend, both planes)
+        new._provider = self._provider  # shared by reference (survives; un-deepcopyable)
+        new._ol = self._ol  # shared by reference (same backend, both planes)
         new._namespace = self._namespace
-        new._tracer_cache = None                 # rebuilt lazily from the shared provider
-        new._pipelines = []                      # fresh per-run span/lineage state
+        new._tracer_cache = None  # rebuilt lazily from the shared provider
+        new._pipelines = []  # fresh per-run span/lineage state
         new._nodes = {}
         return new
 
@@ -259,23 +259,17 @@ class AtlasObservabilityHooks:
     def _input_datasets(self, node: Any) -> list[InputDataset]:
         return [InputDataset(namespace=self._namespace, name=n) for n in node.inputs]
 
-    def _output_datasets(
-        self, node: Any, outputs: dict[str, Any] | None = None
-    ) -> list[OutputDataset]:
+    def _output_datasets(self, node: Any, outputs: dict[str, Any] | None = None) -> list[OutputDataset]:
         datasets: list[OutputDataset] = []
         for name in node.outputs:
             facets = {}
             if outputs is not None and name in outputs:
                 rows = _rowcount(outputs[name])
                 if rows is not None:
-                    facets["outputStatistics"] = (
-                        output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
-                            rowCount=rows, producer=PRODUCER
-                        )
+                    facets["outputStatistics"] = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
+                        rowCount=rows, producer=PRODUCER
                     )
-            datasets.append(
-                OutputDataset(namespace=self._namespace, name=name, facets=facets)
-            )
+            datasets.append(OutputDataset(namespace=self._namespace, name=name, facets=facets))
         return datasets
 
     # -- OTel helpers ------------------------------------------------------- #
@@ -297,9 +291,7 @@ class AtlasObservabilityHooks:
     # -- Pipeline lifecycle ------------------------------------------------- #
 
     @hook_impl
-    def before_pipeline_run(
-        self, run_params: dict[str, Any], pipeline: Any, catalog: Any
-    ) -> None:
+    def before_pipeline_run(self, run_params: dict[str, Any], pipeline: Any, catalog: Any) -> None:
         span = self._tracer.start_span("pipeline_run")
         span.set_attribute("pyforge.pipeline", str(run_params.get("pipeline_name") or "__default__"))
         self._pipelines.append(_PipelineFrame(span=span))
@@ -315,9 +307,7 @@ class AtlasObservabilityHooks:
         self._close_pipeline(StatusCode.OK)
 
     @hook_impl
-    def on_pipeline_error(
-        self, error: Exception, run_params: dict[str, Any], pipeline: Any, catalog: Any
-    ) -> None:
+    def on_pipeline_error(self, error: Exception, run_params: dict[str, Any], pipeline: Any, catalog: Any) -> None:
         # Defensively close any node spans still open (a mid-node crash) so no span leaks,
         # AND emit an OpenLineage FAIL terminal for each in-flight node so an OL consumer
         # never sees a dangling START with no COMPLETE/FAIL (Reviewer-B finding 3). Then
@@ -367,8 +357,11 @@ class AtlasObservabilityHooks:
 
         ol_run_id = str(generate_new_uuid())
         self._nodes[node.name] = _NodeState(
-            span=span, started=time.perf_counter(), ol_run_id=ol_run_id,
-            cache_hits=cache_hits, node=node,
+            span=span,
+            started=time.perf_counter(),
+            ol_run_id=ol_run_id,
+            cache_hits=cache_hits,
+            node=node,
         )
 
         self._emit(
@@ -397,9 +390,7 @@ class AtlasObservabilityHooks:
         if state is None:
             return
         latency_ms = (time.perf_counter() - state.started) * 1000.0
-        total_rows = sum(
-            r for r in (_rowcount(v) for v in outputs.values()) if r is not None
-        )
+        total_rows = sum(r for r in (_rowcount(v) for v in outputs.values()) if r is not None)
 
         # Output-write child spans (the dataset IO / API call for each output).
         for name in node.outputs:

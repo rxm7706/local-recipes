@@ -93,10 +93,7 @@ def find_bmad_output_root_leftovers(target: Path) -> tuple[Finding, ...]:
                 source=Source.DOCS_SHELF_OCCUPANCY,
                 check=_CHECK_BMAD_OUTPUT_ROOT,
                 status=DoctorStatus.WARN,
-                message=(
-                    f"{rel} is not in the doctor-maintained _bmad-output/ "
-                    "root allow-list"
-                ),
+                message=(f"{rel} is not in the doctor-maintained _bmad-output/ root allow-list"),
                 evidence={"path": rel},
             )
         )
@@ -127,10 +124,7 @@ def find_extra_airgap_docs(target: Path) -> tuple[Finding, ...]:
                     source=Source.DOCS_SHELF_OCCUPANCY,
                     check=_CHECK_AIRGAP_CLUSTER,
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{rel} is a second air-gap doc outside the Story "
-                        "23.2 cluster"
-                    ),
+                    message=(f"{rel} is a second air-gap doc outside the Story 23.2 cluster"),
                     evidence={"path": rel},
                 )
             )

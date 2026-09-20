@@ -137,17 +137,11 @@ def _fields_problem(record: object) -> str | None:
     caps = record["shipped_capabilities"]
     if not isinstance(caps, list) or not all(isinstance(c, str) for c in caps):
         return "field 'shipped_capabilities' must be an array of strings"
-    if not isinstance(record["compute_hours"], (int, float)) or isinstance(
-        record["compute_hours"], bool
-    ):
+    if not isinstance(record["compute_hours"], (int, float)) or isinstance(record["compute_hours"], bool):
         return "field 'compute_hours' must be a number"
-    if not isinstance(record["token_spend"], int) or isinstance(
-        record["token_spend"], bool
-    ):
+    if not isinstance(record["token_spend"], int) or isinstance(record["token_spend"], bool):
         return "field 'token_spend' must be an integer"
-    if not isinstance(record["wall_clock_hours"], (int, float)) or isinstance(
-        record["wall_clock_hours"], bool
-    ):
+    if not isinstance(record["wall_clock_hours"], (int, float)) or isinstance(record["wall_clock_hours"], bool):
         return "field 'wall_clock_hours' must be a number"
     if not isinstance(record["unblock_narrative"], str):
         return "field 'unblock_narrative' must be a string"
@@ -184,20 +178,15 @@ def _read_legacy_json(progress_path: Path) -> list[Progress]:
     except FileNotFoundError:
         return []
     except (ValueError, OSError, RecursionError) as exc:
-        raise errors.HeraldError(
-            f"progress file {progress_path} could not be read: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"progress file {progress_path} could not be read: {exc}") from exc
     if not isinstance(document, list):
-        raise errors.HeraldError(
-            f"progress file {progress_path} does not hold a JSON array at its top level"
-        )
+        raise errors.HeraldError(f"progress file {progress_path} does not hold a JSON array at its top level")
     records: list[Progress] = []
     for index, entry in enumerate(document):
         problem = _fields_problem(entry)
         if problem:
             raise errors.HeraldError(
-                f"progress file {progress_path} has a malformed record at "
-                f"index {index}: {problem}"
+                f"progress file {progress_path} has a malformed record at index {index}: {problem}"
             )
         records.append(Progress(**entry))
     return records
@@ -226,12 +215,9 @@ def _row_to_progress(progress_path: Path, row) -> Progress:
         shipped_capabilities = json.loads(row["shipped_capabilities"])
     except ValueError as exc:
         raise errors.HeraldError(
-            f"progress record {row['id']!r} in {progress_path} has malformed "
-            f"shipped_capabilities: {exc}"
+            f"progress record {row['id']!r} in {progress_path} has malformed shipped_capabilities: {exc}"
         ) from exc
-    if not isinstance(shipped_capabilities, list) or not all(
-        isinstance(c, str) for c in shipped_capabilities
-    ):
+    if not isinstance(shipped_capabilities, list) or not all(isinstance(c, str) for c in shipped_capabilities):
         raise errors.HeraldError(
             f"progress record {row['id']!r} in {progress_path} has malformed "
             f"shipped_capabilities: expected an array of strings"
@@ -315,9 +301,7 @@ def _write_all_unlocked(progress_path: Path, records: list[Progress]) -> None:
         # `ValueError` subclass the old `json.dumps(ensure_ascii=True)`
         # path escaped instead. Both reached `cli.dispatch`, which catches
         # only `HeraldError`, as tracebacks.
-        raise errors.HeraldError(
-            f"progress file {progress_path} could not be written: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"progress file {progress_path} could not be written: {exc}") from exc
 
 
 def upsert(
@@ -412,9 +396,7 @@ def upsert(
         raise
     except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         # Same set, same reason, as `_write_all_unlocked` above.
-        raise errors.HeraldError(
-            f"progress file {progress_path} could not be written: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"progress file {progress_path} could not be written: {exc}") from exc
 
 
 def latest_for_station(progress_path: Path, station: str) -> Progress | None:

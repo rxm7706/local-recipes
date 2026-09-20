@@ -39,9 +39,7 @@ class MockGitHubAPI:
             "state": "open",
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
-            "html_url": (
-                f"https://github.com/{self.owner}/{self.repo}/pull/{self.pr_counter}"
-            ),
+            "html_url": (f"https://github.com/{self.owner}/{self.repo}/pull/{self.pr_counter}"),
         }
         self.pull_requests[self.pr_counter] = pr
         self.branches[head] = {"name": head, "sha": f"abc{self.pr_counter}def"}

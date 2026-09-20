@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from conftest import PACKAGES_ROOT
+
 from pyforge.core.dispatch import (
     PREPARATORY_UNINTROSPECTABLE,
     SKIP_DISTRIBUTIONS,
@@ -21,8 +23,6 @@ from pyforge.core.dispatch import (
     script_map_from_packages_root,
     station_token_from_dist_name,
 )
-
-from conftest import PACKAGES_ROOT
 
 
 class ParityMatrixError(AssertionError):
@@ -41,9 +41,7 @@ def _station_package_dirs(packages_root: Path) -> list[Path]:
     return sorted(
         p
         for p in packages_root.iterdir()
-        if p.is_dir()
-        and p.name.startswith("pyforge-")
-        and p.name not in SKIP_DISTRIBUTIONS
+        if p.is_dir() and p.name.startswith("pyforge-") and p.name not in SKIP_DISTRIBUTIONS
     )
 
 
@@ -143,8 +141,7 @@ def generate_parity_matrix(packages_root: Path) -> list[ParityRow]:
             continue
         if prep:
             raise ParityMatrixError(
-                f"station {token!r} is listed as unintrospectable ({prep}) "
-                f"but AST found verbs {sorted(verbs)}"
+                f"station {token!r} is listed as unintrospectable ({prep}) but AST found verbs {sorted(verbs)}"
             )
         for verb in sorted(verbs):
             rows.append(
@@ -171,9 +168,7 @@ def test_ci_generates_parity_matrix_and_every_verb_is_reachable():
     mapping = script_map_from_packages_root(PACKAGES_ROOT)
     for row in matrix:
         rest = [row.verb] if row.verb else ["--help"]
-        child = dispatch_argv(
-            ["pyforge", row.station, *rest], script_map=mapping
-        )
+        child = dispatch_argv(["pyforge", row.station, *rest], script_map=mapping)
         assert child[0] == row.primary_script
         assert child[1:] == rest
         if row.verb is None:
@@ -186,13 +181,11 @@ def test_unmapped_station_with_a_verb_fails_the_matrix(tmp_path: Path):
     pkg = tmp_path / "pyforge-ghost"
     (pkg / "src" / "pyforge" / "ghost").mkdir(parents=True)
     (pkg / "pyproject.toml").write_text(
-        '[project]\nname = "pyforge-ghost"\n'
-        '[project.scripts]\nghost = "pyforge.ghost.cli:main"\n',
+        '[project]\nname = "pyforge-ghost"\n[project.scripts]\nghost = "pyforge.ghost.cli:main"\n',
         encoding="utf-8",
     )
     (pkg / "src" / "pyforge" / "ghost" / "cli.py").write_text(
-        "def build():\n"
-        "    p.add_parser('haunt')\n",
+        "def build():\n    p.add_parser('haunt')\n",
         encoding="utf-8",
     )
     mapping = script_map_from_packages_root(tmp_path)
@@ -208,8 +201,7 @@ def test_silent_skip_without_preparatory_story_fails(tmp_path: Path):
     pkg = tmp_path / "pyforge-mute"
     (pkg / "src" / "pyforge" / "mute").mkdir(parents=True)
     (pkg / "pyproject.toml").write_text(
-        '[project]\nname = "pyforge-mute"\n'
-        '[project.scripts]\nmute = "pyforge.mute.cli:main"\n',
+        '[project]\nname = "pyforge-mute"\n[project.scripts]\nmute = "pyforge.mute.cli:main"\n',
         encoding="utf-8",
     )
     (pkg / "src" / "pyforge" / "mute" / "cli.py").write_text(
@@ -221,13 +213,9 @@ def test_silent_skip_without_preparatory_story_fails(tmp_path: Path):
 
 
 def test_dispatch_module_does_not_copy_station_duty_tables():
-    source = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "pyforge"
-        / "core"
-        / "dispatch.py"
-    ).read_text(encoding="utf-8")
+    source = (Path(__file__).resolve().parents[2] / "src" / "pyforge" / "core" / "dispatch.py").read_text(
+        encoding="utf-8"
+    )
     forbidden = (
         "encrypt a file",
         "find_run_command",

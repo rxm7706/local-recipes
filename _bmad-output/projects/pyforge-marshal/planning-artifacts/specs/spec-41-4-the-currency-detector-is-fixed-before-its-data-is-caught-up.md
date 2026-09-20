@@ -49,3 +49,16 @@ Type / Effort / Deps: feature / M / S-41.3.
 ## Source
 
 Contract recovered from `epics.md` Story 41.4 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3a9030c8bb` (2026-09-02, "steward: Story 41.4 follow-up review — whitespace, hostname checking, and three unpinned guarantees"); also `f098b49823` (2026-09-02, "marshal: promote sprint-status ledger for pyforge-steward (41.4 and epic-41 -> done)"); also `13e50483b3` (2026-09-02, "steward: Story 41.4 — record the review triage and close the spec"). Ledger row `41-4-the-currency-detector-is-fixed-before-its-data-is-caught-up: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`, `src/platform/config/broker_tls.py`, `src/platform/config/startup/stage_one.py`, `src/platform/deploy/README.md`, `src/platform/tests/test_broker_tls_verified.py`, `src/platform/tests/test_startup_required_settings.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

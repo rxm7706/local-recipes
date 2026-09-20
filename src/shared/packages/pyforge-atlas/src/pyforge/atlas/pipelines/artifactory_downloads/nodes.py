@@ -61,7 +61,7 @@ def _is_missing(v) -> bool:
         return False
     try:
         return bool(pd.isna(v))
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
 
 
@@ -83,16 +83,12 @@ def fetch_artifactory_downloads(artifactory_params: dict) -> pd.DataFrame:
     if not virtual_repos:
         return pd.DataFrame(columns=_RAW_COLS)
     if not isinstance(virtual_repos, (list, tuple)):
-        raise ValueError(
-            f"params:artifactory.virtual_repos must be a list, got {type(virtual_repos).__name__}"
-        )
+        raise ValueError(f"params:artifactory.virtual_repos must be a list, got {type(virtual_repos).__name__}")
 
     config = ArtifactoryConfig(base_url=params.get("base_url") or "")
     transport = params.get("transport")
     adapter = (
-        ArtifactoryAqlAdapter(config, transport=transport)
-        if transport is not None
-        else ArtifactoryAqlAdapter(config)
+        ArtifactoryAqlAdapter(config, transport=transport) if transport is not None else ArtifactoryAqlAdapter(config)
     )
 
     totals: dict[tuple[str, str], int] = {}
@@ -148,7 +144,7 @@ def join_artifactory_identity(
             continue
         try:
             download_count = int(r.download_count)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         rows.append(DownloadRow(name=str(r.name), version=str(r.version), download_count=download_count))
     joined = join_identity(rows, pypi_conda_mapping, pypi_universe)
@@ -197,9 +193,7 @@ def format_artifactory_purl_export(artifactory_downloads_joined: pd.DataFrame) -
     code's own ``p['match_confidence'] or ''`` fallback rather than inventing a value.
     An empty/``None`` ``artifactory_downloads_joined`` yields the header-only content."""
     lines = [_MAPPED_TSV_HEADER]
-    if artifactory_downloads_joined is not None and not getattr(
-        artifactory_downloads_joined, "empty", True
-    ):
+    if artifactory_downloads_joined is not None and not getattr(artifactory_downloads_joined, "empty", True):
         for row in artifactory_downloads_joined.itertuples(index=False):
             conda_name = getattr(row, "conda_name", None)
             if _is_missing(conda_name) or not isinstance(conda_name, str):
@@ -301,16 +295,12 @@ def fetch_artifactory_consumption(artifactory_params: dict) -> pd.DataFrame:
     if not virtual_repos:
         return pd.DataFrame(columns=_CONSUMPTION_COLS)
     if not isinstance(virtual_repos, (list, tuple)):
-        raise ValueError(
-            f"params:artifactory.virtual_repos must be a list, got {type(virtual_repos).__name__}"
-        )
+        raise ValueError(f"params:artifactory.virtual_repos must be a list, got {type(virtual_repos).__name__}")
 
     config = ArtifactoryConfig(base_url=params.get("base_url") or "")
     transport = params.get("transport")
     adapter = (
-        ArtifactoryAqlAdapter(config, transport=transport)
-        if transport is not None
-        else ArtifactoryAqlAdapter(config)
+        ArtifactoryAqlAdapter(config, transport=transport) if transport is not None else ArtifactoryAqlAdapter(config)
     )
 
     totals: dict[str, tuple[int, int, int, int]] = {}
@@ -350,9 +340,7 @@ def build_enterprise_jfrog_consumption(
     if (
         artifactory_downloads_joined is None
         or getattr(artifactory_downloads_joined, "empty", True)
-        or not {"pypi_name", "version", "download_count"} <= set(
-            getattr(artifactory_downloads_joined, "columns", [])
-        )
+        or not {"pypi_name", "version", "download_count"} <= set(getattr(artifactory_downloads_joined, "columns", []))
     ):
         downloads_by_name: dict[str, dict] = {}
     else:
@@ -365,7 +353,7 @@ def build_enterprise_jfrog_consumption(
                 continue
             try:
                 count = int(row.download_count)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 continue
             entry = downloads_by_name.setdefault(norm, {"downloads": 0, "versions": set()})
             entry["downloads"] += count
@@ -392,14 +380,17 @@ def build_enterprise_jfrog_consumption(
                     int(row.internal_component_count) if not _is_missing(row.internal_component_count) else 0
                 )
                 internal_lob = int(row.internal_lob_count) if not _is_missing(row.internal_lob_count) else 0
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 continue
-            prev = consumption_by_name.get(norm, {
-                "platform_env_count": 0,
-                "internal_app_count": 0,
-                "internal_component_count": 0,
-                "internal_lob_count": 0,
-            })
+            prev = consumption_by_name.get(
+                norm,
+                {
+                    "platform_env_count": 0,
+                    "internal_app_count": 0,
+                    "internal_component_count": 0,
+                    "internal_lob_count": 0,
+                },
+            )
             consumption_by_name[norm] = {
                 "platform_env_count": prev["platform_env_count"] + platform_env,
                 "internal_app_count": prev["internal_app_count"] + internal_app,

@@ -30,8 +30,11 @@ import yaml
 
 from pyforge.mason.engines import condalock
 from pyforge.mason.errors import (
-    EngineAbsentError, EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
-    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError,
+    EngineAbsentError,
+    EnvironmentCheckTimeoutError,
+    EnvironmentLockfileMalformedError,
+    EnvironmentLockfileMissingError,
+    EnvironmentLockTimeoutError,
 )
 
 _MANIFEST_PATHS = ("environment.yml",)
@@ -61,6 +64,7 @@ def _write_lockfile(path, content_hash: dict) -> None:
 
 # --- probe() -------------------------------------------------------------------
 
+
 def test_probe_delegates_to_probe_engine_with_the_conda_lock_binary_name():
     with patch("pyforge.mason.engines.condalock.probe_engine") as mock_probe:
         mock_probe.return_value.version = "conda-lock 4.0.2"
@@ -72,13 +76,16 @@ def test_probe_delegates_to_probe_engine_with_the_conda_lock_binary_name():
 
 # --- lock(): engine presence gate ------------------------------------------------
 
+
 def test_lock_raises_engine_absent_before_any_subprocess_spawn_or_tempfile_write():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine",
-        side_effect=EngineAbsentError("conda-lock", "conda-lock"),
-    ) as mock_require, \
-         patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run, \
-         patch("pyforge.mason.engines.condalock.tempfile.mkstemp") as mock_mkstemp:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            side_effect=EngineAbsentError("conda-lock", "conda-lock"),
+        ) as mock_require,
+        patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run,
+        patch("pyforge.mason.engines.condalock.tempfile.mkstemp") as mock_mkstemp,
+    ):
         with pytest.raises(EngineAbsentError):
             condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
@@ -89,12 +96,18 @@ def test_lock_raises_engine_absent_before_any_subprocess_spawn_or_tempfile_write
 
 # --- lock(): invocation shape ----------------------------------------------------
 
+
 def test_lock_invokes_conda_lock_with_the_documented_argv_and_kwargs():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH, platforms=("linux-64",))
 
     args, kwargs = mock_run.call_args
@@ -114,22 +127,32 @@ def test_lock_invokes_conda_lock_with_the_documented_argv_and_kwargs():
 
 
 def test_lock_uses_the_default_timeout_when_none_given():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
     assert mock_run.call_args.kwargs["timeout"] == condalock._CONDA_LOCK_TIMEOUT_SECONDS
 
 
 def test_lock_forwards_an_explicit_timeout():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH, timeout=45.0)
 
     assert mock_run.call_args.kwargs["timeout"] == 45.0
@@ -137,12 +160,17 @@ def test_lock_forwards_an_explicit_timeout():
 
 # --- lock(): subprocess boundary translation -------------------------------------
 
+
 def test_lock_translates_timeout_expired_to_environment_lock_timeout_error():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-        side_effect=subprocess.TimeoutExpired(cmd=["conda-lock", "lock"], timeout=600.0),
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=subprocess.TimeoutExpired(cmd=["conda-lock", "lock"], timeout=600.0),
+        ),
     ):
         with pytest.raises(EnvironmentLockTimeoutError) as excinfo:
             condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
@@ -157,10 +185,15 @@ def test_lock_removes_the_mdy_metadata_file_even_after_a_timeout():
         captured_paths.append(_mdy_path(argv))
         raise subprocess.TimeoutExpired(cmd=argv, timeout=600.0)
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         with pytest.raises(EnvironmentLockTimeoutError):
             condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
@@ -171,12 +204,17 @@ def test_lock_removes_the_mdy_metadata_file_even_after_a_timeout():
 
 # --- lock(): I/O & Edge-Case Matrix ----------------------------------------------
 
+
 def test_lock_happy_path_reports_the_lockfile_path_and_engine_identity():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-        return_value=_fake_completed(stdout="Locking dependencies...\n"),
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(stdout="Locking dependencies...\n"),
+        ),
     ):
         result = condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
@@ -190,11 +228,15 @@ def test_lock_happy_path_reports_the_lockfile_path_and_engine_identity():
 def test_lock_failed_solve_reports_no_lockfile_but_still_reports_engine_identity():
     """spec I/O matrix: a failed solve is DATA (AD-4) -- `lockfile_path` is
     `None`, but `engine_name`/`engine_version` stay populated."""
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-        return_value=_fake_completed(returncode=1, stdout=""),
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(returncode=1, stdout=""),
+        ),
     ):
         result = condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
@@ -205,11 +247,16 @@ def test_lock_failed_solve_reports_no_lockfile_but_still_reports_engine_identity
 
 
 def test_lock_with_no_platforms_carries_zero_dash_p_flags():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
     argv = mock_run.call_args.args[0]
@@ -217,13 +264,20 @@ def test_lock_with_no_platforms_carries_zero_dash_p_flags():
 
 
 def test_lock_with_multiple_platforms_repeats_dash_p_in_order():
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.lock(
-            _MANIFEST_PATHS, _OUTPUT_PATH, platforms=("linux-64", "osx-arm64"),
+            _MANIFEST_PATHS,
+            _OUTPUT_PATH,
+            platforms=("linux-64", "osx-arm64"),
         )
 
     argv = mock_run.call_args.args[0]
@@ -233,11 +287,16 @@ def test_lock_with_multiple_platforms_repeats_dash_p_in_order():
 
 def test_lock_with_multiple_manifests_repeats_dash_f_in_order():
     manifests = ("environment.yml", "pyproject.toml")
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.lock(manifests, _OUTPUT_PATH)
 
     argv = mock_run.call_args.args[0]
@@ -250,11 +309,16 @@ def test_lock_with_no_manifest_paths_carries_zero_dash_f_flags():
     `manifest_paths` emits no `-f` flags at all, letting `conda-lock` fall
     back to its own manifest auto-discovery rather than Mason inventing one
     (review pass, 2026-08-14)."""
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.lock((), _OUTPUT_PATH)
 
     argv = mock_run.call_args.args[0]
@@ -274,10 +338,15 @@ def test_lock_with_an_unparseable_engine_version_reports_none():
             observed_content.update(json.load(handle))
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value=None,
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value=None,
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         result = condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
@@ -286,6 +355,7 @@ def test_lock_with_an_unparseable_engine_version_reports_none():
 
 
 # --- lock(): --mdy provenance file -------------------------------------------------
+
 
 def test_lock_writes_the_mdy_metadata_file_with_engine_identity_before_the_child_runs():
     """Reads the `--mdy` file's path from the captured argv and asserts its
@@ -298,10 +368,15 @@ def test_lock_writes_the_mdy_metadata_file_with_engine_identity_before_the_child
             observed_content.update(json.load(handle))
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
@@ -319,10 +394,15 @@ def test_lock_removes_the_mdy_metadata_file_after_a_successful_solve():
         assert os.path.exists(captured_paths[0])
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
@@ -336,10 +416,15 @@ def test_lock_removes_the_mdy_metadata_file_after_a_failed_solve():
         captured_paths.append(_mdy_path(argv))
         return _fake_completed(returncode=1)
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         condalock.lock(_MANIFEST_PATHS, _OUTPUT_PATH)
 
@@ -348,15 +433,18 @@ def test_lock_removes_the_mdy_metadata_file_after_a_failed_solve():
 
 # --- check(): engine presence gate ------------------------------------------------
 
+
 def test_check_raises_engine_absent_before_any_subprocess_spawn_or_tempfile_copy(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine",
-        side_effect=EngineAbsentError("conda-lock", "conda-lock"),
-    ) as mock_require, \
-         patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run, \
-         patch("pyforge.mason.engines.condalock.tempfile.mkstemp") as mock_mkstemp:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            side_effect=EngineAbsentError("conda-lock", "conda-lock"),
+        ) as mock_require,
+        patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run,
+        patch("pyforge.mason.engines.condalock.tempfile.mkstemp") as mock_mkstemp,
+    ):
         with pytest.raises(EngineAbsentError):
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -367,15 +455,21 @@ def test_check_raises_engine_absent_before_any_subprocess_spawn_or_tempfile_copy
 
 # --- check(): lockfile presence gate ----------------------------------------------
 
+
 def test_check_raises_lockfile_missing_before_any_subprocess_spawn(tmp_path):
     missing_path = str(tmp_path / "does-not-exist.yml")
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-    ) as mock_run, patch(
-        "pyforge.mason.engines.condalock.tempfile.mkstemp",
-    ) as mock_mkstemp:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+        ) as mock_run,
+        patch(
+            "pyforge.mason.engines.condalock.tempfile.mkstemp",
+        ) as mock_mkstemp,
+    ):
         with pytest.raises(EnvironmentLockfileMissingError) as excinfo:
             condalock.check(missing_path, _MANIFEST_PATHS)
 
@@ -386,15 +480,21 @@ def test_check_raises_lockfile_missing_before_any_subprocess_spawn(tmp_path):
 
 # --- check(): invocation shape ----------------------------------------------------
 
+
 def test_check_invokes_conda_lock_with_the_documented_argv_and_kwargs(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.check(str(lockfile), _MANIFEST_PATHS, platforms=("linux-64",))
 
     args, kwargs = mock_run.call_args
@@ -417,11 +517,16 @@ def test_check_invokes_conda_lock_with_the_documented_argv_and_kwargs(tmp_path):
 def test_check_with_no_platforms_carries_zero_dash_p_flags(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.check(str(lockfile), _MANIFEST_PATHS)
 
     argv = mock_run.call_args.args[0]
@@ -431,11 +536,16 @@ def test_check_with_no_platforms_carries_zero_dash_p_flags(tmp_path):
 def test_check_uses_the_default_timeout_when_none_given(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.check(str(lockfile), _MANIFEST_PATHS)
 
     assert mock_run.call_args.kwargs["timeout"] == condalock._CONDA_LOCK_TIMEOUT_SECONDS
@@ -444,11 +554,16 @@ def test_check_uses_the_default_timeout_when_none_given(tmp_path):
 def test_check_forwards_an_explicit_timeout(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
         condalock.check(str(lockfile), _MANIFEST_PATHS, timeout=45.0)
 
     assert mock_run.call_args.kwargs["timeout"] == 45.0
@@ -456,15 +571,21 @@ def test_check_forwards_an_explicit_timeout(tmp_path):
 
 # --- check(): the original lockfile is never mutated -------------------------------
 
+
 def test_check_never_mutates_the_original_lockfile_on_the_current_path(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
     original_bytes = lockfile.read_bytes()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", return_value=_fake_completed(),
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ),
     ):
         result = condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -483,10 +604,15 @@ def test_check_never_mutates_the_original_lockfile_on_the_stale_path(tmp_path):
         _write_lockfile(_check_lockfile_path(argv), {"linux-64": "changed"})
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         result = condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -495,6 +621,7 @@ def test_check_never_mutates_the_original_lockfile_on_the_stale_path(tmp_path):
 
 
 # --- check(): staleness verdict -----------------------------------------------------
+
 
 def test_check_reports_stale_false_when_the_temp_copys_content_hash_is_unchanged(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
@@ -511,10 +638,15 @@ def test_check_reports_stale_false_when_the_temp_copys_content_hash_is_unchanged
         _write_lockfile(_check_lockfile_path(argv), {"linux-64": "abc"})
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         result = condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -529,10 +661,15 @@ def test_check_reports_stale_true_when_the_temp_copys_content_hash_is_rewritten(
         _write_lockfile(_check_lockfile_path(argv), {"linux-64": "different"})
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         result = condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -542,11 +679,15 @@ def test_check_reports_stale_true_when_the_temp_copys_content_hash_is_rewritten(
 def test_check_happy_path_reports_engine_identity_and_returncode(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-        return_value=_fake_completed(stdout="Nothing to do.\n"),
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(stdout="Nothing to do.\n"),
+        ),
     ):
         result = condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -558,14 +699,19 @@ def test_check_happy_path_reports_engine_identity_and_returncode(tmp_path):
 
 # --- check(): subprocess boundary translation ---------------------------------------
 
+
 def test_check_translates_timeout_expired_to_environment_check_timeout_error(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-        side_effect=subprocess.TimeoutExpired(cmd=["conda-lock", "lock"], timeout=600.0),
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=subprocess.TimeoutExpired(cmd=["conda-lock", "lock"], timeout=600.0),
+        ),
     ):
         with pytest.raises(EnvironmentCheckTimeoutError) as excinfo:
             condalock.check(str(lockfile), _MANIFEST_PATHS)
@@ -582,10 +728,15 @@ def test_check_removes_the_temp_copy_even_after_a_timeout(tmp_path):
         captured_paths.append(_check_lockfile_path(argv))
         raise subprocess.TimeoutExpired(cmd=argv, timeout=600.0)
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         with pytest.raises(EnvironmentCheckTimeoutError):
             condalock.check(str(lockfile), _MANIFEST_PATHS)
@@ -595,6 +746,7 @@ def test_check_removes_the_temp_copy_even_after_a_timeout(tmp_path):
 
 
 # --- check(): temp copy cleanup -----------------------------------------------------
+
 
 def test_check_removes_the_temp_copy_after_a_current_verdict(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
@@ -607,10 +759,15 @@ def test_check_removes_the_temp_copy_after_a_current_verdict(tmp_path):
         assert os.path.exists(path)
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -628,10 +785,15 @@ def test_check_removes_the_temp_copy_after_a_stale_verdict(tmp_path):
         _write_lockfile(path, {"linux-64": "different"})
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -642,14 +804,19 @@ def test_check_removes_the_temp_copy_after_a_stale_verdict(tmp_path):
 # Review pass, 2026-08-15: condalock.check() itself never raises for a failed child --
 # cli.py's own dispatch is where a non-zero returncode now also projects to EXIT_FAILED.
 
+
 def test_check_reports_a_nonzero_returncode_as_data_without_raising(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-        return_value=_fake_completed(returncode=1, stdout="solver crashed\n"),
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(returncode=1, stdout="solver crashed\n"),
+        ),
     ):
         result = condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -663,20 +830,26 @@ def test_check_reports_a_nonzero_returncode_as_data_without_raising(tmp_path):
 
 # --- check(): the TOCTOU race between os.path.isfile and shutil.copyfile -------------
 
+
 def test_check_translates_a_copy_race_to_lockfile_missing_error(tmp_path):
     """Review pass, 2026-08-15: `os.path.isfile()` can pass and the file can
     still vanish before `shutil.copyfile` runs -- that race must not leak a
     raw `OSError`."""
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.shutil.copyfile",
-        side_effect=FileNotFoundError("vanished"),
-    ) as mock_copyfile, patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.shutil.copyfile",
+            side_effect=FileNotFoundError("vanished"),
+        ) as mock_copyfile,
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+        ) as mock_run,
+    ):
         with pytest.raises(EnvironmentLockfileMissingError) as excinfo:
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -695,12 +868,17 @@ def test_check_translates_a_non_vanished_copy_failure_to_lockfile_malformed_erro
     `MasonError`s (NFR-14)."""
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.shutil.copyfile",
-        side_effect=PermissionError(13, "Permission denied"),
-    ), patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.shutil.copyfile",
+            side_effect=PermissionError(13, "Permission denied"),
+        ),
+        patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run,
+    ):
         with pytest.raises(EnvironmentLockfileMalformedError) as excinfo:
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -711,30 +889,40 @@ def test_check_translates_a_non_vanished_copy_failure_to_lockfile_malformed_erro
 
 # --- check(): malformed lockfile content --------------------------------------------
 
+
 def test_check_raises_lockfile_malformed_error_when_the_file_is_not_utf8(tmp_path):
     """`_read_content_hash` enumerates `UnicodeDecodeError` among the
     failures it translates, but nothing exercised that branch until this
     review pass (2026-08-15 second)."""
     lockfile = tmp_path / "conda-lock.yml"
     lockfile.write_bytes(b"metadata:\n  content_hash:\n    linux-64: \xff\xfe\n")
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run,
+    ):
         with pytest.raises(EnvironmentLockfileMalformedError) as excinfo:
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
     assert excinfo.value.lockfile_path == str(lockfile)
     mock_run.assert_not_called()
 
+
 def test_check_raises_lockfile_malformed_error_when_metadata_key_missing(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     with open(lockfile, "w", encoding="utf-8") as handle:
         yaml.safe_dump({"version": 1}, handle)
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run",
-    ) as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+        ) as mock_run,
+    ):
         with pytest.raises(EnvironmentLockfileMalformedError) as excinfo:
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -747,9 +935,13 @@ def test_check_raises_lockfile_malformed_error_when_content_hash_key_missing(tmp
     lockfile = tmp_path / "conda-lock.yml"
     with open(lockfile, "w", encoding="utf-8") as handle:
         yaml.safe_dump({"metadata": {}}, handle)
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run,
+    ):
         with pytest.raises(EnvironmentLockfileMalformedError):
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -759,9 +951,13 @@ def test_check_raises_lockfile_malformed_error_when_content_hash_key_missing(tmp
 def test_check_raises_lockfile_malformed_error_when_yaml_is_invalid(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     lockfile.write_text(": this is not : valid yaml : [", encoding="utf-8")
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run,
+    ):
         with pytest.raises(EnvironmentLockfileMalformedError):
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -771,9 +967,13 @@ def test_check_raises_lockfile_malformed_error_when_yaml_is_invalid(tmp_path):
 def test_check_raises_lockfile_malformed_error_when_file_is_empty(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
     lockfile.write_text("", encoding="utf-8")
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run:
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run,
+    ):
         with pytest.raises(EnvironmentLockfileMalformedError):
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
@@ -792,10 +992,15 @@ def test_check_raises_lockfile_malformed_error_when_the_after_read_is_malformed(
             handle.write("not: [valid")
         return _fake_completed()
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.subprocess.run", side_effect=_side_effect,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            side_effect=_side_effect,
+        ),
     ):
         with pytest.raises(EnvironmentLockfileMalformedError) as excinfo:
             condalock.check(str(lockfile), _MANIFEST_PATHS)
@@ -816,10 +1021,15 @@ def test_check_removes_the_temp_copy_after_a_malformed_lockfile_error(tmp_path):
         captured_paths.append(path)
         return fd, path
 
-    with patch(
-        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
-    ), patch(
-        "pyforge.mason.engines.condalock.tempfile.mkstemp", side_effect=_capturing_mkstemp,
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.tempfile.mkstemp",
+            side_effect=_capturing_mkstemp,
+        ),
     ):
         with pytest.raises(EnvironmentLockfileMalformedError):
             condalock.check(str(lockfile), _MANIFEST_PATHS)

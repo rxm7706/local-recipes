@@ -26,16 +26,12 @@ FORBIDDEN_MARKERS = ("ws://", "wss://", "autoload_server", "session_id")
 
 
 def _rows_for(view, db_path, monkeypatch):
-    module = cli_bridge.load_cli_module(
-        view.script, scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module(view.script, scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", db_path)
     return cli_bridge.call_query(module, **view.query_kwargs)
 
 
-def test_render_rows_happy_path_rows_match_fixture_in_declared_column_order(
-    atlas_db_path, monkeypatch
-):
+def test_render_rows_happy_path_rows_match_fixture_in_declared_column_order(atlas_db_path, monkeypatch):
     view = get_view("staleness-report")
     rows = _rows_for(view, atlas_db_path, monkeypatch)
     assert rows  # fixture has non-empty results for this view
@@ -100,9 +96,7 @@ def test_adoption_stage_rows_match_the_fixtures_four_packages(atlas_db_path, mon
     assert by_name["alpha-pkg"]["stage"] == "declining"
 
 
-def test_render_rows_empty_result_still_declares_all_columns(
-    empty_atlas_db_path, monkeypatch
-):
+def test_render_rows_empty_result_still_declares_all_columns(empty_atlas_db_path, monkeypatch):
     view = get_view("staleness-report")
     rows = _rows_for(view, empty_atlas_db_path, monkeypatch)
     assert rows == []

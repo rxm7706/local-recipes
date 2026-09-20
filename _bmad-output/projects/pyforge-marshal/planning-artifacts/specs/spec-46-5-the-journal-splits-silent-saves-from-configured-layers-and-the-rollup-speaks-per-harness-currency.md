@@ -23,7 +23,7 @@ declared_low_risk: false
 **Approach:** `core/layer_savings_sources.py` journal schema and the rollup report surface.
 
 Ledger key: `46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: feature / M / S-46.4.
 
 ### Living CAP citations
@@ -177,3 +177,7 @@ The join is READ-ONLY and single-pass per file: nothing in `cli/dispatch.py`, `s
 ## Source
 
 Contract recovered from `epics.md` Story 46.5 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Status reconcile 2026-09-20
+
+- "Ledger status" line `backlog` → `done`.

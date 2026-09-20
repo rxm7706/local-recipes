@@ -21,9 +21,16 @@ from pathlib import Path
 import pytest
 
 from pyforge.mason.resolve import (
-    STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND,
-    STEP_RUNNING_INTERPRETER, ResolvedCfeInterpreter, ResolvedCfeRoot,
-    detect_native_build_config, resolve_cfe_interpreter, resolve_cfe_root,
+    STEP_CWD_WALK,
+    STEP_ENVIRONMENT,
+    STEP_FLAG,
+    STEP_NOT_FOUND,
+    STEP_RUNNING_INTERPRETER,
+    ResolvedCfeInterpreter,
+    ResolvedCfeRoot,
+    detect_native_build_config,
+    resolve_cfe_interpreter,
+    resolve_cfe_root,
 )
 
 _ENV_KEY = "MASON_CFE_ROOT"
@@ -36,6 +43,7 @@ def _make_marker(base: Path) -> None:
 
 
 # --- I/O & Edge-Case Matrix ------------------------------------------------
+
 
 def test_flag_wins_over_env_and_walk(tmp_path):
     """Flag wins over env and walk."""
@@ -102,6 +110,7 @@ def test_marker_path_exists_but_is_a_file_not_a_directory(tmp_path):
 
 # --- Additional cases named by the Tasks & Acceptance section -------------
 
+
 def test_flag_only_match_no_env_no_marker(tmp_path):
     """Flag-only match: no env var present at all, no marker anywhere."""
     result = resolve_cfe_root("/explicit/root", {}, tmp_path)
@@ -165,6 +174,7 @@ def test_resolved_cfe_root_is_frozen():
 
 # --- Story 1.6: resolve_cfe_interpreter I/O & Edge-Case Matrix -------------
 
+
 def test_interpreter_flag_wins_over_env_and_default():
     """Flag wins over env and default."""
     result = resolve_cfe_interpreter("/x/py", {_ENV_PYTHON_KEY: "/y/py"})
@@ -180,17 +190,13 @@ def test_interpreter_env_wins_over_running_interpreter():
 def test_interpreter_whitespace_only_flag_and_env_fall_through():
     """Whitespace-only flag/env falls through to `sys.executable`."""
     result = resolve_cfe_interpreter("  ", {_ENV_PYTHON_KEY: ""})
-    assert result == ResolvedCfeInterpreter(
-        path=sys.executable, step=STEP_RUNNING_INTERPRETER
-    )
+    assert result == ResolvedCfeInterpreter(path=sys.executable, step=STEP_RUNNING_INTERPRETER)
 
 
 def test_interpreter_nothing_given_falls_through_to_running_interpreter():
     """Nothing given at all falls through to `sys.executable`."""
     result = resolve_cfe_interpreter(None, {})
-    assert result == ResolvedCfeInterpreter(
-        path=sys.executable, step=STEP_RUNNING_INTERPRETER
-    )
+    assert result == ResolvedCfeInterpreter(path=sys.executable, step=STEP_RUNNING_INTERPRETER)
 
 
 def test_interpreter_empty_string_flag_and_env_fall_through():
@@ -199,9 +205,7 @@ def test_interpreter_empty_string_flag_and_env_fall_through():
     previously exercised only by the never-raises parametrization, which
     asserts no crash but not the actual outcome."""
     result = resolve_cfe_interpreter("", {})
-    assert result == ResolvedCfeInterpreter(
-        path=sys.executable, step=STEP_RUNNING_INTERPRETER
-    )
+    assert result == ResolvedCfeInterpreter(path=sys.executable, step=STEP_RUNNING_INTERPRETER)
 
 
 def test_interpreter_flag_only_match_no_env():
@@ -245,6 +249,7 @@ def test_resolved_cfe_interpreter_is_frozen():
 
 # --- Story 2.6: detect_native_build_config -- I/O & Edge-Case Matrix -------
 
+
 @pytest.mark.parametrize(
     ("system", "machine", "expected"),
     [
@@ -260,7 +265,10 @@ def test_resolved_cfe_interpreter_is_frozen():
     ],
 )
 def test_detect_native_build_config_maps_every_known_host_pair(
-    monkeypatch, system, machine, expected,
+    monkeypatch,
+    system,
+    machine,
+    expected,
 ):
     monkeypatch.setattr("pyforge.mason.resolve.platform.system", lambda: system)
     monkeypatch.setattr("pyforge.mason.resolve.platform.machine", lambda: machine)
@@ -278,7 +286,9 @@ def test_detect_native_build_config_maps_every_known_host_pair(
     ],
 )
 def test_detect_native_build_config_returns_none_for_an_unrecognized_host(
-    monkeypatch, system, machine,
+    monkeypatch,
+    system,
+    machine,
 ):
     """Never a guess (spec Never boundary): an unmapped `platform.system()`/
     `platform.machine()` pair returns `None` rather than a default config --
@@ -305,10 +315,12 @@ def test_detect_native_build_config_spawns_no_process(monkeypatch):
     `tests/meta/test_dependency_direction.py`)."""
     calls: list[str] = []
     monkeypatch.setattr(
-        "pyforge.mason.resolve.platform.system", lambda: calls.append("system") or "Linux",
+        "pyforge.mason.resolve.platform.system",
+        lambda: calls.append("system") or "Linux",
     )
     monkeypatch.setattr(
-        "pyforge.mason.resolve.platform.machine", lambda: calls.append("machine") or "x86_64",
+        "pyforge.mason.resolve.platform.machine",
+        lambda: calls.append("machine") or "x86_64",
     )
 
     assert detect_native_build_config() == "linux64"

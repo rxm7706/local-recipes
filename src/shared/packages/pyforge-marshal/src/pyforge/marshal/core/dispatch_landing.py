@@ -28,10 +28,7 @@ def may_attempt_dispatch_landing(
     story_merged_on_main: bool,
 ) -> bool:
     """True when independent verification passed and the story is not yet on main."""
-    return (
-        verification_verdict == DispatchVerificationVerdict.VERIFIED
-        and not story_merged_on_main
-    )
+    return verification_verdict == DispatchVerificationVerdict.VERIFIED and not story_merged_on_main
 
 
 def refuse_unverified_landing(
@@ -41,13 +38,9 @@ def refuse_unverified_landing(
     return verification_verdict != DispatchVerificationVerdict.VERIFIED
 
 
-def merge_subject_is_marshal_native(
-    subject: str, template: str, project_slug: str
-) -> bool:
+def merge_subject_is_marshal_native(subject: str, template: str, project_slug: str) -> bool:
     """True when ``subject`` classifies marshal-native (FR-187 / Story 5.10)."""
-    return bool(
-        promotion.marshal_native_merged_keys((subject,), template, project_slug)
-    )
+    return bool(promotion.marshal_native_merged_keys((subject,), template, project_slug))
 
 
 # --- Story 28.20 (CAP-4): mechanical land-conflict union -----------------
@@ -67,10 +60,7 @@ SPRINT_LEDGER_BASENAME = "sprint-status-ledger.yaml"
 
 def sprint_ledger_rel_path(project_slug: str) -> str:
     """Repo-relative path to a project's tracked sprint-status ledger."""
-    return (
-        f"_bmad-output/projects/{project_slug}/planning-artifacts/"
-        f"{SPRINT_LEDGER_BASENAME}"
-    )
+    return f"_bmad-output/projects/{project_slug}/planning-artifacts/{SPRINT_LEDGER_BASENAME}"
 
 
 def ledger_status_precedence(left: str, right: str) -> str:
@@ -108,9 +98,7 @@ def unknown_conflict_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
 # --- Story 51.11 (CAP-258): blocked-twin promotion --------------------------
 
 
-def blocked_twin_promotion_text(
-    *, primary_text: str | None, worktree_text: str
-) -> str | None:
+def blocked_twin_promotion_text(*, primary_text: str | None, worktree_text: str) -> str | None:
     """Text to write onto the primary's tracked copy of a story spec when a
     dispatch worktree halts ``blocked`` with its commit uncommitted (Story
     51.11), or ``None`` when no write is needed.

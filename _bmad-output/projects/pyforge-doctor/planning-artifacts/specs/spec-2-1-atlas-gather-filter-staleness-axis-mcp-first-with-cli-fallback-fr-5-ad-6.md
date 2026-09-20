@@ -112,3 +112,16 @@ The MCP path mirrors `pyforge-herald`'s proven `mcp_transport.py` pattern (Story
 **Follow-up review recommendation: false** -- both findings are isolated to the MCP transport's failure/timeout handling, each covered by a dedicated new test proving the fix; no new design questions opened. Both reviewers converged independently on the identical two findings.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `095a5087c5` (2026-08-07, "Merge pull request #290 from rxm7706/doctor/2-1-atlas-gather-filter-staleness-axis"). Ledger row `2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback-fr-5-ad-6: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `pixi.lock`, `pixi.toml`, `src/shared/packages/pyforge-doctor/pyproject.toml`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli_bridge.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py`, `src/shared/packages/pyforge-doctor/tests/meta/test_atlas_sole_mcp_import.py`, `src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_cli_bridge.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_atlas.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

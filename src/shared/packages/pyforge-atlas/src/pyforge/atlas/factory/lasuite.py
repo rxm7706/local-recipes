@@ -133,8 +133,7 @@ class LaSuiteClient:
         resp = self._opener(Request(method=method, url=url, headers=self._headers(), json=payload))
         if not (200 <= resp.status_code < 300):
             raise LaSuiteError(
-                f"{method} {url} -> HTTP {resp.status_code}: {resp.body!r} "
-                "(La Suite / Wagtail REST call failed)"
+                f"{method} {url} -> HTTP {resp.status_code}: {resp.body!r} (La Suite / Wagtail REST call failed)"
             )
         return resp.body
 
@@ -145,9 +144,7 @@ class LaSuiteClient:
         return self._call("POST", "/api/v1/documents/", payload)
 
     def update_document(self, doc_id: str, title: str, content: str) -> dict:
-        return self._call(
-            "PATCH", f"/api/v1/documents/{doc_id}/", {"title": title, "content": content}
-        )
+        return self._call("PATCH", f"/api/v1/documents/{doc_id}/", {"title": title, "content": content})
 
     def get_document(self, doc_id: str) -> dict:
         return self._call("GET", f"/api/v1/documents/{doc_id}/")
@@ -196,9 +193,7 @@ class WikiSyncer:
     duplicate-create every page).
     """
 
-    def __init__(
-        self, client: LaSuiteClient, layout: WikiLayout, *, source_stage: str = "outputs"
-    ) -> None:
+    def __init__(self, client: LaSuiteClient, layout: WikiLayout, *, source_stage: str = "outputs") -> None:
         self._client = client
         self._layout = layout
         self._source_stage = source_stage
@@ -293,6 +288,4 @@ class WikiSyncer:
         # Atomic write via pyforge.core.atomic_write_text (Story 14.2, CAP-2 --
         # the one shared temp-file-then-os.replace primitive, mkstemp-based):
         # a crash/ENOSPC mid-save can't corrupt the idempotency key.
-        atomic_write_text(
-            self._map_path, json.dumps(self._mapping, indent=2, sort_keys=True) + "\n"
-        )
+        atomic_write_text(self._map_path, json.dumps(self._mapping, indent=2, sort_keys=True) + "\n")

@@ -35,7 +35,8 @@ from pyforge.doctor.sources import factory
 #: assume an unprivileged runner; skipping is the honest form of the same
 #: assumption.
 _needs_unprivileged = pytest.mark.skipif(
-    os.geteuid() == 0, reason="chmod-based unreadable-directory tests are meaningless as root",
+    os.geteuid() == 0,
+    reason="chmod-based unreadable-directory tests are meaningless as root",
 )
 
 # Mirrors test_sources_ledger.py's own scrub: a contributor's own git config
@@ -63,7 +64,11 @@ def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+        ["git", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return result.stdout
 
@@ -107,18 +112,17 @@ def _seed_ground_truth(repo: Path, version: str = "1.0.0") -> None:
     (skill / "scripts").mkdir(parents=True, exist_ok=True)
     (skill / "CHANGELOG.md").write_text(f"## Changelog\n\n**v{version}**\n", encoding="utf-8")
     (skill / "scripts" / "conda_forge_atlas.py").write_text(
-        'SCHEMA_VERSION = 1\n\n'
-        'PHASES = [\n'
+        "SCHEMA_VERSION = 1\n\n"
+        "PHASES = [\n"
         '    ("B", "desc"),\n'
         '    ("C", "desc"),\n'
         '    ("D", "desc"),\n'
         '    ("E", "desc"),\n'
-        ']\n',
+        "]\n",
         encoding="utf-8",
     )
     (skill / "SKILL.md").write_text(
-        f"---\nname: conda-forge-expert\nversion: {version}\n---\n"
-        "### G1\nfoo\n### G3\nbar\n### G5\nbaz\n",
+        f"---\nname: conda-forge-expert\nversion: {version}\n---\n### G1\nfoo\n### G3\nbar\n### G5\nbaz\n",
         encoding="utf-8",
     )
     tools = repo / ".claude" / "tools"
@@ -126,18 +130,18 @@ def _seed_ground_truth(repo: Path, version: str = "1.0.0") -> None:
     (tools / "conda_forge_server.py").write_text(
         "@mcp.tool\ndef foo(): ...\n\n@mcp.tool\ndef bar(): ...\n", encoding="utf-8"
     )
-    (repo / "pixi.toml").write_text(
-        '[environments]\ndefault = ["a"]\nbuild = ["b"]\ndocs = ["c"]\n', encoding="utf-8"
-    )
+    (repo / "pixi.toml").write_text('[environments]\ndefault = ["a"]\nbuild = ["b"]\ndocs = ["c"]\n', encoding="utf-8")
     gov = repo / "docs" / "governance"
     gov.mkdir(parents=True, exist_ok=True)
     (gov / "guild-roster.json").write_text(
-        json.dumps({
-            "stations": ["marshal", "doctor"],
-            "guild_dreams": ["pyforge-charter"],
-            "dream_statuses": ["dreamt", "pitched", "specified", "realized", "archived"],
-            "dream_types": ["dream", "practice"],
-        }),
+        json.dumps(
+            {
+                "stations": ["marshal", "doctor"],
+                "guild_dreams": ["pyforge-charter"],
+                "dream_statuses": ["dreamt", "pitched", "specified", "realized", "archived"],
+                "dream_types": ["dream", "practice"],
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -296,7 +300,8 @@ def test_compound_pin_with_matching_live_version_reports_clean(tmp_path: Path) -
     repo = tmp_path / "repo"
     _bootstrap(repo, "8.84.0")
     _pinned_md_raw(
-        repo, "planning-artifacts/architecture-bmad-infra.md",
+        repo,
+        "planning-artifacts/architecture-bmad-infra.md",
         "source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'",
     )
 
@@ -314,7 +319,8 @@ def test_compound_pin_on_snapshot_still_reports_behind(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo, "9.0.0")
     _pinned_md_raw(
-        repo, "planning-artifacts/validation-report-PRD.md",
+        repo,
+        "planning-artifacts/validation-report-PRD.md",
         "source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'",
     )
 
@@ -344,7 +350,8 @@ def test_pin_naming_conda_forge_expert_with_no_version_after_it_still_reports_mi
     repo = tmp_path / "repo"
     _bootstrap(repo)
     _pinned_md_raw(
-        repo, "planning-artifacts/architecture-bmad-infra.md",
+        repo,
+        "planning-artifacts/architecture-bmad-infra.md",
         "source_pin: 'BMAD 6.11.0'",
     )
 
@@ -502,8 +509,7 @@ def test_count_stale_reports_ok(tmp_path: Path) -> None:
 def test_stale_rule_content_reports_warn(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
-    _pinned_md(repo, "planning-artifacts/index.md", "1.0.0",
-               body="branch naming: <recipe-name>-<version>\n")
+    _pinned_md(repo, "planning-artifacts/index.md", "1.0.0", body="branch naming: <recipe-name>-<version>\n")
 
     findings = factory.gather(repo)
 
@@ -593,9 +599,7 @@ def test_surface_changed_reports_warn(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
     server = repo / ".claude" / "tools" / "conda_forge_server.py"
-    server.write_text(
-        server.read_text(encoding="utf-8") + "\n@mcp.tool\ndef baz(): ...\n", encoding="utf-8"
-    )
+    server.write_text(server.read_text(encoding="utf-8") + "\n@mcp.tool\ndef baz(): ...\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -615,9 +619,7 @@ def test_spike_report_is_classified_and_not_flagged_uncovered(tmp_path: Path) ->
     classified rather than falling through to ``UNKNOWN``."""
     repo = tmp_path / "repo"
     _bootstrap(repo)
-    (factory._plan(repo) / "spike-0-copier-api-fit-report.md").write_text(
-        "verdict: PASS\n", encoding="utf-8"
-    )
+    (factory._plan(repo) / "spike-0-copier-api-fit-report.md").write_text("verdict: PASS\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -653,9 +655,7 @@ def test_a_second_spike_index_is_also_classified(tmp_path: Path) -> None:
     following the same convention stays covered."""
     repo = tmp_path / "repo"
     _bootstrap(repo)
-    (factory._plan(repo) / "spike-2-some-other-thing-report.md").write_text(
-        "verdict: FAIL\n", encoding="utf-8"
-    )
+    (factory._plan(repo) / "spike-2-some-other-thing-report.md").write_text("verdict: FAIL\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -669,9 +669,7 @@ def test_spike_report_look_alike_without_a_numeric_index_still_hard_fails(tmp_pa
     pattern (missing the numeric spike index) is still a hole, not a pass."""
     repo = tmp_path / "repo"
     _bootstrap(repo)
-    (factory._plan(repo) / "spike-copier-api-fit-report.md").write_text(
-        "verdict: PASS\n", encoding="utf-8"
-    )
+    (factory._plan(repo) / "spike-copier-api-fit-report.md").write_text("verdict: PASS\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -718,11 +716,7 @@ def test_fleet_drain_run_records_are_classified_and_not_flagged_uncovered(
     classified rather than falling through to `UNKNOWN`."""
     repo = tmp_path / "repo"
     _bootstrap(repo)
-    run_dir = (
-        factory._impl(repo)
-        / "fleet-drain-runs"
-        / "pyforge-marshal-20260830T010055392Z-4088e463"
-    )
+    run_dir = factory._impl(repo) / "fleet-drain-runs" / "pyforge-marshal-20260830T010055392Z-4088e463"
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "fleet-drain-supervisor.log").write_text("x\n", encoding="utf-8")
     (run_dir / "journal.jsonl").write_text("{}\n", encoding="utf-8")
@@ -789,9 +783,7 @@ def test_flat_spec_memlog_sibling_is_classified_and_not_flagged_uncovered(
     _bootstrap(repo)
     specs = factory._plan(repo) / "specs"
     specs.mkdir(parents=True, exist_ok=True)
-    (specs / "spec-33-3-the-layers-are-enabled-on-factory-spin.memlog.md").write_text(
-        "x\n", encoding="utf-8"
-    )
+    (specs / "spec-33-3-the-layers-are-enabled-on-factory-spin.memlog.md").write_text("x\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -811,9 +803,7 @@ def test_benchmark_artifact_is_classified_and_not_flagged_uncovered(
     _bootstrap(repo)
     benchmarks = factory._plan(repo) / "benchmarks"
     benchmarks.mkdir(parents=True, exist_ok=True)
-    (benchmarks / "structure-graph-dispatch-28-31.json").write_text(
-        '{"story": "28.31"}\n', encoding="utf-8"
-    )
+    (benchmarks / "structure-graph-dispatch-28-31.json").write_text('{"story": "28.31"}\n', encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -949,9 +939,7 @@ def test_dream_vocab_invalid_status_and_type_report_warn(tmp_path: Path) -> None
     _bootstrap(repo)
     dreams = repo / "docs" / "dreams"
     dreams.mkdir(parents=True, exist_ok=True)
-    (dreams / "foo.md").write_text(
-        "---\nstatus: bogus\ntype: bogus\nowner: marshal\n---\n", encoding="utf-8"
-    )
+    (dreams / "foo.md").write_text("---\nstatus: bogus\ntype: bogus\nowner: marshal\n---\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -1091,9 +1079,7 @@ def test_a_malformed_roster_degrades_only_the_two_checks_that_read_it(tmp_path: 
     checks = [f.check for f in findings]
     assert checks.count("bmad-drift-unevaluable") == 2
     assert "pin-missing" in checks
-    unevaluable_names = {
-        f.evidence["check"] for f in findings if f.check == "bmad-drift-unevaluable"
-    }
+    unevaluable_names = {f.evidence["check"] for f in findings if f.check == "bmad-drift-unevaluable"}
     assert unevaluable_names == {"check_dream_vocab", "check_dream_owners"}
 
 
@@ -1153,9 +1139,7 @@ def test_one_check_raising_does_not_discard_the_others_real_findings(
     assert "simulated check_pins failure" in unevaluable[0].message
 
 
-def test_gather_wraps_an_unanticipated_gather_level_exception(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_gather_wraps_an_unanticipated_gather_level_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The outer ``degrade_on_exception`` net: an exception _gather itself
     cannot anticipate (here, simulated by making ``_proj`` explode) still
     degrades to one WARN rather than propagating."""
@@ -1188,9 +1172,7 @@ def test_gather_wraps_an_unanticipated_gather_level_exception(
 
 
 def _unevaluable_checks(findings: tuple) -> set[str]:
-    return {
-        f.evidence["check"] for f in findings if f.check == "bmad-drift-unevaluable"
-    }
+    return {f.evidence["check"] for f in findings if f.check == "bmad-drift-unevaluable"}
 
 
 def test_baseline_valid_json_of_the_wrong_shape_reports_fail(tmp_path: Path) -> None:
@@ -1247,8 +1229,7 @@ def test_unreadable_nested_dir_warns_instead_of_reporting_full_coverage(
         f"an unreadable nested dir was reported as a clean project: {after}"
     )
     assert {"check_coverage", "check_stale_rules"} <= _unevaluable_checks(after)
-    assert all("PermissionError" in f.message
-               for f in after if f.check == "bmad-drift-unevaluable")
+    assert all("PermissionError" in f.message for f in after if f.check == "bmad-drift-unevaluable")
 
 
 @_needs_unprivileged
@@ -1316,7 +1297,8 @@ def test_non_utf8_byte_does_not_discard_a_sibling_docs_real_finding(
 
     stale = [f for f in findings if f.check == "stale-rule"]
     assert {f.evidence["subject"] for f in stale} == {
-        "planning-artifacts/readable.md", "planning-artifacts/mojibake.md",
+        "planning-artifacts/readable.md",
+        "planning-artifacts/mojibake.md",
     }, f"a non-UTF-8 byte discarded a sibling doc's finding: {findings}"
     assert not _unevaluable_checks(findings)
 
@@ -1333,7 +1315,8 @@ def test_unknown_live_version_warns_but_keeps_the_pin_missing_half(
     _seed_ground_truth(repo)
     _seed_all_tracked(repo, version="0.1.0")
     (factory._proj(repo) / "planning-artifacts" / "index.md").write_text(
-        "no pin at all\n", encoding="utf-8",
+        "no pin at all\n",
+        encoding="utf-8",
     )
     _commit_all(repo, "seed behind-pinned project")
 
@@ -1379,7 +1362,8 @@ def test_unreadable_phase_registry_warns_instead_of_fabricating_phase_n(
 
 
 def test_every_unevaluable_finding_carries_the_same_evidence_keys(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``bmad-drift-unevaluable`` is produced by two sites -- a per-check
     failure (``_unevaluable``) and ``_gather``'s own missing-project guard. A
@@ -1501,8 +1485,7 @@ def test_unreadable_planning_tree_keeps_the_readable_trees_hard_findings(
         plan.chmod(0o755)
 
     assert "check_archive_hygiene" in _unevaluable_checks(after)
-    hygiene = {(f.check, f.evidence["subject"]) for f in after
-               if f.check in {"archive-misplaced", "stray-file"}}
+    hygiene = {(f.check, f.evidence["subject"]) for f in after if f.check in {"archive-misplaced", "stray-file"}}
     assert hygiene == {
         ("archive-misplaced", "implementation-artifacts/retro-thing.md"),
         ("stray-file", "implementation-artifacts/junk.patch"),
@@ -1559,9 +1542,7 @@ def test_unreadable_unrelated_ground_truth_leaves_check_pins_untouched(
     assert "pin-missing" in {f.check for f in after}, (
         f"an unreadable pixi.toml erased a real pin-missing finding: {after}"
     )
-    assert "check_pins" not in _unevaluable_checks(after), (
-        f"check_pins degraded over a file it never needed: {after}"
-    )
+    assert "check_pins" not in _unevaluable_checks(after), f"check_pins degraded over a file it never needed: {after}"
 
 
 @_needs_unprivileged
@@ -1589,12 +1570,8 @@ def test_unreadable_skill_md_degrades_only_the_behind_half_of_check_pins(
     finally:
         skill_md.chmod(0o644)
 
-    assert "pin-missing" in {f.check for f in after}, (
-        f"an unreadable SKILL.md discarded a real HARD finding: {after}"
-    )
-    assert "check_pins" in _unevaluable_checks(after), (
-        f"the unanswerable behind-ness half went silently clean: {after}"
-    )
+    assert "pin-missing" in {f.check for f in after}, f"an unreadable SKILL.md discarded a real HARD finding: {after}"
+    assert "check_pins" in _unevaluable_checks(after), f"the unanswerable behind-ness half went silently clean: {after}"
 
 
 @_needs_unprivileged
@@ -1622,9 +1599,7 @@ def test_unreadable_baseline_is_not_reported_as_corrupt(tmp_path: Path) -> None:
     assert not any(f.check == "baseline-corrupt" for f in after), (
         f"an intact baseline was accused of being corrupt: {after}"
     )
-    assert "check_baseline" in _unevaluable_checks(after), (
-        f"an unreadable baseline went silently clean: {after}"
-    )
+    assert "check_baseline" in _unevaluable_checks(after), f"an unreadable baseline went silently clean: {after}"
 
 
 @_needs_unprivileged
@@ -1659,9 +1634,6 @@ def test_one_unreadable_doc_keeps_its_readable_siblings_findings(
         "planning-artifacts/c-note.md",
     }, f"one unreadable doc discarded its readable siblings' findings: {after}"
 
-    lost = [f for f in after if f.check == "bmad-drift-unevaluable"
-            and f.evidence["check"] == "check_stale_rules"]
+    lost = [f for f in after if f.check == "bmad-drift-unevaluable" and f.evidence["check"] == "check_stale_rules"]
     assert len(lost) == 1, after
-    assert "b-note.md" in lost[0].message, (
-        f"the WARN does not name the file it lost: {lost[0].message}"
-    )
+    assert "b-note.md" in lost[0].message, f"the WARN does not name the file it lost: {lost[0].message}"

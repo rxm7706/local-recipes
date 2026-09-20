@@ -10,7 +10,6 @@ from __future__ import annotations
 from enum import StrEnum
 
 from .harness_session import (
-    HarnessSessionOutcome,
     classify_session_log,
     is_transient_harness_session_outcome,
 )
@@ -55,10 +54,7 @@ def classify_dispatch_block(
 ) -> DispatchBlockKind:
     """Classify whether a failed dispatch should block fleet retry."""
     outcome = classify_session_log(session_log)
-    if (
-        changed_path_count == 0
-        and is_transient_harness_session_outcome(outcome)
-    ):
+    if changed_path_count == 0 and is_transient_harness_session_outcome(outcome):
         return DispatchBlockKind.TRANSIENT
     if failed_gate in _TERMINAL_FAILED_GATES:
         return DispatchBlockKind.TERMINAL
@@ -90,16 +86,10 @@ def prune_blocked_stories_merged_on_main(
     """Remove blocked entries for stories already landed on main."""
     if not blocked or not merged_story_keys:
         return blocked
-    return {
-        story: reason
-        for story, reason in blocked.items()
-        if story not in merged_story_keys
-    }
+    return {story: reason for story, reason in blocked.items() if story not in merged_story_keys}
 
 
-def should_dispatch_retry_escalate(
-    prior_failed_attempts: int, max_dev_attempts: int
-) -> bool:
+def should_dispatch_retry_escalate(prior_failed_attempts: int, max_dev_attempts: int) -> bool:
     """Pure: ``True`` when prior dispatch failures reached the dev ceiling.
 
     Mirrors ``core.supervise.evaluate_retry_escalation``'s

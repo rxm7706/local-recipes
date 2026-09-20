@@ -145,9 +145,7 @@ class _RangeServer:
                     return
                 self._send_body(path)
 
-        self._httpd = socketserver.TCPServer(
-            ("127.0.0.1", 0), partial(Handler, directory=self.directory)
-        )
+        self._httpd = socketserver.TCPServer(("127.0.0.1", 0), partial(Handler, directory=self.directory))
         self.port = self._httpd.server_address[1]
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
 
@@ -202,8 +200,8 @@ def emitted_site(tmp_path) -> Path:
     emit_static_site(
         {"core_feedstock_health": _seed_df()},
         target,
-        rows_per_chunk=_N,                   # one chunk (the D1 dataset), but...
-        row_group_size=_ROW_GROUP_SIZE,      # ...many row groups -> partial Range reads are real
+        rows_per_chunk=_N,  # one chunk (the D1 dataset), but...
+        row_group_size=_ROW_GROUP_SIZE,  # ...many row groups -> partial Range reads are real
     )
     return target
 
@@ -220,8 +218,7 @@ def _query_red(con: "duckdb.DuckDBPyConnection", url: str) -> int:
     """The D1 feedstock-health count. Projects ONLY ci_status, so over Range the client skips
     the wide feedstock_name column chunks (projection pushdown) — reading only what it needs."""
     row = con.execute(
-        "SELECT count(*) FILTER (WHERE ci_status IN ('failure','error')) "
-        f"FROM read_parquet('{url}')"
+        f"SELECT count(*) FILTER (WHERE ci_status IN ('failure','error')) FROM read_parquet('{url}')"
     ).fetchone()
     return int(row[0])
 
@@ -246,12 +243,9 @@ def test_emitted_layout_consumed_via_http_range(emitted_site):
 
             # (a) THE load-bearing proof: consumption was via HTTP Range, NOT a whole-file GET.
             assert 206 in server.codes, f"no 206 Partial Content served; codes={server.codes}"
-            assert len(server.ranges) > 1, (
-                f"expected multiple Range reads (footer + row groups), got {server.ranges}"
-            )
+            assert len(server.ranges) > 1, f"expected multiple Range reads (footer + row groups), got {server.ranges}"
             assert 200 not in server.codes, (
-                "the Parquet was fetched WHOLE (a 200) — Range not honored; "
-                f"codes={server.codes}"
+                f"the Parquet was fetched WHOLE (a 200) — Range not honored; codes={server.codes}"
             )
             # Every Range response is a STRICT sub-range (none is the whole file in one shot)...
             lengths = [e - s + 1 for (s, e) in server.range_spans]
@@ -299,9 +293,7 @@ def test_chunk_url_is_host_agnostic_and_slash_tolerant():
     rel = "core_feedstock_health/core_feedstock_health-0000.parquet"
     assert chunk_url("https://u.github.io/repo", rel) == f"https://u.github.io/repo/{rel}"
     # a mirror base WITH a trailing slash composes identically (AD-2 substitution).
-    assert chunk_url("https://mirror.example/prefix/", rel) == chunk_url(
-        "https://mirror.example/prefix", rel
-    )
+    assert chunk_url("https://mirror.example/prefix/", rel) == chunk_url("https://mirror.example/prefix", rel)
     # an empty base -> same-origin relative path (no host baked in).
     assert chunk_url("", rel) == rel
 
@@ -324,8 +316,7 @@ def test_manifest_and_chunks_byte_stable_across_two_emits(tmp_path):
 # Edge cases (Reviewer B territory), all offline / no server needed.
 # ---------------------------------------------------------------------------
 def test_empty_dataset_emits_schema_only_chunk(tmp_path):
-    empty = pd.DataFrame({"feedstock_name": pd.Series([], dtype="string"),
-                          "ci_status": pd.Series([], dtype="string")})
+    empty = pd.DataFrame({"feedstock_name": pd.Series([], dtype="string"), "ci_status": pd.Series([], dtype="string")})
     m = emit_static_site({"core_feedstock_health": empty}, tmp_path / "s")
     ds = m["datasets"]["core_feedstock_health"]
     assert ds["row_count"] == 0
@@ -336,8 +327,9 @@ def test_empty_dataset_emits_schema_only_chunk(tmp_path):
 
 
 def test_multichunk_split_when_rows_exceed_chunk(tmp_path):
-    m = emit_static_site({"core_feedstock_health": _seed_df()}, tmp_path / "s",
-                         rows_per_chunk=40_000, row_group_size=_ROW_GROUP_SIZE)
+    m = emit_static_site(
+        {"core_feedstock_health": _seed_df()}, tmp_path / "s", rows_per_chunk=40_000, row_group_size=_ROW_GROUP_SIZE
+    )
     chunks = m["datasets"]["core_feedstock_health"]["chunks"]
     assert [c["rows"] for c in chunks] == [40_000, 40_000, 20_000]  # 100_000 rows / 40_000
     assert sum(c["rows"] for c in chunks) == _N
@@ -359,9 +351,7 @@ def test_count_star_reads_footer_only_over_range(emitted_site):
     con = _offline_httpfs_connection()
     try:
         with _RangeServer(site) as server:
-            n = con.execute(
-                f"SELECT count(*) FROM read_parquet('{chunk_url(server.base, rel)}')"
-            ).fetchone()[0]
+            n = con.execute(f"SELECT count(*) FROM read_parquet('{chunk_url(server.base, rel)}')").fetchone()[0]
             assert n == _N
             assert 200 not in server.codes and 206 in server.codes
             assert server.bytes_served < total_bytes // 10, (
@@ -403,14 +393,12 @@ def test_range_past_eof_is_clamped_not_crashing(emitted_site):
     size = (site / rel).stat().st_size
     with _RangeServer(site) as server:
         # end past EOF -> clamped 206
-        req = urllib.request.Request(f"{server.base}/{rel}",
-                                     headers={"Range": f"bytes=0-{size + 10_000}"})
+        req = urllib.request.Request(f"{server.base}/{rel}", headers={"Range": f"bytes=0-{size + 10_000}"})
         with urllib.request.urlopen(req) as resp:
             assert resp.status == 206
             assert len(resp.read()) == size
         # start past EOF -> 416
-        req2 = urllib.request.Request(f"{server.base}/{rel}",
-                                      headers={"Range": f"bytes={size + 5}-{size + 10}"})
+        req2 = urllib.request.Request(f"{server.base}/{rel}", headers={"Range": f"bytes={size + 5}-{size + 10}"})
         try:
             urllib.request.urlopen(req2)
             got = 200
@@ -445,9 +433,7 @@ def test_late_failure_does_not_destroy_a_prior_good_site(tmp_path):
 
     # a re-emit whose SECOND dataset has a bad type must raise BEFORE touching the first dataset.
     with pytest.raises(TypeError):
-        emit_static_site(
-            {"core_feedstock_health": pd.DataFrame({"x": [9]}), "zz": [1, 2, 3]}, target, rows_per_chunk=2
-        )
+        emit_static_site({"core_feedstock_health": pd.DataFrame({"x": [9]}), "zz": [1, 2, 3]}, target, rows_per_chunk=2)
     # the prior good site is intact (still 2 chunks + a coherent manifest).
     assert sorted((target / "core_feedstock_health").glob("*.parquet")) == good_chunks
     verify_manifest(target)  # still coherent — not corrupted against a stale manifest

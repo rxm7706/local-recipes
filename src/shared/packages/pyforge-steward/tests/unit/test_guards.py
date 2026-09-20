@@ -126,9 +126,7 @@ def test_lacking_without_spec_is_outcome() -> None:
 def test_lacking_reads_spec(tmp_path: Path) -> None:
     spec = tmp_path / "SPEC.md"
     spec.write_text("hub_guards:\n  - algorithmic\n", encoding="utf-8")
-    result = GuardsDuty().run(
-        build_parser().parse_args(["guards", "lacking", "--spec", str(spec)])
-    )
+    result = GuardsDuty().run(build_parser().parse_args(["guards", "lacking", "--spec", str(spec)]))
     assert result.ok is True
     assert "outcome" in result.details["lacking"]
     assert "source_grounding" in result.details["lacking"]

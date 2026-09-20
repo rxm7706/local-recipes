@@ -66,7 +66,6 @@ def _has_vss() -> bool:
 requires_vss = pytest.mark.skipif(not _has_vss(), reason="vss extension is not provisioned in local cache")
 
 
-
 def _offline_connection() -> "duckdb.DuckDBPyConnection":
     """A DuckDB connection with autoinstall/autoload DISABLED — LOAD vss must come from the
     pre-provisioned local cache (offline), never a network INSTALL (AD-13)."""
@@ -79,9 +78,7 @@ def _offline_connection() -> "duckdb.DuckDBPyConnection":
 
 
 def _small_store(dim: int = 128) -> DuckdbVssRagStore:
-    store = DuckdbVssRagStore(
-        embedder=HashingEmbedder(dim=dim), connection=_offline_connection()
-    )
+    store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=dim), connection=_offline_connection())
     store.index(ARTIFACTS)
     return store
 
@@ -140,9 +137,7 @@ def test_store_loads_vss_offline_with_autoinstall_disabled():
     store = _small_store()  # built on _offline_connection()
     assert store.count() == len(ARTIFACTS)
     # vss is actually loaded on this offline connection
-    loaded = store.con.execute(
-        "SELECT loaded FROM duckdb_extensions() WHERE extension_name='vss'"
-    ).fetchone()
+    loaded = store.con.execute("SELECT loaded FROM duckdb_extensions() WHERE extension_name='vss'").fetchone()
     assert loaded and loaded[0] is True
     # and a query still ranks
     assert store.similarity_search("python", k=1)
@@ -166,9 +161,7 @@ def test_unprovisioned_vss_raises_clear_error_not_a_network_install():
         }
     )
     with pytest.raises(VssNotProvisionedError) as exc:
-        DuckdbVssRagStore(
-            embedder=HashingEmbedder(dim=32), connection=unprovisioned
-        )
+        DuckdbVssRagStore(embedder=HashingEmbedder(dim=32), connection=unprovisioned)
     msg = str(exc.value)
     assert "provision" in msg.lower()
     assert "INSTALL" in msg  # the message points at the one-time provisioning step
@@ -210,14 +203,10 @@ def test_ranking_is_a_duckdb_query_not_python():
     assert "array_distance" in plan
     assert "order by" in plan
     # a vss HNSW index physically exists over the embedding column
-    idx = store.con.execute(
-        f"SELECT index_name FROM duckdb_indexes() WHERE table_name='{store._table}'"
-    ).fetchall()
+    idx = store.con.execute(f"SELECT index_name FROM duckdb_indexes() WHERE table_name='{store._table}'").fetchall()
     assert any(store._index == row[0] for row in idx), f"HNSW index missing: {idx}"
     # vss is loaded (the index type only exists because the extension is loaded)
-    loaded = store.con.execute(
-        "SELECT loaded FROM duckdb_extensions() WHERE extension_name='vss'"
-    ).fetchone()
+    loaded = store.con.execute("SELECT loaded FROM duckdb_extensions() WHERE extension_name='vss'").fetchone()
     assert loaded and loaded[0] is True
 
 
@@ -228,9 +217,7 @@ def test_ranking_is_a_duckdb_query_not_python():
 
 @requires_vss
 def test_empty_corpus_returns_no_results():
-    store = DuckdbVssRagStore(
-        embedder=HashingEmbedder(dim=32), connection=_offline_connection()
-    )
+    store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=32), connection=_offline_connection())
     assert store.index([]) == 0
     assert store.count() == 0
     assert store.similarity_search("anything", k=5) == []
@@ -260,9 +247,7 @@ def test_non_positive_k_returns_empty():
 def test_duplicate_embeddings_rank_deterministically():
     """Identical texts (identical embeddings) tie on distance; the id tie-break keeps the
     order deterministic (no flaky ordering)."""
-    store = DuckdbVssRagStore(
-        embedder=HashingEmbedder(dim=64), connection=_offline_connection()
-    )
+    store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=64), connection=_offline_connection())
     store.index([("a", "same text"), ("b", "same text"), ("c", "different words")])
     r1 = [r["id"] for r in store.similarity_search("same text", k=3)]
     r2 = [r["id"] for r in store.similarity_search("same text", k=3)]
@@ -284,9 +269,7 @@ def test_zero_vector_query_is_well_defined():
 @requires_vss
 def test_zero_vector_artifact_indexes_and_ranks():
     """An artifact whose text embeds to the zero vector indexes fine and is rankable."""
-    store = DuckdbVssRagStore(
-        embedder=HashingEmbedder(dim=32), connection=_offline_connection()
-    )
+    store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=32), connection=_offline_connection())
     store.index([("empty", ""), ("real", "python recipe")])
     assert store.count() == 2
     results = store.similarity_search("python recipe", k=2)
@@ -304,9 +287,7 @@ def test_dimension_mismatch_errors_clearly():
 
 @requires_vss
 def test_unicode_artifacts_index_and_rank():
-    store = DuckdbVssRagStore(
-        embedder=HashingEmbedder(dim=64), connection=_offline_connection()
-    )
+    store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=64), connection=_offline_connection())
     store.index([("u1", "café déjà vü 日本語 packaging"), ("u2", "plain ascii text")])
     assert store.count() == 2
     results = store.similarity_search("café 日本語", k=2)
@@ -355,6 +336,7 @@ def test_index_and_search_on_a_PERSISTENT_connection():
     hnsw_enable_experimental_persistence is set — the store now sets it, so index()+search
     work on a file-backed connection (every prior test used in-memory, masking this)."""
     import os as _os
+
     with tempfile.TemporaryDirectory() as d:
         path = _os.path.join(d, "f1_consolidated.duckdb")
         con = duckdb.connect(
@@ -380,7 +362,8 @@ def test_malicious_table_or_metric_identifier_is_rejected():
     con.execute("CREATE TABLE victim(secret VARCHAR)")
     with pytest.raises(ValueError, match="invalid table identifier"):
         DuckdbVssRagStore(
-            embedder=HashingEmbedder(dim=8), connection=con,
+            embedder=HashingEmbedder(dim=8),
+            connection=con,
             table="rag (id VARCHAR); DROP TABLE victim; CREATE TABLE rag2",
         )
     # victim survives — the injection never executed.

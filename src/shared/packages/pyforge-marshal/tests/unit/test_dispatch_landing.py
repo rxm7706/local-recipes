@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
@@ -39,15 +40,9 @@ def test_union_sprint_ledger_maps_done_beats_backlog() -> None:
 
 
 def test_may_attempt_only_when_verified_and_not_merged() -> None:
-    assert may_attempt_dispatch_landing(
-        DispatchVerificationVerdict.VERIFIED, story_merged_on_main=False
-    )
-    assert not may_attempt_dispatch_landing(
-        DispatchVerificationVerdict.REFUSED, story_merged_on_main=False
-    )
-    assert not may_attempt_dispatch_landing(
-        DispatchVerificationVerdict.VERIFIED, story_merged_on_main=True
-    )
+    assert may_attempt_dispatch_landing(DispatchVerificationVerdict.VERIFIED, story_merged_on_main=False)
+    assert not may_attempt_dispatch_landing(DispatchVerificationVerdict.REFUSED, story_merged_on_main=False)
+    assert not may_attempt_dispatch_landing(DispatchVerificationVerdict.VERIFIED, story_merged_on_main=True)
 
 
 def test_merge_subject_is_marshal_native_with_policy_template() -> None:
@@ -57,14 +52,10 @@ def test_merge_subject_is_marshal_native_with_policy_template() -> None:
         flags={},
     )
     template = effective.merge_subject_template.value
-    story_key = normalize(
-        "22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native"
-    )
+    story_key = normalize("22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native")
     subject = render_merge_subject(story_key, template, "pyforge-marshal")
     assert merge_subject_is_marshal_native(subject, template, "pyforge-marshal")
-    native = promotion.marshal_native_merged_keys(
-        (subject,), template, "pyforge-marshal"
-    )
+    native = promotion.marshal_native_merged_keys((subject,), template, "pyforge-marshal")
     assert story_key in native
 
 
@@ -93,13 +84,9 @@ class FakeVcs:
 
     def commit_subjects(self, repo_root: Path, ref: str):
         if self._merged:
-            effective, _ = policy.compose(
-                project_slug="pyforge-marshal", project={}, flags={}
-            )
+            effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
             key = normalize("22-4-example")
-            subject = render_merge_subject(
-                key, effective.merge_subject_template.value, "pyforge-marshal"
-            )
+            subject = render_merge_subject(key, effective.merge_subject_template.value, "pyforge-marshal")
             return (subject,)
         return ()
 
@@ -357,10 +344,7 @@ def test_execute_dispatch_land_advances_main_when_merge_tree_clean_and_github_di
 def test_execute_dispatch_land_heals_ledger_only_conflict(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = (
-        "_bmad-output/projects/pyforge-marshal/planning-artifacts/"
-        "sprint-status-ledger.yaml"
-    )
+    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     vcs = HealCapableVcs(
         conflict_paths=(ledger_rel,),
         main_ledger=_ledger_yaml(("28-19-x", "done")),
@@ -646,9 +630,7 @@ class MergeTreePreviewVcs(FakeVcs):
         self.merge_tree_write_calls.append((base, branch))
         return self.tree_oid
 
-    def add_worktree_for_tree(
-        self, repo_root: Path, home: Path, tree_oid: str, *, parent: str
-    ) -> None:
+    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
         self.add_worktree_for_tree_calls.append((home, tree_oid, parent))
         self.preview_home = home
         if self.add_worktree_raises:
@@ -733,9 +715,7 @@ def test_execute_dispatch_land_lands_when_merge_tree_preview_is_clean(
     worktree.mkdir()
     vcs = MergeTreePreviewVcs(behind=3, tree_oid="preview-tree-oid")
     process = FakeProcess()
-    effective, _ = policy.compose(
-        project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={}
-    )
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={})
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
         story_key="51-1-example",
@@ -899,9 +879,7 @@ def test_execute_dispatch_land_falls_back_to_rmtree_when_remove_worktree_raises(
     worktree.mkdir()
     vcs = MergeTreePreviewVcs(behind=3, tree_oid="preview-tree-oid", remove_worktree_raises=True)
     process = FakeProcess()
-    effective, _ = policy.compose(
-        project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={}
-    )
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={})
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
         story_key="51-1-example",
@@ -918,9 +896,7 @@ def test_execute_dispatch_land_falls_back_to_rmtree_when_remove_worktree_raises(
     assert vcs.pruned_repo_roots == [tmp_path]
 
 
-def test_execute_dispatch_land_mutation_without_merge_tree_check_lands_green(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_execute_dispatch_land_mutation_without_merge_tree_check_lands_green(tmp_path: Path, monkeypatch) -> None:
     """Mutation test: stubbing the merge-tree-preview check to a no-op makes
     the 50.4/27.5 fixture land GREEN -- proving THIS check, not some other
     mechanism, is what refuses it."""
@@ -970,16 +946,9 @@ def test_blocked_twin_promotion_text_promotes_differing_primary() -> None:
 
 
 def test_blocked_twin_promotion_text_none_when_unreadable_primary() -> None:
-    assert (
-        blocked_twin_promotion_text(
-            primary_text=None, worktree_text="---\nstatus: blocked\n---\n"
-        )
-        is None
-    )
+    assert blocked_twin_promotion_text(primary_text=None, worktree_text="---\nstatus: blocked\n---\n") is None
 
 
 def test_blocked_twin_promotion_text_none_when_already_matching() -> None:
     text = "---\nstatus: blocked\n---\n"
-    assert (
-        blocked_twin_promotion_text(primary_text=text, worktree_text=text) is None
-    )
+    assert blocked_twin_promotion_text(primary_text=text, worktree_text=text) is None

@@ -25,6 +25,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.derive import projects_index
 from pyforge.marshal.seed.errors import NeverWriteViolation, PreconditionFailure
@@ -36,9 +37,7 @@ _VERSION = ModelVersion.parse("1.0.0")
 _NO_NEVER_WRITE = fs.NeverWrite(patterns=())
 
 
-def _write_bmad_config(
-    path: Path, *, slug: str, status: str = "active", description: str = "A project."
-) -> None:
+def _write_bmad_config(path: Path, *, slug: str, status: str = "active", description: str = "A project.") -> None:
     """A synthetic ``.bmad-config.toml`` fixture matching
     ``_bmad-output/PROJECTS.md``'s own "Adding a new project" convention.
     Values are written via ``json.dumps`` (not raw f-string interpolation)
@@ -226,9 +225,7 @@ def test_derive_projects_table_raises_on_two_directories_sharing_the_same_slug(t
         projects_index.derive_projects_table(projects_dir)
 
 
-def test_derive_projects_table_treats_an_unlistable_projects_dir_as_header_only(
-    tmp_path, monkeypatch
-):
+def test_derive_projects_table_treats_an_unlistable_projects_dir_as_header_only(tmp_path, monkeypatch):
     """A directory-listing failure (e.g. a permission error) degrades to
     the same header-only table as a missing directory -- never a crash
     (review finding, pass 2)."""
@@ -346,9 +343,7 @@ def test_ensure_symlinks_raises_when_the_target_directory_does_not_exist(tmp_pat
     assert not (tmp_path / "_bmad-output" / "planning-artifacts").exists()
 
 
-def test_ensure_symlinks_names_which_link_already_changed_on_a_partial_failure(
-    tmp_path, monkeypatch
-):
+def test_ensure_symlinks_names_which_link_already_changed_on_a_partial_failure(tmp_path, monkeypatch):
     """Review finding, pass 2: if the second `fs.symlink` call fails after
     the first succeeded, the caller must be told which one already
     changed -- never a bare, uncontextualized exception from the second
@@ -409,10 +404,7 @@ def test_resolve_active_project_falls_back_to_the_marker_file(tmp_path, monkeypa
 def test_resolve_active_project_strips_whitespace_from_every_source(tmp_path, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
 
-    assert (
-        projects_index.resolve_active_project(tmp_path, project="  padded-project  ")
-        == "padded-project"
-    )
+    assert projects_index.resolve_active_project(tmp_path, project="  padded-project  ") == "padded-project"
 
 
 def test_resolve_active_project_treats_a_whitespace_only_env_var_as_absent(tmp_path, monkeypatch):
@@ -430,9 +422,7 @@ def test_resolve_active_project_treats_a_whitespace_only_marker_as_absent(tmp_pa
         projects_index.resolve_active_project(tmp_path)
 
 
-def test_resolve_active_project_treats_a_non_utf8_marker_as_absent_not_a_crash(
-    tmp_path, monkeypatch
-):
+def test_resolve_active_project_treats_a_non_utf8_marker_as_absent_not_a_crash(tmp_path, monkeypatch):
     """Review finding, pass 2: an earlier draft only caught `OSError` on
     the marker read, so a non-UTF-8 marker raised an uncaught
     `UnicodeDecodeError` instead of falling through like a missing one."""
@@ -569,9 +559,7 @@ def test_fs_symlink_refuses_a_malicious_call_into_the_protected_planning_artifac
     but the guard must actually fire when this module's own real primitive
     (`fs.symlink`) is asked to write there."""
     never_write = fs.NeverWrite(("**/planning-artifacts/**",))
-    malicious_link = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "evil-link"
-    )
+    malicious_link = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "evil-link"
 
     with pytest.raises(NeverWriteViolation):
         fs.symlink(malicious_link, Path("elsewhere"), repo_root=tmp_path, never_write=never_write)

@@ -78,13 +78,7 @@ def _portal_apps_py(repo_root: Path, station: str) -> Path:
     packages = _packages_root(repo_root)
     if station == "warden":
         return packages / "django-warden" / "src" / "django_warden_fabric" / "apps.py"
-    return (
-        packages
-        / f"django-{station}"
-        / "src"
-        / f"django_{station}_portal"
-        / "apps.py"
-    )
+    return packages / f"django-{station}" / "src" / f"django_{station}_portal" / "apps.py"
 
 
 def _only_returns_none(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
@@ -92,9 +86,7 @@ def _only_returns_none(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     if len(body) != 1 or not isinstance(body[0], ast.Return):
         return False
     value = body[0].value
-    return value is None or (
-        isinstance(value, ast.Constant) and value.value is None
-    )
+    return value is None or (isinstance(value, ast.Constant) and value.value is None)
 
 
 def _has_real_mcp_asgi_app(apps_py: Path) -> bool:
@@ -102,10 +94,7 @@ def _has_real_mcp_asgi_app(apps_py: Path) -> bool:
         return False
     tree = ast.parse(apps_py.read_text(encoding="utf-8"), filename=str(apps_py))
     for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
-            and node.name == "mcp_asgi_app"
-        ):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name == "mcp_asgi_app":
             return not _only_returns_none(node)
     return False
 
@@ -119,9 +108,7 @@ def detect_tiers(repo_root: Path, station: str) -> dict[str, bool]:
     skill_present = skill_root.is_dir() and any(skill_root.rglob("SKILL.md"))
     # Mason 11.1: CFE is the domain skill. Do not require pyforge-mason/.
     if station == "mason":
-        skill_present = (
-            repo_root / ".claude" / "skills" / "conda-forge-expert" / "SKILL.md"
-        ).is_file()
+        skill_present = (repo_root / ".claude" / "skills" / "conda-forge-expert" / "SKILL.md").is_file()
     return {
         "cli": station in scripts,
         "portal": portal_dir.is_dir(),
@@ -132,9 +119,7 @@ def detect_tiers(repo_root: Path, station: str) -> dict[str, bool]:
 
 
 def _presence_for(repo_root: Path, item: WorkItem) -> TierPresence:
-    cells = dict(item.present) if item.present is not None else detect_tiers(
-        repo_root, item.token
-    )
+    cells = dict(item.present) if item.present is not None else detect_tiers(repo_root, item.token)
     for tier in TIERS:
         cells.setdefault(tier, False)
     return TierPresence(station=item.token, cells=cells)
@@ -142,10 +127,7 @@ def _presence_for(repo_root: Path, item: WorkItem) -> TierPresence:
 
 def _fail_message(item: WorkItem, presence: TierPresence) -> str:
     missing = ", ".join(presence.missing()) or "(none)"
-    return (
-        f"03 station {item.token!r} declared complete with fewer than five "
-        f"tiers; missing: {missing}"
-    )
+    return f"03 station {item.token!r} declared complete with fewer than five tiers; missing: {missing}"
 
 
 def report(
@@ -157,11 +139,7 @@ def report(
     """Enumerate the 8×5 matrix. Extra 01/02/03 items are evaluated for
     fail-on-false-complete but are not added to the denominator.
     """
-    complete = (
-        frozenset(declared_complete)
-        if declared_complete is not None
-        else DECLARED_COMPLETE
-    )
+    complete = frozenset(declared_complete) if declared_complete is not None else DECLARED_COMPLETE
     roster = tuple(
         WorkItem(
             token=station,
@@ -192,9 +170,7 @@ def check(
     extra: Sequence[WorkItem] = (),
     declared_complete: Iterable[str] | None = None,
 ) -> FiveTierReport:
-    result = report(
-        repo_root, extra=extra, declared_complete=declared_complete
-    )
+    result = report(repo_root, extra=extra, declared_complete=declared_complete)
     if result.failures:
         raise FiveTierCompleteError("\n".join(result.failures))
     return result

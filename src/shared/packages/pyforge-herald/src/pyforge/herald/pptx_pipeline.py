@@ -62,7 +62,6 @@ from pptx.enum.dml import MSO_THEME_COLOR
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Emu, Pt
-
 from pyforge.core.atomic_write import atomic_write, atomic_write_text
 
 from . import errors
@@ -114,9 +113,7 @@ def default_template_path() -> Path:
     decision) -- resolved via ``importlib.resources``, never a
     source-tree-relative path, so this resolves identically from an
     installed wheel or conda package (Code Map)."""
-    return Path(
-        resources.files("pyforge.herald") / "templates" / "pyforge-deck-template.pptx"
-    )
+    return Path(resources.files("pyforge.herald") / "templates" / "pyforge-deck-template.pptx")
 
 
 def _open_template(template_path: Path) -> PptxPresentation:
@@ -128,9 +125,7 @@ def _open_template(template_path: Path) -> PptxPresentation:
     except Exception as exc:  # noqa: BLE001 -- any python-pptx open failure
         # (corrupt zip, not a .pptx/.potx at all, ...) is "bad template" for
         # this module's purposes.
-        raise errors.PptxTemplateError(
-            f"cannot open template {template_path}: {exc}"
-        ) from exc
+        raise errors.PptxTemplateError(f"cannot open template {template_path}: {exc}") from exc
 
 
 def _emu(value: int | None) -> int:
@@ -158,11 +153,7 @@ def extract_spec(template_path: Path) -> TemplateSpec:
             placeholders=[
                 TemplatePlaceholder(
                     idx=ph.placeholder_format.idx,
-                    type=(
-                        ph.placeholder_format.type.name
-                        if ph.placeholder_format.type is not None
-                        else "UNKNOWN"
-                    ),
+                    type=(ph.placeholder_format.type.name if ph.placeholder_format.type is not None else "UNKNOWN"),
                     name=ph.name,
                     left=_emu(ph.left),
                     top=_emu(ph.top),
@@ -185,9 +176,7 @@ def spec_to_dict(spec: TemplateSpec) -> dict[str, Any]:
     return asdict(spec)
 
 
-def _resolve_layout(
-    prs: PptxPresentation, layout_ref: object, slide_index: int
-) -> SlideLayout:
+def _resolve_layout(prs: PptxPresentation, layout_ref: object, slide_index: int) -> SlideLayout:
     """A ``content_plan.json`` slide entry's ``"layout"`` field -> the
     template's matching ``SlideLayout``. Accepts either an ``int`` index or
     a ``str`` name (spec: "real layout indices/names"); ``bool`` is
@@ -197,22 +186,18 @@ def _resolve_layout(
     layouts = list(prs.slide_layouts)
     if isinstance(layout_ref, bool) or not isinstance(layout_ref, (int, str)):
         raise errors.InvalidContentPlanError(
-            f"slide #{slide_index}: 'layout' must be an int index or "
-            f"string name, got {layout_ref!r}"
+            f"slide #{slide_index}: 'layout' must be an int index or string name, got {layout_ref!r}"
         )
     if isinstance(layout_ref, int):
         if 0 <= layout_ref < len(layouts):
             return layouts[layout_ref]
         raise errors.InvalidContentPlanError(
-            f"slide #{slide_index}: layout index {layout_ref} out of range "
-            f"(template has {len(layouts)} layouts)"
+            f"slide #{slide_index}: layout index {layout_ref} out of range (template has {len(layouts)} layouts)"
         )
     for layout in layouts:
         if layout.name == layout_ref:
             return layout
-    raise errors.InvalidContentPlanError(
-        f"slide #{slide_index}: no layout named {layout_ref!r} in template"
-    )
+    raise errors.InvalidContentPlanError(f"slide #{slide_index}: no layout named {layout_ref!r} in template")
 
 
 def _resolve_placeholder_values(
@@ -227,23 +212,19 @@ def _resolve_placeholder_values(
     :func:`fill_template` materializes anything (I/O matrix: "No file
     written")."""
     if not isinstance(raw_values, Mapping):
-        raise errors.InvalidContentPlanError(
-            f"slide #{slide_index}: 'placeholders' must be a JSON object"
-        )
+        raise errors.InvalidContentPlanError(f"slide #{slide_index}: 'placeholders' must be a JSON object")
     layout_by_idx = {ph.placeholder_format.idx: ph for ph in layout.placeholders}
     resolved: dict[int, str | list[str]] = {}
     for raw_idx, value in raw_values.items():
         try:
             idx = int(raw_idx)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             raise errors.InvalidContentPlanError(
-                f"slide #{slide_index}: placeholder key {raw_idx!r} is not "
-                f"an integer idx"
+                f"slide #{slide_index}: placeholder key {raw_idx!r} is not an integer idx"
             ) from None
         if idx not in layout_by_idx:
             raise errors.InvalidContentPlanError(
-                f"slide #{slide_index}: layout {layout.name!r} has no "
-                f"placeholder idx {idx}"
+                f"slide #{slide_index}: layout {layout.name!r} has no placeholder idx {idx}"
             )
         if not layout_by_idx[idx].has_text_frame:
             raise errors.InvalidContentPlanError(
@@ -253,11 +234,7 @@ def _resolve_placeholder_values(
             )
         if isinstance(value, str):
             resolved[idx] = value
-        elif (
-            isinstance(value, list)
-            and value
-            and all(isinstance(item, str) for item in value)
-        ):
+        elif isinstance(value, list) and value and all(isinstance(item, str) for item in value):
             resolved[idx] = value
         else:
             raise errors.InvalidContentPlanError(
@@ -386,14 +363,10 @@ def _wrap_at_size(text: str, font_size_pt: int, width_budget_pt: float) -> list[
     the one wrapping pipeline both the sizing search and every render
     path go through, so the lines a size was chosen for are exactly the
     lines that get written."""
-    return _rebalance_orphan(
-        _wrap_words(text, font_size_pt, width_budget_pt), font_size_pt, width_budget_pt
-    )
+    return _rebalance_orphan(_wrap_words(text, font_size_pt, width_budget_pt), font_size_pt, width_budget_pt)
 
 
-def _wrapped_fits(
-    text: str, font_size_pt: int, width_budget_pt: float, height_budget_pt: float
-) -> list[str] | None:
+def _wrapped_fits(text: str, font_size_pt: int, width_budget_pt: float, height_budget_pt: float) -> list[str] | None:
     """``text``'s wrapped lines at ``font_size_pt`` when they fit BOTH
     budgets, else ``None``.
 
@@ -411,9 +384,7 @@ def _wrapped_fits(
     return lines
 
 
-def fit_text(
-    text: str, width_emu: int, height_emu: int, *, max_pt: int, min_pt: int
-) -> FittedText:
+def fit_text(text: str, width_emu: int, height_emu: int, *, max_pt: int, min_pt: int) -> FittedText:
     """The autofit search (Design Notes): the largest font size in
     ``range(max_pt, min_pt - 1, -1)`` at which ``text``, word-wrapped and
     orphan-rebalanced at that size, fits 90% of BOTH ``width_emu`` and
@@ -585,9 +556,7 @@ dispatches on."""
 # hook Story 15.1 deliberately left (its own Design Notes).
 
 
-def add_card(
-    slide: Slide, left: int, top: int, width: int, height: int, title: str, body: str
-) -> Shape:
+def add_card(slide: Slide, left: int, top: int, width: int, height: int, title: str, body: str) -> Shape:
     """A rounded-rectangle card at ``(left, top, width, height)`` EMU: a
     bold title and a body paragraph, each independently autofit. The
     title's height-budget is capped at 45% of the card's height so it
@@ -596,17 +565,13 @@ def add_card(
     own search ceiling is additionally clamped to the size the title
     settled on, so a long title that shrinks can never end up rendering
     smaller than the body beneath it."""
-    shape = slide.shapes.add_shape(
-        MSO_SHAPE.ROUNDED_RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height)
-    )
+    shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height))
     shape.fill.solid()
     shape.fill.fore_color.theme_color = MSO_THEME_COLOR.BACKGROUND_2
     shape.line.color.theme_color = MSO_THEME_COLOR.ACCENT_1
 
     title_cap_emu = int(height * _CARD_TITLE_HEIGHT_CAP_FRACTION)
-    title_fit = fit_text(
-        title, width, title_cap_emu, max_pt=_CARD_TITLE_MAX_PT, min_pt=_MIN_PT
-    )
+    title_fit = fit_text(title, width, title_cap_emu, max_pt=_CARD_TITLE_MAX_PT, min_pt=_MIN_PT)
     title_used_emu = min(title_cap_emu, _lines_height_emu(title_fit))
     body_fit = fit_text(
         body,
@@ -637,26 +602,20 @@ def add_card(
     return shape
 
 
-def add_metric_box(
-    slide: Slide, left: int, top: int, width: int, height: int, value: str, label: str
-) -> Shape:
+def add_metric_box(slide: Slide, left: int, top: int, width: int, height: int, value: str, label: str) -> Shape:
     """A rectangle metric box at ``(left, top, width, height)`` EMU: a
     large value line and a small label line below it, each independently
     autofit -- the same adaptive-split principle as :func:`add_card`,
     capped at 75% of the box's height for the value, and the label's
     search ceiling likewise clamped to the value's settled size so the
     label can never render larger than the value it annotates."""
-    shape = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height)
-    )
+    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height))
     shape.fill.solid()
     shape.fill.fore_color.theme_color = MSO_THEME_COLOR.BACKGROUND_2
     shape.line.color.theme_color = MSO_THEME_COLOR.ACCENT_1
 
     value_cap_emu = int(height * _METRIC_VALUE_HEIGHT_CAP_FRACTION)
-    value_fit = fit_text(
-        value, width, value_cap_emu, max_pt=_METRIC_VALUE_MAX_PT, min_pt=_MIN_PT
-    )
+    value_fit = fit_text(value, width, value_cap_emu, max_pt=_METRIC_VALUE_MAX_PT, min_pt=_MIN_PT)
     value_used_emu = min(value_cap_emu, _lines_height_emu(value_fit))
     label_fit = fit_text(
         label,
@@ -687,9 +646,7 @@ def add_metric_box(
     return shape
 
 
-def _table_font_size(
-    rows: tuple[tuple[str, ...], ...], cell_width_emu: float, cell_height_emu: float
-) -> int:
+def _table_font_size(rows: tuple[tuple[str, ...], ...], cell_width_emu: float, cell_height_emu: float) -> int:
     """The largest single font size at which EVERY cell's own
     column-width/row-height budget fits (Design Notes: "Table: one
     global size") -- the same descending search :func:`fit_text` runs
@@ -701,8 +658,7 @@ def _table_font_size(
     height_budget_pt = (cell_height_emu / _EMU_PER_PT) * _FIT_SAFETY
     for font_size_pt in range(_TABLE_MAX_PT, _MIN_PT - 1, -1):
         if all(
-            _wrapped_fits(cell, font_size_pt, width_budget_pt, height_budget_pt)
-            is not None
+            _wrapped_fits(cell, font_size_pt, width_budget_pt, height_budget_pt) is not None
             for row in rows
             for cell in row
         ):
@@ -724,9 +680,7 @@ def add_table(
     given (Design Notes: "Table: one global size")."""
     num_rows = len(rows)
     num_cols = len(rows[0])
-    graphic_frame = slide.shapes.add_table(
-        num_rows, num_cols, Emu(left), Emu(top), Emu(width), Emu(height)
-    )
+    graphic_frame = slide.shapes.add_table(num_rows, num_cols, Emu(left), Emu(top), Emu(width), Emu(height))
     table = graphic_frame.table
 
     cell_width_emu = width / num_cols
@@ -737,9 +691,7 @@ def add_table(
 
     for row_index, row in enumerate(rows):
         is_header = has_header and row_index == 0
-        text_theme_color = (
-            MSO_THEME_COLOR.BACKGROUND_1 if is_header else MSO_THEME_COLOR.TEXT_1
-        )
+        text_theme_color = MSO_THEME_COLOR.BACKGROUND_1 if is_header else MSO_THEME_COLOR.TEXT_1
         for col_index, cell_text in enumerate(row):
             cell = table.cell(row_index, col_index)
             _reset_margins(cell.text_frame)
@@ -758,9 +710,7 @@ def add_table(
     return graphic_frame
 
 
-def add_section_label(
-    slide: Slide, left: int, top: int, width: int, height: int, text: str
-) -> Shape:
+def add_section_label(slide: Slide, left: int, top: int, width: int, height: int, text: str) -> Shape:
     """A textbox at ``(left, top, width, height)`` EMU holding a single
     autofit-sized, theme-colored run (or, for text long enough to need
     it, the same literal word-wrapped lines every other shape type
@@ -790,17 +740,14 @@ def add_section_label(
 _SHAPE_TYPES = ("card", "metric_box", "table", "section_label")
 
 
-def _require_str_field(
-    raw_shape: Mapping[str, Any], field_name: str, slide_index: int, shape_index: int
-) -> str:
+def _require_str_field(raw_shape: Mapping[str, Any], field_name: str, slide_index: int, shape_index: int) -> str:
     """``raw_shape[field_name]`` as a validated ``str`` -- raises
     :class:`errors.InvalidContentPlanError` (I/O matrix's "Missing
     required field" row) when it is absent or the wrong type."""
     value = raw_shape.get(field_name)
     if not isinstance(value, str):
         raise errors.InvalidContentPlanError(
-            f"slide #{slide_index} shape #{shape_index}: missing or "
-            f"non-string {field_name!r}"
+            f"slide #{slide_index} shape #{shape_index}: missing or non-string {field_name!r}"
         )
     return value
 
@@ -817,79 +764,60 @@ def _resolve_shape_geometry(
         raw_value = raw_shape.get(key)
         if isinstance(raw_value, bool) or not isinstance(raw_value, int):
             raise errors.InvalidContentPlanError(
-                f"slide #{slide_index} shape #{shape_index}: {key!r} must "
-                f"be an int EMU value, got {raw_value!r}"
+                f"slide #{slide_index} shape #{shape_index}: {key!r} must be an int EMU value, got {raw_value!r}"
             )
         geometry[key] = raw_value
     if geometry["width"] <= 0 or geometry["height"] <= 0:
         raise errors.InvalidContentPlanError(
-            f"slide #{slide_index} shape #{shape_index}: 'width' and "
-            f"'height' must be positive"
+            f"slide #{slide_index} shape #{shape_index}: 'width' and 'height' must be positive"
         )
     if geometry["left"] < 0 or geometry["top"] < 0:
         raise errors.InvalidContentPlanError(
-            f"slide #{slide_index} shape #{shape_index}: 'left' and 'top' "
-            f"must be non-negative"
+            f"slide #{slide_index} shape #{shape_index}: 'left' and 'top' must be non-negative"
         )
     return geometry["left"], geometry["top"], geometry["width"], geometry["height"]
 
 
-def _resolve_table_rows(
-    raw_rows: object, slide_index: int, shape_index: int
-) -> tuple[tuple[str, ...], ...]:
+def _resolve_table_rows(raw_rows: object, slide_index: int, shape_index: int) -> tuple[tuple[str, ...], ...]:
     """A table shape's ``"rows"`` field -> a validated, rectangular tuple
     of tuples of strings (every row the same column count -- a
     ``GraphicFrame`` table has a fixed column count, and
     :func:`_table_font_size`'s per-column budget assumes it)."""
     if not isinstance(raw_rows, list) or not raw_rows:
         raise errors.InvalidContentPlanError(
-            f"slide #{slide_index} shape #{shape_index}: 'rows' must be a "
-            f"non-empty JSON array"
+            f"slide #{slide_index} shape #{shape_index}: 'rows' must be a non-empty JSON array"
         )
     num_cols: int | None = None
     resolved: list[tuple[str, ...]] = []
     for row in raw_rows:
-        if (
-            not isinstance(row, list)
-            or not row
-            or not all(isinstance(cell, str) for cell in row)
-        ):
+        if not isinstance(row, list) or not row or not all(isinstance(cell, str) for cell in row):
             raise errors.InvalidContentPlanError(
-                f"slide #{slide_index} shape #{shape_index}: each table "
-                f"row must be a non-empty array of strings"
+                f"slide #{slide_index} shape #{shape_index}: each table row must be a non-empty array of strings"
             )
         if num_cols is None:
             num_cols = len(row)
         elif len(row) != num_cols:
             raise errors.InvalidContentPlanError(
-                f"slide #{slide_index} shape #{shape_index}: every table "
-                f"row must have the same number of columns"
+                f"slide #{slide_index} shape #{shape_index}: every table row must have the same number of columns"
             )
         resolved.append(tuple(row))
     return tuple(resolved)
 
 
-def _resolve_one_shape(
-    raw_shape: object, slide_index: int, shape_index: int
-) -> ResolvedShape:
+def _resolve_one_shape(raw_shape: object, slide_index: int, shape_index: int) -> ResolvedShape:
     """One ``content_plan.json`` ``"shapes"`` entry -> its typed,
     geometry-validated :data:`ResolvedShape`. Raises
     :class:`errors.InvalidContentPlanError` for an unknown ``"type"``
     (I/O matrix's "Unknown shape type" row) or any missing/malformed
     type-specific field, before any slide is materialized."""
     if not isinstance(raw_shape, Mapping):
-        raise errors.InvalidContentPlanError(
-            f"slide #{slide_index} shape #{shape_index} is not a JSON object"
-        )
+        raise errors.InvalidContentPlanError(f"slide #{slide_index} shape #{shape_index} is not a JSON object")
     if "type" not in raw_shape:
-        raise errors.InvalidContentPlanError(
-            f"slide #{slide_index} shape #{shape_index} is missing 'type'"
-        )
+        raise errors.InvalidContentPlanError(f"slide #{slide_index} shape #{shape_index} is missing 'type'")
     shape_type = raw_shape.get("type")
     if shape_type not in _SHAPE_TYPES:
         raise errors.InvalidContentPlanError(
-            f"slide #{slide_index} shape #{shape_index}: unknown shape "
-            f"type {shape_type!r}"
+            f"slide #{slide_index} shape #{shape_index}: unknown shape type {shape_type!r}"
         )
     left, top, width, height = _resolve_shape_geometry(raw_shape, slide_index, shape_index)
     if shape_type == "card":
@@ -916,13 +844,8 @@ def _resolve_shapes(entry: Mapping[str, Any], slide_index: int) -> list[Resolved
     :func:`fill_template`'s prior behavior unchanged."""
     raw_shapes = entry.get("shapes", [])
     if not isinstance(raw_shapes, list):
-        raise errors.InvalidContentPlanError(
-            f"slide #{slide_index}: 'shapes' must be a JSON array"
-        )
-    return [
-        _resolve_one_shape(raw_shape, slide_index, shape_index)
-        for shape_index, raw_shape in enumerate(raw_shapes)
-    ]
+        raise errors.InvalidContentPlanError(f"slide #{slide_index}: 'shapes' must be a JSON array")
+    return [_resolve_one_shape(raw_shape, slide_index, shape_index) for shape_index, raw_shape in enumerate(raw_shapes)]
 
 
 def _add_shapes(slide: Slide, shapes: Sequence[ResolvedShape]) -> None:
@@ -953,13 +876,9 @@ def _add_shapes(slide: Slide, shapes: Sequence[ResolvedShape]) -> None:
                 shape.label,
             )
         elif isinstance(shape, TableShape):
-            add_table(
-                slide, shape.left, shape.top, shape.width, shape.height, shape.rows
-            )
+            add_table(slide, shape.left, shape.top, shape.width, shape.height, shape.rows)
         elif isinstance(shape, SectionLabelShape):
-            add_section_label(
-                slide, shape.left, shape.top, shape.width, shape.height, shape.text
-            )
+            add_section_label(slide, shape.left, shape.top, shape.width, shape.height, shape.text)
         else:
             raise AssertionError(f"unhandled ResolvedShape variant: {type(shape)!r}")
 
@@ -991,18 +910,14 @@ def fill_template(template_path: Path, content_plan: object) -> PptxPresentation
     if not isinstance(slides, list):
         raise errors.InvalidContentPlanError("content plan must have a 'slides' list")
 
-    resolved_slides: list[
-        tuple[SlideLayout, dict[int, str | list[str]], list[ResolvedShape]]
-    ] = []
+    resolved_slides: list[tuple[SlideLayout, dict[int, str | list[str]], list[ResolvedShape]]] = []
     for index, entry in enumerate(slides):
         if not isinstance(entry, Mapping):
             raise errors.InvalidContentPlanError(f"slide #{index} is not a JSON object")
         if "layout" not in entry:
             raise errors.InvalidContentPlanError(f"slide #{index} is missing 'layout'")
         layout = _resolve_layout(prs, entry["layout"], index)
-        placeholder_values = _resolve_placeholder_values(
-            layout, entry.get("placeholders", {}), index
-        )
+        placeholder_values = _resolve_placeholder_values(layout, entry.get("placeholders", {}), index)
         shapes = _resolve_shapes(entry, index)
         resolved_slides.append((layout, placeholder_values, shapes))
 
@@ -1044,14 +959,10 @@ def run_fill(template_path: Path, content_plan_path: Path, out_path: Path) -> No
     try:
         raw = content_plan_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
-        raise errors.InvalidContentPlanError(
-            f"cannot read content plan {content_plan_path}: {exc}"
-        ) from exc
+        raise errors.InvalidContentPlanError(f"cannot read content plan {content_plan_path}: {exc}") from exc
     try:
         content_plan = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise errors.InvalidContentPlanError(
-            f"content plan {content_plan_path} is not valid JSON: {exc}"
-        ) from exc
+        raise errors.InvalidContentPlanError(f"content plan {content_plan_path} is not valid JSON: {exc}") from exc
     presentation = fill_template(template_path, content_plan)
     atomic_write(Path(out_path), lambda tmp: presentation.save(str(tmp)))

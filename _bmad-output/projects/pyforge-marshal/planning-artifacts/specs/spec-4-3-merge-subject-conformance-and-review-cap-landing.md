@@ -151,3 +151,16 @@ baseline_revision: '4d5218a9c73431b99903af8d6e09a0c6c48a77c4'
 
 - `land-story` end-to-end, full I/O matrix plus every P1-P7 regression.
   [`test_deploy.py:1`](../../../../src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py#L1)
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9c048a9c2d` (2026-08-06, "Merge pull request #275 from rxm7706/marshal/4-3-merge-subject-conformance-review-cap"). Ledger row `4-3-merge-subject-conformance-and-review-cap-landing: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

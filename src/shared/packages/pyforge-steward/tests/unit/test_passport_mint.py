@@ -285,9 +285,7 @@ def test_passport_duty_mint_blank_vendor_id_fails():
 
 
 def test_passport_duty_json_on_success():
-    ns = build_parser().parse_args(
-        ["passport", "--json", "mint", "--vendor-id", "acme", "--jira-key", "PROJ-json-1"]
-    )
+    ns = build_parser().parse_args(["passport", "--json", "mint", "--vendor-id", "acme", "--jira-key", "PROJ-json-1"])
     result = PassportDuty().run(ns)
     assert result.ok is True
     payload = json.loads(result.summary)

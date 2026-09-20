@@ -52,13 +52,13 @@ from . import (
     bmad_method,
     board,
     capability_effect,
+    capability_ledger,
     chain,
     deps,
     docs_currency,
+    docs_map_hygiene,
     docs_shelf,
     factory,
-    capability_ledger,
-    docs_map_hygiene,
     frozen_path,
     general_docs_consistency,
     ledger,
@@ -213,10 +213,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--project",
         metavar="SLUG",
         default=None,
-        help=(
-            "BMAD project slug for --layers (e.g. pyforge-marshal). "
-            "Required with --layers; ignored otherwise."
-        ),
+        help=("BMAD project slug for --layers (e.g. pyforge-marshal). Required with --layers; ignored otherwise."),
     )
     return parser
 
@@ -226,22 +223,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.groundtruth and args.source != _GROUNDTRUTH_SOURCE:
-        parser.error(
-            f"argument --groundtruth: only valid for source "
-            f"{_GROUNDTRUTH_SOURCE!r}, got {args.source!r}"
-        )
+        parser.error(f"argument --groundtruth: only valid for source {_GROUNDTRUTH_SOURCE!r}, got {args.source!r}")
 
     if args.dreams and args.source != _DREAMS_HYGIENE_SOURCE:
-        parser.error(
-            f"argument --dreams: only valid for source "
-            f"{_DREAMS_HYGIENE_SOURCE!r}, got {args.source!r}"
-        )
+        parser.error(f"argument --dreams: only valid for source {_DREAMS_HYGIENE_SOURCE!r}, got {args.source!r}")
 
     if args.layers and args.source != _LAYERS_AUDIT_SOURCE:
-        parser.error(
-            f"argument --layers: only valid for source "
-            f"{_LAYERS_AUDIT_SOURCE!r}, got {args.source!r}"
-        )
+        parser.error(f"argument --layers: only valid for source {_LAYERS_AUDIT_SOURCE!r}, got {args.source!r}")
 
     if args.layers and not args.project:
         parser.error("argument --layers: requires --project SLUG")
@@ -253,9 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("argument --dreams: not valid together with --groundtruth")
 
     if args.layers and (args.dreams or args.groundtruth):
-        parser.error(
-            "argument --layers: not valid together with --dreams or --groundtruth"
-        )
+        parser.error("argument --layers: not valid together with --dreams or --groundtruth")
 
     target = Path(".")
 
@@ -283,10 +269,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps([finding.to_json_dict() for finding in findings], indent=2))
     else:
         for finding in findings:
-            print(
-                f"[{finding.source.value}] {finding.check}: "
-                f"{finding.status.value} -- {finding.message}"
-            )
+            print(f"[{finding.source.value}] {finding.check}: {finding.status.value} -- {finding.message}")
 
     return exit_code_for(findings)
 

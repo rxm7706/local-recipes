@@ -20,7 +20,7 @@ def _seed_foundry(root: Path) -> Path:
     factory = root / "factory"
     (factory / "recipes" / "click-help-colors").mkdir(parents=True)
     (factory / "recipes" / "click-help-colors" / "recipe.yaml").write_text("schema_version: 1\n", encoding="utf-8")
-    (factory / "pixi.toml").write_text("[workspace]\nname = \"factory\"\n", encoding="utf-8")
+    (factory / "pixi.toml").write_text('[workspace]\nname = "factory"\n', encoding="utf-8")
     (factory / "pixi.lock").write_text("version: 6\n", encoding="utf-8")
     return root
 

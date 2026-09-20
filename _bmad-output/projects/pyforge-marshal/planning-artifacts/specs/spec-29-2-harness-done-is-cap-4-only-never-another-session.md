@@ -70,3 +70,16 @@ supervisor tests added by this story.
 
 Dream addendum 2026-09-02. CAP-11 marshal half. Change proposal:
 `sprint-change-proposal-2026-09-02-done-spec-review-loop.md`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `c6eff1e9ac` (2026-09-02, "marshal: mark Story 29.2 done after CAP-4-only dispatch landed."); also `a516d07f50` (2026-09-02, "marshal: treat harness-done as CAP-4 only, never another session (29.2)."). Ledger row `29-2-harness-done-is-cap-4-only-never-another-session: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-29-2-harness-done-is-cap-4-only-never-another-session.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

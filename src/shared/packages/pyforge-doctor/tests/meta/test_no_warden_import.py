@@ -36,9 +36,7 @@ _EXEMPT_RELATIVE_PATHS = frozenset({Path("sources") / "warden.py"})
 
 def _package_modules() -> list[Path]:
     return sorted(
-        path
-        for path in PACKAGE_DIR.rglob("*.py")
-        if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
+        path for path in PACKAGE_DIR.rglob("*.py") if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
     )
 
 
@@ -54,9 +52,7 @@ def _module_package_parts(path: Path) -> tuple[str, ...]:
     return ("pyforge", "doctor", *rel.parent.parts)
 
 
-def _resolve_import_from(
-    node: ast.ImportFrom, package_parts: tuple[str, ...]
-) -> str | None:
+def _resolve_import_from(node: ast.ImportFrom, package_parts: tuple[str, ...]) -> str | None:
     """The absolute dotted module a ``from ... import`` targets, resolving
     relative forms against ``package_parts``. None when the relative level
     climbs beyond the top-level package (a runtime error anyway)."""
@@ -70,16 +66,12 @@ def _resolve_import_from(
     return ".".join(base)
 
 
-def _warden_import_violations(
-    tree: ast.Module, package_parts: tuple[str, ...] = ("pyforge", "doctor")
-) -> list[int]:
+def _warden_import_violations(tree: ast.Module, package_parts: tuple[str, ...] = ("pyforge", "doctor")) -> list[int]:
     violations: list[int] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "pyforge.warden" or alias.name.startswith(
-                    "pyforge.warden."
-                ):
+                if alias.name == "pyforge.warden" or alias.name.startswith("pyforge.warden."):
                     violations.append(node.lineno)
         elif isinstance(node, ast.ImportFrom):
             # Resolve relative forms (`from .. import warden`,
@@ -96,9 +88,7 @@ def _warden_import_violations(
             # under the PARENT module ("pyforge"), not "pyforge.warden" --
             # the two checks above miss this form entirely (review finding,
             # 2026-07-30).
-            elif module == "pyforge" and any(
-                alias.name == "warden" for alias in node.names
-            ):
+            elif module == "pyforge" and any(alias.name == "warden" for alias in node.names):
                 violations.append(node.lineno)
     return violations
 
@@ -110,9 +100,7 @@ def test_package_scan_surface_is_not_empty():
 
 def test_no_module_imports_pyforge_warden():
     for module_path in _package_modules():
-        violations = _warden_import_violations(
-            _parse(module_path), _module_package_parts(module_path)
-        )
+        violations = _warden_import_violations(_parse(module_path), _module_package_parts(module_path))
         assert not violations, (
             f"{module_path.name} imports pyforge.warden at line(s) "
             f"{violations} -- only sources/warden.py may import "

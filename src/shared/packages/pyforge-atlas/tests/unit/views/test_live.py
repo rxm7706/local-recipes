@@ -38,9 +38,7 @@ def _loaded_module(view, db_path, monkeypatch):
     monkeypatch its DB_PATH -- load_cli_module's (name, scripts_dir) memoization means any
     later load_cli_module(view.script) call (no scripts_dir override, as live.py's code makes)
     resolves to this SAME patched module instance."""
-    module = cli_bridge.load_cli_module(
-        view.script, scripts_dir=cli_bridge.default_scripts_dir()
-    )
+    module = cli_bridge.load_cli_module(view.script, scripts_dir=cli_bridge.default_scripts_dir())
     monkeypatch.setattr(module, "DB_PATH", db_path)
     return module
 
@@ -166,9 +164,7 @@ def test_build_application_raises_for_a_widget_without_a_websocket_renderer(monk
         build_application(view)
 
 
-def test_filter_and_sort_compose_a_pending_sort_survives_a_new_filter_query(
-    atlas_db_path, monkeypatch
-):
+def test_filter_and_sort_compose_a_pending_sort_survives_a_new_filter_query(atlas_db_path, monkeypatch):
     """A sort chosen before a filter change is re-applied to the freshly re-queried rows (not
     dropped) -- the two controls compose rather than fighting each other."""
     view = get_view("staleness-report")

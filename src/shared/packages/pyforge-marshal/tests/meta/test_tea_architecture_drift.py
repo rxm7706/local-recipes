@@ -60,9 +60,7 @@ def _station_tree(tmp_path: Path, *, slug: str = "scribe") -> Path:
     )
     tests = tmp_path / "src" / "shared" / "packages" / project / "tests" / "unit"
     tests.mkdir(parents=True)
-    (tests / "test_1_1_scaffold.py").write_text(
-        "def test_scaffold():\n    assert True\n", encoding="utf-8"
-    )
+    (tests / "test_1_1_scaffold.py").write_text("def test_scaffold():\n    assert True\n", encoding="utf-8")
     return tmp_path
 
 
@@ -108,9 +106,7 @@ def test_regen_fills_missing_row_then_check_passes(tea, tmp_path: Path, capsys):
     result = tea.generate_station(root, "pyforge-scribe")
     drifted = _strip_matrix_row(result.output_path.read_text(encoding="utf-8"), "1.2")
     result.output_path.write_text(drifted, encoding="utf-8")
-    assert tea.main(
-        ["--repo-root", str(root), "--project", "pyforge-scribe", "--check"]
-    ) == 1
+    assert tea.main(["--repo-root", str(root), "--project", "pyforge-scribe", "--check"]) == 1
     capsys.readouterr()
 
     tea.generate_station(root, "pyforge-scribe")
@@ -123,14 +119,7 @@ def test_regen_fills_missing_row_then_check_passes(tea, tmp_path: Path, capsys):
 def test_missing_doc_exits_nonzero(tea, tmp_path: Path, capsys):
     """MISSING_DOC: station has epics but no test-architecture.md → exit 1."""
     root = _station_tree(tmp_path)
-    out = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-scribe"
-        / "planning-artifacts"
-        / "test-architecture.md"
-    )
+    out = root / "_bmad-output" / "projects" / "pyforge-scribe" / "planning-artifacts" / "test-architecture.md"
     assert not out.exists()
 
     code = tea.main(["--repo-root", str(root), "--project", "pyforge-scribe", "--check"])
@@ -181,14 +170,7 @@ def test_all_check_fails_when_any_station_drifts(tea, tmp_path: Path, monkeypatc
         _station_tree(root, slug=slug)
         tea.generate_station(root, f"pyforge-{slug}")
     # Drift only herald
-    herald_out = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-herald"
-        / "planning-artifacts"
-        / "test-architecture.md"
-    )
+    herald_out = root / "_bmad-output" / "projects" / "pyforge-herald" / "planning-artifacts" / "test-architecture.md"
     drifted = _strip_matrix_row(herald_out.read_text(encoding="utf-8"), "1.2")
     herald_out.write_text(drifted, encoding="utf-8")
 

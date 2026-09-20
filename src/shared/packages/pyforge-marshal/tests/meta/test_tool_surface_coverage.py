@@ -121,16 +121,7 @@ def test_fixture_non_mason_package_mcp_counts(tmp_path: Path):
     (tmp_path / "pixi.toml").write_text("[workspace]\n", encoding="utf-8")
     (tmp_path / ".claude").mkdir()
     server = (
-        tmp_path
-        / "src"
-        / "shared"
-        / "packages"
-        / "pyforge-herald"
-        / "src"
-        / "pyforge"
-        / "herald"
-        / "mcp"
-        / "server.py"
+        tmp_path / "src" / "shared" / "packages" / "pyforge-herald" / "src" / "pyforge" / "herald" / "mcp" / "server.py"
     )
     server.parent.mkdir(parents=True)
     server.write_text("# fixture\n", encoding="utf-8")

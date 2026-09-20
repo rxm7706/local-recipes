@@ -14,9 +14,9 @@ import threading
 import time
 
 import pytest
+
 from pyforge.herald import claims, db, notices, progress
 from pyforge.herald.errors import HeraldError
-
 
 # --- connection setup: WAL + busy_timeout -----------------------------------
 
@@ -149,8 +149,7 @@ def test_a_non_busy_open_failure_is_not_retried_to_the_busy_timeout(tmp_path):
         target.chmod(0o644)
 
     assert elapsed < db._BUSY_TIMEOUT_MS / 1000 / 2, (
-        f"a failure waiting cannot resolve stalled for {elapsed:.2f}s; "
-        f"only SQLITE_BUSY may be retried"
+        f"a failure waiting cannot resolve stalled for {elapsed:.2f}s; only SQLITE_BUSY may be retried"
     )
 
 
@@ -210,9 +209,7 @@ def test_duplicate_station_date_in_legacy_progress_json_reports_an_import_failur
         "created_at": "t1",
         "updated_at": "t2",
     }
-    (tmp_path / "progress.json").write_text(
-        json.dumps([{**record, "id": "p1"}, {**record, "id": "p2"}])
-    )
+    (tmp_path / "progress.json").write_text(json.dumps([{**record, "id": "p1"}, {**record, "id": "p2"}]))
 
     with pytest.raises(HeraldError) as excinfo:
         progress.read_all(db_path)
@@ -234,12 +231,7 @@ def test_fresh_database_is_stamped_at_the_latest_schema_version(tmp_path):
 def test_migration_creates_every_table(tmp_path):
     db_path = tmp_path / "herald.db"
     with db.connection(db_path) as conn:
-        tables = {
-            row[0]
-            for row in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            ).fetchall()
-        }
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()}
     assert {"progress", "claims", "notices_index", "notices_redirects"} <= tables
 
 
@@ -404,9 +396,7 @@ def test_legacy_notices_index_json_is_imported_once(tmp_path):
     # comment in the progress case above. A re-import would raise here
     # (`component` is a PRIMARY KEY), so this pins the gating, not just the
     # row count.
-    assert [n.component for n in notices.list_notices(herald_dir.parent, status="all")] == [
-        "auth-api-v1"
-    ]
+    assert [n.component for n in notices.list_notices(herald_dir.parent, status="all")] == ["auth-api-v1"]
 
 
 def test_all_three_legacy_files_import_together(tmp_path):
@@ -452,9 +442,7 @@ def test_all_three_legacy_files_import_together(tmp_path):
             ]
         )
     )
-    (herald_dir / "notices-index.json").write_text(
-        json.dumps({"notices": {}, "redirects": {}})
-    )
+    (herald_dir / "notices-index.json").write_text(json.dumps({"notices": {}, "redirects": {}}))
     db_path = herald_dir / "herald.db"
     assert len(progress.read_all(db_path)) == 1
     assert len(claims.read_all(db_path)) == 1
@@ -558,12 +546,7 @@ def test_legacy_import_failure_leaves_nothing_partially_imported(tmp_path):
 
     raw = sqlite3.connect(db_path)
     version = raw.execute("PRAGMA user_version").fetchone()[0]
-    tables = {
-        row[0]
-        for row in raw.execute(
-            "SELECT name FROM sqlite_master WHERE type = 'table'"
-        ).fetchall()
-    }
+    tables = {row[0] for row in raw.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()}
     raw.close()
     assert version == 0
     assert "claims" not in tables, "the claims half of a rolled-back migration must not persist"
@@ -847,12 +830,7 @@ def test_empty_read_connection_follows_the_migration_set(tmp_path, monkeypatch):
     def shape(conn):
         return (
             conn.execute("PRAGMA user_version").fetchone()[0],
-            {
-                row[0]
-                for row in conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table'"
-                )
-            },
+            {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")},
             [r[1] for r in conn.execute("PRAGMA table_info(progress)")],
         )
 
@@ -870,7 +848,7 @@ def test_empty_read_connection_follows_the_migration_set(tmp_path, monkeypatch):
 
 
 def test_legacy_import_is_skipped_when_the_tables_already_hold_rows(tmp_path):
-    """"Imports once" has to hold on the one path that legitimately reruns
+    """ "Imports once" has to hold on the one path that legitimately reruns
     the v1 migration over populated tables: a database restored from
     ``sqlite3 .dump`` comes back full at ``user_version = 0``.
 
@@ -967,9 +945,7 @@ def test_the_two_migration_sets_carry_the_same_versions():
     the defect ``_empty_read_connection`` was rebuilt to fix: a read served
     from a schema stamped current but shaped a version behind.
     """
-    assert [version for version, _ in db._SCHEMA_MIGRATIONS] == [
-        version for version, _ in db._MIGRATIONS
-    ]
+    assert [version for version, _ in db._SCHEMA_MIGRATIONS] == [version for version, _ in db._MIGRATIONS]
 
 
 def test_notices_fail_fast_creates_nothing_when_another_legacy_store_exists(tmp_path):
@@ -1014,6 +990,4 @@ def test_claims_publish_wraps_a_raw_sqlite_error_from_its_in_transaction_read(tm
         raw.close()
 
     with pytest.raises(HeraldError):
-        claims.publish(
-            db_path, claim.id, thesis="t", validate=drop_the_table_mid_validation
-        )
+        claims.publish(db_path, claim.id, thesis="t", validate=drop_the_table_mid_validation)

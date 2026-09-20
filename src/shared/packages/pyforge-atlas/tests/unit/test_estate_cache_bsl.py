@@ -13,9 +13,7 @@ from pyforge.atlas.semantic.models import build_estate_cache_model
 
 def test_bsl_query_returns_planted_estate_rows(tmp_path: Path) -> None:
     cache = tmp_path / "query_plane_estate.parquet"
-    pd.DataFrame({"sku": ["widget-a", "widget-b"], "units": [12, 7]}).to_parquet(
-        cache, compression="zstd"
-    )
+    pd.DataFrame({"sku": ["widget-a", "widget-b"], "units": [12, 7]}).to_parquet(cache, compression="zstd")
     frame = load_estate_cache(cache)
     assert set(frame.columns) >= {"sku", "units_total"}
     by_sku = {row.sku: int(row.units_total) for row in frame.itertuples(index=False)}

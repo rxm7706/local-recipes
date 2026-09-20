@@ -175,9 +175,7 @@ def test_load_extract_fresh_load_creates_one_row():
         direction="inbound", batch_sha=sha, waybill="w-fresh", transport="app-upload", config=_real_config()
     )
     assert outcome.status == "loaded"
-    assert (
-        CorridorLoad.objects.filter(direction="inbound", batch_sha=sha, waybill="w-fresh").count() == 1
-    )
+    assert CorridorLoad.objects.filter(direction="inbound", batch_sha=sha, waybill="w-fresh").count() == 1
 
 
 def test_load_extract_identical_repeat_is_idempotent():
@@ -197,12 +195,8 @@ def test_load_extract_identical_repeat_is_idempotent():
 
 def test_load_extract_different_waybill_same_sha_creates_second_row():
     sha = "d" * 64
-    load_extract(
-        direction="inbound", batch_sha=sha, waybill="w-1", transport="app-upload", config=_real_config()
-    )
-    load_extract(
-        direction="inbound", batch_sha=sha, waybill="w-2", transport="app-upload", config=_real_config()
-    )
+    load_extract(direction="inbound", batch_sha=sha, waybill="w-1", transport="app-upload", config=_real_config())
+    load_extract(direction="inbound", batch_sha=sha, waybill="w-2", transport="app-upload", config=_real_config())
     assert CorridorLoad.objects.filter(batch_sha=sha).count() == 2
 
 
@@ -219,9 +213,7 @@ def test_load_extract_repeat_with_declared_off_transport_is_still_idempotent():
     )
     assert first.status == "loaded"
 
-    second = load_extract(
-        direction="inbound", batch_sha=sha, waybill=waybill, transport="email", config=_real_config()
-    )
+    second = load_extract(direction="inbound", batch_sha=sha, waybill=waybill, transport="email", config=_real_config())
     assert second.status == "idempotent"
     assert second.transport == "app-upload"
     assert CorridorLoad.objects.filter(direction="inbound", batch_sha=sha, waybill=waybill).count() == 1
@@ -450,9 +442,7 @@ def test_load_duty_repeat_with_declared_off_transport_is_still_idempotent(tmp_pa
     extract = tmp_path / "extract.csv"
     extract.write_text("row,one\n", encoding="utf-8")
 
-    first_ns = build_parser().parse_args(
-        ["load", "inbound", "--file", str(extract), "--waybill", "w-cli-repeat-off"]
-    )
+    first_ns = build_parser().parse_args(["load", "inbound", "--file", str(extract), "--waybill", "w-cli-repeat-off"])
     first = LoadDuty().run(first_ns)
     assert first.ok is True
     assert first.details["status"] == "loaded"
@@ -552,9 +542,7 @@ def test_load_duty_waybill_over_length_cap_fails(tmp_path):
     extract = tmp_path / "extract.csv"
     extract.write_text("row,one\n", encoding="utf-8")
     over_length_waybill = "w" * 129
-    ns = build_parser().parse_args(
-        ["load", "inbound", "--file", str(extract), "--waybill", over_length_waybill]
-    )
+    ns = build_parser().parse_args(["load", "inbound", "--file", str(extract), "--waybill", over_length_waybill])
     result = LoadDuty().run(ns)
     assert result.ok is False
     assert CorridorLoad.objects.filter(waybill=over_length_waybill).count() == 0

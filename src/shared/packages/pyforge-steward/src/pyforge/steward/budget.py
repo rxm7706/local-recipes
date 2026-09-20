@@ -89,9 +89,7 @@ def default_budget_path() -> Path:
 
 # ── Cap parsing (FR-16, Story 4.1) ──────────────────────────────────────────
 
-_CAP_PATTERN = re.compile(
-    r"^(?P<amount>\d+(?:\.\d+)?)(?P<currency>[A-Za-z]{3})/(?P<period>[A-Za-z]+)$"
-)
+_CAP_PATTERN = re.compile(r"^(?P<amount>\d+(?:\.\d+)?)(?P<currency>[A-Za-z]{3})/(?P<period>[A-Za-z]+)$")
 
 
 class CapParseError(ValueError):
@@ -126,14 +124,12 @@ def parse_cap(cap: str) -> tuple[float, str, str]:
     match = _CAP_PATTERN.match(cap.strip())
     if not match:
         raise CapParseError(
-            f"budget set: {cap!r} is not a valid cap — expected "
-            "<amount><currency>/<period>, e.g. '1500usd/month'"
+            f"budget set: {cap!r} is not a valid cap — expected <amount><currency>/<period>, e.g. '1500usd/month'"
         )
     amount = float(match.group("amount"))
     if amount <= 0:
         raise CapParseError(
-            f"budget set: {cap!r} has a non-positive amount ({amount}) — a "
-            "budget ceiling must be a positive number"
+            f"budget set: {cap!r} has a non-positive amount ({amount}) — a budget ceiling must be a positive number"
         )
     return amount, match.group("currency").lower(), match.group("period").lower()
 
@@ -167,10 +163,7 @@ def load_budget(path: str | Path) -> tuple[Ceiling, ...]:
     with path.open("r", encoding="utf-8") as f:
         document = yaml.safe_load(f) or {}
     if not isinstance(document, dict):
-        raise BudgetError(
-            f"{path}: top-level document must be a mapping, got "
-            f"{type(document).__name__}"
-        )
+        raise BudgetError(f"{path}: top-level document must be a mapping, got {type(document).__name__}")
     raw_ceilings = document.get("ceilings") or []
     if not isinstance(raw_ceilings, list):
         # Review finding: `for raw in document.get("ceilings") or []:` raises
@@ -179,9 +172,7 @@ def load_budget(path: str | Path) -> tuple[Ceiling, ...]:
         # propagates all the way to cli.main()'s generic exception handler
         # as a raw traceback, contradicting this function's own "a corrupt
         # budget file must never silently [crash]" guarantee.
-        raise BudgetError(
-            f"{path}: 'ceilings' must be a list, got {type(raw_ceilings).__name__}"
-        )
+        raise BudgetError(f"{path}: 'ceilings' must be a list, got {type(raw_ceilings).__name__}")
     ceilings: list[Ceiling] = []
     for raw in raw_ceilings:
         if not isinstance(raw, dict):
@@ -278,9 +269,7 @@ def format_ceilings(ceilings: tuple[Ceiling, ...], *, as_json: bool) -> str:
         return json.dumps([_ceiling_to_dict(c) for c in ceilings], indent=2)
     if not ceilings:
         return "budget show: no ceiling has ever been declared"
-    lines = [
-        f"{c.amount:g} {c.currency}/{c.period} (declared {c.declared_at})" for c in ceilings
-    ]
+    lines = [f"{c.amount:g} {c.currency}/{c.period} (declared {c.declared_at})" for c in ceilings]
     return "\n".join(lines)
 
 

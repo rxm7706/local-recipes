@@ -20,7 +20,6 @@ from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
     DispatchGitFacts,
-    DispatchSessionVerdict,
 )
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
@@ -92,12 +91,8 @@ class FakeVcs:
         self.commit_paths_calls.append((repo_root, paths, message))
         return "committed-sha"
 
-    def commit_paths_onto_remote_tip(
-        self, repo_root, *, remote, ref, writes, message
-    ):
-        self.isolated_promote_calls.append(
-            (repo_root, remote, ref, tuple(writes), message)
-        )
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message):
+        self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
         if self.commit_paths_onto_remote_tip_raises:
             raise VcsCommandError("git push failed: non-fast-forward (test double)")
         return "isolated-promote-sha"
@@ -113,9 +108,7 @@ def _git_facts(*, baseline_head_sha: str = _BASELINE) -> DispatchGitFacts:
     )
 
 
-def _seed_spec(
-    *, repo_root: Path, worktree: Path, slug: str, story_key: str, text: str
-) -> str:
+def _seed_spec(*, repo_root: Path, worktree: Path, slug: str, story_key: str, text: str) -> str:
     specs_dir = dispatch_core.planning_specs_dir(repo_root, slug)
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = story_key.replace(".", "-")
@@ -135,7 +128,7 @@ _BLOCKED_SPEC_TEXT = (
     "---\n"
     "status: blocked\n"
     f"baseline_revision: '{_BASELINE}'\n"
-    "blocking_condition: \"an intent gap\"\n"
+    'blocking_condition: "an intent gap"\n'
     "---\n\n"
     "## Auto Run Result\n\n"
     "Status: escalated\n"

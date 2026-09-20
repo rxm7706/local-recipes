@@ -56,9 +56,7 @@ def test_marshal_portal_does_not_import_pyforge_or_raw_http():
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 top = module.split(".")[0]
-                if top in _HTTP_TOPLEVEL or top == "pyforge" or module.startswith(
-                    ("urllib.request", "http.client")
-                ):
+                if top in _HTTP_TOPLEVEL or top == "pyforge" or module.startswith(("urllib.request", "http.client")):
                     offenders.append(f"{path}: from {module}")
     assert offenders == []
 
@@ -83,11 +81,7 @@ def test_diff_does_not_add_bmad_loop_ingest():
             continue
         text = path.read_text(encoding="utf-8")
         lowered = text.lower()
-        prohibits = (
-            "do not implement" in lowered
-            or "never" in lowered
-            or "no bmad-loop ingest" in lowered
-        )
+        prohibits = "do not implement" in lowered or "never" in lowered or "no bmad-loop ingest" in lowered
         if any(marker in text for marker in _INGEST_MARKERS) and not prohibits:
             offenders.append(rel)
         if rel.endswith(".py") and "supervisor" in rel and "src/platform" in rel:

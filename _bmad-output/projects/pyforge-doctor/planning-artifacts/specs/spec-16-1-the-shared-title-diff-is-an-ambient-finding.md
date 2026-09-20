@@ -94,3 +94,16 @@ Fixture title: use this repo's licensed deck-dream `title:` string plus syntheti
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3bb7a56939` (2026-08-22, "Merge pull request #633 from rxm7706/doctor/16-1-shared-title-diff-ambient"). Ledger row `16-1-the-shared-title-diff-is-an-ambient-finding: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_sibling_dreams_drift.py`, `scripts/fleet_picture.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py`, `src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_cli_check.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_models.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py` (+1 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

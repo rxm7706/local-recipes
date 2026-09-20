@@ -9,9 +9,7 @@ from pyforge.doctor.score import AxisScore, Grade, GradeResult, grade
 
 
 def _finding(source, check="pkg-a", status=DoctorStatus.OK, evidence=None):
-    return Finding(
-        source=source, check=check, status=status, message="stub", evidence=evidence or {}
-    )
+    return Finding(source=source, check=check, status=status, message="stub", evidence=evidence or {})
 
 
 def _gather_failure(source):
@@ -52,15 +50,10 @@ def test_grade_is_deterministic_across_two_calls():
 
 
 def test_all_ok_findings_grade_a():
-    findings = tuple(
-        _finding(Source.STALENESS_REPORT, check=f"pkg-{i}", status=DoctorStatus.OK)
-        for i in range(3)
-    )
+    findings = tuple(_finding(Source.STALENESS_REPORT, check=f"pkg-{i}", status=DoctorStatus.OK) for i in range(3))
     result = grade(findings)
     assert result.grade is Grade.A
-    assert result.axis_scores == (
-        AxisScore(axis="staleness-report", ok=3, warn=0, fail=0, grade=Grade.A),
-    )
+    assert result.axis_scores == (AxisScore(axis="staleness-report", ok=3, warn=0, fail=0, grade=Grade.A),)
 
 
 def test_majority_warn_grades_c_minority_warn_grades_b():
@@ -148,7 +141,9 @@ def test_gather_failure_sentinel_with_a_different_check_name_is_not_mistaken_for
     # "gather incomplete" just because it happens to be a FAIL.
     findings = (
         _finding(
-            Source.CVE_WATCHER, check="real-package", status=DoctorStatus.FAIL,
+            Source.CVE_WATCHER,
+            check="real-package",
+            status=DoctorStatus.FAIL,
             evidence={"delta": 3},
         ),
     )
@@ -162,12 +157,18 @@ def test_gather_failure_sentinel_with_a_different_check_name_is_not_mistaken_for
 def test_axis_score_to_json_dict_shape():
     axis = AxisScore(axis="cve-watcher", ok=1, warn=2, fail=3, grade=Grade.F)
     assert axis.to_json_dict() == {
-        "axis": "cve-watcher", "ok": 1, "warn": 2, "fail": 3, "grade": "F",
+        "axis": "cve-watcher",
+        "ok": 1,
+        "warn": 2,
+        "fail": 3,
+        "grade": "F",
     }
 
 
 def test_grade_result_to_json_dict_shape():
     result = GradeResult(grade=Grade.INCOMPLETE, axis_scores=(), reason="no findings gathered")
     assert result.to_json_dict() == {
-        "grade": "incomplete", "axis_scores": [], "reason": "no findings gathered",
+        "grade": "incomplete",
+        "axis_scores": [],
+        "reason": "no findings gathered",
     }

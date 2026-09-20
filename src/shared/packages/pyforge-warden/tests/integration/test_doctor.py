@@ -56,8 +56,7 @@ def test_doctor_performs_no_discovery_extraction_or_policy_work(capsys, tmp_path
     any report/policy vocabulary (axis tags, a ``findings=`` count), reach
     the doctor output — it is an environment check, not a project scan."""
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "demo"\nversion = "0.0.1"\n'
-        'dependencies = ["totally-absent-pkg-xyz"]\n',
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = ["totally-absent-pkg-xyz"]\n',
         encoding="utf-8",
     )
     rc = main(["scan", str(tmp_path), "--doctor"])

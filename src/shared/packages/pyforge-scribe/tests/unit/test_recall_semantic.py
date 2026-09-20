@@ -51,9 +51,7 @@ def _load_pair(store: PostgresGraphStore | FlatFileGraphStore, repo: Path) -> No
     store.commit()
 
 
-def test_semantic_recall_hits_no_lexical_overlap_target(
-    tmp_path: Path, pg_dsn: str, cited_repo: Path
-) -> None:
+def test_semantic_recall_hits_no_lexical_overlap_target(tmp_path: Path, pg_dsn: str, cited_repo: Path) -> None:
     store = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
     _load_pair(store, cited_repo)
 
@@ -78,9 +76,7 @@ def test_flatfile_semantic_stays_lexical_only(cited_repo: Path) -> None:
     assert store.query_similar("canine") == []
 
 
-def test_semantic_skips_unresolvable_citation(
-    tmp_path: Path, pg_dsn: str, cited_repo: Path
-) -> None:
+def test_semantic_skips_unresolvable_citation(tmp_path: Path, pg_dsn: str, cited_repo: Path) -> None:
     store = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
     store.reset()
     store.upsert_node(_node("memory:project/dog", "dog", "notes/missing.md"))

@@ -31,7 +31,7 @@ deferred:
 **Approach:** AGENTS.md, CLAUDE.md, and the bmad-build-auto skill note; an advisory (never gating) doctor detector may flag a bare dispatch.
 
 Ledger key: `46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: docs / S / —.
 
 ### Living CAP citations
@@ -145,3 +145,7 @@ with no code-level I/O.
 **Verification performed:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 8329 passed, 1 skipped, 12 deselected, exit 0 (re-run after patches). `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped, exit 0 (re-run after patches). Both read directly from exit code, never through a pipe.
 
 **Residual risks:** None identified beyond the deferred advisory-detector capability (recorded in frontmatter `deferred:`), which is explicitly out of scope for this docs-only story.
+
+## Status reconcile 2026-09-20
+
+- "Ledger status" line `backlog` → `done`.

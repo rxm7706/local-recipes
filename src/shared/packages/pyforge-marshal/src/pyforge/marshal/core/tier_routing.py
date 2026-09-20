@@ -59,9 +59,7 @@ class TierLaunchResolution:
     resolved_models: dict[str, str]
 
     @classmethod
-    def from_preference_only(
-        cls, preference: Sequence[str]
-    ) -> TierLaunchResolution:
+    def from_preference_only(cls, preference: Sequence[str]) -> TierLaunchResolution:
         adapter = bmadloop_adapter_for_preference(preference)
         return cls(
             stages={},
@@ -131,9 +129,7 @@ def sort_candidates_by_pool_preference(
     def _is_subscription(candidate: StageCandidate) -> bool:
         if candidate.pool is not None:
             return True
-        pool = candidate_pool_from_catalog(
-            catalog, harness=candidate.harness, model=candidate.model
-        )
+        pool = candidate_pool_from_catalog(catalog, harness=candidate.harness, model=candidate.model)
         return pool is not None
 
     indexed = list(enumerate(candidates))
@@ -214,9 +210,7 @@ def resolve_tier_launch(
 ) -> TierLaunchResolution:
     """Resolve difficulty -> (harness, model) pairs for launch."""
     preference = tuple(policy.harness_preference.value)
-    chosen = resolve_tier_difficulty(
-        policy, difficulty, allow_unmapped_fallback=allow_unmapped_fallback
-    )
+    chosen = resolve_tier_difficulty(policy, difficulty, allow_unmapped_fallback=allow_unmapped_fallback)
     if chosen is None:
         return TierLaunchResolution.from_preference_only(preference)
 
@@ -226,9 +220,7 @@ def resolve_tier_launch(
         return TierLaunchResolution.from_preference_only(preference)
 
     excluded = set(excluded_harnesses or ())
-    if session_log and is_transient_harness_session_outcome(
-        classify_session_log(session_log)
-    ):
+    if session_log and is_transient_harness_session_outcome(classify_session_log(session_log)):
         if preference:
             excluded.add(preference[0])
 
@@ -308,12 +300,8 @@ def _provider_for_harness(harness: str | None) -> str | None:
     return PROFILE_TO_PROVIDER.get(harness)
 
 
-def _resolved_from_candidate(
-    candidate: StageCandidate, catalog: object
-) -> ResolvedStage:
-    pool = candidate.pool or candidate_pool_from_catalog(
-        catalog, harness=candidate.harness, model=candidate.model
-    )
+def _resolved_from_candidate(candidate: StageCandidate, catalog: object) -> ResolvedStage:
+    pool = candidate.pool or candidate_pool_from_catalog(catalog, harness=candidate.harness, model=candidate.model)
     adapter_name = None
     if candidate.harness is not None:
         adapter_name = bmadloop_adapter_for_preference([candidate.harness])

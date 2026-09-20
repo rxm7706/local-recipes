@@ -58,3 +58,16 @@ during dev/review. For the actual landing record, see `spec-deck-family-lockstep
 - Part of CAP-2
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `155ec05450` (2026-09-10, "Story 21.3: mark sibling-dreams slug re-key done in sprint ledger."); also `8a704595df` (2026-08-30, "atlas: review-pass-3 fixups for --live-catalog contract (Story 21.3)"); also `97bc0c9d63` (2026-08-30, "atlas: add --live-catalog Tier 0 contract to inventory-quartet metrics (Story 21.3)"). Ledger row `21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

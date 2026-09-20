@@ -267,16 +267,12 @@ class DesignTransport(Protocol):
     internally. All arguments are keyword-only, so an adapter can add a
     parameter without breaking positional call sites."""
 
-    def get_design_prompt(
-        self, *, design_system_id: str | None = None, project_id: str | None = None
-    ) -> str:
+    def get_design_prompt(self, *, design_system_id: str | None = None, project_id: str | None = None) -> str:
         """The mandatory pre-write design-system prompt (tool
         ``get_claude_design_prompt``)."""
         ...
 
-    def create_project(
-        self, *, name: str, design_system_id: str | None = None
-    ) -> ProjectRef: ...
+    def create_project(self, *, name: str, design_system_id: str | None = None) -> ProjectRef: ...
 
     def list_projects(self) -> Sequence[ProjectSummary]:
         """Enumerate every Design project the signed-in account can see
@@ -394,9 +390,7 @@ def sanitize_payload(payload: Any) -> Any:
     see ``McpTransport.read_file``."""
     if isinstance(payload, Mapping):
         return {
-            (sanitize_payload(key) if isinstance(key, str) else key): sanitize_payload(
-                value
-            )
+            (sanitize_payload(key) if isinstance(key, str) else key): sanitize_payload(value)
             for key, value in payload.items()
             if key != SERVE_URL_KEY
         }
@@ -467,14 +461,9 @@ def parse_read_response(text: str) -> FileRead:
         try:
             payload = json.loads(stripped)
         except json.JSONDecodeError as exc:
-            raise TransportCallError(
-                "read_file returned an unparseable JSON answer"
-            ) from exc
+            raise TransportCallError("read_file returned an unparseable JSON answer") from exc
         if not isinstance(payload, Mapping) or not payload.get("unchanged"):
-            raise TransportCallError(
-                "read_file returned a JSON answer that is not an "
-                "if_none_match short-circuit"
-            )
+            raise TransportCallError("read_file returned a JSON answer that is not an if_none_match short-circuit")
         etag = as_text(payload.get("etag"))
         if not etag:
             # The etag is the whole point of the short-circuit: the caller
@@ -482,8 +471,7 @@ def parse_read_response(text: str) -> FileRead:
             # would silently turn `herald deck watch`'s cheap etag poll
             # into a full download every cycle, with nothing to see.
             raise TransportCallError(
-                "read_file answered an if_none_match short-circuit carrying "
-                "no etag; the wire contract moved"
+                "read_file answered an if_none_match short-circuit carrying no etag; the wire contract moved"
             )
         return FileRead(
             path=as_text(payload.get("path")),
@@ -494,18 +482,14 @@ def parse_read_response(text: str) -> FileRead:
 
     opening = _READ_OPEN_RE.search(text)
     if opening is None:
-        raise TransportCallError(
-            f"read_file returned no <{_READ_TAG}> wrapper to parse"
-        )
+        raise TransportCallError(f"read_file returned no <{_READ_TAG}> wrapper to parse")
     # The FIRST close tag after the opening is always the right one: the
     # server entity-escapes the body, so the body cannot contain a literal
     # close tag. Searching from the end instead would swallow a trailer
     # that merely mentions the tag into the file content.
     close_at = text.find(_READ_CLOSE, opening.end())
     if close_at < 0:
-        raise TransportCallError(
-            f"read_file returned no <{_READ_TAG}> wrapper to parse"
-        )
+        raise TransportCallError(f"read_file returned no <{_READ_TAG}> wrapper to parse")
     attributes = dict(_ATTR_RE.findall(opening.group(1)))
     first_line, last_line, total_lines = _parse_window(attributes)
     body = text[opening.end() : close_at]
@@ -539,16 +523,10 @@ def _is_leaf_etag_map(value: Any) -> bool:
     """``leaf_if_match`` maps every leaf under a folder destination to its
     own etag, so an empty map preconditions nothing and a non-string value
     preconditions the wrong thing."""
-    return (
-        isinstance(value, Mapping)
-        and bool(value)
-        and all(_is_etag(item) for item in value.values())
-    )
+    return isinstance(value, Mapping) and bool(value) and all(_is_etag(item) for item in value.values())
 
 
-def require_conditional(
-    tool: str, files: Sequence[Mapping[str, Any]], *, allow_leaf: bool
-) -> None:
+def require_conditional(tool: str, files: Sequence[Mapping[str, Any]], *, allow_leaf: bool) -> None:
     """FR-24: refuse an unconditional write before any network call.
 
     Lives here, not in one adapter, because Story 1.3's
@@ -564,8 +542,7 @@ def require_conditional(
     ``AttributeError``."""
     if not files:
         raise UnconditionalWriteError(
-            f"{tool}: no file entries to write (FR-24); an empty write "
-            f"would report success without writing anything"
+            f"{tool}: no file entries to write (FR-24); an empty write would report success without writing anything"
         )
     keys = ("if_match", "leaf_if_match") if allow_leaf else ("if_match",)
     for index, entry in enumerate(files):
@@ -574,9 +551,7 @@ def require_conditional(
                 f"{tool}: entry {index} is a {type(entry).__name__}, not a "
                 f"mapping, so it declares no etag precondition (FR-24)"
             )
-        if _is_etag(entry.get("if_match")) or (
-            allow_leaf and _is_leaf_etag_map(entry.get("leaf_if_match"))
-        ):
+        if _is_etag(entry.get("if_match")) or (allow_leaf and _is_leaf_etag_map(entry.get("leaf_if_match"))):
             continue
         subject = entry.get("dest") or entry.get("path") or f"entry {index}"
         wanted = " or ".join(repr(key) for key in keys)

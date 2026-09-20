@@ -55,3 +55,15 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
 **Status:** done
 **Outcome (2026-09-13):** confirmed shipped 2026-09-10 via atlas Story 25.1 (PR #1114, `caeae255d05`) — `pyforge/atlas/views/`, its tests, and `cli_bridge.py` are all deleted (verified: zero repo-wide importers outside this Spec's own narrative text), `docs/dreams/atlas-query-dashboards.md` is `status: archived` with a Realization log entry, and `spec-atlas-query-dashboards/SPEC.md` marks CAP-1..CAP-4 `SUPERSEDED`. Ledger was never flipped after the work landed.
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `49-10-index-atlas-realization-gate-effect-stories: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

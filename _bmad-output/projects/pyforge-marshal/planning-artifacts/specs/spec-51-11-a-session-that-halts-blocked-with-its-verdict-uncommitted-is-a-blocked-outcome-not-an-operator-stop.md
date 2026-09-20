@@ -3,7 +3,7 @@ title: '51.11: A session that halts blocked with its verdict uncommitted is a bl
 type: 'fix'
 created: '2026-09-20'
 updated: '2026-09-19'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'c8277c03c117ff4779d54a2ff9d900f519415971'
 review_loop_iteration: 1
 followup_review_recommended: true
@@ -113,3 +113,7 @@ Status: done
 **Follow-up review recommended:** true — one interpretive judgment call needs a second look. The Intent's `*-attempted-change*.patch` wording, read literally against the worktree's Tier-3, points at the backlinked `implementation-artifacts/` directory that AGENTS.md forbids git-tracking outright ("nothing there may be git-tracked"). The literal string does not appear anywhere else in this repo (it describes an external harness's own artifact naming, not an established local convention), so `_attempted_change_patch_paths` resolves the conflict by *excluding* any match under `implementation-artifacts/` — that patch already survives worktree teardown by virtue of being backlinked to the primary checkout, so nothing is lost, but a patch dropped anywhere else in the worktree (the realistic case this function actually commits) has no such protection and is committed onto the dispatch branch as the Intent describes. A reviewer with visibility into where doctor 26.1's actual patch landed should confirm this reading.
 
 **Residual risks:** (1) the exclusion above — low risk, self-consistent with AGENTS.md's Tier-3 rule, but not verified against the actual doctor 26.1 patch location since that Tier-3 artifact does not exist in this worktree to replay verbatim. (2) No end-to-end test drives `run_dispatch_supervisor`'s full tick loop (no such test exists anywhere in this suite for that ~550-line polling function); coverage is at the level of the four new pure/composable helper functions it calls, which is the same granularity Story 51.4's sibling `test_dispatch_supervisor_spec_block.py` uses for the adjacent block-reason path.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop: done`).

@@ -43,15 +43,15 @@ def test_parse_cap_accepts_a_decimal_amount():
 @pytest.mark.parametrize(
     "bad_cap",
     [
-        "garbage",             # no digits, no unit, no period
-        "1500usd",             # missing "/period"
-        "usd/month",           # missing amount
-        "1500/month",          # missing currency
-        "1500us/month",        # currency not exactly 3 letters
-        "1500usdd/month",      # currency not exactly 3 letters
-        "-5usd/month",         # not a valid positive-amount shape
-        "0usd/month",          # zero amount
-        "-5.0usd/month",       # negative decimal
+        "garbage",  # no digits, no unit, no period
+        "1500usd",  # missing "/period"
+        "usd/month",  # missing amount
+        "1500/month",  # missing currency
+        "1500us/month",  # currency not exactly 3 letters
+        "1500usdd/month",  # currency not exactly 3 letters
+        "-5usd/month",  # not a valid positive-amount shape
+        "0usd/month",  # zero amount
+        "-5.0usd/month",  # negative decimal
     ],
 )
 def test_parse_cap_rejects_malformed_values(bad_cap):

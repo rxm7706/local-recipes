@@ -224,7 +224,6 @@ from ..core.harness_profile import (
     resolve_wire_wrap,
     substitute_wire_port,
 )
-from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..core.model_cost import (
     TokenCounts,
     adapter_provider,
@@ -236,6 +235,7 @@ from ..core.model_cost import (
     resolve_model_price,
     weighted_total,
 )
+from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
@@ -446,6 +446,7 @@ _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 #: still can.
 _SURFACE_RECONCILE_COMMAND = "python scripts/spec_surface_reconcile.py"
 
+
 def render_policy_toml(
     effective: policy.EffectivePolicy,
     *,
@@ -567,17 +568,14 @@ def render_policy_toml(
     doc["limits"]["dev_contract_nudge"] = seed["dev_contract_nudge"].value
     doc["verify"]["stream_capture_kb"] = seed["stream_capture_kb"].value
     doc["review"]["on_timeout"] = seed["review_on_timeout"].value
-    doc["review"]["on_status_contradiction"] = seed[
-        "review_on_status_contradiction"
-    ].value
+    doc["review"]["on_status_contradiction"] = seed["review_on_status_contradiction"].value
     doc["review"]["min_score"] = seed["review_min_score"].value
     doc["operator"]["enabled"] = seed["operator_enabled"].value
     # S-13.7 (FR-174): the station's own commands, THEN the repo-wide surface
     # guard. Appended rather than composed (see _SURFACE_RECONCILE_COMMAND), and
     # de-duplicated so re-rendering an already-rendered home stays idempotent --
     # `marshal config --write-harness-policy` is run repeatedly by design.
-    _verify = [c for c in effective.verify_commands.value
-               if c != _SURFACE_RECONCILE_COMMAND]
+    _verify = [c for c in effective.verify_commands.value if c != _SURFACE_RECONCILE_COMMAND]
     doc["verify"]["commands"] = [*_verify, _SURFACE_RECONCILE_COMMAND]
     doc["scm"]["worktree_seed"] = list(effective.worktree_seed_paths.value)
 
@@ -659,9 +657,7 @@ def render_policy_toml(
     if catalog_declared(catalog):
         resolved_adapter = adapter
         if resolved_adapter is None:
-            resolved_adapter = bmadloop_adapter_for_preference(
-                effective.harness_preference.value
-            )
+            resolved_adapter = bmadloop_adapter_for_preference(effective.harness_preference.value)
         if resolved_adapter is None:
             resolved_adapter = str(doc["adapter"]["name"])
         provider = adapter_provider(resolved_adapter)
@@ -680,9 +676,7 @@ def _plain_json(value: object) -> object:
     return value
 
 
-def _write_model_cost_catalog_sidecar(
-    effective: policy.EffectivePolicy, loop_home: Path
-) -> None:
+def _write_model_cost_catalog_sidecar(effective: policy.EffectivePolicy, loop_home: Path) -> None:
     """Persist declared catalog beside policy.toml for runtime telemetry."""
     sidecar_path = Path(loop_home) / ".bmad-loop" / _MODEL_COST_CATALOG_SIDECAR
     catalog = effective.model_cost_catalog.value
@@ -699,7 +693,7 @@ def _write_model_cost_catalog_sidecar(
             sidecar_path,
             json.dumps(_plain_json(catalog), sort_keys=True).encode("utf-8"),
         )
-    except (OSError, TypeError):
+    except OSError, TypeError:
         return
 
 
@@ -707,7 +701,7 @@ def _load_model_cost_catalog(project: Path) -> dict[str, object] | None:
     sidecar_path = Path(project) / ".bmad-loop" / _MODEL_COST_CATALOG_SIDECAR
     try:
         payload = json.loads(sidecar_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError, TypeError):
+    except OSError, UnicodeDecodeError, json.JSONDecodeError, TypeError:
         return None
     if not catalog_declared(payload):
         return None
@@ -718,7 +712,7 @@ def _read_policy_adapter_and_model(project: Path) -> tuple[str | None, str | Non
     policy_path = Path(project) / ".bmad-loop" / "policy.toml"
     try:
         doc = tomlkit.parse(policy_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None, None
     adapter_table = doc.get("adapter")
     if not isinstance(adapter_table, tomlkit.items.Table):
@@ -766,9 +760,7 @@ def _usage_dollar_fields(
     if layer_savings is not None:
         savings_dict: dict[str, object] = {}
         if layer_savings.output_compression_saved is not None:
-            savings_dict["output_compression_saved"] = (
-                layer_savings.output_compression_saved
-            )
+            savings_dict["output_compression_saved"] = layer_savings.output_compression_saved
         if layer_savings.wire_compression_saved is not None:
             savings_dict["wire_compression_saved"] = layer_savings.wire_compression_saved
         graph_stats = layer_savings.graph_hits_vs_file_reads
@@ -779,13 +771,9 @@ def _usage_dollar_fields(
         elif isinstance(graph_stats, str):
             savings_dict["graph_hits_vs_file_reads"] = graph_stats
         if layer_savings.derived_context_cache_hits is not None:
-            savings_dict["derived_context_cache_hits"] = (
-                layer_savings.derived_context_cache_hits
-            )
+            savings_dict["derived_context_cache_hits"] = layer_savings.derived_context_cache_hits
         if layer_savings.planning_graph_tokens_saved is not None:
-            savings_dict["planning_graph_tokens_saved"] = (
-                layer_savings.planning_graph_tokens_saved
-            )
+            savings_dict["planning_graph_tokens_saved"] = layer_savings.planning_graph_tokens_saved
         if savings_dict:
             computed = estimate_layer_savings_usd(savings_dict, price)
             savings_usd = computed or None
@@ -866,14 +854,10 @@ def _atomic_write_policy_text(text: str, loop_home: Path) -> Path:
         atomic_write_bytes(target_path, text.encode("utf-8"))
         return target_path
     except OSError as exc:
-        raise HarnessPolicyWriteError(
-            f"cannot write policy.toml to {bmad_loop_dir}: {exc}"
-        ) from exc
+        raise HarnessPolicyWriteError(f"cannot write policy.toml to {bmad_loop_dir}: {exc}") from exc
 
 
-def _resolve_wrapper_binary(
-    binary: str, fallback_bin_dirs: tuple[str, ...], repo_root: Path | None
-) -> str | None:
+def _resolve_wrapper_binary(binary: str, fallback_bin_dirs: tuple[str, ...], repo_root: Path | None) -> str | None:
     """Resolve a wire-wrapper binary the same way dispatch does."""
     on_path = shutil.which(binary)
     if on_path is not None:
@@ -927,9 +911,7 @@ def write_spin_wire_profile_overlay(loop_home: Path, adapter_name: str, text: st
     try:
         atomic_write_bytes(target, text.encode("utf-8"))
     except OSError as exc:
-        raise HarnessPolicyWriteError(
-            f"cannot write wire profile overlay to {target}: {exc}"
-        ) from exc
+        raise HarnessPolicyWriteError(f"cannot write wire profile overlay to {target}: {exc}") from exc
     return target
 
 
@@ -950,9 +932,7 @@ def attempt_spin_wire_layer(
     """
     profile_stem = PROFILE_BY_BMADLOOP_ADAPTER.get(adapter_name)
     if profile_stem is None:
-        enabled = resolve_wire_enabled(
-            (wire_layer or {}).get("enabled", False), wrapper_declared=False
-        )
+        enabled = resolve_wire_enabled((wire_layer or {}).get("enabled", False), wrapper_declared=False)
         if not enabled:
             return WireWrap(applied=False)
         return WireWrap(
@@ -962,27 +942,21 @@ def attempt_spin_wire_layer(
                 "profile with a wire-compression wrapper declaration"
             ),
             aggressiveness=(
-                wire_layer.get("aggressiveness")
-                if isinstance((wire_layer or {}).get("aggressiveness"), str)
-                else None
+                wire_layer.get("aggressiveness") if isinstance((wire_layer or {}).get("aggressiveness"), str) else None
             ),
         )
 
     marshal_profiles = load_packaged_profiles()
     profile = marshal_profiles.get(profile_stem)
     if profile is None:
-        enabled = resolve_wire_enabled(
-            (wire_layer or {}).get("enabled", False), wrapper_declared=False
-        )
+        enabled = resolve_wire_enabled((wire_layer or {}).get("enabled", False), wrapper_declared=False)
         if not enabled:
             return WireWrap(applied=False)
         return WireWrap(
             applied=False,
             reason=f"marshal harness profile {profile_stem!r} is missing",
             aggressiveness=(
-                wire_layer.get("aggressiveness")
-                if isinstance((wire_layer or {}).get("aggressiveness"), str)
-                else None
+                wire_layer.get("aggressiveness") if isinstance((wire_layer or {}).get("aggressiveness"), str) else None
             ),
         )
 
@@ -1017,9 +991,7 @@ def attempt_spin_wire_layer(
             )
 
     try:
-        resolved_wrapper_argv = substitute_wire_port(
-            profile.wrapper.argv, worktree=loop_home
-        )
+        resolved_wrapper_argv = substitute_wire_port(profile.wrapper.argv, worktree=loop_home)
         overlay = _render_bmadloop_wire_profile_overlay(
             adapter_name=adapter_name,
             wrapper_binary=profile.wrapper.binary,
@@ -1030,10 +1002,7 @@ def attempt_spin_wire_layer(
     except (HarnessPolicyWriteError, OSError, KeyError, ValueError) as exc:
         return WireWrap(
             applied=False,
-            reason=(
-                f"could not write bmad-loop wire profile overlay for "
-                f"{adapter_name!r}: {exc}"
-            ),
+            reason=(f"could not write bmad-loop wire profile overlay for {adapter_name!r}: {exc}"),
             aggressiveness=wire.aggressiveness,
         )
 
@@ -1061,9 +1030,7 @@ def attempt_spin_wire_layer(
 # _POLICY_TEMPLATE is a module-load-time failure everywhere else in this
 # file already assumes cannot happen (it is a hardcoded source constant,
 # never user input).
-ADAPTER_REVIEW_MODEL_STOCK_DEFAULT: str = tomlkit.parse(_POLICY_TEMPLATE)["adapter"]["review"][
-    "model"
-]
+ADAPTER_REVIEW_MODEL_STOCK_DEFAULT: str = tomlkit.parse(_POLICY_TEMPLATE)["adapter"]["review"]["model"]
 
 
 def write_policy_document(doc: tomlkit.TOMLDocument, loop_home: Path) -> Path:
@@ -1244,6 +1211,7 @@ _LIST_STATUS_TO_ENGINE_LIVENESS: dict[str, EngineLiveness] = {
 # interactive, tmux-launching budget -- which this story never invokes at
 # all (see the spec's own Boundaries & Constraints).
 _PROBE_TIMEOUT_S = 30.0
+
 
 # Story 6.4 (FR-43) -- the curated, read-only subset of the resolved
 # `CLIProfile`'s own already-declared fields this story reports as an
@@ -1522,9 +1490,7 @@ class BmadLoopHarness:
         return tuple(story.key for story in feed.stories) + feed.unknown_keys
 
     @staticmethod
-    def _run_argv(
-        *, epic: int | None, story: str | None, max_count: int | None
-    ) -> list[str]:
+    def _run_argv(*, epic: int | None, story: str | None, max_count: int | None) -> list[str]:
         """The one argv builder shared by ``spin``/``run_foreground`` --
         ``["bmad-loop", "run"]`` plus ``--epic``/``--story``/``--max-stories``
         when given, EXACTLY the flag names the installed 0.9.0 ``cli.py``
@@ -1604,12 +1570,8 @@ class BmadLoopHarness:
             # chaining from a bare `None` (Story 14.4 review finding, mirrors
             # vcs_git.py/forge_gh.py's own `_run`).
             if str(exc).startswith("cannot open log"):
-                raise HarnessError(
-                    f"cannot open spin log {log_path}: {cause or exc}"
-                ) from (cause or exc)
-            raise HarnessError(
-                f"cannot launch bmad-loop run: {cause or exc}"
-            ) from (cause or exc)
+                raise HarnessError(f"cannot open spin log {log_path}: {cause or exc}") from (cause or exc)
+            raise HarnessError(f"cannot launch bmad-loop run: {cause or exc}") from (cause or exc)
 
         harness_run_id = self._poll_for_harness_run_id(log_path)
         return SpinResult(pid=pid, harness_run_id=harness_run_id)
@@ -1763,15 +1725,11 @@ class BmadLoopHarness:
         # ``ProcessError`` -- distinguished below by cause type so both
         # original ``HarnessError`` messages survive unchanged.
         try:
-            result = PosixProcess().run(
-                ["bmad-loop", "stop", run_id], cwd=project, timeout_s=_STOP_TIMEOUT_S
-            )
+            result = PosixProcess().run(["bmad-loop", "stop", run_id], cwd=project, timeout_s=_STOP_TIMEOUT_S)
         except ProcessError as exc:
             cause = exc.__cause__
             if isinstance(cause, subprocess.TimeoutExpired):
-                raise HarnessError(
-                    f"bmad-loop stop {run_id} timed out after {_STOP_TIMEOUT_S}s: {cause}"
-                ) from cause
+                raise HarnessError(f"bmad-loop stop {run_id} timed out after {_STOP_TIMEOUT_S}s: {cause}") from cause
             raise HarnessError(f"cannot launch bmad-loop stop: {cause}") from cause
         # A non-zero exit is the ordinary "did not stop" shape (already
         # finished, or some other non-launch failure the installed 0.9.0
@@ -1809,9 +1767,7 @@ class BmadLoopHarness:
         try:
             log_file = open(log_path, "ab")
         except (OSError, ValueError) as exc:
-            raise HarnessError(
-                f"cannot open resume log {str(log_path)!r}: {exc}"
-            ) from exc
+            raise HarnessError(f"cannot open resume log {str(log_path)!r}: {exc}") from exc
         with log_file:
             # A visible seam between the two attempts (review finding): the
             # append above preserves the wedged attempt's output, but without
@@ -1829,11 +1785,9 @@ class BmadLoopHarness:
             # be the reason a recovery does not happen, and the `flush` keeps
             # it ordered ahead of the child's own writes to the same fd.
             try:
-                log_file.write(
-                    f"\n--- marshal: resuming {run_id} ---\n".encode("utf-8")
-                )
+                log_file.write(f"\n--- marshal: resuming {run_id} ---\n".encode("utf-8"))
                 log_file.flush()
-            except (OSError, ValueError):
+            except OSError, ValueError:
                 pass
             try:
                 process = subprocess.Popen(
@@ -1882,7 +1836,7 @@ class BmadLoopHarness:
             return "unknown"
         try:
             document = json.loads(list_result.stdout)
-        except (json.JSONDecodeError, ValueError):
+        except json.JSONDecodeError, ValueError:
             return "unknown"
         runs = document.get("runs")
         if not isinstance(runs, list):
@@ -1911,7 +1865,7 @@ class BmadLoopHarness:
             return "unknown"
         try:
             state = load_state(run_dir)
-        except (OSError, ValueError, KeyError, TypeError):
+        except OSError, ValueError, KeyError, TypeError:
             return "unknown"
         if bool(state.finished):
             return "terminal"
@@ -1979,13 +1933,9 @@ class BmadLoopHarness:
                     story_key = task.story_key
                     story_token_counts = _token_counts_from_task(task)
                     if story_token_counts is not None:
-                        story_weighted_tokens = weighted_total(
-                            story_token_counts, cache_read_weight
-                        )
+                        story_weighted_tokens = weighted_total(story_token_counts, cache_read_weight)
                     else:
-                        story_weighted_tokens = task.tokens.weighted_total(
-                            cache_read_weight
-                        )
+                        story_weighted_tokens = task.tokens.weighted_total(cache_read_weight)
             run_weighted_tokens = 0
             for task in state.tasks.values():
                 counts = _token_counts_from_task(task)
@@ -2107,7 +2057,7 @@ class BmadLoopHarness:
         try:
             redacted = to_redacted({"text": text})
             return json.loads(redacted.text)["text"]
-        except (ValueError, LookupError, TypeError):
+        except ValueError, LookupError, TypeError:
             return None
 
     @staticmethod
@@ -2133,13 +2083,13 @@ class BmadLoopHarness:
         escaping this always-degrades-never-raises method."""
         try:
             parsed = json.loads(text)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return BmadLoopHarness._redact_text(text)
         if not isinstance(parsed, dict):
             return BmadLoopHarness._redact_text(text)
         try:
             return to_redacted(parsed).text
-        except (ValueError, LookupError, TypeError):
+        except ValueError, LookupError, TypeError:
             return None
 
     def run_status_snapshot(self, project: Path, run_id: str) -> RunStatusSnapshot | None:
@@ -2164,11 +2114,7 @@ class BmadLoopHarness:
             finished = bool(state.finished)
             paused_stage = state.paused_stage
             paused_story_key = state.paused_story_key
-            paused_reason = (
-                self._redact_text(state.paused_reason)
-                if state.paused_reason is not None
-                else None
-            )
+            paused_reason = self._redact_text(state.paused_reason) if state.paused_reason is not None else None
             escalated_spec_file: str | None = None
             escalated_task_phase: str | None = None
             escalated_preserve_ref: str | None = None
@@ -2228,11 +2174,7 @@ class BmadLoopHarness:
                 deferred.append(
                     DeferredStory(
                         story_key=task.story_key,
-                        reason=(
-                            self._redact_text(task.defer_reason)
-                            if task.defer_reason is not None
-                            else None
-                        ),
+                        reason=(self._redact_text(task.defer_reason) if task.defer_reason is not None else None),
                         attempt=task.attempt,
                         branch=task.branch,
                         worktree_path=task.worktree_path,
@@ -2264,9 +2206,7 @@ class BmadLoopHarness:
             sweeps_refused=sweeps_refused,
         )
 
-    def resolution_reference(
-        self, project: Path, run_id: str, story_key: str
-    ) -> str | None:
+    def resolution_reference(self, project: Path, run_id: str, story_key: str) -> str | None:
         # Lazy import, this method's own instance -- the seam AD-3 reserves
         # for the one call `cli/spin.py`'s `marshal factory resume` could
         # not otherwise make (see the module docstring's Story 3.7
@@ -2279,7 +2219,7 @@ class BmadLoopHarness:
         try:
             path = resolution_path(run_dir, story_key)
             return path.as_posix() if path.is_file() else None
-        except (OSError, ValueError, TypeError):
+        except OSError, ValueError, TypeError:
             return None
 
     def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:

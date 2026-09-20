@@ -61,9 +61,7 @@ def repo_root() -> Path:
     for candidate in (here, *here.parents):
         if (candidate / _BMAD_LOOP_WORKTREE_RELATIVE_PATH).is_file():
             return candidate
-    raise SuiteError(
-        "cannot locate repo root (scripts/bmad-loop-worktree not found walking up)"
-    )
+    raise SuiteError("cannot locate repo root (scripts/bmad-loop-worktree not found walking up)")
 
 
 # Story 31.2 / install-class CAP-2 — not a boolean only --module targets satisfy.
@@ -97,8 +95,7 @@ INSTALL_CLASS_PLAYBOOK_REL = (
     "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
 )
 INSTALL_MATRIX_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-channel-product/install-matrix.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md"
 )
 
 # Values that are class-correct "not unwired" — not a module census miss.
@@ -364,9 +361,7 @@ def fetch_github_latest(
     del package  # live fetch is repo-scoped only
     release_url = _GITHUB_LATEST_RELEASE_URL.format(owner_repo=owner_repo)
     try:
-        with urllib.request.urlopen(
-            _url_request(release_url), timeout=timeout
-        ) as response:
+        with urllib.request.urlopen(_url_request(release_url), timeout=timeout) as response:
             body = json.loads(response.read())
         if not isinstance(body, dict):
             return None
@@ -409,9 +404,7 @@ def fetch_github_latest(
     return max(parsed, key=lambda item: item[0])[1]
 
 
-def fetch_channel_version(
-    package: str, *, timeout: float = _FETCH_TIMEOUT_SECONDS
-) -> str | None:
+def fetch_channel_version(package: str, *, timeout: float = _FETCH_TIMEOUT_SECONDS) -> str | None:
     """Fail-open SelfExplainML ``latest_version`` from anaconda.org."""
     url = _ANACONDA_PACKAGE_URL.format(
         channel=_ANACONDA_CHANNEL,
@@ -431,16 +424,14 @@ def read_recipe_version(repo: Path, package: str) -> str | None:
     not be coerced via ``str()`` (float-lossy for version-like numbers).
     """
     try:
-        data = yaml.safe_load(
-            (repo / "recipes" / package / "recipe.yaml").read_text(encoding="utf-8")
-        )
+        data = yaml.safe_load((repo / "recipes" / package / "recipe.yaml").read_text(encoding="utf-8"))
         version = data["context"]["version"]
         if isinstance(version, str):
             return version
         if isinstance(version, int) and not isinstance(version, bool):
             return str(version)
         return None
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         return None
 
 
@@ -484,16 +475,14 @@ def read_applied_core_version(repo: Path) -> str | None:
     not be coerced via ``str()`` (float-lossy for version-like numbers).
     """
     try:
-        data = yaml.safe_load(
-            (repo / _BMAD_CORE_MANIFEST_RELATIVE_PATH).read_text(encoding="utf-8")
-        )
+        data = yaml.safe_load((repo / _BMAD_CORE_MANIFEST_RELATIVE_PATH).read_text(encoding="utf-8"))
         version = data["installation"]["version"]
         if isinstance(version, str):
             return version
         if isinstance(version, int) and not isinstance(version, bool):
             return str(version)
         return None
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         return None
 
 
@@ -509,7 +498,7 @@ def _bmad_config_keys(repo: Path) -> set[str]:
     path = repo / "_bmad" / "config.yaml"
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError):
+    except OSError, yaml.YAMLError:
         return set()
     if not isinstance(data, dict):
         return set()
@@ -580,10 +569,7 @@ def _module_census_hit(repo: Path, pkg: SuitePackageDef) -> str | None:
 def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
     """Per-class wired-or-not (Story 31.2). Fail-open, never raises."""
     try:
-        if (
-            pkg.install_class == INSTALL_CLASS_SKIP
-            or pkg.wire_policy == "skip"
-        ):
+        if pkg.install_class == INSTALL_CLASS_SKIP or pkg.wire_policy == "skip":
             return StageProbe(
                 value="skip",
                 ok=True,
@@ -669,9 +655,7 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
             # exact in-repo signal AD-3 retired if this duty ever runs from
             # this repo's own root with an accidentally-blank env value.
             # `or` treats an empty string the same as "unset."
-            studio_root = Path(
-                os.environ.get(_PYFORGE_STUDIO_ROOT_ENV) or _PYFORGE_STUDIO_ROOT_DEFAULT
-            ).expanduser()
+            studio_root = Path(os.environ.get(_PYFORGE_STUDIO_ROOT_ENV) or _PYFORGE_STUDIO_ROOT_DEFAULT).expanduser()
             if not studio_root.is_dir():
                 return StageProbe(
                     value="unwired",
@@ -681,8 +665,7 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
             has_bmad = (studio_root / "_bmad").is_dir()
             try:
                 has_mc_skill = any(
-                    p.is_dir() and p.name.startswith("mc-")
-                    for p in (studio_root / ".claude" / "skills").iterdir()
+                    p.is_dir() and p.name.startswith("mc-") for p in (studio_root / ".claude" / "skills").iterdir()
                 )
             except OSError:
                 has_mc_skill = False
@@ -695,10 +678,7 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
             return StageProbe(
                 value="unwired",
                 ok=True,
-                detail=(
-                    f"studio module: {studio_root} present but _bmad/ and/or a "
-                    "mc-* skill is missing"
-                ),
+                detail=(f"studio module: {studio_root} present but _bmad/ and/or a mc-* skill is missing"),
             )
         if pkg.install_class == INSTALL_CLASS_CLI:
             exe_name = pkg.cli_bin or pkg.name
@@ -713,9 +693,7 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
             # env's bin dir before declaring it missing. Never `local-recipes`.
             guild_exe = repo / ".pixi" / "envs" / "pyforge-guild" / "bin" / exe_name
             if guild_exe.is_file():
-                return StageProbe(
-                    value="runnable", ok=True, detail=f"cli: {guild_exe}"
-                )
+                return StageProbe(value="runnable", ok=True, detail=f"cli: {guild_exe}")
             return StageProbe(
                 value="missing",
                 ok=True,
@@ -761,9 +739,7 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
         return StageProbe(value=None, ok=False, detail=f"wired probe failed: {exc}")
 
 
-def _stage_from_value(
-    value: str | None, *, skipped: bool = False, skip_detail: str = ""
-) -> StageProbe:
+def _stage_from_value(value: str | None, *, skipped: bool = False, skip_detail: str = "") -> StageProbe:
     if skipped:
         return StageProbe(value=None, ok=True, detail=skip_detail or "probe skipped for class")
     if value is None:
@@ -771,9 +747,7 @@ def _stage_from_value(
     return StageProbe(value=value, ok=True)
 
 
-def _installer_tree_installed_stage(
-    repo: Path, name: str, *, hooks: ProbeHooks
-) -> StageProbe:
+def _installer_tree_installed_stage(repo: Path, name: str, *, hooks: ProbeHooks) -> StageProbe:
     """The installer-tree class's ``installed`` stage (Story 46.9): the
     APPLIED core version (``read_applied_core_version``) wins over the
     pixi-env conda-meta scan (``hooks.installed``) whenever both are present
@@ -874,9 +848,7 @@ def build_package_truth(
     hooks = hooks or ProbeHooks()
 
     if pkg.npm_name is None:
-        npm_stage = _stage_from_value(
-            None, skipped=True, skip_detail="npm probe skipped for package class"
-        )
+        npm_stage = _stage_from_value(None, skipped=True, skip_detail="npm probe skipped for package class")
     else:
         try:
             npm_stage = _stage_from_value(hooks.npm(pkg.npm_name))
@@ -884,9 +856,7 @@ def build_package_truth(
             npm_stage = StageProbe(value=None, ok=False, detail=str(exc))
 
     if pkg.github_repo is None:
-        gh_stage = _stage_from_value(
-            None, skipped=True, skip_detail="GitHub probe skipped for package class"
-        )
+        gh_stage = _stage_from_value(None, skipped=True, skip_detail="GitHub probe skipped for package class")
     else:
         try:
             gh_stage = _stage_from_value(hooks.github(pkg.github_repo, pkg.name))
@@ -1237,9 +1207,7 @@ class SuiteDuty:
         if use_baseline:
             hooks = hooks_from_baseline(BASELINE_2026_08_22)
             baseline_id = BASELINE_ID_2026_08_22
-        report = build_pipeline_truth_report(
-            repo, hooks=hooks, baseline_id=baseline_id
-        )
+        report = build_pipeline_truth_report(repo, hooks=hooks, baseline_id=baseline_id)
         return DutyResult(
             ok=True,
             summary=format_pipeline_truth(report, as_json=as_json),

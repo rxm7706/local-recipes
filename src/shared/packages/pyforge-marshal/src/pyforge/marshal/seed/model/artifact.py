@@ -62,42 +62,35 @@ class ClassBehavior:
 # stays reachable under its own name does not close that: the proxy is a
 # read-only VIEW, so mutating the underlying dict is fully visible through
 # it. The literal is therefore built inline and never bound elsewhere.
-CLASS_BEHAVIOR: Mapping[ArtifactClass, ClassBehavior] = MappingProxyType({
-    ArtifactClass.REFERENCED: ClassBehavior(
-        definition=(
-            "Not materialized. The repo depends on it by version range; it "
-            "lives upstream."
+CLASS_BEHAVIOR: Mapping[ArtifactClass, ClassBehavior] = MappingProxyType(
+    {
+        ArtifactClass.REFERENCED: ClassBehavior(
+            definition=("Not materialized. The repo depends on it by version range; it lives upstream."),
+            update_behavior="nothing in the repo changes",
+            hand_edit_behavior="n/a",
         ),
-        update_behavior="nothing in the repo changes",
-        hand_edit_behavior="n/a",
-    ),
-    ArtifactClass.COPIED_MANAGED: ClassBehavior(
-        definition=(
-            "Materialized, tool-owned. The repo should not hand-edit it."
+        ArtifactClass.COPIED_MANAGED: ClassBehavior(
+            definition=("Materialized, tool-owned. The repo should not hand-edit it."),
+            update_behavior="regenerated wholesale",
+            hand_edit_behavior="`check` reports; `update` refuses without `--force`",
         ),
-        update_behavior="regenerated wholesale",
-        hand_edit_behavior="`check` reports; `update` refuses without `--force`",
-    ),
-    ArtifactClass.COPIED_SEEDED: ClassBehavior(
-        definition=(
-            "Materialized once as a starting point, then repo-owned forever."
+        ArtifactClass.COPIED_SEEDED: ClassBehavior(
+            definition=("Materialized once as a starting point, then repo-owned forever."),
+            update_behavior="never touched",
+            hand_edit_behavior="expected and fine",
         ),
-        update_behavior="never touched",
-        hand_edit_behavior="expected and fine",
-    ),
-    ArtifactClass.GENERATED_DERIVED: ClassBehavior(
-        definition="Computed from the neutral contract and/or repo state.",
-        update_behavior="recomputed every run (idempotent)",
-        hand_edit_behavior="overwritten on next run; `check` reports",
-    ),
-    ArtifactClass.HYBRID_MANAGED_REGION: ClassBehavior(
-        definition=(
-            "A repo-owned file containing a tool-owned, marker-delimited span."
+        ArtifactClass.GENERATED_DERIVED: ClassBehavior(
+            definition="Computed from the neutral contract and/or repo state.",
+            update_behavior="recomputed every run (idempotent)",
+            hand_edit_behavior="overwritten on next run; `check` reports",
         ),
-        update_behavior="only the span is replaced",
-        hand_edit_behavior="`check` reports hash mismatch on the span only",
-    ),
-})
+        ArtifactClass.HYBRID_MANAGED_REGION: ClassBehavior(
+            definition=("A repo-owned file containing a tool-owned, marker-delimited span."),
+            update_behavior="only the span is replaced",
+            hand_edit_behavior="`check` reports hash mismatch on the span only",
+        ),
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -128,14 +121,9 @@ class Artifact:
 
     def __post_init__(self) -> None:
         if not isinstance(self.entry, ManifestEntry):
-            raise ValueError(
-                f"entry must be a ManifestEntry, got {type(self.entry).__name__}"
-            )
+            raise ValueError(f"entry must be a ManifestEntry, got {type(self.entry).__name__}")
         if not isinstance(self.behavior, ClassBehavior):
-            raise ValueError(
-                f"{self.entry.id}: behavior must be a ClassBehavior, got "
-                f"{type(self.behavior).__name__}"
-            )
+            raise ValueError(f"{self.entry.id}: behavior must be a ClassBehavior, got {type(self.behavior).__name__}")
         expected = CLASS_BEHAVIOR.get(self.entry.artifact_class)
         if expected is None:
             raise ValueError(
@@ -156,9 +144,7 @@ class Artifact:
         # `class: hybrid-managed-region` in YAML -- never as a Python member
         # name.
         actual_name = actual_class.value if actual_class is not None else "an unrecognized class"
-        raise ValueError(
-            f"{self.entry.id}: behavior is {actual_name}'s, not {self.entry.artifact_class.value}'s"
-        )
+        raise ValueError(f"{self.entry.id}: behavior is {actual_name}'s, not {self.entry.artifact_class.value}'s")
 
 
 def describe(entry: ManifestEntry) -> Artifact:

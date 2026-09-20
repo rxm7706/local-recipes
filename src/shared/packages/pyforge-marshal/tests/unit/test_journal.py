@@ -36,17 +36,9 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
     prepare_for_write_offloading_fields,
     resolve_scope_violation_advisories_from_payload,
-    sidecar_texts_for_lines,
 )
 
-_SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "marshal"
-    / "schemas"
-    / "journal.json"
-)
+_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "journal.json"
 
 
 def _schema() -> dict[str, object]:
@@ -69,8 +61,7 @@ def test_phase_is_the_three_valued_ad28_vocabulary():
 
 def test_mint_run_id_valid():
     assert (
-        mint_run_id("pyforge-marshal", "20260803T054512123Z", "a1b2c3")
-        == "pyforge-marshal-20260803T054512123Z-a1b2c3"
+        mint_run_id("pyforge-marshal", "20260803T054512123Z", "a1b2c3") == "pyforge-marshal-20260803T054512123Z-a1b2c3"
     )
 
 
@@ -114,9 +105,7 @@ def test_journal_entry_id_valid_construction():
     assert entry_id.counter == 0
 
 
-@pytest.mark.parametrize(
-    "writer_id", ["", "-cli", "CLI", "cli 1", "cli.1"]
-)
+@pytest.mark.parametrize("writer_id", ["", "-cli", "CLI", "cli 1", "cli.1"])
 def test_journal_entry_id_rejects_invalid_writer_id(writer_id):
     with pytest.raises(ValueError, match="writer_id"):
         JournalEntryId(writer_id=writer_id, counter=0)
@@ -526,10 +515,7 @@ def test_prepare_for_write_threshold_boundary_inlines_at_exactly_4096_bytes():
 def test_prepare_for_write_threshold_boundary_sidecars_at_4097_bytes():
     overhead = len(json.dumps({"k": ""}, sort_keys=True).encode("utf-8"))
     payload = {"k": "x" * (SIDECAR_THRESHOLD_BYTES + 1 - overhead)}
-    assert (
-        len(json.dumps(payload, sort_keys=True).encode("utf-8"))
-        == SIDECAR_THRESHOLD_BYTES + 1
-    )
+    assert len(json.dumps(payload, sort_keys=True).encode("utf-8")) == SIDECAR_THRESHOLD_BYTES + 1
     entry = build_entry(
         id=_valid_id(),
         ts="2026-08-03T05:45:12.123Z",
@@ -692,9 +678,7 @@ def test_frozen_path_accepts_str_story_key():
 # --- FoldResult.live_frozen_surfaces (Story 2.3, AD-26/AD-27) ----------------
 
 
-def _observation(
-    *, kind: str, payload: dict[str, object], counter: int, ts_offset: int = 0
-) -> JournalEntry:
+def _observation(*, kind: str, payload: dict[str, object], counter: int, ts_offset: int = 0) -> JournalEntry:
     return build_entry(
         id=_valid_id(counter=counter),
         ts=_ts_frozen(ts_offset),
@@ -755,9 +739,7 @@ def test_live_frozen_surfaces_freeze_declared_narrows_alongside_the_seed():
 
 
 def test_live_frozen_surfaces_freeze_removed_lifts_a_seeded_freeze():
-    entry = _observation(
-        kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=0
-    )
+    entry = _observation(kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=0)
     result = _fold_of(entry).live_frozen_surfaces(("a.yaml", "b.yaml"))
     assert result == (FrozenPath(path="b.yaml", story_key=None),)
 
@@ -769,9 +751,7 @@ def test_live_frozen_surfaces_freeze_removed_lifts_a_declared_freeze():
         counter=0,
         ts_offset=0,
     )
-    removed = _observation(
-        kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=1, ts_offset=1
-    )
+    removed = _observation(kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=1, ts_offset=1)
     result = _fold_of(declared, removed).live_frozen_surfaces(())
     assert result == ()
 
@@ -787,9 +767,7 @@ def test_live_frozen_surfaces_processes_entries_in_chronological_order():
         counter=0,
         ts_offset=0,
     )
-    removed = _observation(
-        kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=1, ts_offset=1
-    )
+    removed = _observation(kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=1, ts_offset=1)
     declared_2 = _observation(
         kind=KIND_FREEZE_DECLARED,
         payload={"path": "a.yaml", "story_key": "6.2"},
@@ -805,9 +783,7 @@ def test_live_frozen_surfaces_skips_a_freeze_declared_entry_missing_story_key():
     raised -- the generic fold already validated the entry's own shape;
     this method's own additional shape requirement (story_key present, a
     str) is its own concern."""
-    entry = _observation(
-        kind=KIND_FREEZE_DECLARED, payload={"path": "a.yaml"}, counter=0
-    )
+    entry = _observation(kind=KIND_FREEZE_DECLARED, payload={"path": "a.yaml"}, counter=0)
     result = _fold_of(entry).live_frozen_surfaces(())
     assert result == ()
 
@@ -827,9 +803,7 @@ def test_live_frozen_surfaces_meta_never_reads_effective_policy_seed_directly():
     guard in tests/meta/test_ad26_seed_field_access_guard.py."""
     from pyforge.marshal.core.policy import compose
 
-    effective, _ = compose(
-        project_slug="acme", project={"frozen_surfaces": ["a.yaml"]}, flags={}
-    )
+    effective, _ = compose(project_slug="acme", project={"frozen_surfaces": ["a.yaml"]}, flags={})
     seed_value = effective.seed_view()["frozen_surfaces"].value
     empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
     live = empty.live_frozen_surfaces(seed_value)
@@ -926,9 +900,7 @@ def test_prepare_for_write_offloading_fields_keeps_verdict_inline() -> None:
             SCOPE_VIOLATION_ADVISORIES_FIELD: advisories,
         },
     )
-    prepared = prepare_for_write_offloading_fields(
-        entry, offload_fields=frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD})
-    )
+    prepared = prepare_for_write_offloading_fields(entry, offload_fields=frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD}))
     assert prepared.sidecar_relative_path is not None
     assert prepared.sidecar_content is not None
     inline = json.loads(prepared.line)
@@ -946,8 +918,7 @@ def test_fold_reads_verdict_from_legacy_whole_payload_sidecar() -> None:
         "verdict": "verified",
         "ok": True,
         "scope_violation_advisories": [
-            {"code": "MRS-GATE-012", "path": f"extra/path/{index}.py"}
-            for index in range(500)
+            {"code": "MRS-GATE-012", "path": f"extra/path/{index}.py"} for index in range(500)
         ],
     }
     entry = build_entry(
@@ -964,11 +935,7 @@ def test_fold_reads_verdict_from_legacy_whole_payload_sidecar() -> None:
     assert prepared.sidecar_content is not None
     sidecars = {prepared.sidecar_relative_path: prepared.sidecar_content}
     folded = fold([prepared.line], sidecars=sidecars)
-    outcomes = [
-        e
-        for e in folded.entries
-        if e.kind == "dispatch-verification" and e.phase is Phase.OUTCOME
-    ]
+    outcomes = [e for e in folded.entries if e.kind == "dispatch-verification" and e.phase is Phase.OUTCOME]
     assert len(outcomes) == 1
     assert outcomes[0].payload.get("verdict") == "verified"
 
@@ -976,11 +943,7 @@ def test_fold_reads_verdict_from_legacy_whole_payload_sidecar() -> None:
 def test_resolve_scope_violation_advisories_from_offloaded_sidecar_ref() -> None:
     advisories = [{"code": "MRS-GATE-012", "path": "src/outside.py"}]
     sidecar_ref = "blobs/dispatch-supervisor-1-3.json"
-    sidecars = {
-        sidecar_ref: json.dumps(
-            {SCOPE_VIOLATION_ADVISORIES_FIELD: advisories}, sort_keys=True
-        )
-    }
+    sidecars = {sidecar_ref: json.dumps({SCOPE_VIOLATION_ADVISORIES_FIELD: advisories}, sort_keys=True)}
     resolved = resolve_scope_violation_advisories_from_payload(
         {"scope_violation_advisories_sidecar_ref": sidecar_ref},
         sidecars=sidecars,

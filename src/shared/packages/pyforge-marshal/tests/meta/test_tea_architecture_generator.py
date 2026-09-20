@@ -67,9 +67,7 @@ def _station_tree(tmp_path: Path, *, slug: str = "scribe") -> Path:
     tests = tmp_path / "src" / "shared" / "packages" / project / "tests" / "unit"
     tests.mkdir(parents=True)
     (tests / "test_capture.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
-    (tests / "test_1_1_scaffold.py").write_text(
-        "def test_scaffold():\n    assert True\n", encoding="utf-8"
-    )
+    (tests / "test_1_1_scaffold.py").write_text("def test_scaffold():\n    assert True\n", encoding="utf-8")
     return tmp_path
 
 
@@ -101,16 +99,7 @@ def test_idempotent_on_unchanged_tree(tea, tmp_path: Path):
 def test_document_changes_when_tests_moved(tea, tmp_path: Path):
     root = _station_tree(tmp_path)
     before = tea.generate_station(root, "pyforge-scribe").output_path.read_bytes()
-    new_test = (
-        root
-        / "src"
-        / "shared"
-        / "packages"
-        / "pyforge-scribe"
-        / "tests"
-        / "unit"
-        / "test_1_2_wiring.py"
-    )
+    new_test = root / "src" / "shared" / "packages" / "pyforge-scribe" / "tests" / "unit" / "test_1_2_wiring.py"
     new_test.write_text("def test_wiring():\n    assert True\n", encoding="utf-8")
     after = tea.generate_station(root, "pyforge-scribe").output_path.read_bytes()
     assert before != after
@@ -132,14 +121,7 @@ def test_fleet_smoke_all_eight_paths_exist_without_tbd(tea):
         station = tea.load_station(REPO_ROOT, project)
         doc = tea.render_document(station, REPO_ROOT)
         tea.assert_no_tbd(doc, project=project)
-        out = (
-            REPO_ROOT
-            / "_bmad-output"
-            / "projects"
-            / project
-            / "planning-artifacts"
-            / "test-architecture.md"
-        )
+        out = REPO_ROOT / "_bmad-output" / "projects" / project / "planning-artifacts" / "test-architecture.md"
         # After --all in verification, files must exist; during unit collection
         # they may still be the pre-run hand docs — either way no TBD allowed
         # once generated content is present with our generator marker.

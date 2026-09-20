@@ -63,9 +63,7 @@ def _write(source_root: Path, filename: str, content: str) -> Path:
 # --- classification -----------------------------------------------------
 
 
-def test_classify_team_relevant_flat_frontmatter(
-    source_root: Path, memory_root: Path, repo_root: Path
-) -> None:
+def test_classify_team_relevant_flat_frontmatter(source_root: Path, memory_root: Path, repo_root: Path) -> None:
     _write(
         source_root,
         "feedback_run_tests_first.md",
@@ -115,9 +113,7 @@ def test_classify_team_relevant_nested_metadata_frontmatter(
     assert entry.slug == "widget-status"
 
 
-def test_classify_mixed_shapes_in_one_source_dir(
-    source_root: Path, memory_root: Path, repo_root: Path
-) -> None:
+def test_classify_mixed_shapes_in_one_source_dir(source_root: Path, memory_root: Path, repo_root: Path) -> None:
     _write(
         source_root,
         "feedback_flat_shape.md",
@@ -139,9 +135,7 @@ def test_classify_mixed_shapes_in_one_source_dir(
     }
 
 
-def test_classify_already_promoted_flat(
-    source_root: Path, memory_root: Path, repo_root: Path
-) -> None:
+def test_classify_already_promoted_flat(source_root: Path, memory_root: Path, repo_root: Path) -> None:
     _write(
         source_root,
         "feedback_done.md",
@@ -182,9 +176,7 @@ def test_classify_already_promoted_nested_any_indentation(
     assert proposal.entries[0].classification == "already-promoted"
 
 
-def test_classify_personal_description_keyword(
-    source_root: Path, memory_root: Path, repo_root: Path
-) -> None:
+def test_classify_personal_description_keyword(source_root: Path, memory_root: Path, repo_root: Path) -> None:
     _write(
         source_root,
         "feedback_tone.md",
@@ -205,9 +197,7 @@ def test_classify_personal_description_keyword(
     assert proposal.promotable == ()
 
 
-def test_classify_stale_missing_referenced_path(
-    source_root: Path, memory_root: Path, repo_root: Path
-) -> None:
+def test_classify_stale_missing_referenced_path(source_root: Path, memory_root: Path, repo_root: Path) -> None:
     _write(
         source_root,
         "feedback_stale_path.md",
@@ -543,9 +533,7 @@ def test_apply_promotion_resolves_in_batch_collision_to_distinct_files(
 # --- default_user_local_root ----------------------------------------------
 
 
-def test_default_user_local_root_encodes_non_alnum_chars(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_default_user_local_root_encodes_non_alnum_chars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_home = tmp_path / "fakehome"
     fake_home.mkdir()
     project_dir = tmp_path / "work" / ".bmad-loop" / "my-repo"

@@ -28,9 +28,7 @@ def _fixture_wiki(tmp_path: Path):
         "---\ntitle: DuckDB\n---\nDuckDB is the single compute engine for atlas.\n",
         encoding="utf-8",
     )
-    (raw / "kedro.md").write_text(
-        "# Kedro\nKedro resolves the pipeline DAG for the migration.\n", encoding="utf-8"
-    )
+    (raw / "kedro.md").write_text("# Kedro\nKedro resolves the pipeline DAG for the migration.\n", encoding="utf-8")
     return layout
 
 
@@ -71,9 +69,7 @@ def test_compile_transforms_raw_to_compiled(tmp_path: Path):
 def test_compile_derives_title_from_heading_when_no_frontmatter(tmp_path: Path):
     layout = _fixture_wiki(tmp_path)
     CompileCrew().run(layout)
-    meta, _ = parse_frontmatter(
-        layout.stage_path("compiled", "kedro.md").read_text(encoding="utf-8")
-    )
+    meta, _ = parse_frontmatter(layout.stage_path("compiled", "kedro.md").read_text(encoding="utf-8"))
     assert meta["title"] == "Kedro"
 
 
@@ -115,9 +111,7 @@ def test_compile_forwards_source_staleness(tmp_path: Path):
     assert body.startswith(STALE_BANNER_PREFIX)
     # a FRESH source stays fresh.
     assert "kedro.md" not in result.stale_forwarded
-    kmeta, _ = parse_frontmatter(
-        layout.stage_path("compiled", "kedro.md").read_text(encoding="utf-8")
-    )
+    kmeta, _ = parse_frontmatter(layout.stage_path("compiled", "kedro.md").read_text(encoding="utf-8"))
     assert "stale" not in kmeta
 
 
@@ -128,9 +122,7 @@ def test_unreadable_staleness_sidecar_degrades_to_stale(tmp_path: Path):
     result = CompileCrew().run(layout)
     # AD-13: degrade toward stale, never silently toward fresh.
     assert "duckdb.md" in result.stale_forwarded
-    meta, _ = parse_frontmatter(
-        layout.stage_path("compiled", "duckdb.md").read_text(encoding="utf-8")
-    )
+    meta, _ = parse_frontmatter(layout.stage_path("compiled", "duckdb.md").read_text(encoding="utf-8"))
     assert meta["stale"] is True
 
 
@@ -149,8 +141,7 @@ def test_compile_forwards_inline_frontmatter_staleness(tmp_path: Path):
     # must be forwarded as stale — never laundered to fresh by the frontmatter rebuild.
     layout = scaffold_wiki(tmp_path / "wiki")
     layout.stage_path("raw", "x.md").write_text(
-        "---\ntitle: X\nstale: true\nstale_reason: refresh skipped upstream\n"
-        "stale_marked_at: 42\n---\nbody\n",
+        "---\ntitle: X\nstale: true\nstale_reason: refresh skipped upstream\nstale_marked_at: 42\n---\nbody\n",
         encoding="utf-8",
     )
     result = CompileCrew().run(layout)
@@ -167,9 +158,7 @@ def test_compile_forwards_inline_frontmatter_staleness(tmp_path: Path):
 def test_compile_skips_malformed_raw_without_partial_abort(tmp_path: Path):
     # One malformed raw doc must not abort the loop or leave the good docs uncompiled.
     layout = _fixture_wiki(tmp_path)
-    layout.stage_path("raw", "broken.md").write_text(
-        "---\n: : not: valid: yaml\n---\nbody\n", encoding="utf-8"
-    )
+    layout.stage_path("raw", "broken.md").write_text("---\n: : not: valid: yaml\n---\nbody\n", encoding="utf-8")
     result = CompileCrew().run(layout)
     # the two good fixture docs still compiled...
     assert set(result.compiled) == {"duckdb.md", "kedro.md"}
@@ -190,9 +179,7 @@ def test_lint_clean_wiki_has_no_violations(tmp_path: Path):
 def test_lint_reports_missing_frontmatter_and_empty_body(tmp_path: Path):
     layout = scaffold_wiki(tmp_path / "wiki")
     layout.stage_path("compiled", "bare.md").write_text("no frontmatter here\n", encoding="utf-8")
-    layout.stage_path("compiled", "empty.md").write_text(
-        "---\ntitle: Empty\n---\n", encoding="utf-8"
-    )
+    layout.stage_path("compiled", "empty.md").write_text("---\ntitle: Empty\n---\n", encoding="utf-8")
     report = LintCrew().run(layout)
     assert report.by_rule("missing-frontmatter")
     assert report.by_rule("empty-body")
@@ -213,9 +200,7 @@ def test_lint_reports_malformed_page_without_crashing(tmp_path: Path):
     # MUST-FIX (review): a malformed compiled page must be REPORTED, not crash the pass and hide
     # other violations (lint is the AD-13 laundering safety net — it can't DoS on a bad page).
     layout = scaffold_wiki(tmp_path / "wiki")
-    layout.stage_path("compiled", "bad.md").write_text(
-        "---\n: : broken: yaml:\n---\nbody\n", encoding="utf-8"
-    )
+    layout.stage_path("compiled", "bad.md").write_text("---\n: : broken: yaml:\n---\nbody\n", encoding="utf-8")
     layout.stage_path("compiled", "good.md").write_text(
         "---\ntitle: Good\n---\nSee [B](missing.md).\n", encoding="utf-8"
     )
@@ -229,9 +214,7 @@ def test_lint_broken_link_resolves_subdir_paths(tmp_path: Path):
     # SHOULD-FIX (review): leaf-only matching false-negated a wrong-subdir link. A link to
     # guides/duckdb.md must be flagged even when a TOP-LEVEL duckdb.md exists.
     layout = scaffold_wiki(tmp_path / "wiki")
-    layout.stage_path("compiled", "duckdb.md").write_text(
-        "---\ntitle: DuckDB\n---\ntop level\n", encoding="utf-8"
-    )
+    layout.stage_path("compiled", "duckdb.md").write_text("---\ntitle: DuckDB\n---\ntop level\n", encoding="utf-8")
     layout.stage_path("compiled", "index.md").write_text(
         "---\ntitle: Index\n---\nSee [d](guides/duckdb.md).\n", encoding="utf-8"
     )
@@ -244,9 +227,7 @@ def test_lint_broken_link_accepts_real_subdir_target(tmp_path: Path):
     # reciprocal: a link to a page that really exists in a subdir must NOT be flagged.
     layout = scaffold_wiki(tmp_path / "wiki")
     (layout.stage_dir("compiled") / "guides").mkdir()
-    layout.stage_path("compiled", "guides/real.md").write_text(
-        "---\ntitle: Real\n---\nreal page\n", encoding="utf-8"
-    )
+    layout.stage_path("compiled", "guides/real.md").write_text("---\ntitle: Real\n---\nreal page\n", encoding="utf-8")
     layout.stage_path("compiled", "index.md").write_text(
         "---\ntitle: Index\n---\nSee [r](guides/real.md).\n", encoding="utf-8"
     )
@@ -299,9 +280,7 @@ def test_qa_skips_malformed_page_and_still_answers(tmp_path: Path):
     # good pages and skips the unparseable one.
     layout = _fixture_wiki(tmp_path)
     CompileCrew().run(layout)
-    layout.stage_path("compiled", "broken.md").write_text(
-        "---\n: : broken:\n---\nx\n", encoding="utf-8"
-    )
+    layout.stage_path("compiled", "broken.md").write_text("---\n: : broken:\n---\nx\n", encoding="utf-8")
     ans = QACrew().run(layout, "what is the compute engine?")  # must not raise
     assert ans.grounded
     assert ans.grounding[0].doc == "duckdb.md"

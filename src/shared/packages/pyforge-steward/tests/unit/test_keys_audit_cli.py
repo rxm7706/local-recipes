@@ -94,9 +94,7 @@ def test_both_flags_combined_both_clean(tmp_path, capsys):
 
 
 def test_both_flags_combined_one_dirty_fails_the_whole_audit(capsys):
-    rc = main(
-        ["keys", "audit", "--drift", "--secrets", str(SECRET_FIXTURE_DIR)]
-    )
+    rc = main(["keys", "audit", "--drift", "--secrets", str(SECRET_FIXTURE_DIR)])
     err = capsys.readouterr().err
 
     assert rc == EXIT_FAILED

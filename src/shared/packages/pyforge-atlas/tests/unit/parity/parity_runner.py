@@ -70,9 +70,7 @@ def diff_view(
     kedro_cmp = kedro_frame.drop(columns=[c for c in benign if c in kedro_frame.columns])
 
     result = compare_frames(kedro_cmp, legacy_cmp)
-    benign_diffs = (
-        (f"excluded timestamp/ordering-only columns: {benign}",) if benign else ()
-    )
+    benign_diffs = (f"excluded timestamp/ordering-only columns: {benign}",) if benign else ()
     return ParityEvidenceRecord(
         view=view,
         legacy_row_count=int(legacy_frame.shape[0]),
@@ -97,6 +95,7 @@ def _read_legacy_view(conn: sqlite3.Connection, view: str) -> pd.DataFrame:
 
 
 # --- synthetic fixture surface (the in-loop gate; NO real data) ------------
+
 
 def _synthetic_pair(view: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """A tiny synthetic (legacy, kedro) pair for one view — identical by

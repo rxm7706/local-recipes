@@ -8,9 +8,7 @@ from pyforge.doctor.prescribe import name_root_cause
 
 
 def _finding(source, check, status=DoctorStatus.WARN, evidence=None, message="stub"):
-    return Finding(
-        source=source, check=check, status=status, message=message, evidence=evidence or {}
-    )
+    return Finding(source=source, check=check, status=status, message=message, evidence=evidence or {})
 
 
 def test_cve_traced_to_staleness_names_the_lag_not_only_the_cve():
@@ -52,9 +50,7 @@ def test_cve_correlation_ignores_a_different_package_staleness_finding():
         status=DoctorStatus.FAIL,
         evidence={"severity": "C", "delta": 1, "now_v": 1},
     )
-    unrelated_staleness = _finding(
-        Source.STALENESS_REPORT, "pkg-b", evidence={"age_days": 999}
-    )
+    unrelated_staleness = _finding(Source.STALENESS_REPORT, "pkg-b", evidence={"age_days": 999})
     root_cause = name_root_cause(cve, [cve, unrelated_staleness])
     assert "999" not in root_cause
 

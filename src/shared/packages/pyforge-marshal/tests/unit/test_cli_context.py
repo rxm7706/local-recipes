@@ -27,8 +27,8 @@ import json
 from pathlib import Path
 
 import pytest
-
 from pyforge.core.process import ProcessResult
+
 from pyforge.marshal.adapters import scribe_cli
 from pyforge.marshal.adapters.scribe_cli import ScribeCli
 from pyforge.marshal.cli import context as context_cli
@@ -87,9 +87,7 @@ class _FakeScribeEngine:
                 signature.append([source, None, None])
             else:
                 signature.append([source, stat.st_size, stat.st_mtime_ns])
-        return hashlib.sha256(
-            json.dumps(signature, sort_keys=True).encode("utf-8")
-        ).hexdigest()
+        return hashlib.sha256(json.dumps(signature, sort_keys=True).encode("utf-8")).hexdigest()
 
 
 def _write(path: Path, text: str) -> None:
@@ -109,32 +107,24 @@ def repo(tmp_path: Path) -> Path:
     _write(planning / "index.md", "# Index\n")
     _write(planning / "specs" / "spec-28-1-a.md", "# 28.1\n")
     _write(planning / "specs" / "spec-27-4-b.md", "# 27.4\n")
-    _write(
-        tmp_path / derived.implementation_artifacts_relpath(_SLUG) / ".keep", ""
-    )
+    _write(tmp_path / derived.implementation_artifacts_relpath(_SLUG) / ".keep", "")
     return tmp_path
 
 
 def _declare_layer(repo: Path, *, enabled: bool) -> None:
-    policy_path = repo / (
-        f"_bmad-output/projects/{_SLUG}/planning-artifacts/marshal-policy.toml"
-    )
+    policy_path = repo / (f"_bmad-output/projects/{_SLUG}/planning-artifacts/marshal-policy.toml")
     _write(
         policy_path,
-        "[context.derived-context]\n" f"enabled = {str(enabled).lower()}\n",
+        f"[context.derived-context]\nenabled = {str(enabled).lower()}\n",
     )
 
 
 def _args(repo: Path, *, epic: str = "28", project: str | None = _SLUG):
-    return argparse.Namespace(
-        project=project, epic=epic, root=str(repo), format="json"
-    )
+    return argparse.Namespace(project=project, epic=epic, root=str(repo), format="json")
 
 
 def _run(repo: Path, engine, capsys, **kwargs) -> dict:
-    code = context_cli.run_context_refresh(
-        _args(repo, **kwargs), scribe=ScribeCli(engine)
-    )
+    code = context_cli.run_context_refresh(_args(repo, **kwargs), scribe=ScribeCli(engine))
     envelope = json.loads(capsys.readouterr().out)
     envelope["exit_code"] = code
     return envelope
@@ -161,9 +151,7 @@ class TestLayerOffMeansUnchanged:
         assert envelope["findings"] == []
         assert engine.calls == []
 
-    def test_an_absent_context_block_is_the_same_as_declared_off(
-        self, repo, engine, capsys
-    ):
+    def test_an_absent_context_block_is_the_same_as_declared_off(self, repo, engine, capsys):
         """Story 28.1's "absent block = every layer off" composes through
         here with no second rule."""
         envelope = _run(repo, engine, capsys)
@@ -171,9 +159,7 @@ class TestLayerOffMeansUnchanged:
         assert envelope["data"]["mode"] == derived.MODE_COMPILE_ON_HUNCH
         assert engine.calls == []
 
-    def test_writes_no_manifest_and_reads_no_planning_document(
-        self, repo, engine, capsys, monkeypatch
-    ):
+    def test_writes_no_manifest_and_reads_no_planning_document(self, repo, engine, capsys, monkeypatch):
         _declare_layer(repo, enabled=False)
         read: list[str] = []
         original = Path.read_text
@@ -191,16 +177,12 @@ class TestZeroRecomputeOnUnchangedSources:
     """AC 1: two consecutive iterations with unchanged planning sources --
     the second recomputes nothing."""
 
-    def test_second_iteration_reports_every_artifact_fresh(
-        self, repo, engine, capsys
-    ):
+    def test_second_iteration_reports_every_artifact_fresh(self, repo, engine, capsys):
         _declare_layer(repo, enabled=True)
         first = _run(repo, engine, capsys)
         assert first["data"]["mode"] == derived.MODE_INCREMENTAL
         # First-ever run has no recorded fingerprint: both artifacts derive.
-        assert {a["state"] for a in first["data"]["artifacts"]} == {
-            derived.STATE_STALE
-        }
+        assert {a["state"] for a in first["data"]["artifacts"]} == {derived.STATE_STALE}
 
         second = _run(repo, engine, capsys)
         assert second["exit_code"] == EXIT_OK
@@ -212,18 +194,14 @@ class TestZeroRecomputeOnUnchangedSources:
         ]
         assert second["findings"] == []
 
-    def test_an_unrelated_story_spec_landing_does_not_stale_the_epic_context(
-        self, repo, engine, capsys
-    ):
+    def test_an_unrelated_story_spec_landing_does_not_stale_the_epic_context(self, repo, engine, capsys):
         """The over-eager recompile this story removes: today's rule
         ("no file in planning-artifacts is newer") invalidates every epic's
         distill the moment ANY spec lands."""
         _declare_layer(repo, enabled=True)
         _run(repo, engine, capsys)
         _write(
-            repo
-            / derived.planning_specs_relpath(_SLUG)
-            / "spec-19-2-unrelated.md",
+            repo / derived.planning_specs_relpath(_SLUG) / "spec-19-2-unrelated.md",
             "# a different epic's story\n",
         )
         _write(
@@ -233,19 +211,11 @@ class TestZeroRecomputeOnUnchangedSources:
 
         after = _run(repo, engine, capsys)
         states = {a["name"]: a["state"] for a in after["data"]["artifacts"]}
-        assert (
-            states[derived.epic_context_artifact_name(_SLUG, "28")]
-            == derived.STATE_FRESH
-        )
-        assert (
-            states[derived.continuity_artifact_name(_SLUG, "28")]
-            == derived.STATE_FRESH
-        )
+        assert states[derived.epic_context_artifact_name(_SLUG, "28")] == derived.STATE_FRESH
+        assert states[derived.continuity_artifact_name(_SLUG, "28")] == derived.STATE_FRESH
 
-    def test_marshal_never_reads_a_planning_documents_contents(
-        self, repo, engine, capsys, monkeypatch
-    ):
-        """"No full-document read" is the AC's own observable. Marshal
+    def test_marshal_never_reads_a_planning_documents_contents(self, repo, engine, capsys, monkeypatch):
+        """ "No full-document read" is the AC's own observable. Marshal
         lists filenames and declares paths; the engine stats them. Nothing
         in this path opens the 65k-token epics file."""
         _declare_layer(repo, enabled=True)
@@ -257,18 +227,14 @@ class TestZeroRecomputeOnUnchangedSources:
             lambda self, *a, **k: (read.append(str(self)), original(self, *a, **k))[1],
         )
         _run(repo, engine, capsys)
-        assert not any(
-            name.endswith(("epics.md", "PRD.md", "architecture.md")) for name in read
-        )
+        assert not any(name.endswith(("epics.md", "PRD.md", "architecture.md")) for name in read)
 
 
 class TestExactlyOneRefreshOnASourceEdit:
     """AC 2: a planning-source edit yields exactly one refresh, and the
     derived artifact reflects the edit."""
 
-    def test_editing_epics_stales_only_the_epic_context_artifact(
-        self, repo, engine, capsys
-    ):
+    def test_editing_epics_stales_only_the_epic_context_artifact(self, repo, engine, capsys):
         _declare_layer(repo, enabled=True)
         _run(repo, engine, capsys)
         _write(
@@ -278,25 +244,15 @@ class TestExactlyOneRefreshOnASourceEdit:
 
         after = _run(repo, engine, capsys)
         states = {a["name"]: a["state"] for a in after["data"]["artifacts"]}
-        assert (
-            states[derived.epic_context_artifact_name(_SLUG, "28")]
-            == derived.STATE_STALE
-        )
-        assert (
-            states[derived.continuity_artifact_name(_SLUG, "28")]
-            == derived.STATE_FRESH
-        )
+        assert states[derived.epic_context_artifact_name(_SLUG, "28")] == derived.STATE_STALE
+        assert states[derived.continuity_artifact_name(_SLUG, "28")] == derived.STATE_FRESH
         assert sum(1 for s in states.values() if s == derived.STATE_STALE) == 1
 
         # ...and the refresh settles: a third iteration recomputes nothing.
         settled = _run(repo, engine, capsys)
-        assert {a["state"] for a in settled["data"]["artifacts"]} == {
-            derived.STATE_FRESH
-        }
+        assert {a["state"] for a in settled["data"]["artifacts"]} == {derived.STATE_FRESH}
 
-    def test_a_same_epic_spec_landing_stales_only_the_continuity_artifact(
-        self, repo, engine, capsys
-    ):
+    def test_a_same_epic_spec_landing_stales_only_the_continuity_artifact(self, repo, engine, capsys):
         _declare_layer(repo, enabled=True)
         _run(repo, engine, capsys)
         _write(
@@ -306,34 +262,21 @@ class TestExactlyOneRefreshOnASourceEdit:
 
         after = _run(repo, engine, capsys)
         states = {a["name"]: a["state"] for a in after["data"]["artifacts"]}
-        assert (
-            states[derived.continuity_artifact_name(_SLUG, "28")]
-            == derived.STATE_STALE
-        )
-        assert (
-            states[derived.epic_context_artifact_name(_SLUG, "28")]
-            == derived.STATE_FRESH
-        )
+        assert states[derived.continuity_artifact_name(_SLUG, "28")] == derived.STATE_STALE
+        assert states[derived.epic_context_artifact_name(_SLUG, "28")] == derived.STATE_FRESH
 
-    def test_deleting_a_declared_source_is_a_change_not_a_silent_no_op(
-        self, repo, engine, capsys
-    ):
+    def test_deleting_a_declared_source_is_a_change_not_a_silent_no_op(self, repo, engine, capsys):
         _declare_layer(repo, enabled=True)
         _run(repo, engine, capsys)
         (repo / derived.planning_artifacts_relpath(_SLUG) / "architecture.md").unlink()
 
         after = _run(repo, engine, capsys)
         states = {a["name"]: a["state"] for a in after["data"]["artifacts"]}
-        assert (
-            states[derived.epic_context_artifact_name(_SLUG, "28")]
-            == derived.STATE_STALE
-        )
+        assert states[derived.epic_context_artifact_name(_SLUG, "28")] == derived.STATE_STALE
 
 
 class TestManifestAndGrammar:
-    def test_manifest_lands_in_the_gitignored_derived_data_dir(
-        self, repo, engine, capsys
-    ):
+    def test_manifest_lands_in_the_gitignored_derived_data_dir(self, repo, engine, capsys):
         _declare_layer(repo, enabled=True)
         envelope = _run(repo, engine, capsys)
         manifest = Path(envelope["data"]["manifest"])
@@ -343,18 +286,14 @@ class TestManifestAndGrammar:
         names = [a["name"] for a in payload["artifacts"]]
         assert names == sorted(names)
 
-    def test_the_manifest_is_byte_stable_across_unchanged_iterations(
-        self, repo, engine, capsys
-    ):
+    def test_the_manifest_is_byte_stable_across_unchanged_iterations(self, repo, engine, capsys):
         """A declaration that churns would itself look like a change."""
         _declare_layer(repo, enabled=True)
         first = Path(_run(repo, engine, capsys)["data"]["manifest"]).read_bytes()
         second = Path(_run(repo, engine, capsys)["data"]["manifest"]).read_bytes()
         assert first == second
 
-    def test_invokes_the_declared_scribe_grammar_once_per_iteration(
-        self, repo, engine, capsys
-    ):
+    def test_invokes_the_declared_scribe_grammar_once_per_iteration(self, repo, engine, capsys):
         _declare_layer(repo, enabled=True)
         _run(repo, engine, capsys)
         assert len(engine.calls) == 1
@@ -364,9 +303,7 @@ class TestManifestAndGrammar:
 
 
 class TestDegradationNeverBlocks:
-    def test_a_missing_scribe_falls_back_to_compile_on_hunch_with_a_warning(
-        self, repo, capsys, monkeypatch, tmp_path
-    ):
+    def test_a_missing_scribe_falls_back_to_compile_on_hunch_with_a_warning(self, repo, capsys, monkeypatch, tmp_path):
         _declare_layer(repo, enabled=True)
         monkeypatch.setattr(scribe_cli.shutil, "which", lambda _n: None)
         envelope = _run(repo, _FakeScribeEngine(tmp_path / "i.json"), capsys)
@@ -375,9 +312,7 @@ class TestDegradationNeverBlocks:
         assert envelope["data"]["mode"] == derived.MODE_COMPILE_ON_HUNCH
         assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-002"]
 
-    def test_a_grammar_that_answers_for_neither_list_is_reported_not_assumed_fresh(
-        self, repo, capsys, monkeypatch
-    ):
+    def test_a_grammar_that_answers_for_neither_list_is_reported_not_assumed_fresh(self, repo, capsys, monkeypatch):
         _declare_layer(repo, enabled=True)
         monkeypatch.setattr(scribe_cli.shutil, "which", lambda _n: "/usr/bin/scribe")
 
@@ -391,9 +326,7 @@ class TestDegradationNeverBlocks:
 
         envelope = _run(repo, _Silent(), capsys)
         assert envelope["verdict"] == "warn"
-        assert {a["state"] for a in envelope["data"]["artifacts"]} == {
-            derived.STATE_UNKNOWN
-        }
+        assert {a["state"] for a in envelope["data"]["artifacts"]} == {derived.STATE_UNKNOWN}
         assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-002"]
 
     def test_a_malformed_epic_is_unevaluable_not_a_crash(self, repo, engine, capsys):
@@ -403,9 +336,7 @@ class TestDegradationNeverBlocks:
         assert envelope["data"]["mode"] == derived.MODE_COMPILE_ON_HUNCH
         assert engine.calls == []
 
-    def test_a_project_with_no_planning_artifacts_is_unevaluable(
-        self, repo, engine, capsys
-    ):
+    def test_a_project_with_no_planning_artifacts_is_unevaluable(self, repo, engine, capsys):
         """The layer is declared on repo-wide, but the named station has no
         planning-artifacts directory -- there is nothing to declare as a
         source, so there is no freshness answer either way."""
@@ -418,9 +349,7 @@ class TestDegradationNeverBlocks:
         assert envelope["data"]["mode"] == derived.MODE_COMPILE_ON_HUNCH
         assert engine.calls == []
 
-    def test_a_malformed_slug_is_unevaluable_never_an_interpolated_path(
-        self, repo, engine, capsys
-    ):
+    def test_a_malformed_slug_is_unevaluable_never_an_interpolated_path(self, repo, engine, capsys):
         _write(
             repo / "_bmad-output/policy-defaults.toml",
             "[context.derived-context]\nenabled = true\n",
@@ -461,9 +390,7 @@ class TestCliSurface:
     def test_text_rendering_names_the_layer_and_the_mode(self, repo, engine, capsys):
         _declare_layer(repo, enabled=True)
         context_cli.run_context_refresh(
-            argparse.Namespace(
-                project=_SLUG, epic="28", root=str(repo), format="text"
-            ),
+            argparse.Namespace(project=_SLUG, epic="28", root=str(repo), format="text"),
             scribe=ScribeCli(engine),
         )
         out = capsys.readouterr().out

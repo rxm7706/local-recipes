@@ -4,16 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import capability_effect
 
 
 def _spec_text(*, status: str, cap_body: str) -> str:
-    return (
-        f"---\nspec: example\nstatus: {status}\n---\n\n"
-        f"## Capabilities\n\n{cap_body}\n"
-    )
+    return f"---\nspec: example\nstatus: {status}\n---\n\n## Capabilities\n\n{cap_body}\n"
 
 
 def test_present_verified_line_is_rendered_and_silent():
@@ -33,22 +29,15 @@ def test_present_verified_line_is_rendered_and_silent():
     assert len(rows) == 1
     row = rows[0]
     assert row.verified_text == "2026-09-05 — exercised in tests/unit/test_x.py"
-    assert row.rendered == (
-        "CAP-1 — verified: 2026-09-05 — exercised in tests/unit/test_x.py"
-    )
-    findings = capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    )
+    assert row.rendered == ("CAP-1 — verified: 2026-09-05 — exercised in tests/unit/test_x.py")
+    findings = capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT)
     assert findings == ()
 
 
 def test_plain_verified_line_is_parsed():
     text = _spec_text(
         status="realized",
-        cap_body=(
-            "- **CAP-2 — other.**\n"
-            "  verified: 2026-08-01 — live check at src/foo.py:10\n"
-        ),
+        cap_body=("- **CAP-2 — other.**\n  verified: 2026-08-01 — live check at src/foo.py:10\n"),
     )
     rows = capability_effect.parse_spec_capability_verified_rows(
         project="pyforge-marshal",
@@ -56,28 +45,20 @@ def test_plain_verified_line_is_parsed():
         spec_text=text,
     )
     assert rows[0].verified_text == "2026-08-01 — live check at src/foo.py:10"
-    assert capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    ) == ()
+    assert capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT) == ()
 
 
 def test_missing_verified_on_terminal_spec_emits_warn():
     text = _spec_text(
         status="shipped",
-        cap_body=(
-            "- **CAP-3 — no evidence.**\n"
-            "  - **intent:** something\n"
-            "  - **success:** measurable outcome\n"
-        ),
+        cap_body=("- **CAP-3 — no evidence.**\n  - **intent:** something\n  - **success:** measurable outcome\n"),
     )
     rows = capability_effect.parse_spec_capability_verified_rows(
         project="pyforge-steward",
         spec_slug="spec-no-verified",
         spec_text=text,
     )
-    findings = capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    )
+    findings = capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT)
     assert len(findings) == 1
     finding = findings[0]
     assert finding.source == Source.CAPABILITY_EFFECT
@@ -98,9 +79,7 @@ def test_missing_verified_on_non_terminal_spec_is_silent():
         spec_slug="spec-draft",
         spec_text=text,
     )
-    assert capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    ) == ()
+    assert capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT) == ()
 
 
 def test_realized_status_triggers_missing_verified_finding():
@@ -113,9 +92,7 @@ def test_realized_status_triggers_missing_verified_finding():
         spec_slug="spec-realized",
         spec_text=text,
     )
-    findings = capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    )
+    findings = capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT)
     assert len(findings) == 1
     assert findings[0].evidence["spec_status"] == "realized"
 
@@ -135,20 +112,12 @@ def test_uses_last_verified_line_when_reconciled():
         spec_text=text,
     )
     assert rows[0].verified_text == "2026-09-10 — re-checked recently"
-    assert capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    ) == ()
+    assert capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT) == ()
 
 
 def test_iter_rows_from_fixture_tree(tmp_path: Path):
     spec_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-doctor"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-fixture"
+        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts" / "specs" / "spec-fixture"
     )
     spec_dir.mkdir(parents=True)
     (spec_dir / "SPEC.md").write_text(
@@ -184,40 +153,26 @@ def test_multi_cap_spec_parses_each_block_independently():
     assert rows[0].verified_text is not None
     assert rows[1].cap_n == 2
     assert rows[1].verified_text is None
-    findings = capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    )
+    findings = capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT)
     assert len(findings) == 1
     assert findings[0].evidence["cap_n"] == 2
 
 
 def test_quoted_frontmatter_status_is_terminal():
-    text = (
-        "---\nspec: example\nstatus: 'shipped'\n---\n\n"
-        "## Capabilities\n\n"
-        "- **CAP-1 — quoted status.**\n"
-    )
+    text = "---\nspec: example\nstatus: 'shipped'\n---\n\n## Capabilities\n\n- **CAP-1 — quoted status.**\n"
     rows = capability_effect.parse_spec_capability_verified_rows(
         project="pyforge-doctor",
         spec_slug="spec-quoted",
         spec_text=text,
     )
     assert rows[0].spec_status == "shipped"
-    findings = capability_effect.missing_verified_findings(
-        rows, source=Source.CAPABILITY_EFFECT
-    )
+    findings = capability_effect.missing_verified_findings(rows, source=Source.CAPABILITY_EFFECT)
     assert len(findings) == 1
 
 
 def test_gather_verified_line_is_read_only(tmp_path: Path):
     spec_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-doctor"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-read-only"
+        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts" / "specs" / "spec-read-only"
     )
     spec_dir.mkdir(parents=True)
     spec_path = spec_dir / "SPEC.md"

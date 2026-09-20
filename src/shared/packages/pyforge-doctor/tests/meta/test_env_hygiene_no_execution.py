@@ -33,17 +33,11 @@ def _parse(path: Path) -> ast.Module:
 def _no_execution_violations(tree: ast.Module) -> list[int]:
     violations: list[int] = []
     for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and node.func.id in _EXEC_LIKE_CALL_NAMES
-        ):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _EXEC_LIKE_CALL_NAMES:
             violations.append(node.lineno)
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "importlib" or alias.name.startswith(
-                    "importlib."
-                ):
+                if alias.name == "importlib" or alias.name.startswith("importlib."):
                     violations.append(node.lineno)
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
@@ -54,8 +48,7 @@ def _no_execution_violations(tree: ast.Module) -> list[int]:
 
 def test_env_hygiene_module_exists():
     assert ENV_HYGIENE_SOURCE_PATH.is_file(), (
-        f"expected {ENV_HYGIENE_SOURCE_PATH} -- the Story 1.4 env-hygiene "
-        "detector module is missing"
+        f"expected {ENV_HYGIENE_SOURCE_PATH} -- the Story 1.4 env-hygiene detector module is missing"
     )
 
 
@@ -93,9 +86,5 @@ def test_guard_fires_on_synthetic_importlib_import():
 
 
 def test_guard_does_not_fire_on_benign_ast_parse_usage():
-    benign = (
-        "import ast\n"
-        "from pathlib import Path\n"
-        "tree = ast.parse('x = 1')\n"
-    )
+    benign = "import ast\nfrom pathlib import Path\ntree = ast.parse('x = 1')\n"
     assert _no_execution_violations(ast.parse(benign)) == []

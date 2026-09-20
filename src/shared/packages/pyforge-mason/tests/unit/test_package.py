@@ -80,17 +80,35 @@ from pyforge.mason.engines.pep517 import Pep517BuildResult
 from pyforge.mason.engines.pixi import PixiBuildResult, PixiUploadResult
 from pyforge.mason.engines.twine import TwineUploadResult
 from pyforge.mason.errors import (
-    CfeUnresolvedError, EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
-    PackageVersionMismatchError, ShipChannelCredentialMissingError,
-    ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
+    CfeUnresolvedError,
+    EngineAbsentError,
+    InvalidShipTargetError,
+    PackageProjectPathError,
+    PackageVersionMismatchError,
+    ShipChannelCredentialMissingError,
+    ShipCondaForgeRecipeLocationError,
+    ShipCondaForgeRecipeMissingError,
     ShipCredentialMissingError,
 )
 from pyforge.mason.models import (
-    PackageBuildResult, ShipReceipt, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+    PackageBuildResult,
+    ShipReceipt,
+    ShipState,
+    ShipTarget,
+    ShipTargetKind,
+    ShipTargetResult,
 )
 from pyforge.mason.package import (
-    _TESTPYPI_REPOSITORY_URL, _versions_disagree, build, build_ship_receipt, parse_ship_targets,
-    plan_ship, ship, ship_channel, ship_conda_forge, ship_pypi,
+    _TESTPYPI_REPOSITORY_URL,
+    _versions_disagree,
+    build,
+    build_ship_receipt,
+    parse_ship_targets,
+    plan_ship,
+    ship,
+    ship_channel,
+    ship_conda_forge,
+    ship_pypi,
 )
 from pyforge.mason.resolve import STEP_CWD_WALK, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot
 
@@ -117,8 +135,10 @@ _CONDA_RESULT = PixiBuildResult(
 def test_build_happy_path_composes_both_engines_into_one_result(tmp_path):
     proj = tmp_path / "proj"
     proj.mkdir()
-    with patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT) as mock_pep517, \
-         patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT) as mock_pixi:
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT) as mock_pep517,
+        patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT) as mock_pixi,
+    ):
         result = build(str(proj))
 
     mock_pep517.assert_called_once()
@@ -137,7 +157,8 @@ def test_build_happy_path_composes_both_engines_into_one_result(tmp_path):
 
 
 def test_build_resolves_project_path_to_an_absolute_string_before_calling_either_engine(
-    tmp_path, monkeypatch,
+    tmp_path,
+    monkeypatch,
 ):
     """Regression (package.py's own docstring): a relative `project_path`
     combined with `cwd=project_path` on the SAME relative string would
@@ -147,8 +168,10 @@ def test_build_resolves_project_path_to_an_absolute_string_before_calling_either
     monkeypatch.chdir(tmp_path)
     (tmp_path / "proj").mkdir()
 
-    with patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT) as mock_pep517, \
-         patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT) as mock_pixi:
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT) as mock_pep517,
+        patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT) as mock_pixi,
+    ):
         result = build("proj")
 
     expected = str((tmp_path / "proj").resolve())
@@ -164,10 +187,14 @@ def test_build_raises_package_project_path_error_when_resolve_fails():
     resolution) -- before either engine adapter is ever called. The
     ORIGINAL caller-supplied `project_path` must name the error, since the
     resolved form was never successfully computed."""
-    with patch(
-        "pyforge.mason.package.Path.resolve", side_effect=OSError("Too many levels of symlinks"),
-    ), patch("pyforge.mason.package.pep517.build") as mock_pep517, \
-         patch("pyforge.mason.package.pixi.build") as mock_pixi:
+    with (
+        patch(
+            "pyforge.mason.package.Path.resolve",
+            side_effect=OSError("Too many levels of symlinks"),
+        ),
+        patch("pyforge.mason.package.pep517.build") as mock_pep517,
+        patch("pyforge.mason.package.pixi.build") as mock_pixi,
+    ):
         with pytest.raises(PackageProjectPathError) as excinfo:
             build("/some/bad/path")
 
@@ -185,8 +212,10 @@ def test_build_version_mismatch_raises_before_returning(tmp_path):
         conda_version="0.2.0",
         stdout="Building pkg\n",
     )
-    with patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT), \
-         patch("pyforge.mason.package.pixi.build", return_value=mismatched_conda):
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT),
+        patch("pyforge.mason.package.pixi.build", return_value=mismatched_conda),
+    ):
         with pytest.raises(PackageVersionMismatchError) as excinfo:
             build(str(proj))
 
@@ -228,8 +257,10 @@ def test_build_does_not_raise_when_versions_are_equal_but_differently_formatted(
         conda_version="0.1",
         stdout="Building pkg\n",
     )
-    with patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT), \
-         patch("pyforge.mason.package.pixi.build", return_value=equivalent_conda):
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT),
+        patch("pyforge.mason.package.pixi.build", return_value=equivalent_conda),
+    ):
         result = build(str(proj))
 
     assert result.wheel_version == "0.1.0"
@@ -248,8 +279,10 @@ def test_build_skips_the_mismatch_check_when_the_wheel_build_failed(tmp_path):
         wheel_version=None,
         stdout="error: build backend failed\n",
     )
-    with patch("pyforge.mason.package.pep517.build", return_value=failed_wheel), \
-         patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT):
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=failed_wheel),
+        patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT),
+    ):
         result = build(str(proj))
 
     assert result.wheel_version is None
@@ -261,10 +294,15 @@ def test_build_skips_the_mismatch_check_when_the_conda_build_failed(tmp_path):
     proj = tmp_path / "proj"
     proj.mkdir()
     failed_conda = PixiBuildResult(
-        returncode=1, conda_path=None, conda_version=None, stdout="error: recipe not found\n",
+        returncode=1,
+        conda_path=None,
+        conda_version=None,
+        stdout="error: recipe not found\n",
     )
-    with patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT), \
-         patch("pyforge.mason.package.pixi.build", return_value=failed_conda):
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT),
+        patch("pyforge.mason.package.pixi.build", return_value=failed_conda),
+    ):
         result = build(str(proj))
 
     assert result.wheel_version == "0.1.0"
@@ -280,10 +318,13 @@ def test_build_engine_build_absent_propagates_and_never_calls_pixi(tmp_path):
     is ever reached."""
     proj = tmp_path / "proj"
     proj.mkdir()
-    with patch(
-        "pyforge.mason.package.pep517.build",
-        side_effect=EngineAbsentError("build", "python-build"),
-    ) as mock_pep517, patch("pyforge.mason.package.pixi.build") as mock_pixi:
+    with (
+        patch(
+            "pyforge.mason.package.pep517.build",
+            side_effect=EngineAbsentError("build", "python-build"),
+        ) as mock_pep517,
+        patch("pyforge.mason.package.pixi.build") as mock_pixi,
+    ):
         with pytest.raises(EngineAbsentError):
             build(str(proj))
 
@@ -298,12 +339,16 @@ def test_build_engine_pixi_absent_still_runs_pep517_first_but_the_error_propagat
     `EngineAbsentError` (spec I/O matrix)."""
     proj = tmp_path / "proj"
     proj.mkdir()
-    with patch(
-        "pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT,
-    ) as mock_pep517, patch(
-        "pyforge.mason.package.pixi.build",
-        side_effect=EngineAbsentError("pixi", "pixi"),
-    ) as mock_pixi:
+    with (
+        patch(
+            "pyforge.mason.package.pep517.build",
+            return_value=_WHEEL_RESULT,
+        ) as mock_pep517,
+        patch(
+            "pyforge.mason.package.pixi.build",
+            side_effect=EngineAbsentError("pixi", "pixi"),
+        ) as mock_pixi,
+    ):
         with pytest.raises(EngineAbsentError):
             build(str(proj))
 
@@ -314,8 +359,10 @@ def test_build_engine_pixi_absent_still_runs_pep517_first_but_the_error_propagat
 def test_build_default_target_is_library(tmp_path):
     proj = tmp_path / "proj"
     proj.mkdir()
-    with patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT), \
-         patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT):
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT),
+        patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT),
+    ):
         result = build(str(proj))
 
     assert result.target == "library"
@@ -324,8 +371,10 @@ def test_build_default_target_is_library(tmp_path):
 def test_build_forwards_an_explicit_target(tmp_path):
     proj = tmp_path / "proj"
     proj.mkdir()
-    with patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT), \
-         patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT):
+    with (
+        patch("pyforge.mason.package.pep517.build", return_value=_WHEEL_RESULT),
+        patch("pyforge.mason.package.pixi.build", return_value=_CONDA_RESULT),
+    ):
         result = build(str(proj), target="library")
 
     assert result.target == "library"
@@ -333,30 +382,23 @@ def test_build_forwards_an_explicit_target(tmp_path):
 
 # --- Story 3.3: parse_ship_targets --------------------------------------------
 
+
 def test_parse_ship_targets_pypi():
-    assert parse_ship_targets("pypi") == (
-        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
-    )
+    assert parse_ship_targets("pypi") == (ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),)
 
 
 def test_parse_ship_targets_pypi_test():
     """Story 3.9/FR-50: `"pypi-test"` mirrors `"pypi"`'s own bare-literal
     handling exactly -- no prefix, no dedup."""
-    assert parse_ship_targets("pypi-test") == (
-        ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),
-    )
+    assert parse_ship_targets("pypi-test") == (ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),)
 
 
 def test_parse_ship_targets_conda_forge():
-    assert parse_ship_targets("conda-forge") == (
-        ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
-    )
+    assert parse_ship_targets("conda-forge") == (ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),)
 
 
 def test_parse_ship_targets_channel():
-    assert parse_ship_targets("channel:myorg") == (
-        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
-    )
+    assert parse_ship_targets("channel:myorg") == (ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),)
 
 
 def test_parse_ship_targets_all_three_comma_separated_preserves_order():
@@ -403,9 +445,7 @@ def test_parse_ship_targets_tolerates_whitespace_around_commas():
 def test_parse_ship_targets_strips_whitespace_after_channel_prefix():
     """Review pass, 2026-08-13: `"channel: myorg"`'s leading space after the
     colon must not survive into `channel_name`."""
-    assert parse_ship_targets("channel: myorg") == (
-        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
-    )
+    assert parse_ship_targets("channel: myorg") == (ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),)
 
 
 @pytest.mark.parametrize("value", [",", "pypi,", ",pypi", " ", "pypi,,conda-forge"])
@@ -463,7 +503,8 @@ def test_plan_ship_all_four_kinds_are_not_attempted_with_no_reference():
 
 def test_plan_ship_pypi_message_names_wheel_and_sdist_and_states_irreversibility():
     results = plan_ship(
-        (ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),), _PLAN_BUILD_RESULT,
+        (ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),),
+        _PLAN_BUILD_RESULT,
     )
 
     assert results[0].target == "pypi"
@@ -479,7 +520,8 @@ def test_plan_ship_pypi_test_message_names_wheel_and_sdist_but_never_claims_irre
     but NEVER claims irreversibility -- that claim stays exclusive to the
     real `pypi` target."""
     results = plan_ship(
-        (ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),), _PLAN_BUILD_RESULT,
+        (ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),),
+        _PLAN_BUILD_RESULT,
     )
 
     assert results[0].target == "pypi-test"
@@ -492,7 +534,8 @@ def test_plan_ship_pypi_test_message_names_wheel_and_sdist_but_never_claims_irre
 
 def test_plan_ship_conda_forge_message_mentions_a_pull_request():
     results = plan_ship(
-        (ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),), _PLAN_BUILD_RESULT,
+        (ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),),
+        _PLAN_BUILD_RESULT,
     )
 
     assert results[0].target == "conda-forge"
@@ -501,7 +544,8 @@ def test_plan_ship_conda_forge_message_mentions_a_pull_request():
 
 def test_plan_ship_channel_message_names_conda_path_and_channel_name():
     results = plan_ship(
-        (ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),), _PLAN_BUILD_RESULT,
+        (ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),),
+        _PLAN_BUILD_RESULT,
     )
 
     assert results[0].target == "channel:myorg"
@@ -519,8 +563,10 @@ def test_plan_ship_calls_no_engine():
         ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
         ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
     )
-    with patch("pyforge.mason.package.pep517.build") as mock_pep517, \
-         patch("pyforge.mason.package.pixi.build") as mock_pixi:
+    with (
+        patch("pyforge.mason.package.pep517.build") as mock_pep517,
+        patch("pyforge.mason.package.pixi.build") as mock_pixi,
+    ):
         plan_ship(targets, _PLAN_BUILD_RESULT)
 
     mock_pep517.assert_not_called()
@@ -577,8 +623,7 @@ _SHIP_BUILD_RESULT = PackageBuildResult(
 
 
 def test_ship_pypi_raises_before_build_or_upload_when_both_credentials_missing():
-    with patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with patch("pyforge.mason.package.build") as mock_build, patch("pyforge.mason.package.twine.upload") as mock_upload:
         with pytest.raises(ShipCredentialMissingError) as excinfo:
             ship_pypi("/proj", environ={})
 
@@ -588,8 +633,7 @@ def test_ship_pypi_raises_before_build_or_upload_when_both_credentials_missing()
 
 
 def test_ship_pypi_raises_naming_only_the_missing_credential():
-    with patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with patch("pyforge.mason.package.build") as mock_build, patch("pyforge.mason.package.twine.upload") as mock_upload:
         with pytest.raises(ShipCredentialMissingError) as excinfo:
             ship_pypi("/proj", environ={"TWINE_USERNAME": "me"})
 
@@ -599,8 +643,7 @@ def test_ship_pypi_raises_naming_only_the_missing_credential():
 
 
 def test_ship_pypi_treats_a_whitespace_only_credential_as_missing():
-    with patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with patch("pyforge.mason.package.build") as mock_build, patch("pyforge.mason.package.twine.upload") as mock_upload:
         with pytest.raises(ShipCredentialMissingError) as excinfo:
             ship_pypi("/proj", environ={"TWINE_USERNAME": "   ", "TWINE_PASSWORD": "secret"})
 
@@ -611,21 +654,31 @@ def test_ship_pypi_treats_a_whitespace_only_credential_as_missing():
 
 def test_ship_pypi_happy_path_uploads_and_returns_terminal_result():
     upload_result = TwineUploadResult(
-        returncode=0, url="https://pypi.org/project/pkg/0.1.0/", stdout="View at:\n...\n",
+        returncode=0,
+        url="https://pypi.org/project/pkg/0.1.0/",
+        stdout="View at:\n...\n",
     )
-    with patch(
-        "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
-    ) as mock_build, patch(
-        "pyforge.mason.package.pypi_index.version_exists", return_value=False,
-    ) as mock_exists, patch(
-        "pyforge.mason.package.twine.upload", return_value=upload_result,
-    ) as mock_upload:
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            return_value=_SHIP_BUILD_RESULT,
+        ) as mock_build,
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            return_value=False,
+        ) as mock_exists,
+        patch(
+            "pyforge.mason.package.twine.upload",
+            return_value=upload_result,
+        ) as mock_upload,
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
     mock_exists.assert_called_once_with("pkg", "0.1.0")
     mock_upload.assert_called_once_with(
-        (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path), repository_url=None,
+        (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path),
+        repository_url=None,
     )
     assert result == ShipTargetResult(
         target="pypi",
@@ -649,8 +702,10 @@ def test_ship_pypi_returns_failed_when_build_produces_no_wheel():
         pep517_stdout="error: build backend failed\n",
         pixi_stdout="",
     )
-    with patch("pyforge.mason.package.build", return_value=failed_build), \
-         patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=failed_build),
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_upload.assert_not_called()
@@ -678,8 +733,10 @@ def test_ship_pypi_returns_failed_when_build_produces_a_wheel_but_no_sdist():
         pep517_stdout="only the wheel was discovered\n",
         pixi_stdout="",
     )
-    with patch("pyforge.mason.package.build", return_value=partial_build), \
-         patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=partial_build),
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_upload.assert_not_called()
@@ -689,20 +746,29 @@ def test_ship_pypi_returns_failed_when_build_produces_a_wheel_but_no_sdist():
 
 def test_ship_pypi_returns_failed_when_upload_returns_nonzero():
     upload_result = TwineUploadResult(returncode=1, url=None, stdout="ERROR HTTPError: 400\n")
-    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
-         patch("pyforge.mason.package.pypi_index.version_exists", return_value=False), \
-         patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch("pyforge.mason.package.pypi_index.version_exists", return_value=False),
+        patch("pyforge.mason.package.twine.upload", return_value=upload_result),
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     assert result == ShipTargetResult(
-        target="pypi", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+        target="pypi",
+        state=ShipState.FAILED,
+        reference=None,
+        message="ERROR HTTPError: 400\n",
     )
 
 
 def test_ship_pypi_propagates_engine_absent_from_build():
-    with patch(
-        "pyforge.mason.package.build", side_effect=EngineAbsentError("build", "python-build"),
-    ), patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            side_effect=EngineAbsentError("build", "python-build"),
+        ),
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
         with pytest.raises(EngineAbsentError):
             ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
@@ -710,15 +776,18 @@ def test_ship_pypi_propagates_engine_absent_from_build():
 
 
 def test_ship_pypi_propagates_package_version_mismatch_from_build():
-    with patch(
-        "pyforge.mason.package.build",
-        side_effect=PackageVersionMismatchError(
-            wheel_version="0.1.0",
-            conda_version="0.2.0",
-            wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
-            conda_path="/proj/dist-conda/pkg-0.2.0-abc123_0.conda",
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            side_effect=PackageVersionMismatchError(
+                wheel_version="0.1.0",
+                conda_version="0.2.0",
+                wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+                conda_path="/proj/dist-conda/pkg-0.2.0-abc123_0.conda",
+            ),
         ),
-    ), patch("pyforge.mason.package.twine.upload") as mock_upload:
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
         with pytest.raises(PackageVersionMismatchError):
             ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
@@ -727,11 +796,17 @@ def test_ship_pypi_propagates_package_version_mismatch_from_build():
 
 def test_ship_pypi_default_target_is_library():
     upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
-    with patch(
-        "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
-    ) as mock_build, patch(
-        "pyforge.mason.package.pypi_index.version_exists", return_value=False,
-    ), patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            return_value=_SHIP_BUILD_RESULT,
+        ) as mock_build,
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            return_value=False,
+        ),
+        patch("pyforge.mason.package.twine.upload", return_value=upload_result),
+    ):
         ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
@@ -745,11 +820,17 @@ def test_ship_pypi_forwards_an_explicit_target():
     arbitrary string is a valid probe of the plumbing alone (review pass,
     2026-08-14)."""
     upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
-    with patch(
-        "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
-    ) as mock_build, patch(
-        "pyforge.mason.package.pypi_index.version_exists", return_value=False,
-    ), patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            return_value=_SHIP_BUILD_RESULT,
+        ) as mock_build,
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            return_value=False,
+        ),
+        patch("pyforge.mason.package.twine.upload", return_value=upload_result),
+    ):
         ship_pypi("/proj", environ=_SHIP_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")
@@ -757,13 +838,18 @@ def test_ship_pypi_forwards_an_explicit_target():
 
 # --- Story 3.7: ship_pypi idempotence-by-interrogation --------------------------
 
+
 def test_ship_pypi_already_shipped_skips_upload_and_returns_terminal():
     """spec I/O matrix: 'PyPI already shipped' -- version_exists -> True ->
     TERMINAL, reference = project URL; twine.upload never called."""
-    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
-         patch(
-             "pyforge.mason.package.pypi_index.version_exists", return_value=True,
-         ) as mock_exists, patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            return_value=True,
+        ) as mock_exists,
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_exists.assert_called_once_with("pkg", "0.1.0")
@@ -776,10 +862,14 @@ def test_ship_pypi_already_shipped_skips_upload_and_returns_terminal():
 def test_ship_pypi_undeterminable_interrogation_returns_pending_naming_the_reason():
     """spec I/O matrix: 'PyPI interrogation undeterminable' -- version_exists
     -> None -> PENDING naming the reason; twine.upload never called."""
-    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
-         patch(
-             "pyforge.mason.package.pypi_index.version_exists", return_value=None,
-         ), patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            return_value=None,
+        ),
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_upload.assert_not_called()
@@ -794,18 +884,22 @@ def test_ship_pypi_interrogation_runs_after_build_and_before_upload():
     """spec Always boundary: interrogation runs strictly AFTER build()
     (needs the built version) and BEFORE the upload call."""
     call_order = []
-    with patch(
-        "pyforge.mason.package.build",
-        side_effect=lambda *a, **k: (call_order.append("build"), _SHIP_BUILD_RESULT)[1],
-    ), patch(
-        "pyforge.mason.package.pypi_index.version_exists",
-        side_effect=lambda *a, **k: (call_order.append("version_exists"), False)[1],
-    ), patch(
-        "pyforge.mason.package.twine.upload",
-        side_effect=lambda *a, **k: (
-            call_order.append("upload"),
-            TwineUploadResult(returncode=0, url=None, stdout=""),
-        )[1],
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            side_effect=lambda *a, **k: (call_order.append("build"), _SHIP_BUILD_RESULT)[1],
+        ),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            side_effect=lambda *a, **k: (call_order.append("version_exists"), False)[1],
+        ),
+        patch(
+            "pyforge.mason.package.twine.upload",
+            side_effect=lambda *a, **k: (
+                call_order.append("upload"),
+                TwineUploadResult(returncode=0, url=None, stdout=""),
+            )[1],
+        ),
     ):
         ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
@@ -819,12 +913,17 @@ _TESTPYPI_URL = "https://test.pypi.org/legacy/"
 
 def test_ship_pypi_repository_url_sets_target_pypi_test_on_the_terminal_result():
     upload_result = TwineUploadResult(
-        returncode=0, url="https://test.pypi.org/project/pkg/0.1.0/", stdout="View at:\n...\n",
+        returncode=0,
+        url="https://test.pypi.org/project/pkg/0.1.0/",
+        stdout="View at:\n...\n",
     )
-    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
-         patch(
-             "pyforge.mason.package.twine.upload", return_value=upload_result,
-         ) as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.twine.upload",
+            return_value=upload_result,
+        ) as mock_upload,
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
 
     mock_upload.assert_called_once_with(
@@ -856,8 +955,10 @@ def test_ship_pypi_repository_url_sets_target_pypi_test_on_a_failed_build():
         pep517_stdout="error: build backend failed\n",
         pixi_stdout="",
     )
-    with patch("pyforge.mason.package.build", return_value=failed_build), \
-         patch("pyforge.mason.package.twine.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=failed_build),
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
 
     mock_upload.assert_not_called()
@@ -867,12 +968,17 @@ def test_ship_pypi_repository_url_sets_target_pypi_test_on_a_failed_build():
 
 def test_ship_pypi_repository_url_sets_target_pypi_test_on_upload_failure():
     upload_result = TwineUploadResult(returncode=1, url=None, stdout="ERROR HTTPError: 400\n")
-    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
-         patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch("pyforge.mason.package.twine.upload", return_value=upload_result),
+    ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
 
     assert result == ShipTargetResult(
-        target="pypi-test", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+        target="pypi-test",
+        state=ShipState.FAILED,
+        reference=None,
+        message="ERROR HTTPError: 400\n",
     )
 
 
@@ -883,10 +989,13 @@ def test_ship_pypi_without_repository_url_still_forwards_none_to_twine_upload():
     which already asserts this, so a future edit that silently drops the
     keyword is still caught even if that other test's assertion changes."""
     upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
-    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
-         patch(
-             "pyforge.mason.package.twine.upload", return_value=upload_result,
-         ) as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.twine.upload",
+            return_value=upload_result,
+        ) as mock_upload,
+    ):
         ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     assert mock_upload.call_args.kwargs["repository_url"] is None
@@ -912,8 +1021,7 @@ _SHIP_CHANNEL_BUILD_RESULT = PackageBuildResult(
 
 
 def test_ship_channel_raises_before_build_or_upload_when_credential_missing():
-    with patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.pixi.upload") as mock_upload:
+    with patch("pyforge.mason.package.build") as mock_build, patch("pyforge.mason.package.pixi.upload") as mock_upload:
         with pytest.raises(ShipChannelCredentialMissingError) as excinfo:
             ship_channel("/proj", "myorg", environ={})
 
@@ -923,8 +1031,7 @@ def test_ship_channel_raises_before_build_or_upload_when_credential_missing():
 
 
 def test_ship_channel_treats_a_whitespace_only_credential_as_missing():
-    with patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.pixi.upload") as mock_upload:
+    with patch("pyforge.mason.package.build") as mock_build, patch("pyforge.mason.package.pixi.upload") as mock_upload:
         with pytest.raises(ShipChannelCredentialMissingError) as excinfo:
             ship_channel("/proj", "myorg", environ={"PREFIX_API_KEY": "   "})
 
@@ -935,13 +1042,20 @@ def test_ship_channel_treats_a_whitespace_only_credential_as_missing():
 
 def test_ship_channel_happy_path_uploads_and_returns_terminal_result():
     upload_result = PixiUploadResult(returncode=0, stdout="Uploading...\ndone\n")
-    with patch(
-        "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
-    ) as mock_build, patch(
-        "pyforge.mason.package.pixi.search", return_value=False,
-    ) as mock_search, patch(
-        "pyforge.mason.package.pixi.upload", return_value=upload_result,
-    ) as mock_upload:
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            return_value=_SHIP_CHANNEL_BUILD_RESULT,
+        ) as mock_build,
+        patch(
+            "pyforge.mason.package.pixi.search",
+            return_value=False,
+        ) as mock_search,
+        patch(
+            "pyforge.mason.package.pixi.upload",
+            return_value=upload_result,
+        ) as mock_upload,
+    ):
         result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
@@ -969,8 +1083,10 @@ def test_ship_channel_returns_failed_when_build_produces_no_conda_artifact():
         pep517_stdout="",
         pixi_stdout="error: recipe not found\n",
     )
-    with patch("pyforge.mason.package.build", return_value=failed_build), \
-         patch("pyforge.mason.package.pixi.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=failed_build),
+        patch("pyforge.mason.package.pixi.upload") as mock_upload,
+    ):
         result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_upload.assert_not_called()
@@ -988,13 +1104,17 @@ def test_ship_channel_returns_failed_when_upload_returns_nonzero():
     second call for a different target in the same invocation would be
     unaffected."""
     upload_result = PixiUploadResult(
-        returncode=1, stdout="Error:   x no prefix.dev API key provided\n",
+        returncode=1,
+        stdout="Error:   x no prefix.dev API key provided\n",
     )
-    with patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT), \
-         patch("pyforge.mason.package.pixi.search", return_value=False), \
-         patch(
-             "pyforge.mason.package.pixi.upload", return_value=upload_result,
-         ) as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT),
+        patch("pyforge.mason.package.pixi.search", return_value=False),
+        patch(
+            "pyforge.mason.package.pixi.upload",
+            return_value=upload_result,
+        ) as mock_upload,
+    ):
         result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_upload.assert_called_once_with(_SHIP_CHANNEL_BUILD_RESULT.conda_path, "myorg")
@@ -1007,9 +1127,13 @@ def test_ship_channel_returns_failed_when_upload_returns_nonzero():
 
 
 def test_ship_channel_propagates_engine_absent_from_build():
-    with patch(
-        "pyforge.mason.package.build", side_effect=EngineAbsentError("pixi", "pixi"),
-    ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            side_effect=EngineAbsentError("pixi", "pixi"),
+        ),
+        patch("pyforge.mason.package.pixi.upload") as mock_upload,
+    ):
         with pytest.raises(EngineAbsentError):
             ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
@@ -1017,15 +1141,18 @@ def test_ship_channel_propagates_engine_absent_from_build():
 
 
 def test_ship_channel_propagates_package_version_mismatch_from_build():
-    with patch(
-        "pyforge.mason.package.build",
-        side_effect=PackageVersionMismatchError(
-            wheel_version="0.1.0",
-            conda_version="0.2.0",
-            wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
-            conda_path="/proj/dist-conda/pkg-0.2.0-abc123_0.conda",
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            side_effect=PackageVersionMismatchError(
+                wheel_version="0.1.0",
+                conda_version="0.2.0",
+                wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+                conda_path="/proj/dist-conda/pkg-0.2.0-abc123_0.conda",
+            ),
         ),
-    ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        patch("pyforge.mason.package.pixi.upload") as mock_upload,
+    ):
         with pytest.raises(PackageVersionMismatchError):
             ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
@@ -1033,10 +1160,13 @@ def test_ship_channel_propagates_package_version_mismatch_from_build():
 
 
 def test_ship_channel_propagates_package_project_path_error_from_build():
-    with patch(
-        "pyforge.mason.package.build",
-        side_effect=PackageProjectPathError(project_path="/proj", reason="boom"),
-    ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            side_effect=PackageProjectPathError(project_path="/proj", reason="boom"),
+        ),
+        patch("pyforge.mason.package.pixi.upload") as mock_upload,
+    ):
         with pytest.raises(PackageProjectPathError):
             ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
@@ -1045,11 +1175,17 @@ def test_ship_channel_propagates_package_project_path_error_from_build():
 
 def test_ship_channel_default_target_is_library():
     upload_result = PixiUploadResult(returncode=0, stdout="")
-    with patch(
-        "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
-    ) as mock_build, patch(
-        "pyforge.mason.package.pixi.search", return_value=False,
-    ), patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            return_value=_SHIP_CHANNEL_BUILD_RESULT,
+        ) as mock_build,
+        patch(
+            "pyforge.mason.package.pixi.search",
+            return_value=False,
+        ),
+        patch("pyforge.mason.package.pixi.upload", return_value=upload_result),
+    ):
         ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
@@ -1057,11 +1193,17 @@ def test_ship_channel_default_target_is_library():
 
 def test_ship_channel_forwards_an_explicit_target():
     upload_result = PixiUploadResult(returncode=0, stdout="")
-    with patch(
-        "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
-    ) as mock_build, patch(
-        "pyforge.mason.package.pixi.search", return_value=False,
-    ), patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            return_value=_SHIP_CHANNEL_BUILD_RESULT,
+        ) as mock_build,
+        patch(
+            "pyforge.mason.package.pixi.search",
+            return_value=False,
+        ),
+        patch("pyforge.mason.package.pixi.upload", return_value=upload_result),
+    ):
         ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")
@@ -1069,13 +1211,18 @@ def test_ship_channel_forwards_an_explicit_target():
 
 # --- Story 3.7: ship_channel idempotence-by-interrogation -----------------------
 
+
 def test_ship_channel_already_shipped_skips_upload_and_returns_terminal():
     """spec I/O matrix: 'Channel already shipped' -- pixi.search -> True ->
     TERMINAL, reference = channel_name; pixi.upload never called."""
-    with patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT), \
-         patch(
-             "pyforge.mason.package.pixi.search", return_value=True,
-         ) as mock_search, patch("pyforge.mason.package.pixi.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pixi.search",
+            return_value=True,
+        ) as mock_search,
+        patch("pyforge.mason.package.pixi.upload") as mock_upload,
+    ):
         result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_search.assert_called_once_with("pkg", "0.1.0", "myorg")
@@ -1088,10 +1235,14 @@ def test_ship_channel_already_shipped_skips_upload_and_returns_terminal():
 def test_ship_channel_undeterminable_interrogation_returns_pending_naming_the_reason():
     """spec I/O matrix: 'Channel interrogation undeterminable' -- pixi.search
     -> None -> PENDING naming the reason; pixi.upload never called."""
-    with patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT), \
-         patch(
-             "pyforge.mason.package.pixi.search", return_value=None,
-         ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pixi.search",
+            return_value=None,
+        ),
+        patch("pyforge.mason.package.pixi.upload") as mock_upload,
+    ):
         result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_upload.assert_not_called()
@@ -1105,17 +1256,22 @@ def test_ship_channel_interrogation_runs_after_build_and_before_upload():
     """spec Always boundary: interrogation runs strictly AFTER build() (needs
     the built version) and BEFORE the upload call."""
     call_order = []
-    with patch(
-        "pyforge.mason.package.build",
-        side_effect=lambda *a, **k: (call_order.append("build"), _SHIP_CHANNEL_BUILD_RESULT)[1],
-    ), patch(
-        "pyforge.mason.package.pixi.search",
-        side_effect=lambda *a, **k: (call_order.append("search"), False)[1],
-    ), patch(
-        "pyforge.mason.package.pixi.upload",
-        side_effect=lambda *a, **k: (
-            call_order.append("upload"), PixiUploadResult(returncode=0, stdout=""),
-        )[1],
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            side_effect=lambda *a, **k: (call_order.append("build"), _SHIP_CHANNEL_BUILD_RESULT)[1],
+        ),
+        patch(
+            "pyforge.mason.package.pixi.search",
+            side_effect=lambda *a, **k: (call_order.append("search"), False)[1],
+        ),
+        patch(
+            "pyforge.mason.package.pixi.upload",
+            side_effect=lambda *a, **k: (
+                call_order.append("upload"),
+                PixiUploadResult(returncode=0, stdout=""),
+            )[1],
+        ),
     ):
         ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
@@ -1124,15 +1280,21 @@ def test_ship_channel_interrogation_runs_after_build_and_before_upload():
 
 # --- Story 3.6: ship_conda_forge --------------------------------------------
 
+
 @pytest.mark.parametrize("recipe_path", [None, "", "   "])
 def test_ship_conda_forge_raises_recipe_missing_before_any_resolution(recipe_path):
-    with patch("pyforge.mason.package.resolve_cfe_root") as mock_resolve, \
-         patch("pyforge.mason.recipe.submit") as mock_submit, \
-         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+    with (
+        patch("pyforge.mason.package.resolve_cfe_root") as mock_resolve,
+        patch("pyforge.mason.recipe.submit") as mock_submit,
+        patch("pyforge.mason.cfe.subprocess.run") as mock_run,
+    ):
         with pytest.raises(ShipCondaForgeRecipeMissingError):
             ship_conda_forge(
                 recipe_path,
-                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={},
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
                 start_directory=Path("/start"),
             )
 
@@ -1142,15 +1304,21 @@ def test_ship_conda_forge_raises_recipe_missing_before_any_resolution(recipe_pat
 
 
 def test_ship_conda_forge_raises_cfe_unresolved_when_root_is_not_found():
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
-    ) as mock_resolve, patch("pyforge.mason.recipe.submit") as mock_submit, \
-         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+        ) as mock_resolve,
+        patch("pyforge.mason.recipe.submit") as mock_submit,
+        patch("pyforge.mason.cfe.subprocess.run") as mock_run,
+    ):
         with pytest.raises(CfeUnresolvedError):
             ship_conda_forge(
                 "/some/recipe/foo",
-                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={},
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
                 start_directory=Path("/start"),
             )
 
@@ -1162,15 +1330,21 @@ def test_ship_conda_forge_raises_cfe_unresolved_when_root_is_not_found():
 def test_ship_conda_forge_wrong_location_raises_naming_both_paths_no_subprocess(tmp_path):
     root = tmp_path / "cfe-root"
     recipe_dir = tmp_path / "elsewhere" / "foo"
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
-    ), patch("pyforge.mason.recipe.submit") as mock_submit, \
-         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+        ),
+        patch("pyforge.mason.recipe.submit") as mock_submit,
+        patch("pyforge.mason.cfe.subprocess.run") as mock_run,
+    ):
         with pytest.raises(ShipCondaForgeRecipeLocationError) as excinfo:
             ship_conda_forge(
                 str(recipe_dir),
-                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={},
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
                 start_directory=tmp_path,
             )
 
@@ -1196,16 +1370,25 @@ def test_ship_conda_forge_accepts_a_recipe_reached_through_a_symlinked_recipes_d
     recipe_dir = root / "store" / "foo"
     recipe_dir.mkdir()
     submit_result = ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference=None, message="ok",
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference=None,
+        message="ok",
     )
 
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
-    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+        ),
+        patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit,
+    ):
         result = ship_conda_forge(
             str(recipe_dir),
-            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             start_directory=tmp_path,
         )
 
@@ -1219,15 +1402,23 @@ def test_ship_conda_forge_returns_failed_when_path_resolve_raises(tmp_path):
     FAILED, message=str(exc))` instead of raising -- mirrors
     `recipe.py::submit()`'s own established precedent for this exact
     resolve-failure mode."""
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
-    ), patch(
-        "pyforge.mason.package.Path.resolve", side_effect=OSError("Too many levels of symlinks"),
-    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
+        ),
+        patch(
+            "pyforge.mason.package.Path.resolve",
+            side_effect=OSError("Too many levels of symlinks"),
+        ),
+        patch("pyforge.mason.recipe.submit") as mock_submit,
+    ):
         result = ship_conda_forge(
             "/some/bad/path",
-            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             start_directory=tmp_path,
         )
 
@@ -1246,13 +1437,19 @@ def test_ship_conda_forge_returns_failed_when_the_recipe_tilde_cannot_expand(tmp
     leading `~user` names no such user. The original `except (OSError,
     ValueError)` did not catch it, so the function raised instead of
     returning the `FAILED` result its own docstring promises."""
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
-    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
+        ),
+        patch("pyforge.mason.recipe.submit") as mock_submit,
+    ):
         result = ship_conda_forge(
             "~nosuchuser9/recipes/foo",
-            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             start_directory=tmp_path,
         )
 
@@ -1268,13 +1465,19 @@ def test_ship_conda_forge_returns_failed_when_the_root_tilde_cannot_expand(tmp_p
     ~foo/cfe` value through unvalidated, and the root is `.expanduser()`d
     here (and in `doctor.py`) only -- `recipe.py::submit()` never expands a
     root, so this trigger has no pre-existing counterpart there."""
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=Path("~nosuchuser9/cfe"), step=STEP_FLAG),
-    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=Path("~nosuchuser9/cfe"), step=STEP_FLAG),
+        ),
+        patch("pyforge.mason.recipe.submit") as mock_submit,
+    ):
         result = ship_conda_forge(
             str(tmp_path / "recipes" / "foo"),
-            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             start_directory=tmp_path,
         )
 
@@ -1292,15 +1495,24 @@ def test_ship_conda_forge_strips_a_recipe_path_before_resolving_it(tmp_path):
     root = tmp_path / "cfe-root"
     recipe_dir = root / "recipes" / "foo"
     submit_result = ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference="ref", message="msg",
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="ref",
+        message="msg",
     )
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
-    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+        ),
+        patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit,
+    ):
         result = ship_conda_forge(
             f"   {recipe_dir}  ",
-            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             start_directory=tmp_path,
         )
 
@@ -1317,14 +1529,19 @@ def test_ship_conda_forge_happy_path_returns_recipe_submit_result_unchanged(tmp_
         reference="https://github.com/conda-forge/staged-recipes/pull/123",
         message="PR created: https://github.com/conda-forge/staged-recipes/pull/123",
     )
-    with patch(
-        "pyforge.mason.package.resolve_cfe_root",
-        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
-    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+    with (
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+            return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+        ),
+        patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit,
+    ):
         result = ship_conda_forge(
             str(recipe_dir),
             environ={"FOO": "bar"},
-            cfe_root_arg="cfe-root-flag", cfe_python_arg="py-flag", cfe_timeout_arg=42.0,
+            cfe_root_arg="cfe-root-flag",
+            cfe_python_arg="py-flag",
+            cfe_timeout_arg=42.0,
             start_directory=tmp_path,
         )
 
@@ -1343,8 +1560,10 @@ def test_ship_conda_forge_happy_path_returns_recipe_submit_result_unchanged(tmp_
 
 # --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
 
+
 def test_ship_conda_forge_against_fake_cfe_root_returns_the_fixtures_canned_success(
-    fake_cfe_root, monkeypatch,
+    fake_cfe_root,
+    monkeypatch,
 ):
     """Mirrors `test_recipe.py::
     test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success`:
@@ -1383,15 +1602,20 @@ def test_ship_conda_forge_against_fake_cfe_root_returns_the_fixtures_canned_succ
 # block proves `ship()`'s own dispatch/gating/exception-catch logic
 # independent of any one target's real behavior.
 
+
 def test_ship_invalid_target_raises_before_any_target_runs(tmp_path):
     """spec I/O matrix: 'Invalid token... whole command fails before any
     target runs.'"""
-    with patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.ship_pypi") as mock_ship_pypi:
+    with patch("pyforge.mason.package.build") as mock_build, patch("pyforge.mason.package.ship_pypi") as mock_ship_pypi:
         with pytest.raises(InvalidShipTargetError) as excinfo:
             ship(
-                "bogus", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-                cfe_timeout_arg=None, start_directory=tmp_path,
+                "bogus",
+                confirm=True,
+                environ={},
+                cfe_root_arg=None,
+                cfe_python_arg=None,
+                cfe_timeout_arg=None,
+                start_directory=tmp_path,
             )
 
     assert excinfo.value.value == "bogus"
@@ -1402,12 +1626,21 @@ def test_ship_invalid_target_raises_before_any_target_runs(tmp_path):
 def test_ship_dry_run_calls_build_once_and_returns_the_plan(tmp_path):
     """spec I/O matrix: dry-run default -- one `build()` call, then `plan_
     ship`'s own `NOT_ATTEMPTED` entries; nothing uploaded."""
-    with patch(
-        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
-    ) as mock_build, patch("pyforge.mason.package.ship_pypi") as mock_ship_pypi:
+    with (
+        patch(
+            "pyforge.mason.package.build",
+            return_value=_PLAN_BUILD_RESULT,
+        ) as mock_build,
+        patch("pyforge.mason.package.ship_pypi") as mock_ship_pypi,
+    ):
         results = ship(
-            "pypi,conda-forge", confirm=False, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi,conda-forge",
+            confirm=False,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_build.assert_called_once_with(str(tmp_path), target="library")
@@ -1421,11 +1654,16 @@ def test_ship_dry_run_calls_build_once_and_returns_the_plan(tmp_path):
 
 def test_ship_dry_run_calls_build_exactly_once_regardless_of_target_count(tmp_path):
     with patch(
-        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+        "pyforge.mason.package.build",
+        return_value=_PLAN_BUILD_RESULT,
     ) as mock_build:
         ship(
-            "pypi,pypi-test,conda-forge,channel:myorg", confirm=False, environ={},
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            "pypi,pypi-test,conda-forge,channel:myorg",
+            confirm=False,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             start_directory=tmp_path,
         )
 
@@ -1435,8 +1673,13 @@ def test_ship_dry_run_calls_build_exactly_once_regardless_of_target_count(tmp_pa
 def test_ship_dry_run_pypi_test_plan_names_testpypi_with_no_irreversibility_claim(tmp_path):
     with patch("pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT):
         results = ship(
-            "pypi-test", confirm=False, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi-test",
+            confirm=False,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     assert results[0].target == "pypi-test"
@@ -1447,11 +1690,18 @@ def test_ship_dry_run_pypi_test_plan_names_testpypi_with_no_irreversibility_clai
 
 def test_ship_dry_run_forwards_an_explicit_target_to_build(tmp_path):
     with patch(
-        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+        "pyforge.mason.package.build",
+        return_value=_PLAN_BUILD_RESULT,
     ) as mock_build:
         ship(
-            "pypi", confirm=False, environ={}, target="not-the-default", cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi",
+            confirm=False,
+            environ={},
+            target="not-the-default",
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_build.assert_called_once_with(str(tmp_path), target="not-the-default")
@@ -1469,8 +1719,13 @@ def test_ship_dry_run_with_only_conda_forge_never_calls_build(tmp_path):
     `EngineAbsentError` on a host missing pep517/pixi tooling."""
     with patch("pyforge.mason.package.build") as mock_build:
         results = ship(
-            "conda-forge", confirm=False, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "conda-forge",
+            confirm=False,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_build.assert_not_called()
@@ -1481,8 +1736,13 @@ def test_ship_dry_run_with_only_conda_forge_never_calls_build(tmp_path):
 
     with patch("pyforge.mason.package.build") as mock_build:
         results = ship(
-            "conda-forge,conda-forge", confirm=False, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "conda-forge,conda-forge",
+            confirm=False,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_build.assert_not_called()
@@ -1502,11 +1762,17 @@ def test_ship_dry_run_mixing_conda_forge_with_pypi_still_calls_build_once(tmp_pa
     boundary condition ("at least one non-conda-forge target") is not only
     ever exercised via `pypi`."""
     with patch(
-        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+        "pyforge.mason.package.build",
+        return_value=_PLAN_BUILD_RESULT,
     ) as mock_build:
         results = ship(
-            "conda-forge,channel:myorg", confirm=False, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "conda-forge,channel:myorg",
+            confirm=False,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_build.assert_called_once_with(str(tmp_path), target="library")
@@ -1521,11 +1787,17 @@ def test_ship_dry_run_mixing_conda_forge_with_pypi_test_still_calls_build_once(t
     boundary condition against `pypi-test` specifically, not only `pypi`/
     `channel:<name>` as the two tests above already cover."""
     with patch(
-        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+        "pyforge.mason.package.build",
+        return_value=_PLAN_BUILD_RESULT,
     ) as mock_build:
         results = ship(
-            "conda-forge,pypi-test", confirm=False, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "conda-forge,pypi-test",
+            confirm=False,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_build.assert_called_once_with(str(tmp_path), target="library")
@@ -1545,21 +1817,35 @@ def test_ship_real_ship_conda_forge_and_pypi_test_with_no_pypi_sibling_run_indep
     recipe_dir = tmp_path / "recipes" / "example-recipe"
     recipe_dir.mkdir(parents=True)
     conda_forge_result = ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference="https://github.com/x/pull/1",
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="https://github.com/x/pull/1",
         message="opened",
     )
     pypi_test_result = ShipTargetResult(
-        target="pypi-test", state=ShipState.TERMINAL, reference="https://test.pypi.org/x",
+        target="pypi-test",
+        state=ShipState.TERMINAL,
+        reference="https://test.pypi.org/x",
         message="ok",
     )
-    with patch(
-        "pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result,
-    ) as mock_conda_forge, patch(
-        "pyforge.mason.package.ship_pypi", return_value=pypi_test_result,
-    ) as mock_ship_pypi:
+    with (
+        patch(
+            "pyforge.mason.package.ship_conda_forge",
+            return_value=conda_forge_result,
+        ) as mock_conda_forge,
+        patch(
+            "pyforge.mason.package.ship_pypi",
+            return_value=pypi_test_result,
+        ) as mock_ship_pypi,
+    ):
         results = ship(
-            "conda-forge,pypi-test", confirm=True, environ={}, recipe_path=str(recipe_dir),
-            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            "conda-forge,pypi-test",
+            confirm=True,
+            environ={},
+            recipe_path=str(recipe_dir),
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
             start_directory=tmp_path,
         )
 
@@ -1572,38 +1858,66 @@ def test_ship_real_ship_conda_forge_and_pypi_test_with_no_pypi_sibling_run_indep
 def test_ship_canonical_happy_path_pypi_and_channel_both_terminal(tmp_path):
     """spec I/O matrix: canonical happy path -- both `TERMINAL`."""
     pypi_result = ShipTargetResult(
-        target="pypi", state=ShipState.TERMINAL, reference="url", message="ok",
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="url",
+        message="ok",
     )
     channel_result = ShipTargetResult(
-        target="channel:myorg", state=ShipState.TERMINAL, reference="myorg", message="ok",
+        target="channel:myorg",
+        state=ShipState.TERMINAL,
+        reference="myorg",
+        message="ok",
     )
-    with patch(
-        "pyforge.mason.package.ship_pypi", return_value=pypi_result,
-    ) as mock_ship_pypi, patch(
-        "pyforge.mason.package.ship_channel", return_value=channel_result,
-    ) as mock_ship_channel, patch("pyforge.mason.package.build") as mock_build:
+    with (
+        patch(
+            "pyforge.mason.package.ship_pypi",
+            return_value=pypi_result,
+        ) as mock_ship_pypi,
+        patch(
+            "pyforge.mason.package.ship_channel",
+            return_value=channel_result,
+        ) as mock_ship_channel,
+        patch("pyforge.mason.package.build") as mock_build,
+    ):
         results = ship(
-            "pypi,channel:myorg", confirm=True, environ={"X": "Y"}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi,channel:myorg",
+            confirm=True,
+            environ={"X": "Y"},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_build.assert_not_called()
     assert results == (pypi_result, channel_result)
     mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={"X": "Y"}, target="library")
     mock_ship_channel.assert_called_once_with(
-        str(tmp_path), "myorg", environ={"X": "Y"}, target="library",
+        str(tmp_path),
+        "myorg",
+        environ={"X": "Y"},
+        target="library",
     )
 
 
 def test_ship_pypi_alone_runs_immediately_with_no_gate(tmp_path):
     """spec I/O matrix: 'pypi alone... runs immediately, no gate.'"""
     pypi_result = ShipTargetResult(
-        target="pypi", state=ShipState.TERMINAL, reference="url", message="ok",
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="url",
+        message="ok",
     )
     with patch("pyforge.mason.package.ship_pypi", return_value=pypi_result) as mock_ship_pypi:
         results = ship(
-            "pypi", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={}, target="library")
@@ -1612,12 +1926,21 @@ def test_ship_pypi_alone_runs_immediately_with_no_gate(tmp_path):
 
 def test_ship_forwards_an_explicit_target_to_ship_pypi(tmp_path):
     pypi_result = ShipTargetResult(
-        target="pypi", state=ShipState.TERMINAL, reference="u", message="m",
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="u",
+        message="m",
     )
     with patch("pyforge.mason.package.ship_pypi", return_value=pypi_result) as mock_ship_pypi:
         ship(
-            "pypi", confirm=True, environ={}, target="not-the-default", cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi",
+            confirm=True,
+            environ={},
+            target="not-the-default",
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={}, target="not-the-default")
@@ -1627,17 +1950,29 @@ def test_ship_rehearsal_passes_then_pypi_runs_for_real(tmp_path):
     """spec I/O matrix: 'Rehearsal passes... pypi-test TERMINAL, then pypi
     runs for real and is TERMINAL.'"""
     rehearsal_result = ShipTargetResult(
-        target="pypi-test", state=ShipState.TERMINAL, reference="test-url", message="ok-test",
+        target="pypi-test",
+        state=ShipState.TERMINAL,
+        reference="test-url",
+        message="ok-test",
     )
     real_result = ShipTargetResult(
-        target="pypi", state=ShipState.TERMINAL, reference="real-url", message="ok-real",
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="real-url",
+        message="ok-real",
     )
     with patch(
-        "pyforge.mason.package.ship_pypi", side_effect=[rehearsal_result, real_result],
+        "pyforge.mason.package.ship_pypi",
+        side_effect=[rehearsal_result, real_result],
     ) as mock_ship_pypi:
         results = ship(
-            "pypi-test,pypi", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi-test,pypi",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     assert results == (rehearsal_result, real_result)
@@ -1651,14 +1986,23 @@ def test_ship_rehearsal_fails_then_pypi_is_gated_and_never_called(tmp_path):
     """spec I/O matrix: 'Rehearsal fails... pypi-test FAILED; pypi is
     NOT_ATTEMPTED naming the gate, no upload attempted.'"""
     rehearsal_result = ShipTargetResult(
-        target="pypi-test", state=ShipState.FAILED, reference=None, message="upload failed",
+        target="pypi-test",
+        state=ShipState.FAILED,
+        reference=None,
+        message="upload failed",
     )
     with patch(
-        "pyforge.mason.package.ship_pypi", return_value=rehearsal_result,
+        "pyforge.mason.package.ship_pypi",
+        return_value=rehearsal_result,
     ) as mock_ship_pypi:
         results = ship(
-            "pypi-test,pypi", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi-test,pypi",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_ship_pypi.assert_called_once()  # only the rehearsal itself -- pypi's own upload never ran
@@ -1680,14 +2024,22 @@ def test_ship_rehearsal_runs_first_regardless_of_input_order(tmp_path):
         call_order.append(repository_url)
         if repository_url:
             return ShipTargetResult(
-                target="pypi-test", state=ShipState.TERMINAL, reference="t", message="t",
+                target="pypi-test",
+                state=ShipState.TERMINAL,
+                reference="t",
+                message="t",
             )
         return ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="r", message="r")
 
     with patch("pyforge.mason.package.ship_pypi", side_effect=fake_ship_pypi):
         results = ship(
-            "pypi,pypi-test", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi,pypi-test",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     # The rehearsal (repository_url set) ran FIRST even though "pypi" was
@@ -1708,15 +2060,22 @@ def test_ship_multiple_pypi_test_tokens_only_the_first_gates_pypi(tmp_path):
         call_log.append(repository_url)
         if repository_url:
             return ShipTargetResult(
-                target="pypi-test", state=ShipState.TERMINAL, reference="t",
+                target="pypi-test",
+                state=ShipState.TERMINAL,
+                reference="t",
                 message=f"call-{len(call_log)}",
             )
         return ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="r", message="r")
 
     with patch("pyforge.mason.package.ship_pypi", side_effect=fake_ship_pypi):
         results = ship(
-            "pypi-test,pypi-test,pypi", confirm=True, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi-test,pypi-test,pypi",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     assert len(call_log) == 3  # both pypi-test tokens ran independently, plus the real pypi
@@ -1730,19 +2089,35 @@ def test_ship_pypi_with_no_pypi_test_sibling_is_unaffected_by_the_gate(tmp_path)
     """spec Always boundary (D-11): 'A pypi target with no pypi-test
     sibling in the same invocation is unaffected.'"""
     pypi_result = ShipTargetResult(
-        target="pypi", state=ShipState.TERMINAL, reference="u", message="m",
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="u",
+        message="m",
     )
     channel_result = ShipTargetResult(
-        target="channel:myorg", state=ShipState.TERMINAL, reference="myorg", message="m",
+        target="channel:myorg",
+        state=ShipState.TERMINAL,
+        reference="myorg",
+        message="m",
     )
-    with patch(
-        "pyforge.mason.package.ship_pypi", return_value=pypi_result,
-    ) as mock_ship_pypi, patch(
-        "pyforge.mason.package.ship_channel", return_value=channel_result,
+    with (
+        patch(
+            "pyforge.mason.package.ship_pypi",
+            return_value=pypi_result,
+        ) as mock_ship_pypi,
+        patch(
+            "pyforge.mason.package.ship_channel",
+            return_value=channel_result,
+        ),
     ):
         results = ship(
-            "channel:myorg,pypi", confirm=True, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "channel:myorg,pypi",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={}, target="library")
@@ -1759,18 +2134,30 @@ def test_ship_pypi_test_with_no_pypi_sibling_runs_the_ordinary_loop_not_the_gate
     with_no_pypi_test_sibling_is_unaffected_by_the_gate` above, the
     opposite-direction case)."""
     pypi_test_result = ShipTargetResult(
-        target="pypi-test", state=ShipState.TERMINAL, reference="test-url", message="ok-test",
+        target="pypi-test",
+        state=ShipState.TERMINAL,
+        reference="test-url",
+        message="ok-test",
     )
     with patch(
-        "pyforge.mason.package.ship_pypi", return_value=pypi_test_result,
+        "pyforge.mason.package.ship_pypi",
+        return_value=pypi_test_result,
     ) as mock_ship_pypi:
         results = ship(
-            "pypi-test", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi-test",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     mock_ship_pypi.assert_called_once_with(
-        str(tmp_path), environ={}, target="library", repository_url=_TESTPYPI_URL,
+        str(tmp_path),
+        environ={},
+        target="library",
+        repository_url=_TESTPYPI_URL,
     )
     assert results == (pypi_test_result,)
 
@@ -1784,16 +2171,27 @@ def test_ship_duplicated_pypi_test_with_no_pypi_sibling_calls_ship_pypi_once_per
         "pyforge.mason.package.ship_pypi",
         side_effect=[
             ShipTargetResult(
-                target="pypi-test", state=ShipState.TERMINAL, reference="t1", message="call-1",
+                target="pypi-test",
+                state=ShipState.TERMINAL,
+                reference="t1",
+                message="call-1",
             ),
             ShipTargetResult(
-                target="pypi-test", state=ShipState.TERMINAL, reference="t2", message="call-2",
+                target="pypi-test",
+                state=ShipState.TERMINAL,
+                reference="t2",
+                message="call-2",
             ),
         ],
     ) as mock_ship_pypi:
         results = ship(
-            "pypi-test,pypi-test", confirm=True, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi-test,pypi-test",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     assert mock_ship_pypi.call_count == 2
@@ -1809,14 +2207,26 @@ def test_ship_conda_forge_precondition_failure_alongside_pypi_does_not_block_pyp
     others... conda-forge alone FAILED naming the precondition; pypi
     completes normally.'"""
     pypi_result = ShipTargetResult(
-        target="pypi", state=ShipState.TERMINAL, reference="url", message="ok",
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="url",
+        message="ok",
     )
-    with patch("pyforge.mason.package.ship_pypi", return_value=pypi_result), patch(
-        "pyforge.mason.package.ship_conda_forge", side_effect=CfeUnresolvedError(),
+    with (
+        patch("pyforge.mason.package.ship_pypi", return_value=pypi_result),
+        patch(
+            "pyforge.mason.package.ship_conda_forge",
+            side_effect=CfeUnresolvedError(),
+        ),
     ):
         results = ship(
-            "pypi,conda-forge", confirm=True, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "pypi,conda-forge",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     assert results[0] == pypi_result
@@ -1833,13 +2243,20 @@ def test_ship_lone_conda_forge_cfe_unresolved_returns_failed_not_raised(tmp_path
     the call in `pytest.raises` at all: a raise would fail this test."""
     with patch("pyforge.mason.package.ship_conda_forge", side_effect=CfeUnresolvedError()):
         results = ship(
-            "conda-forge", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path,
+            "conda-forge",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
         )
 
     assert results == (
         ShipTargetResult(
-            target="conda-forge", state=ShipState.FAILED, reference=None,
+            target="conda-forge",
+            state=ShipState.FAILED,
+            reference=None,
             message=str(CfeUnresolvedError()),
         ),
     )
@@ -1847,15 +2264,26 @@ def test_ship_lone_conda_forge_cfe_unresolved_returns_failed_not_raised(tmp_path
 
 def test_ship_a_masonerror_from_one_target_does_not_stop_later_targets(tmp_path):
     conda_forge_result = ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference="ref", message="ok",
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="ref",
+        message="ok",
     )
-    with patch(
-        "pyforge.mason.package.ship_channel",
-        side_effect=ShipChannelCredentialMissingError(["PREFIX_API_KEY"]),
-    ), patch("pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result):
+    with (
+        patch(
+            "pyforge.mason.package.ship_channel",
+            side_effect=ShipChannelCredentialMissingError(["PREFIX_API_KEY"]),
+        ),
+        patch("pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result),
+    ):
         results = ship(
-            "channel:myorg,conda-forge", confirm=True, environ={}, cfe_root_arg=None,
-            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            "channel:myorg,conda-forge",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
             recipe_path="/some/recipe",
         )
 
@@ -1869,16 +2297,29 @@ def test_ship_real_ship_with_only_conda_forge_never_calls_build(tmp_path):
     never be forced through `pep517`/`pixi` build engines it may not even
     have installed."""
     conda_forge_result = ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference="ref", message="ok",
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="ref",
+        message="ok",
     )
-    with patch(
-        "pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result,
-    ), patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.pep517.build") as mock_pep517, \
-         patch("pyforge.mason.package.pixi.build") as mock_pixi:
+    with (
+        patch(
+            "pyforge.mason.package.ship_conda_forge",
+            return_value=conda_forge_result,
+        ),
+        patch("pyforge.mason.package.build"),
+        patch("pyforge.mason.package.pep517.build"),
+        patch("pyforge.mason.package.pixi.build"),
+    ):
         results = ship(
-            "conda-forge", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
-            cfe_timeout_arg=None, start_directory=tmp_path, recipe_path="/some/recipe",
+            "conda-forge",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
+            recipe_path="/some/recipe",
         )
 
     assert results == (conda_forge_result,)
@@ -1886,14 +2327,23 @@ def test_ship_real_ship_with_only_conda_forge_never_calls_build(tmp_path):
 
 def test_ship_forwards_recipe_path_and_cfe_args_to_the_conda_forge_target(tmp_path):
     conda_forge_result = ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference="ref", message="ok",
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="ref",
+        message="ok",
     )
     with patch(
-        "pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result,
+        "pyforge.mason.package.ship_conda_forge",
+        return_value=conda_forge_result,
     ) as mock_ship_conda_forge:
         ship(
-            "conda-forge", confirm=True, environ={"E": "V"}, cfe_root_arg="/root",
-            cfe_python_arg="/py", cfe_timeout_arg=9.0, start_directory=tmp_path,
+            "conda-forge",
+            confirm=True,
+            environ={"E": "V"},
+            cfe_root_arg="/root",
+            cfe_python_arg="/py",
+            cfe_timeout_arg=9.0,
+            start_directory=tmp_path,
             recipe_path="/some/recipe",
         )
 
@@ -1910,18 +2360,28 @@ def test_ship_forwards_recipe_path_and_cfe_args_to_the_conda_forge_target(tmp_pa
 # --- Story 3.7: build_ship_receipt -----------------------------------------------
 
 _TERMINAL_PYPI = ShipTargetResult(
-    target="pypi", state=ShipState.TERMINAL, reference="https://pypi.org/project/pkg/0.1.0/",
+    target="pypi",
+    state=ShipState.TERMINAL,
+    reference="https://pypi.org/project/pkg/0.1.0/",
     message="View at:\n...\n",
 )
 _PENDING_CHANNEL = ShipTargetResult(
-    target="channel:myorg", state=ShipState.PENDING, reference=None,
+    target="channel:myorg",
+    state=ShipState.PENDING,
+    reference=None,
     message="could not determine whether channel already has pkg 0.1.0",
 )
 _FAILED_PYPI = ShipTargetResult(
-    target="pypi", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+    target="pypi",
+    state=ShipState.FAILED,
+    reference=None,
+    message="ERROR HTTPError: 400\n",
 )
 _NOT_ATTEMPTED_CONDA_FORGE = ShipTargetResult(
-    target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+    target="conda-forge",
+    state=ShipState.NOT_ATTEMPTED,
+    reference=None,
+    message=None,
 )
 
 
@@ -1985,9 +2445,11 @@ def test_build_ship_receipt_preserves_order_and_does_not_deduplicate():
 def test_build_ship_receipt_calls_no_engine():
     """`build_ship_receipt` reads already-built `ShipTargetResult`s only --
     it must never call an engine adapter or another ship function itself."""
-    with patch("pyforge.mason.package.build") as mock_build, \
-         patch("pyforge.mason.package.pep517.build") as mock_pep517, \
-         patch("pyforge.mason.package.pixi.build") as mock_pixi:
+    with (
+        patch("pyforge.mason.package.build") as mock_build,
+        patch("pyforge.mason.package.pep517.build") as mock_pep517,
+        patch("pyforge.mason.package.pixi.build") as mock_pixi,
+    ):
         build_ship_receipt((_TERMINAL_PYPI, _FAILED_PYPI))
 
     mock_build.assert_not_called()

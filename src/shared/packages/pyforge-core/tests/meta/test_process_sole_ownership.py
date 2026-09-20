@@ -407,8 +407,7 @@ def test_guard_fires_on_synthetic_subprocess_run():
 
 def test_guard_fires_on_every_subprocess_invoke_method():
     synthetic = "\n".join(
-        f"import subprocess\nsubprocess.{method}(['echo'])"
-        for method in sorted(_SUBPROCESS_INVOKE_METHODS)
+        f"import subprocess\nsubprocess.{method}(['echo'])" for method in sorted(_SUBPROCESS_INVOKE_METHODS)
     )
     violations = _subprocess_violations(ast.parse(synthetic))
     assert len(violations) == len(_SUBPROCESS_INVOKE_METHODS)

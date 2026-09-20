@@ -137,9 +137,7 @@ def filter_by_role(
     return RoleFilteredRows(rows=tuple(matched))
 
 
-def search(
-    frame: RoleFilteredRows, predicate: Callable[[Mapping[str, Any]], bool]
-) -> tuple[Mapping[str, Any], ...]:
+def search(frame: RoleFilteredRows, predicate: Callable[[Mapping[str, Any]], bool]) -> tuple[Mapping[str, Any], ...]:
     """AD-6: search a `RoleFilteredRows` — and nothing else — by `predicate`.
 
     The `isinstance` check runs before any row is inspected, so a caller

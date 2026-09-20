@@ -49,3 +49,16 @@ Type / Effort / Deps: docs / M / S-41.1.
 ## Source
 
 Contract recovered from `epics.md` Story 41.3 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `c2ddf90422` (2026-09-02, "steward: Story 41.3 follow-up review — tighten the governance gates"); also `ae362fa188` (2026-09-02, "steward: Story 41.3 — record the review triage and close the spec"); also `3c249d6f0f` (2026-09-02, "steward: Story 41.3 review pass — the `stale` back-fill returns as a changeset"). Ledger row `41-3-stale-pointers-and-off-convention-layouts-are-corrected: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`, `src/platform/db/README.md`, `src/platform/db/changelog/changes/pyforge-scribe-4-graph-nodes-stale-column.sql`, `src/platform/db/changelog/db.changelog-master.yaml`, `src/platform/db/create_app_role.sql`, `src/platform/db/sqlmigrate-map.yaml`, `src/platform/tests/policy/test_liquibase_ddl_governance.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py`, `src/shared/packages/pyforge-scribe/tests/unit/conftest.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

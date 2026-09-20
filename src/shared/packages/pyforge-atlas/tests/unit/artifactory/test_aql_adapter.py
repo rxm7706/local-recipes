@@ -114,9 +114,7 @@ def test_default_transport_refuses_without_injection():
 
 
 def test_non_2xx_response_raises_with_status_and_body():
-    adapter = ArtifactoryAqlAdapter(
-        _cfg(), transport=lambda req: AqlResponse(500, {"detail": "boom"})
-    )
+    adapter = ArtifactoryAqlAdapter(_cfg(), transport=lambda req: AqlResponse(500, {"detail": "boom"}))
     with pytest.raises(ArtifactoryAqlError) as exc:
         adapter.resolve_backing_repos("libs-virtual")
     msg = str(exc.value)
@@ -129,9 +127,7 @@ def test_non_2xx_response_raises_with_status_and_body():
 def test_single_backing_repo_resolves_to_one_element_list():
     mock = MockArtifactory(
         topology={"libs-virtual-single": ["libs-local"]},
-        download_rows={
-            "libs-virtual-single": [{"name": "pkg-a", "version": "1.0", "count": 4}]
-        },
+        download_rows={"libs-virtual-single": [{"name": "pkg-a", "version": "1.0", "count": 4}]},
     )
     adapter = ArtifactoryAqlAdapter(_cfg(), transport=mock)
 
@@ -146,9 +142,7 @@ def test_single_backing_repo_resolves_to_one_element_list():
 def test_mock_only_package_passes_through_unflagged():
     mock = MockArtifactory(
         topology={"libs-virtual": ["libs-local"]},
-        download_rows={
-            "libs-virtual": [{"name": "internal-only-pkg", "version": "9.9", "count": 1}]
-        },
+        download_rows={"libs-virtual": [{"name": "internal-only-pkg", "version": "9.9", "count": 1}]},
     )
     adapter = ArtifactoryAqlAdapter(_cfg(), transport=mock)
 

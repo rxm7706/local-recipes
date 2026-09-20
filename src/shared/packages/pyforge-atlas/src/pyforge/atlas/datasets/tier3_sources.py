@@ -60,7 +60,7 @@ def parse_homebrew_formulae_json(payload: Any) -> list[str]:
     if isinstance(payload, (str, bytes)):
         try:
             payload = json.loads(payload)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
     if not isinstance(payload, list):
         return []
@@ -81,7 +81,7 @@ def parse_nixpkgs_packages_json(payload: Any) -> list[str]:
     if isinstance(payload, (str, bytes)):
         try:
             payload = json.loads(payload)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
     if not isinstance(payload, dict):
         return []
@@ -95,7 +95,7 @@ def parse_spack_packages(payload: Any) -> list[str]:
     if isinstance(payload, (str, bytes)):
         try:
             payload = json.loads(payload)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
     if isinstance(payload, list):
         return [str(x) for x in payload if x]
@@ -141,7 +141,7 @@ def parse_fedora_packages(payload: Any) -> list[str]:
     if stripped.startswith("{") or stripped.startswith("["):
         try:
             data = json.loads(text)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
         if isinstance(data, list):
             return _names_from_fedora_items(data)

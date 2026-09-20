@@ -137,23 +137,17 @@ class TestDeclaration:
         )
         assert continuity.output == f"{_IMPL}/epic-28-continuity.md"
         assert continuity.output != epic_context.output
-        assert (
-            Path(continuity.output).parent == Path(epic_context.output).parent
-        )
+        assert Path(continuity.output).parent == Path(epic_context.output).parent
 
     @pytest.mark.parametrize("epic", ["", "28.8", "twenty-eight", "../28", "28 "])
     def test_a_malformed_epic_is_a_contract_violation(self, epic):
         with pytest.raises(ValueError, match="epic"):
-            derived.declare_derived_context(
-                project_slug="pyforge-marshal", epic=epic, planning_filenames=[]
-            )
+            derived.declare_derived_context(project_slug="pyforge-marshal", epic=epic, planning_filenames=[])
 
     @pytest.mark.parametrize("slug", ["", "../escape", "a/b", "a\\b"])
     def test_a_malformed_slug_is_a_contract_violation(self, slug):
         with pytest.raises(ValueError, match="slug"):
-            derived.declare_derived_context(
-                project_slug=slug, epic="28", planning_filenames=[]
-            )
+            derived.declare_derived_context(project_slug=slug, epic="28", planning_filenames=[])
 
 
 class TestManifest:
@@ -183,20 +177,14 @@ class TestGrammar:
         )
 
     def test_parses_scribes_own_report_line(self):
-        parsed = derived.parse_refresh_report(
-            "refreshed: a, b; skipped (unchanged): c -> /x/cocoindex-index.json\n"
-        )
+        parsed = derived.parse_refresh_report("refreshed: a, b; skipped (unchanged): c -> /x/cocoindex-index.json\n")
         assert parsed == (("a", "b"), ("c",))
 
     def test_parses_the_empty_sides(self):
-        assert derived.parse_refresh_report(
-            "refreshed: (none); skipped (unchanged): (none) -> /x.json"
-        ) == ((), ())
+        assert derived.parse_refresh_report("refreshed: (none); skipped (unchanged): (none) -> /x.json") == ((), ())
 
     def test_strips_the_optional_per_artifact_count_suffix(self):
-        parsed = derived.parse_refresh_report(
-            "refreshed: graphify-ingest (1 node(s)); skipped (unchanged): move-list"
-        )
+        parsed = derived.parse_refresh_report("refreshed: graphify-ingest (1 node(s)); skipped (unchanged): move-list")
         assert parsed == (("graphify-ingest",), ("move-list",))
 
     def test_a_warning_preamble_never_shadows_the_report(self):
@@ -238,9 +226,7 @@ class TestFreshnessMapping:
     def test_refreshed_wins_over_skipped_for_a_contradictory_answer(self):
         declarations = self._declarations()
         name = declarations[0].name
-        result = derived.resolve_freshness(
-            declarations, refreshed=[name], skipped=[name]
-        )
+        result = derived.resolve_freshness(declarations, refreshed=[name], skipped=[name])
         assert result[0].state == derived.STATE_STALE
 
     def test_result_order_follows_declaration_order(self):

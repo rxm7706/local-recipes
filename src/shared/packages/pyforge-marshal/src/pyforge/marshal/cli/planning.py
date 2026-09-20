@@ -47,8 +47,7 @@ def resolve_chain_mode(args: argparse.Namespace) -> ChainModeArg:
         return "minimal" if minimal_flag else "full"
     if minimal_flag and explicit != "minimal":
         raise ValueError(
-            f"--minimal conflicts with --chain-mode {explicit!r} "
-            "(omit --minimal or pass --chain-mode minimal)"
+            f"--minimal conflicts with --chain-mode {explicit!r} (omit --minimal or pass --chain-mode minimal)"
         )
     if explicit not in ("full", "minimal"):
         raise ValueError(f"invalid chain_mode: {explicit!r}")
@@ -59,10 +58,7 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register ``planning`` with nested ``chain-regenerate``."""
     parser = subparsers.add_parser(
         "planning",
-        help=(
-            "Orchestrate planning-chain regeneration (FR-192 CAP-1…CAP-5; "
-            "Stories 21.2–21.5)."
-        ),
+        help=("Orchestrate planning-chain regeneration (FR-192 CAP-1…CAP-5; Stories 21.2–21.5)."),
         description=(
             "CAP-5: same workflow against any station by parameters only "
             "(project_slug, dream_path, chain_mode, preserve_code_status, "
@@ -73,10 +69,7 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
     planning_sub = parser.add_subparsers(dest="planning_command", required=True)
     regen = planning_sub.add_parser(
         "chain-regenerate",
-        help=(
-            "Regenerate one project's planning chain (CAP-5 parameterized; "
-            "Full default)."
-        ),
+        help=("Regenerate one project's planning chain (CAP-5 parameterized; Full default)."),
         description=(
             "CAP-5 parameters — project_slug (--project), dream_path (--dream), "
             "chain_mode (--chain-mode / --minimal; default full), "
@@ -85,19 +78,14 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
             "default false), apply_orphans (--apply-orphans; default false), "
             "resume (--resume). auto_commit is not offered (always false). "
             "Physical paths under _bmad-output/projects/<slug>/; never "
-            "scripts/bmad-switch. Full phases: "
-            + " → ".join(FULL_CHAIN_PHASES)
-            + "."
+            "scripts/bmad-switch. Full phases: " + " → ".join(FULL_CHAIN_PHASES) + "."
         ),
     )
     regen.add_argument(
         "--project",
         required=True,
         metavar="SLUG",
-        help=(
-            "CAP-5 project_slug: station under "
-            "_bmad-output/projects/<slug>/ (required)."
-        ),
+        help=("CAP-5 project_slug: station under _bmad-output/projects/<slug>/ (required)."),
     )
     regen.add_argument(
         "--dream",
@@ -118,27 +106,18 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
     regen.add_argument(
         "--minimal",
         action="store_true",
-        help=(
-            "CAP-5 chain_mode shortcut: skip research and brief "
-            "(same as --chain-mode minimal)."
-        ),
+        help=("CAP-5 chain_mode shortcut: skip research and brief (same as --chain-mode minimal)."),
     )
     regen.add_argument(
         "--resume",
         action="store_true",
-        help=(
-            "CAP-5 resume: continue the latest incomplete .chain-regen "
-            "journal for --project."
-        ),
+        help=("CAP-5 resume: continue the latest incomplete .chain-regen journal for --project."),
     )
     regen.add_argument(
         "--root",
         default=None,
         metavar="PATH",
-        help=(
-            "Repo root to operate on (default: this checkout). Fixtures pass "
-            "an isolated tree; live runs omit this."
-        ),
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
     )
     regen.add_argument(
         "--format",
@@ -160,10 +139,7 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--preserve-code-status",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help=(
-            "CAP-5 preserve_code_status (CAP-2): keep done/in-progress/backlog "
-            "across epics regen (default: true)."
-        ),
+        help=("CAP-5 preserve_code_status (CAP-2): keep done/in-progress/backlog across epics regen (default: true)."),
     )
     regen.add_argument(
         "--apply-orphans",
@@ -282,10 +258,7 @@ def run_planning_chain_regenerate(args: argparse.Namespace) -> int:
             Finding(
                 code=_MRS_PLAN_002,
                 severity=Severity.ERROR,
-                message=(
-                    f"project {slug!r}: chain blocked mid-run "
-                    f"(journal at {report.run_dir})"
-                ),
+                message=(f"project {slug!r}: chain blocked mid-run (journal at {report.run_dir})"),
                 path=report.run_dir,
             )
         )
@@ -294,10 +267,7 @@ def run_planning_chain_regenerate(args: argparse.Namespace) -> int:
             Finding(
                 code=_MRS_PLAN_003,
                 severity=Severity.ERROR,
-                message=(
-                    f"project {slug!r}: chain failed mid-run "
-                    f"(journal at {report.run_dir})"
-                ),
+                message=(f"project {slug!r}: chain failed mid-run (journal at {report.run_dir})"),
                 path=report.run_dir,
             )
         )
@@ -328,10 +298,7 @@ def _report_to_dict(report: OrchestratedChainReport) -> dict[str, object]:
             }
             for p in report.phases
         ],
-        "orphans": [
-            {"kind": o.kind, "path": o.path, "reason": o.reason}
-            for o in report.orphans
-        ],
+        "orphans": [{"kind": o.kind, "path": o.path, "reason": o.reason} for o in report.orphans],
     }
 
 
@@ -380,10 +347,7 @@ def _print_text(
         print(f"run_dir: {report.run_dir}")
         print("phases:")
         for p in report.phases:
-            print(
-                f"  - {p.name}: {p.status} "
-                f"(attempts={p.attempts}; {p.detail})"
-            )
+            print(f"  - {p.name}: {p.status} (attempts={p.attempts}; {p.detail})")
         if report.orphans:
             print("orphans (not deleted):")
             for o in report.orphans:

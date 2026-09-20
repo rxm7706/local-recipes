@@ -10,6 +10,7 @@ fixture stub, which sits alongside it) and calls `emit(...)` for its canned
 output. Invocable as `[interpreter, script, config]`; `config`
 (`sys.argv[1]`) is accepted and ignored, never validated.
 """
+
 import sys
 from pathlib import Path
 

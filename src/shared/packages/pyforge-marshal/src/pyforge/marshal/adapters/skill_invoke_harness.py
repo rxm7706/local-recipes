@@ -96,9 +96,7 @@ class HarnessSkillInvoker:
                 status="failed",
                 detail="session harness binary not found on PATH (cursor)",
             )
-        planning = (
-            root / "_bmad-output" / "projects" / project / "planning-artifacts"
-        )
+        planning = root / "_bmad-output" / "projects" / project / "planning-artifacts"
         prompt = (
             f"Run the BMAD skill {skill!r} headlessly for planning-chain "
             f"phase {phase!r}.\n"
@@ -155,9 +153,7 @@ class HarnessSkillInvoker:
                 detail=f"skill harness timed out after {timeout_s}s: {exc}",
             )
         except (OSError, ValueError) as exc:
-            raise SkillInvokeError(
-                f"cannot launch skill harness {argv!r}: {exc}"
-            ) from exc
+            raise SkillInvokeError(f"cannot launch skill harness {argv!r}: {exc}") from exc
 
         try:
             log_text = log_path.read_text(encoding="utf-8", errors="replace")

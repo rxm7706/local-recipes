@@ -83,9 +83,9 @@ def _imported_names(path: Path) -> set[str]:
             names.update(f"{node.module}.{alias.name}" for alias in node.names)
         elif isinstance(node, ast.Call):
             func = node.func
-            is_dynamic_import = (
-                isinstance(func, ast.Name) and func.id in ("__import__", "import_module")
-            ) or (isinstance(func, ast.Attribute) and func.attr == "import_module")
+            is_dynamic_import = (isinstance(func, ast.Name) and func.id in ("__import__", "import_module")) or (
+                isinstance(func, ast.Attribute) and func.attr == "import_module"
+            )
             if not is_dynamic_import:
                 continue
             # Resolve the module name from positional OR keyword form —
@@ -109,11 +109,7 @@ def _violations(denylist, exempt: frozenset[str] = frozenset()) -> dict[str, lis
     for path in _iter_scanned_files():
         if path.relative_to(ATLAS_PKG).as_posix() in exempt:
             continue
-        hits = [
-            name
-            for name in sorted(_imported_names(path))
-            if _denylisted(name, denylist)
-        ]
+        hits = [name for name in sorted(_imported_names(path)) if _denylisted(name, denylist)]
         if hits:
             found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
     return found
@@ -162,9 +158,7 @@ def test_ad1_import_direction():
     )
     # kedro_mcp: no exemption — banned everywhere, including the glue.
     mcp_violations = _violations(AD1_EVERYWHERE)
-    assert not mcp_violations, (
-        f"AD-1 violation — kedro_mcp must not be imported by any package file: {mcp_violations}"
-    )
+    assert not mcp_violations, f"AD-1 violation — kedro_mcp must not be imported by any package file: {mcp_violations}"
 
 
 # AD-8 (Story D1): boring_semantic_layer is the SINGLE metric-translation seam. Only
@@ -193,8 +187,7 @@ def test_bsl_only_in_semantic_layer():
     module re-declares metric semantics (Story D1, FR-8)."""
     violations = _bsl_violations()
     assert not violations, (
-        "AD-8 violation — only the semantic/ subpackage may import "
-        f"boring_semantic_layer: {violations}"
+        f"AD-8 violation — only the semantic/ subpackage may import boring_semantic_layer: {violations}"
     )
     # positive: the semantic layer DOES import it (the seam genuinely lives there).
     sem_models = ATLAS_PKG / "semantic" / "models.py"
@@ -230,10 +223,7 @@ def test_vizro_only_in_dashboard_layer():
     """AD-1/AD-6 (Story D2): only ``pyforge/atlas/dashboard/*`` may import ``vizro`` — the
     Vizro read surface is replaceable glue confined to one subpackage."""
     violations = _vizro_violations()
-    assert not violations, (
-        "AD-1 violation — only the dashboard/ subpackage may import vizro: "
-        f"{violations}"
-    )
+    assert not violations, f"AD-1 violation — only the dashboard/ subpackage may import vizro: {violations}"
     # positive: the dashboard app factory DOES import vizro (the glue genuinely lives there).
     app_mod = ATLAS_PKG / "dashboard" / "app.py"
     assert app_mod.is_file(), "dashboard/app.py missing"
@@ -274,10 +264,7 @@ def test_vizro_ai_only_in_nl_layer():
     """AD-1/AD-6 (Story D3): only ``pyforge/atlas/nl/*`` may import ``vizro_ai`` — the NL
     (LLM) backend is replaceable glue confined to one subpackage."""
     violations = _vizro_ai_violations()
-    assert not violations, (
-        "AD-1 violation — only the nl/ subpackage may import vizro_ai: "
-        f"{violations}"
-    )
+    assert not violations, f"AD-1 violation — only the nl/ subpackage may import vizro_ai: {violations}"
     # positive: the nl query module DOES import vizro_ai (lazy+guarded, but statically present)
     # — so the glue genuinely lives there, not a dead exemption.
     query_mod = ATLAS_PKG / "nl" / "query.py"
@@ -288,9 +275,9 @@ def test_vizro_ai_only_in_nl_layer():
     # AD-8 crossover: the nl layer consumes the semantic SEAM (pyforge.atlas.semantic), never
     # boring_semantic_layer directly (the BSL ban above covers nl/, asserted here too).
     for mod in ("query.py", "backend.py", "__init__.py"):
-        assert not any(
-            _denylisted(n, BSL_DENYLIST) for n in _imported_names(ATLAS_PKG / "nl" / mod)
-        ), f"nl/{mod} imports boring_semantic_layer directly — must go through semantic/"
+        assert not any(_denylisted(n, BSL_DENYLIST) for n in _imported_names(ATLAS_PKG / "nl" / mod)), (
+            f"nl/{mod} imports boring_semantic_layer directly — must go through semantic/"
+        )
 
 
 # AD-20 (Story E1): the ``a2a`` SDK is the inter-agent transport seam — only the
@@ -318,10 +305,7 @@ def test_a2a_sdk_only_in_a2a_layer():
     """AD-20 (Story E1): only ``pyforge/atlas/a2a/*`` may import the ``a2a`` SDK — the
     structured inter-agent channel is the single seam, contained to one subpackage."""
     violations = _a2a_sdk_violations()
-    assert not violations, (
-        "AD-20 violation — only the a2a/ subpackage may import the a2a SDK: "
-        f"{violations}"
-    )
+    assert not violations, f"AD-20 violation — only the a2a/ subpackage may import the a2a SDK: {violations}"
     # positive: the a2a transport module DOES import the a2a SDK (the seam genuinely lives
     # there, not a dead exemption).
     transport_mod = ATLAS_PKG / "a2a" / "transport.py"
@@ -347,16 +331,13 @@ def test_observability_libs_only_in_observability():
     settings-registered hook seam; no node body or other module touches the libs."""
     violations = _violations(OBS_DENYLIST, exempt=OBS_GLUE_EXEMPT)
     assert not violations, (
-        "AD-6/AD-23 violation — only observability.py may import "
-        f"openlineage/opentelemetry: {violations}"
+        f"AD-6/AD-23 violation — only observability.py may import openlineage/opentelemetry: {violations}"
     )
     # positive: the observability seam DOES import both libs (not a dead exemption).
     obs_mod = ATLAS_PKG / "observability.py"
     assert obs_mod.is_file(), "observability.py missing"
     obs_imports = _imported_names(obs_mod)
-    assert any(_denylisted(n, ("openlineage",)) for n in obs_imports), (
-        "observability.py does not import openlineage"
-    )
+    assert any(_denylisted(n, ("openlineage",)) for n in obs_imports), "observability.py does not import openlineage"
     assert any(_denylisted(n, ("opentelemetry",)) for n in obs_imports), (
         "observability.py does not import opentelemetry"
     )

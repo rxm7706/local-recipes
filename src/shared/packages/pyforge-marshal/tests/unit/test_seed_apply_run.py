@@ -35,6 +35,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.process import ProcessError
+
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.apply import run
 from pyforge.marshal.seed.apply.run import ApplyResult, run_apply
@@ -74,7 +75,7 @@ def _text_of(path: Path) -> str:
         return ""
     try:
         return path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return ""
 
 
@@ -112,9 +113,7 @@ def _fresh_plan(repo_root: Path, *actions: Action, **fingerprint_overrides) -> P
         dataclasses.replace(
             action,
             current_state=(
-                ArtifactState.PRESENT_DIVERGENT
-                if (repo_root / action.target_path).is_file()
-                else ArtifactState.ABSENT
+                ArtifactState.PRESENT_DIVERGENT if (repo_root / action.target_path).is_file() else ArtifactState.ABSENT
             ),
         )
         for action in actions
@@ -123,10 +122,7 @@ def _fresh_plan(repo_root: Path, *actions: Action, **fingerprint_overrides) -> P
         "git_head": None,
         "dirty": True,
         "artifact_hashes": tuple(
-            sorted(
-                (action.artifact_id, hash_content(_text_of(repo_root / action.target_path)))
-                for action in actions
-            )
+            sorted((action.artifact_id, hash_content(_text_of(repo_root / action.target_path))) for action in actions)
         ),
     }
     fields.update(fingerprint_overrides)
@@ -175,19 +171,13 @@ def _tree(root: Path) -> dict[str, bytes]:
     regular file. All three are documented bounds of ``run_apply`` itself
     with deferred-work entries of their own, not gaps in these tests -- but a
     reader must not mistake a green assertion here for their absence."""
-    return {
-        str(path.relative_to(root)): path.read_bytes()
-        for path in sorted(root.rglob("*"))
-        if path.is_file()
-    }
+    return {str(path.relative_to(root)): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     """Mirrors ``test_seed_plan_build.py``'s own real-git-repo convention:
     real ``git`` I/O against a ``tmp_path``, never mocked."""
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -208,9 +198,7 @@ def test_an_empty_fresh_plan_commits_nothing_writes_nothing_and_returns_no_ids(t
     plan = _fresh_plan(tmp_path)
     calls: list[str] = []
 
-    result = run_apply(
-        plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls)
-    )
+    result = run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls))
 
     assert result == ApplyResult(applied=())
     assert calls == []
@@ -227,9 +215,7 @@ def test_commit_is_called_once_per_action_in_plan_order_and_result_lists_the_sam
     plan = _fresh_plan(tmp_path, *actions)
     calls: list[str] = []
 
-    result = run_apply(
-        plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls)
-    )
+    result = run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls))
 
     assert calls == ["a", "b", "c"]
     assert result.applied == ("a", "b", "c")
@@ -245,18 +231,14 @@ def test_actions_execute_in_plan_order_never_re_sorted_and_never_filtered(tmp_pa
     plan = _fresh_plan(tmp_path, *actions)
     calls: list[str] = []
 
-    result = run_apply(
-        plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls)
-    )
+    result = run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls))
 
     assert calls == ["c", "a", "b"]
     assert result.applied == ("c", "a", "b")
 
 
 def test_apply_result_is_frozen(tmp_path):
-    result = run_apply(
-        _fresh_plan(tmp_path), repo_root=tmp_path, never_write=_OPEN, commit=_never_called
-    )
+    result = run_apply(_fresh_plan(tmp_path), repo_root=tmp_path, never_write=_OPEN, commit=_never_called)
     with pytest.raises(dataclasses.FrozenInstanceError):
         result.applied = ("x",)
 
@@ -270,9 +252,7 @@ def test_a_plan_built_before_a_new_commit_is_refused_naming_stale_plan_and_git_h
     plan = _fresh_plan(tmp_path, git_head=head, dirty=False)
     # Fresh first: the same empty plan applies cleanly, so the refusal below
     # is attributable to the new commit and nothing else.
-    assert run_apply(
-        plan, repo_root=tmp_path, never_write=_OPEN, commit=_never_called
-    ) == ApplyResult(applied=())
+    assert run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_never_called) == ApplyResult(applied=())
 
     _git(tmp_path, "commit", "--allow-empty", "-m", "second")
 
@@ -303,9 +283,7 @@ def test_a_plan_built_against_a_clean_worktree_is_refused_once_the_worktree_is_d
 
 def test_a_plan_whose_actioned_file_was_hand_edited_is_refused_naming_the_artifact_id(tmp_path):
     (tmp_path / "CLAUDE.md").write_text("original\n", encoding="utf-8")
-    plan = _fresh_plan(
-        tmp_path, _action("claude-md", "CLAUDE.md", current_state=ArtifactState.PRESENT_DIVERGENT)
-    )
+    plan = _fresh_plan(tmp_path, _action("claude-md", "CLAUDE.md", current_state=ArtifactState.PRESENT_DIVERGENT))
     (tmp_path / "CLAUDE.md").write_text("hand-edited since the plan\n", encoding="utf-8")
     # Captured AFTER the hand-edit, so the comparison below can be the full
     # content-and-path one every sibling rollback test uses (review finding:
@@ -316,9 +294,7 @@ def test_a_plan_whose_actioned_file_was_hand_edited_is_refused_naming_the_artifa
     calls: list[str] = []
 
     with pytest.raises(PreconditionFailure) as excinfo:
-        run_apply(
-            plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls)
-        )
+        run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls))
 
     assert "stale-plan" in str(excinfo.value)
     assert "claude-md" in str(excinfo.value)
@@ -337,9 +313,7 @@ def test_a_plan_whose_absent_artifact_has_since_appeared_is_refused(tmp_path):
     calls: list[str] = []
 
     with pytest.raises(PreconditionFailure) as excinfo:
-        run_apply(
-            plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls)
-        )
+        run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls))
 
     assert "stale-plan" in str(excinfo.value)
     assert "seeded" in str(excinfo.value)
@@ -360,9 +334,7 @@ def test_a_plan_hashing_an_id_no_action_carries_is_refused_before_any_write(tmp_
     calls: list[str] = []
 
     with pytest.raises(PreconditionFailure) as excinfo:
-        run_apply(
-            tampered, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls)
-        )
+        run_apply(tampered, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls))
 
     assert "stale-plan" in str(excinfo.value)
     assert "ghost" in str(excinfo.value)
@@ -516,9 +488,7 @@ def test_an_unrestorable_path_raises_internal_error_naming_it_and_still_restores
 # --- unreadable snapshot: I/O Matrix row 14 ---------------------------------
 
 
-def test_an_unreadable_snapshot_propagates_its_oserror_and_that_action_never_runs(
-    tmp_path, monkeypatch
-):
+def test_an_unreadable_snapshot_propagates_its_oserror_and_that_action_never_runs(tmp_path, monkeypatch):
     (tmp_path / "a.txt").write_text("original a\n", encoding="utf-8")
     (tmp_path / "b.txt").write_text("original b\n", encoding="utf-8")
     plan = _fresh_plan(tmp_path, _action("a", "a.txt"), _action("b", "b.txt"))
@@ -535,9 +505,7 @@ def test_an_unreadable_snapshot_propagates_its_oserror_and_that_action_never_run
     monkeypatch.setattr(Path, "read_bytes", flaky_read_bytes)
 
     with pytest.raises(OSError, match="snapshot unreadable"):
-        run_apply(
-            plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls)
-        )
+        run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_committer(tmp_path, calls))
 
     # `b`'s commit never ran (its snapshot failed first), and `a` was rolled
     # back -- the OSError reaches the caller unwrapped, per `fs.py`'s own
@@ -633,9 +601,7 @@ def test_no_fs_call_at_all_when_a_run_succeeds(tmp_path, monkeypatch):
     ["/etc/cron.d/genesis", "../outside.txt", "sub/../../outside.txt"],
     ids=["absolute", "parent-traversal", "traversal-via-subdir"],
 )
-def test_an_action_whose_target_escapes_repo_root_is_refused_before_any_write(
-    tmp_path, escaping
-):
+def test_an_action_whose_target_escapes_repo_root_is_refused_before_any_write(tmp_path, escaping):
     """Review finding, verified by execution: ``Path('/repo') / '/etc/x'``
     discards the left operand entirely, and ``.marshal/plan.json`` is
     explicitly untrusted, hand-editable input (``plan/types.py``'s own
@@ -668,9 +634,7 @@ def test_an_action_whose_target_escapes_repo_root_is_refused_before_any_write(
     assert outside.read_text(encoding="utf-8") == "do not touch\n"
 
 
-def test_a_process_error_while_verifying_freshness_becomes_a_precondition_failure(
-    tmp_path, monkeypatch
-):
+def test_a_process_error_while_verifying_freshness_becomes_a_precondition_failure(tmp_path, monkeypatch):
     """Review finding: ``fingerprint_drift`` shells out through
     ``PosixProcess.run``, which raises ``ProcessError`` -- a ``pyforge.core``
     type with no ``exit_code`` and no ``remedy`` -- when ``git`` is missing
@@ -737,9 +701,7 @@ def _imported_names(module_path: Path) -> set[str]:
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
             names.add(module)
-            names.update(
-                f"{module}.{alias.name}" if module else alias.name for alias in node.names
-            )
+            names.update(f"{module}.{alias.name}" if module else alias.name for alias in node.names)
     return names
 
 
@@ -766,9 +728,7 @@ def test_run_module_imports_nothing_from_the_surfaces_p04_and_p07_exclude(banned
     and it will keep passing if ``plan/build.py`` someday imports
     ``seed.state``, which this assertion cannot see."""
     module_path = Path(run.__file__)
-    segments = {
-        segment for name in _imported_names(module_path) for segment in name.split(".") if segment
-    }
+    segments = {segment for name in _imported_names(module_path) for segment in name.split(".") if segment}
     assert banned not in segments, f"seed/apply/run.py imports {banned!r}"
 
 

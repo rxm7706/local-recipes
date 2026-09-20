@@ -50,7 +50,7 @@ def _read_json_object(path: Path) -> dict[str, Any] | None:
         return None
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return None
     return raw if isinstance(raw, dict) else None
 
@@ -109,22 +109,14 @@ def _collect_timestamps(
     gate_record: dict[str, Any] | None,
     state: dict[str, Any] | None,
 ) -> dict[str, str | None]:
-    stamps = [
-        entry.get("ts")
-        for entry in journal
-        if isinstance(entry.get("ts"), str) and entry["ts"].strip()
-    ]
+    stamps = [entry.get("ts") for entry in journal if isinstance(entry.get("ts"), str) and entry["ts"].strip()]
     started = stamps[0] if stamps else None
     ended = stamps[-1] if stamps else None
     if started is None and gate_record is not None:
         started = _first_str(gate_record.get("timestamp"))
     if state is not None:
-        started = started or _first_str(
-            state.get("started_at"), state.get("started"), state.get("ts_start")
-        )
-        ended = ended or _first_str(
-            state.get("ended_at"), state.get("ended"), state.get("ts_end")
-        )
+        started = started or _first_str(state.get("started_at"), state.get("started"), state.get("ts_start"))
+        ended = ended or _first_str(state.get("ended_at"), state.get("ended"), state.get("ts_end"))
     return {"started_at": started, "ended_at": ended}
 
 

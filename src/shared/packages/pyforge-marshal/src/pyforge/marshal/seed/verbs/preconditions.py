@@ -216,14 +216,12 @@ def _require_existing_repo_root(repo_root: Path) -> None:
         raise PreconditionFailure(
             f"repo-root-unusable: {repo_root} cannot be resolved to a directory ({exc})",
             remedy=(
-                "pass a repo root that names a real directory -- seed refuses to"
-                " probe a path it cannot even resolve"
+                "pass a repo root that names a real directory -- seed refuses to probe a path it cannot even resolve"
             ),
         ) from exc
     if not exists:
         raise PreconditionFailure(
-            f"repo-root-missing: {repo_root} does not resolve to an existing"
-            f" directory ({resolved})",
+            f"repo-root-missing: {repo_root} does not resolve to an existing directory ({resolved})",
             remedy=(
                 "check the spelling of the repo root path and re-run -- a repo root"
                 " that is not there is a misconfiguration, not a missing git"
@@ -281,9 +279,7 @@ def _is_dirty(process: ProcessPort, repo_root: Path) -> bool:
     are pinned to each other by an agreement test in
     `tests/unit/test_seed_verbs_preconditions.py` rather than by a shared
     helper -- stated as a chosen trade with a guard on it."""
-    returncode, stdout = _run_git(
-        process, repo_root, ["status", "--porcelain", "--untracked-files=normal"]
-    )
+    returncode, stdout = _run_git(process, repo_root, ["status", "--porcelain", "--untracked-files=normal"])
     if returncode != 0:
         return True
     return bool(stdout)
@@ -315,7 +311,7 @@ def _relative_within(repo_root: Path, target_path: str) -> str | None:
         resolved_root = repo_root.resolve()
         resolved = (repo_root / target_path).resolve()
         return resolved.relative_to(resolved_root).as_posix()
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return None
 
 
@@ -375,8 +371,7 @@ def _read_managed_text(repo_root: Path, record: ManagedRecord) -> str | _Diverge
     if relative is None:
         return _Divergence(
             record.artifact_id,
-            f"{record.path}: does not resolve to a location inside the repo root;"
-            " refusing to read it",
+            f"{record.path}: does not resolve to a location inside the repo root; refusing to read it",
         )
     target = repo_root / record.path
     try:
@@ -683,9 +678,7 @@ def check_preconditions(
         return
     divergences = _managed_divergences(repo_root, managed)
     if divergences:
-        detail = "; ".join(
-            f"{divergence.artifact_id}: {divergence.detail}" for divergence in divergences
-        )
+        detail = "; ".join(f"{divergence.artifact_id}: {divergence.detail}" for divergence in divergences)
         # Counts BOTH numbers rather than conflating them: one region-bearing
         # artifact with two hand-edited regions produces two divergences, and
         # reporting that as "2 managed artifacts" would be wrong (found in

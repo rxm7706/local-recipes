@@ -47,9 +47,7 @@ def test_judge_live_when_session_process_alive() -> None:
         branch_merged=False,
         story_merged_on_main=False,
     )
-    verdict = judge_dispatch_completion(
-        DispatchCompletionInput(session_alive=True, git=git)
-    )
+    verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git))
     assert verdict == DispatchSessionVerdict.LIVE
 
 
@@ -61,9 +59,7 @@ def test_judge_completed_when_story_merged_on_main() -> None:
         branch_merged=False,
         story_merged_on_main=True,
     )
-    verdict = judge_dispatch_completion(
-        DispatchCompletionInput(session_alive=False, git=git)
-    )
+    verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=False, git=git))
     assert verdict == DispatchSessionVerdict.COMPLETED
 
 
@@ -105,9 +101,7 @@ def test_resolve_verdict_completed_when_land_journal_succeeded() -> None:
         def is_alive(self, _pid: int) -> bool:
             return False
 
-    effective = SimpleNamespace(
-        merge_subject_template=SimpleNamespace(value="Merge {key} into main")
-    )
+    effective = SimpleNamespace(merge_subject_template=SimpleNamespace(value="Merge {key} into main"))
 
     verdict = resolve_dispatch_session_verdict(
         fs=object(),
@@ -145,9 +139,7 @@ def test_resolve_verdict_blocked_short_circuits_before_git_facts() -> None:
 
     from types import SimpleNamespace
 
-    effective = SimpleNamespace(
-        merge_subject_template=SimpleNamespace(value="Merge {key} into main")
-    )
+    effective = SimpleNamespace(merge_subject_template=SimpleNamespace(value="Merge {key} into main"))
 
     verdict = resolve_dispatch_session_verdict(
         fs=object(),
@@ -213,9 +205,7 @@ def test_run_dispatch_has_no_foreground_busy_wait() -> None:
             for child in ast.walk(node):
                 if isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute):
                     if child.func.attr == "is_alive":
-                        pytest.fail(
-                            "run_dispatch must not busy-wait on is_alive (CAP-2 watchdog trap)"
-                        )
+                        pytest.fail("run_dispatch must not busy-wait on is_alive (CAP-2 watchdog trap)")
 
 
 class FakeFs:
@@ -259,18 +249,14 @@ class FakeVcs:
     def worktree_path_for_branch(self, _repo_root: Path, _branch: str) -> Path | None:
         return None
 
-    def add_worktree(
-        self, repo_root: Path, home: Path, branch: str, *, base: str
-    ) -> None:
+    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         self.added.append((repo_root, home, branch, base))
         home.mkdir(parents=True, exist_ok=True)
 
     def worktree_head_sha(self, _worktree: Path) -> str:
         return self.head_sha
 
-    def changed_files(
-        self, _repo_root: Path, _worktree_path: Path, *, base: str
-    ) -> tuple[str, ...]:
+    def changed_files(self, _repo_root: Path, _worktree_path: Path, *, base: str) -> tuple[str, ...]:
         return ()
 
     def worktree_unified_patch(self, _worktree_path: Path, *, baseline_sha: str) -> str:

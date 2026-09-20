@@ -77,10 +77,8 @@ def _version_sort_key(version: str) -> tuple:
     (e.g. ``"1.10-1"`` > ``"1.2-1"``) rather than lexicographically, where "1.10-1"
     would sort BELOW "1.2-1" as raw strings (review fix #1 — a plain ``sorted()`` on
     the version strings mis-ranks multi-digit components)."""
-    return tuple(
-        (0, int(part)) if part.isdigit() else (1, part)
-        for part in _VERSION_SEGMENT_RE.findall(version)
-    )
+    return tuple((0, int(part)) if part.isdigit() else (1, part) for part in _VERSION_SEGMENT_RE.findall(version))
+
 
 # Shared row shape for BOTH VcsHostSeedDataset and RegistryUpstreamDataset — the
 # review finding added ``last_error`` to the registry side to match the host side.
@@ -94,14 +92,14 @@ def _coerce_json(raw: Any) -> Any:
     if hasattr(raw, "json") and callable(raw.json):
         try:
             return raw.json()
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return None
     if isinstance(raw, (dict, list)):
         return raw
     if isinstance(raw, (bytes, str)):
         try:
             return json.loads(raw)
-        except (json.JSONDecodeError, TypeError, UnicodeDecodeError):
+        except json.JSONDecodeError, TypeError, UnicodeDecodeError:
             return None
     return None
 
@@ -172,7 +170,7 @@ class _ParquetRefreshStore:
             return None
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except OSError, ValueError:
             return None
         if not isinstance(raw, dict):
             return None
@@ -258,8 +256,7 @@ def _codeberg_path(base: str, identifier: str) -> str:
     parts = ident.split("/")
     if len(parts) != 2 or not parts[0] or not parts[1]:
         raise ValueError(
-            "codeberg request path requires a clean 'owner/repo' identifier "
-            f"(exactly one '/'), got {identifier!r}"
+            f"codeberg request path requires a clean 'owner/repo' identifier (exactly one '/'), got {identifier!r}"
         )
     owner, repo = parts
     return f"{base.rstrip('/')}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/tags?sort=updated&limit=1"
@@ -558,9 +555,7 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         metadata: dict[str, Any] | None = None,
     ) -> None:
         if registry not in _REGISTRY_SPECS:
-            raise ValueError(
-                f"unknown registry {registry!r}; expected one of {sorted(_REGISTRY_SPECS)}"
-            )
+            raise ValueError(f"unknown registry {registry!r}; expected one of {sorted(_REGISTRY_SPECS)}")
         self._base_url = str(url)
         self._registry = registry
         self._filepath = str(filepath)

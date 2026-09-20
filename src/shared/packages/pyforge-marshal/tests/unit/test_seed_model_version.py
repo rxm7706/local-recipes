@@ -10,6 +10,7 @@ from __future__ import annotations
 from itertools import pairwise
 
 import pytest
+
 from pyforge.marshal.seed.model.version import (
     InvalidVersionError,
     ModelVersion,
@@ -267,8 +268,7 @@ def test_comparison_is_total_for_every_constructible_version():
     == holds. `("01",)` vs `("1",)` used to satisfy none of the three --
     equal numerically, unequal by `__eq__` -- silently corrupting `sorted`."""
     versions = [
-        ModelVersion.parse(text)
-        for text in ("1.0.0-alpha", "1.0.0-alpha.1", "1.0.0-1", "1.0.0-2", "1.0.0", "1.0.1")
+        ModelVersion.parse(text) for text in ("1.0.0-alpha", "1.0.0-alpha.1", "1.0.0-1", "1.0.0-2", "1.0.0", "1.0.1")
     ]
     for left in versions:
         for right in versions:

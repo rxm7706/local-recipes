@@ -80,9 +80,7 @@ class _FakeVcs:
         self.window_subjects_raises = window_subjects_raises
         self.resolve_ref_sha = resolve_ref_sha
         self.resolve_ref_raises = resolve_ref_raises
-        self.resolve_ref_sequence = (
-            list(resolve_ref_sequence) if resolve_ref_sequence is not None else None
-        )
+        self.resolve_ref_sequence = list(resolve_ref_sequence) if resolve_ref_sequence is not None else None
         self.resolve_ref_calls: list[str] = []
         self.changed_paths = changed_paths
         self.changed_files_raises = changed_files_raises
@@ -184,15 +182,7 @@ def _write_tracked_spec(tmp_path, slug: str, filename_key: str, text: str) -> No
 
 
 def _tracked_path(tmp_path, slug: str, filename_key: str):
-    return (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "specs"
-        / f"spec-{filename_key}.md"
-    )
+    return tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs" / f"spec-{filename_key}.md"
 
 
 @pytest.fixture(autouse=True)
@@ -242,13 +232,9 @@ def test_promote_skips_an_already_promoted_story(tmp_path, capsys, monkeypatch):
     assert vcs.commit_calls == []
 
 
-def test_promote_reports_a_gap_for_a_merged_story_with_no_tier3_spec(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_reports_a_gap_for_a_merged_story_with_no_tier3_spec(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(
-        parents=True, exist_ok=True
-    )
+    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(parents=True, exist_ok=True)
     vcs = _FakeVcs(main_subjects=("Merge acme/4.1 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
@@ -261,9 +247,7 @@ def test_promote_reports_a_gap_for_a_merged_story_with_no_tier3_spec(
     assert exit_code == 0
 
 
-def test_promote_reports_a_gap_for_an_invalid_tier3_spec_and_does_not_promote_it(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_reports_a_gap_for_an_invalid_tier3_spec_and_does_not_promote_it(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "2-3", "")  # zero-byte
     vcs = _FakeVcs(main_subjects=("Merge acme/2-3 into main",))
@@ -278,9 +262,7 @@ def test_promote_reports_a_gap_for_an_invalid_tier3_spec_and_does_not_promote_it
     assert not _tracked_path(tmp_path, "acme", "2-3").exists()
 
 
-def test_promote_never_overwrites_a_good_tracked_copy_with_a_broken_tier3_one(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_never_overwrites_a_good_tracked_copy_with_a_broken_tier3_one(tmp_path, capsys, monkeypatch):
     """The already-promoted check runs BEFORE validity of the Tier-3 copy is
     even consulted -- a good tracked copy is untouched regardless of the
     Tier-3 source's own state (AD-13's own "never promoted over a GOOD
@@ -299,9 +281,7 @@ def test_promote_never_overwrites_a_good_tracked_copy_with_a_broken_tier3_one(
     assert _tracked_path(tmp_path, "acme", "1-5").read_text(encoding="utf-8") == _VALID_SPEC
 
 
-def test_promote_treats_a_banner_topped_tracked_copy_as_already_promoted(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_treats_a_banner_topped_tracked_copy_as_already_promoted(tmp_path, capsys, monkeypatch):
     """Story 50.5/CAP-248, live incident: herald 23.1's finalize (commit
     `b0b7f3019f`) overwrote the reconciled tracked `spec-1-4` with its stale
     Tier-3 twin because the tracked copy began with a
@@ -310,10 +290,7 @@ def test_promote_treats_a_banner_topped_tracked_copy_as_already_promoted(
     ("---")`. The banner-topped tracked copy must count as already-promoted
     and must never be overwritten by a stale Tier-3 candidate."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    banner_topped = (
-        "<!-- Promoted from implementation-artifacts/ to tracked specs on "
-        "2026-08-04 -->\n" + _VALID_SPEC
-    )
+    banner_topped = "<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->\n" + _VALID_SPEC
     stale_tier3 = "---\ntitle: 'x'\nstatus: 'draft'\n---\n\nstale body\n"
     _write_tier3_spec(tmp_path, "acme", "1-4", stale_tier3)
     _write_tracked_spec(tmp_path, "acme", "1-4", banner_topped)
@@ -374,9 +351,7 @@ def test_promote_treats_a_push_only_route_as_durable(tmp_path, capsys, monkeypat
     assert exit_code == 0
 
 
-def test_promote_reports_hard_unevaluable_finding_when_main_read_fails(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_reports_hard_unevaluable_finding_when_main_read_fails(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-1", _VALID_SPEC)
     vcs = _FakeVcs(main_raises=True)
@@ -407,9 +382,7 @@ def test_promote_reports_unevaluable_when_commit_paths_fails(tmp_path, capsys, m
 
 def test_promote_zero_candidates_is_a_clean_empty_run(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(
-        parents=True, exist_ok=True
-    )
+    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(parents=True, exist_ok=True)
     vcs = _FakeVcs(main_subjects=())
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
@@ -433,15 +406,11 @@ def test_promote_with_no_active_project_reports_mrs_policy_005(tmp_path, capsys,
     assert exit_code == 0
 
 
-def test_promote_with_a_malformed_slug_reports_mrs_policy_006_and_touches_nothing(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_with_a_malformed_slug_reports_mrs_policy_006_and_touches_nothing(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     vcs = _FakeVcs()
 
-    exit_code = deploy_module.run_promote(
-        _args(project="../escape"), vcs=vcs, fs=LocalFs()
-    )
+    exit_code = deploy_module.run_promote(_args(project="../escape"), vcs=vcs, fs=LocalFs())
 
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
@@ -477,9 +446,7 @@ def test_promote_retries_an_orphaned_uncommitted_tracked_copy(tmp_path, capsys, 
     assert committed_paths == (dest,)
 
 
-def test_promote_never_trusts_a_tracked_copy_whose_status_is_unconfirmable(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_never_trusts_a_tracked_copy_whose_status_is_unconfirmable(tmp_path, capsys, monkeypatch):
     """When git itself cannot answer whether a tracked copy is committed
     (`path_has_uncommitted_changes` raising), the candidate must not be
     trusted as already-promoted -- fail safe, same shape as an invalid
@@ -502,9 +469,7 @@ def test_promote_reports_subjects_examined_and_matched(tmp_path, capsys, monkeyp
     clean 'nothing merged yet' from 'N commit subjects examined, none
     conformed to either recognized merge-subject pattern.'"""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(
-        parents=True, exist_ok=True
-    )
+    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(parents=True, exist_ok=True)
     vcs = _FakeVcs(main_subjects=("fastmcp-v4", "pixi update requires-pixi"))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
@@ -528,11 +493,7 @@ def test_promote_recognizes_a_real_github_merge_subject(tmp_path, capsys, monkey
     which the new cross-project scoping correctly rejects)."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "2-3", _VALID_SPEC)
-    vcs = _FakeVcs(
-        main_subjects=(
-            "Merge pull request #269 from rxm7706/acme/2-3-frozen-surface-scope-check",
-        )
-    )
+    vcs = _FakeVcs(main_subjects=("Merge pull request #269 from rxm7706/acme/2-3-frozen-surface-scope-check",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -563,9 +524,7 @@ def test_promote_text_format_renders_a_summary(tmp_path, capsys, monkeypatch):
 # =====================================================================
 
 
-def test_promote_writes_an_intent_outcome_pair_around_commit_paths(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_writes_an_intent_outcome_pair_around_commit_paths(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
     vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
@@ -574,15 +533,9 @@ def test_promote_writes_an_intent_outcome_pair_around_commit_paths(
 
     assert exit_code == 0
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
-    intents = [
-        line
-        for line in journal_lines
-        if line["kind"] == "deploy-promote-commit" and line["phase"] == "intent"
-    ]
+    intents = [line for line in journal_lines if line["kind"] == "deploy-promote-commit" and line["phase"] == "intent"]
     outcomes = [
-        line
-        for line in journal_lines
-        if line["kind"] == "deploy-promote-commit" and line["phase"] == "outcome"
+        line for line in journal_lines if line["kind"] == "deploy-promote-commit" and line["phase"] == "outcome"
     ]
     assert len(intents) == 1
     assert intents[0]["payload"]["story_keys"] == ["1.2"]
@@ -591,9 +544,7 @@ def test_promote_writes_an_intent_outcome_pair_around_commit_paths(
     assert outcomes[0]["intent_id"] == intents[0]["id"]
 
 
-def test_promote_merge_failure_leaves_an_open_intent_with_no_outcome(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_merge_failure_leaves_an_open_intent_with_no_outcome(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
     vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",), commit_raises=True)
@@ -622,15 +573,7 @@ def _write_open_intent(
     matching ``outcome``, in its OWN run directory -- the exact shape a
     process killed between the irreversible action succeeding and this
     process journaling its own outcome would leave behind."""
-    run_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-        / run_id
-    )
+    run_dir = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     entry = {
         "id": {"writer_id": writer_id, "counter": counter},
@@ -644,9 +587,7 @@ def _write_open_intent(
     return entry
 
 
-def test_promote_reconciles_a_prior_open_intent_when_evidence_confirms(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_reconciles_a_prior_open_intent_when_evidence_confirms(tmp_path, capsys, monkeypatch):
     """A crashed prior `promote` left an open intent for "3.8"; THIS run's
     own live evidence (a valid, committed tracked copy already exists)
     confirms it happened -- the intent is closed with a `reconciliation`
@@ -678,9 +619,7 @@ def test_promote_reconciles_a_prior_open_intent_when_evidence_confirms(
     assert reconciliations[0]["intent_id"] == prior_intent["id"]
 
 
-def test_promote_reports_warn_for_an_open_intent_without_evidence(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_reports_warn_for_an_open_intent_without_evidence(tmp_path, capsys, monkeypatch):
     """A crashed prior `promote`'s open intent names "9.9" -- nothing this
     run can positively confirm happened. It stays open and is reported via
     MRS-DEPLOY-021, WARN-classified (never ERROR, never blocking, AD-21's
@@ -706,9 +645,7 @@ def test_promote_reports_warn_for_an_open_intent_without_evidence(
     assert exit_code == 0
 
 
-def test_promote_rerun_against_a_converged_system_is_zero_changes(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_rerun_against_a_converged_system_is_zero_changes(tmp_path, capsys, monkeypatch):
     """NFR-7: running `promote` twice in a row against the SAME state -- the
     second run finds nothing left to promote, has no open intent to
     reconcile (the first run's own intent/outcome pair already closed
@@ -719,9 +656,7 @@ def test_promote_rerun_against_a_converged_system_is_zero_changes(
 
     first_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
     capsys.readouterr()
-    runs_dir = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs"
-    )
+    runs_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs"
     run_count_after_first = len(list(runs_dir.iterdir()))
 
     second_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
@@ -789,9 +724,7 @@ def _specs_dir(tmp_path: Path, slug: str) -> Path:
     return tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
 
 
-def test_promote_reports_warn_and_promotes_nothing_when_the_lock_is_contended(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_reports_warn_and_promotes_nothing_when_the_lock_is_contended(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
     vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
@@ -825,9 +758,7 @@ def test_promote_with_nothing_to_promote_never_acquires_the_lock(tmp_path, capsy
     assert exit_code == 0
 
 
-def test_promote_acquires_and_releases_the_lock_on_specs_dir_around_copy_and_commit(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_acquires_and_releases_the_lock_on_specs_dir_around_copy_and_commit(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
     vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
@@ -847,9 +778,7 @@ def test_promote_acquires_and_releases_the_lock_on_specs_dir_around_copy_and_com
     ]
 
 
-def test_promote_hits_the_real_contention_path_when_another_holder_has_the_lock(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_hits_the_real_contention_path_when_another_holder_has_the_lock(tmp_path, capsys, monkeypatch):
     """Code review (2026-08-06, Edge Case Hunter): the other lock tests
     either mock ``acquire_advisory_lock`` outright or never actually
     contend (the ``_LockTrackingFs`` sequential test's second run has
@@ -898,9 +827,7 @@ def test_promote_hits_the_real_contention_path_when_another_holder_has_the_lock(
     assert vcs.commit_calls == []
 
 
-def test_promote_sequential_runs_for_the_same_project_never_overlap_the_locked_section(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_sequential_runs_for_the_same_project_never_overlap_the_locked_section(tmp_path, capsys, monkeypatch):
     """Two sequential ``run_promote`` invocations for the SAME project,
     sharing one lock-tracking ``FsPort`` -- proves the second run's own
     re-scan sees the first run's already-committed promotion (never a
@@ -1024,15 +951,7 @@ def _recover_args(*, slug: str = "acme", key: str = "4.2", format: str = "json")
 
 
 def _write_run_snapshot(tmp_path, slug: str, run_id: str, filename_key: str, text: str) -> Path:
-    run_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-        / run_id
-    )
+    run_dir = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     path = run_dir / f"spec-{filename_key}.md"
     path.write_text(text, encoding="utf-8")
@@ -1075,9 +994,7 @@ So that landing is safe.
 """
 
 
-def test_recover_spec_reports_snapshots_most_recent_first_and_writes_nothing(
-    tmp_path, capsys, monkeypatch
-):
+def test_recover_spec_reports_snapshots_most_recent_first_and_writes_nothing(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     older = _write_run_snapshot(tmp_path, "acme", "run-a", "4-2", "old snapshot")
     newer = _write_run_snapshot(tmp_path, "acme", "run-b", "4-2-title", "new snapshot")
@@ -1122,14 +1039,7 @@ def test_recover_spec_falls_back_to_epics_derived_regeneration(tmp_path, capsys,
 
 def test_recover_spec_never_overwrites_an_existing_recovered_file(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    dest = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "implementation-artifacts"
-        / "spec-4-2-recovered.md"
-    )
+    dest = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "spec-4-2-recovered.md"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text("PRE-EXISTING", encoding="utf-8")
 
@@ -1176,9 +1086,7 @@ def test_recover_spec_malformed_slug_reports_mrs_policy_006(tmp_path, capsys, mo
     assert exit_code != 0
 
 
-def test_recover_spec_snapshot_search_does_not_match_a_numeric_prefix_collision(
-    tmp_path, capsys, monkeypatch
-):
+def test_recover_spec_snapshot_search_does_not_match_a_numeric_prefix_collision(tmp_path, capsys, monkeypatch):
     """Code review, 2026-08-06, P4 (both reviewers): a lookup for key 1.2
     must not match ``spec-1-20-*.md`` -- a DIFFERENT key that merely shares
     "1-2" as a numeric PREFIX. The glob needs a boundary immediately after
@@ -1207,9 +1115,7 @@ So that something happens.
 """
 
 
-def test_recover_spec_warns_when_acceptance_criteria_comes_back_empty(
-    tmp_path, capsys, monkeypatch
-):
+def test_recover_spec_warns_when_acceptance_criteria_comes_back_empty(tmp_path, capsys, monkeypatch):
     """Code review, 2026-08-06, P5 (Edge Case Hunter): an epics.md section
     whose Acceptance Criteria block is empty after parsing still writes the
     recovered file (this command "reports, never fabricates" -- an empty
@@ -1257,9 +1163,7 @@ def _land_args(
     since: str | None = None,
     format: str = "json",
 ) -> argparse.Namespace:
-    return argparse.Namespace(
-        slug=slug, key=key, justification=justification, since=since, format=format
-    )
+    return argparse.Namespace(slug=slug, key=key, justification=justification, since=since, format=format)
 
 
 def _fake_evaluate_gate(*, verdict: Verdict, findings: tuple = ()):
@@ -1288,16 +1192,12 @@ def _find_land_journal_lines(tmp_path: Path, slug: str) -> list[dict]:
     return lines
 
 
-def test_land_story_refuses_missing_justification_before_any_gate_run(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_refuses_missing_justification_before_any_gate_run(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
     vcs = _FakeVcs()
 
-    exit_code = deploy_module.run_land_story(
-        _land_args(justification=None), vcs=vcs, fs=LocalFs()
-    )
+    exit_code = deploy_module.run_land_story(_land_args(justification=None), vcs=vcs, fs=LocalFs())
 
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
@@ -1312,9 +1212,7 @@ def test_land_story_refuses_empty_justification(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
     vcs = _FakeVcs()
 
-    exit_code = deploy_module.run_land_story(
-        _land_args(justification="   "), vcs=vcs, fs=LocalFs()
-    )
+    exit_code = deploy_module.run_land_story(_land_args(justification="   "), vcs=vcs, fs=LocalFs())
 
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
@@ -1322,9 +1220,7 @@ def test_land_story_refuses_empty_justification(tmp_path, capsys, monkeypatch):
     assert exit_code != 0
 
 
-def test_land_story_refuses_when_the_station_branch_does_not_exist(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_refuses_when_the_station_branch_does_not_exist(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
     vcs = _FakeVcs(existing_branches=frozenset())
@@ -1355,9 +1251,7 @@ def test_land_story_refuses_when_gate_is_not_green(tmp_path, capsys, monkeypatch
         "evaluate_gate",
         _fake_evaluate_gate(
             verdict=Verdict.GATE_FAILED,
-            findings=(
-                Finding(code="MRS-GATE-001", severity=Severity.ERROR, message=gate_finding["message"]),
-            ),
+            findings=(Finding(code="MRS-GATE-001", severity=Severity.ERROR, message=gate_finding["message"]),),
         ),
     )
     vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
@@ -1374,13 +1268,9 @@ def test_land_story_refuses_when_gate_is_not_green(tmp_path, capsys, monkeypatch
     assert _find_land_journal_lines(tmp_path, "acme") == []
 
 
-def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha-123",
@@ -1416,14 +1306,10 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
     assert observations[0]["kind"] == "manual-landing"
 
     merge_intents = [
-        line
-        for line in journal_lines
-        if line["kind"] == "deploy-land-story-merge" and line["phase"] == "intent"
+        line for line in journal_lines if line["kind"] == "deploy-land-story-merge" and line["phase"] == "intent"
     ]
     merge_outcomes = [
-        line
-        for line in journal_lines
-        if line["kind"] == "deploy-land-story-merge" and line["phase"] == "outcome"
+        line for line in journal_lines if line["kind"] == "deploy-land-story-merge" and line["phase"] == "outcome"
     ]
     assert len(merge_intents) == 1
     assert merge_intents[0]["payload"]["story_keys"] == ["4.3"]
@@ -1433,13 +1319,9 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
     assert merge_outcomes[0]["payload"]["merge_sha"] == "merge-sha-456"
 
 
-def test_land_story_reports_non_conforming_merges_without_blocking(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_reports_non_conforming_merges_without_blocking(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         window_subjects=("Merge acme/4.3 into main", "Merge pull request #42 from acme/feature"),
@@ -1450,19 +1332,13 @@ def test_land_story_reports_non_conforming_merges_without_blocking(
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert payload["verdict"] == "clean"
-    assert payload["data"]["non_conforming_merges"] == [
-        "Merge pull request #42 from acme/feature"
-    ]
+    assert payload["data"]["non_conforming_merges"] == ["Merge pull request #42 from acme/feature"]
     assert payload["findings"] == []
 
 
-def test_land_story_conformance_audit_read_failure_warns_but_does_not_block(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_conformance_audit_read_failure_warns_but_does_not_block(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         window_subjects_raises=True,
@@ -1482,9 +1358,7 @@ def test_land_story_conformance_audit_read_failure_warns_but_does_not_block(
     assert _find_land_journal_lines(tmp_path, "acme") != []
 
 
-def test_land_story_merge_failure_leaves_an_open_intent_with_no_outcome(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_merge_failure_leaves_an_open_intent_with_no_outcome(tmp_path, capsys, monkeypatch):
     """Story 4.6 (AD-6): the intent is written BEFORE `merge_branch` is
     even attempted, so a merge failure leaves exactly ONE journal line --
     the open intent, with no outcome and no manual-landing observation
@@ -1492,9 +1366,7 @@ def test_land_story_merge_failure_leaves_an_open_intent_with_no_outcome(
     entry at all; that was the exact AD-6 gap Story 4.6 exists to close --
     see the story's own Spec Change Log for why this assertion changed."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}), merge_branch_raises=True)
 
     exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
@@ -1511,13 +1383,9 @@ def test_land_story_merge_failure_leaves_an_open_intent_with_no_outcome(
     assert "intent_id" not in journal_lines[0]
 
 
-def test_land_story_uses_an_explicit_since_ref_over_the_computed_merge_base(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_uses_an_explicit_since_ref_over_the_computed_merge_base(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
 
     class _RecordingVcs(_FakeVcs):
         def commit_subjects(self, repo_root, ref):
@@ -1526,9 +1394,7 @@ def test_land_story_uses_an_explicit_since_ref_over_the_computed_merge_base(
 
     vcs = _RecordingVcs(existing_branches=frozenset({"loop/acme"}))
 
-    exit_code = deploy_module.run_land_story(
-        _land_args(since="explicit-ref"), vcs=vcs, fs=LocalFs()
-    )
+    exit_code = deploy_module.run_land_story(_land_args(since="explicit-ref"), vcs=vcs, fs=LocalFs())
 
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
@@ -1573,9 +1439,7 @@ def test_land_story_refuses_a_warn_tier_gate_not_exactly_clean(tmp_path, capsys,
     assert _find_land_journal_lines(tmp_path, "acme") == []
 
 
-def test_land_story_policy_read_failure_is_a_hard_stop_no_merge_attempted(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_policy_read_failure_is_a_hard_stop_no_merge_attempted(tmp_path, capsys, monkeypatch):
     """P3 (both reviewers independently): a `PolicyIOError` resolving the
     merge-subject template must refuse the landing outright -- never fall
     through and merge with a silently-defaulted template (AD-24)."""
@@ -1583,9 +1447,7 @@ def test_land_story_policy_read_failure_is_a_hard_stop_no_merge_attempted(
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
     fake_policy_path = tmp_path / "fake-marshal-policy.toml"
     fake_policy_path.write_text("not used -- _read_project_policy is patched", encoding="utf-8")
-    monkeypatch.setattr(
-        deploy_module, "conventional_project_policy_path", lambda slug: fake_policy_path
-    )
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: fake_policy_path)
 
     def _raise_policy_io_error(path):
         raise deploy_module.PolicyIOError(f"malformed policy TOML at {path}")
@@ -1627,16 +1489,12 @@ def test_land_story_already_merged_is_a_clean_noop(tmp_path, capsys, monkeypatch
     assert _find_land_journal_lines(tmp_path, "acme") == []
 
 
-def test_land_story_refuses_when_branch_moves_during_the_gate_window(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_refuses_when_branch_moves_during_the_gate_window(tmp_path, capsys, monkeypatch):
     """P4: the gate evaluates `branch` at one point in time; a commit
     landing on `branch` before the merge actually runs must not be merged
     as if the (now-stale) gate result still applied to it."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         resolve_ref_sequence=["tip-at-gate-time", "tip-after-a-new-commit"],
@@ -1658,9 +1516,7 @@ def test_land_story_redaction_failure_warns_but_still_lands(tmp_path, capsys, mo
     `null` into the permanent journal record with no trace of the gap.
     The landing itself still proceeds -- this is a visibility fix only."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     monkeypatch.setattr(deploy_module, "_land_redact_text", lambda text: None)
     vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
 
@@ -1688,9 +1544,7 @@ def test_land_story_redaction_failure_warns_but_still_lands(tmp_path, capsys, mo
 # =====================================================================
 
 
-def test_land_story_reconciles_a_prior_open_intent_when_evidence_confirms(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_reconciles_a_prior_open_intent_when_evidence_confirms(tmp_path, capsys, monkeypatch):
     """A crashed prior `land-story` left an open intent for "4.3"; THIS
     run's own live evidence (the key is now reachable in main's own commit
     history) confirms it happened -- the intent is closed with a
@@ -1724,17 +1578,13 @@ def test_land_story_reconciles_a_prior_open_intent_when_evidence_confirms(
     assert reconciliations[0]["intent_id"] == prior_intent["id"]
 
 
-def test_land_story_reports_warn_for_an_open_intent_without_evidence(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_reports_warn_for_an_open_intent_without_evidence(tmp_path, capsys, monkeypatch):
     """A crashed prior `land-story`'s open intent names a DIFFERENT key
     ("9.9") than the one this run is landing -- nothing confirms it. It
     stays open and is reported via MRS-DEPLOY-021 (WARN, never blocking),
     and this run's own landing of "4.3" proceeds normally."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
     _write_open_intent(
         tmp_path,
@@ -1754,17 +1604,13 @@ def test_land_story_reports_warn_for_an_open_intent_without_evidence(
     assert vcs.merge_branch_calls != []
 
 
-def test_land_story_rerun_against_a_converged_system_is_zero_changes(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_rerun_against_a_converged_system_is_zero_changes(tmp_path, capsys, monkeypatch):
     """NFR-7: `land-story` on an already-merged key is already established
     (P6) as a clean no-op; this proves it stays that way with zero NEW
     journal entries once the first landing's own intent/outcome pair has
     already closed itself."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
-    )
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha-123",
@@ -1821,12 +1667,8 @@ class _FakeForge:
         check_status_raises: bool = False,
     ) -> None:
         self.existing = existing
-        self.create_result = create_result or PrInfo(
-            number=1, url="https://example/pr/1", state="open", base="main"
-        )
-        self.update_result = update_result or PrInfo(
-            number=2, url="https://example/pr/2", state="open", base="main"
-        )
+        self.create_result = create_result or PrInfo(number=1, url="https://example/pr/1", state="open", base="main")
+        self.update_result = update_result or PrInfo(number=2, url="https://example/pr/2", state="open", base="main")
         self.find_raises = find_raises
         self.create_raises = create_raises
         self.update_raises = update_raises
@@ -1973,9 +1815,7 @@ def test_batch_pr_updates_an_existing_pr_instead_of_duplicating(tmp_path, capsys
     assert forge.update_calls[0][1] == 99
 
 
-def test_batch_pr_blocks_on_an_unsatisfied_required_check_and_writes_no_pr(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_blocks_on_an_unsatisfied_required_check_and_writes_no_pr(tmp_path, capsys, monkeypatch):
     policy_path = _write_batch_pr_project_policy(
         tmp_path,
         """
@@ -1988,9 +1828,7 @@ ungated = true
 """,
     )
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha",
@@ -2026,9 +1864,7 @@ ungated = true
 """,
     )
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha",
@@ -2049,9 +1885,7 @@ ungated = true
     assert rule_report["satisfied"] is True
 
 
-def test_batch_pr_applies_a_fired_label_after_opening_never_blocking(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_applies_a_fired_label_after_opening_never_blocking(tmp_path, capsys, monkeypatch):
     policy_path = _write_batch_pr_project_policy(
         tmp_path,
         """
@@ -2063,9 +1897,7 @@ label = "maintenance"
 """,
     )
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha",
@@ -2106,19 +1938,9 @@ def test_batch_pr_reports_mrs_deploy_014_on_a_forge_command_failure(tmp_path, ca
     assert exit_code != 0
 
 
-def test_batch_pr_body_lists_the_wave_with_gate_verdicts_from_the_journal(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_body_lists_the_wave_with_gate_verdicts_from_the_journal(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    run_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "implementation-artifacts"
-        / "runs"
-        / "acme-run-1"
-    )
+    run_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs" / "acme-run-1"
     run_dir.mkdir(parents=True)
     entry = {
         "id": {"writer_id": "land-story-1", "counter": 0},
@@ -2169,9 +1991,7 @@ landing_rules = "not-a-list-of-rules"
 """,
     )
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
     vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
     forge = _FakeForge()
 
@@ -2189,9 +2009,7 @@ landing_rules = "not-a-list-of-rules"
     assert forge.create_calls == []
 
 
-def test_batch_pr_p2_add_labels_failure_does_not_claim_labels_applied(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_p2_add_labels_failure_does_not_claim_labels_applied(tmp_path, capsys, monkeypatch):
     """P2 (HIGH, Edge Case Hunter, CONFIRMED): `data["labels_applied"]` must
     never claim a label was applied when `add_labels` itself raised."""
     policy_path = _write_batch_pr_project_policy(
@@ -2205,9 +2023,7 @@ label = "maintenance"
 """,
     )
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    monkeypatch.setattr(
-        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha",
@@ -2367,9 +2183,7 @@ def test_batch_pr_p10_already_landed_wave_is_a_noop(tmp_path, capsys, monkeypatc
 # =====================================================================
 
 
-def test_batch_pr_writes_an_intent_outcome_pair_around_create_pr(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_writes_an_intent_outcome_pair_around_create_pr(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
@@ -2384,15 +2198,9 @@ def test_batch_pr_writes_an_intent_outcome_pair_around_create_pr(
 
     assert exit_code == 0
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
-    intents = [
-        line
-        for line in journal_lines
-        if line["kind"] == "deploy-batch-pr-write" and line["phase"] == "intent"
-    ]
+    intents = [line for line in journal_lines if line["kind"] == "deploy-batch-pr-write" and line["phase"] == "intent"]
     outcomes = [
-        line
-        for line in journal_lines
-        if line["kind"] == "deploy-batch-pr-write" and line["phase"] == "outcome"
+        line for line in journal_lines if line["kind"] == "deploy-batch-pr-write" and line["phase"] == "outcome"
     ]
     assert len(intents) == 1
     assert intents[0]["payload"]["action"] == "create_pr"
@@ -2402,9 +2210,7 @@ def test_batch_pr_writes_an_intent_outcome_pair_around_create_pr(
     assert outcomes[0]["payload"]["pr_number"] == 1
 
 
-def test_batch_pr_create_pr_failure_leaves_an_open_intent_with_no_outcome(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_create_pr_failure_leaves_an_open_intent_with_no_outcome(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
@@ -2425,9 +2231,7 @@ def test_batch_pr_create_pr_failure_leaves_an_open_intent_with_no_outcome(
     assert "intent_id" not in journal_lines[0]
 
 
-def test_batch_pr_never_auto_reconciles_on_bare_pr_existence_alone(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_never_auto_reconciles_on_bare_pr_existence_alone(tmp_path, capsys, monkeypatch):
     """Code review (2026-08-06, P2, both reviewers' independent top
     finding): a crashed prior `batch-pr` left an open intent for this
     wave. `find_open_pr` now shows SOME PR on the head branch -- but bare
@@ -2470,25 +2274,19 @@ def test_batch_pr_never_auto_reconciles_on_bare_pr_existence_alone(
 
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
     reconciliations = [
-        line
-        for line in journal_lines
-        if line["phase"] == "outcome" and line["kind"] == "reconciliation"
+        line for line in journal_lines if line["phase"] == "outcome" and line["kind"] == "reconciliation"
     ]
     # The prior intent stays open -- NOT auto-closed by bare PR-existence.
     assert reconciliations == []
     still_open_intents = [
         line
         for line in journal_lines
-        if line["kind"] == "deploy-batch-pr-write"
-        and line["phase"] == "intent"
-        and line["id"] == prior_intent["id"]
+        if line["kind"] == "deploy-batch-pr-write" and line["phase"] == "intent" and line["id"] == prior_intent["id"]
     ]
     assert len(still_open_intents) == 1
 
 
-def test_batch_pr_reports_warn_for_an_open_intent_without_evidence(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_reports_warn_for_an_open_intent_without_evidence(tmp_path, capsys, monkeypatch):
     """A crashed prior `batch-pr`'s open intent has NO confirming evidence
     yet (no PR exists for the head branch) -- it stays open and is
     reported via MRS-DEPLOY-021 (WARN, never blocking), and this run's own
@@ -2520,9 +2318,7 @@ def test_batch_pr_reports_warn_for_an_open_intent_without_evidence(
     assert len(forge.create_calls) == 1
 
 
-def test_batch_pr_rerun_against_a_converged_system_is_zero_changes(
-    tmp_path, capsys, monkeypatch
-):
+def test_batch_pr_rerun_against_a_converged_system_is_zero_changes(tmp_path, capsys, monkeypatch):
     """NFR-7: once every wave key is already durably landed on `base`, a
     re-run is already established (P10) as a clean no-op -- this proves it
     stays that way with zero NEW journal entries and no forge writes at
@@ -2620,18 +2416,12 @@ def test_evaluate_hygiene_p9_label_still_fires_when_check_succeeds():
     assert blocking == []
 
 
-def test_gather_gate_verdicts_p6_skips_a_run_dir_whose_fold_raises_non_typeerror(
-    tmp_path, monkeypatch
-):
+def test_gather_gate_verdicts_p6_skips_a_run_dir_whose_fold_raises_non_typeerror(tmp_path, monkeypatch):
     """P6 (MEDIUM, both reviewers): a run directory whose journal content
     makes `fold` raise something other than TypeError (e.g. ValueError)
     must be skipped, never crash the whole gather."""
-    good_dir = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs" / "good"
-    )
-    bad_dir = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs" / "bad"
-    )
+    good_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs" / "good"
+    bad_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs" / "bad"
     good_dir.mkdir(parents=True)
     bad_dir.mkdir(parents=True)
 
@@ -2649,9 +2439,7 @@ def test_gather_gate_verdicts_p6_skips_a_run_dir_whose_fold_raises_non_typeerror
         if "bad-marker" in text:
             raise ValueError("simulated malformed journal content")
         if "good-marker" in text:
-            return _StubFoldResult(
-                [_StubEntry("manual-landing", {"story_key": "4.4", "gate_verdict": "clean"})]
-            )
+            return _StubFoldResult([_StubEntry("manual-landing", {"story_key": "4.4", "gate_verdict": "clean"})])
         return _StubFoldResult([])
 
     (good_dir / "journal.jsonl").write_text("good-marker\n", encoding="utf-8")
@@ -2679,21 +2467,24 @@ def test_gather_gate_verdicts_p7_orders_by_mtime_not_directory_name(tmp_path, mo
     newer_dir.mkdir(parents=True)
 
     def _entry(verdict: str) -> str:
-        return json.dumps(
-            {
-                "id": {"writer_id": "land-story-1", "counter": 0},
-                "ts": "2026-08-06T00:00:00.000Z",
-                "run_id": "run",
-                "kind": "manual-landing",
-                "phase": "observation",
-                "payload": {
-                    "story_key": "4.4",
-                    "justification": None,
-                    "merge_sha": "deadbeef",
-                    "gate_verdict": verdict,
-                },
-            }
-        ) + "\n"
+        return (
+            json.dumps(
+                {
+                    "id": {"writer_id": "land-story-1", "counter": 0},
+                    "ts": "2026-08-06T00:00:00.000Z",
+                    "run_id": "run",
+                    "kind": "manual-landing",
+                    "phase": "observation",
+                    "payload": {
+                        "story_key": "4.4",
+                        "justification": None,
+                        "merge_sha": "deadbeef",
+                        "gate_verdict": verdict,
+                    },
+                }
+            )
+            + "\n"
+        )
 
     (older_dir / "journal.jsonl").write_text(_entry("gate-failed"), encoding="utf-8")
     (newer_dir / "journal.jsonl").write_text(_entry("clean"), encoding="utf-8")
@@ -2727,6 +2518,7 @@ def test_batch_pr_redact_p11_returns_none_on_any_redaction_failure(monkeypatch):
 # =====================================================================
 
 from pyforge.core.process import ProcessError, ProcessResult  # noqa: E402
+
 from pyforge.marshal.core.journal import (  # noqa: E402
     JournalEntryId,
     Phase,
@@ -2807,9 +2599,7 @@ def _refresh_feed_args(*, project: str = "acme", format: str = "json") -> argpar
     return argparse.Namespace(project=project, format=format)
 
 
-def _write_prior_run_with_harness_run_id(
-    tmp_path, home: Path, slug: str, run_id: str, harness_run_id: str
-) -> Path:
+def _write_prior_run_with_harness_run_id(tmp_path, home: Path, slug: str, run_id: str, harness_run_id: str) -> Path:
     """Seeds a real Marshal run directory under ``home``'s own Tier-3 store
     with a minimal, valid ``run-launch`` outcome entry naming
     ``harness_run_id`` -- the SAME shape
@@ -2845,9 +2635,7 @@ def _write_refresh_feed_project_policy(tmp_path: Path, monkeypatch, text: str) -
     return path
 
 
-def test_refresh_feed_reports_git_facts_with_no_journal_available(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_reports_git_facts_with_no_journal_available(tmp_path, capsys, monkeypatch):
     """No loop home provisioned at all -- a legitimate state, per the
     story's own I/O matrix: git's own answer stands alone, no findings."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
@@ -2874,16 +2662,12 @@ def test_refresh_feed_reports_git_facts_with_no_journal_available(
     assert payload["data"]["resync_commands"] == []
 
 
-def test_refresh_feed_claimed_commit_matching_git_is_consistent(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_claimed_commit_matching_git_is_consistent(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
     home = home_root / "acme"
-    _write_prior_run_with_harness_run_id(
-        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
-    )
+    _write_prior_run_with_harness_run_id(tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01")
     vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
     snapshot = RunStatusSnapshot(
         paused_stage=None,
@@ -2913,16 +2697,12 @@ def test_refresh_feed_claimed_commit_matching_git_is_consistent(
     assert harness.calls == [(home, "acme-hh01")]
 
 
-def test_refresh_feed_claimed_commit_not_confirmed_by_git_reports_mrs_status_001(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_claimed_commit_not_confirmed_by_git_reports_mrs_status_001(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
     home = home_root / "acme"
-    _write_prior_run_with_harness_run_id(
-        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
-    )
+    _write_prior_run_with_harness_run_id(tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01")
     vcs = _FakeVcs(main_subjects=())  # nothing merged, per git
     snapshot = RunStatusSnapshot(
         paused_stage=None,
@@ -2967,12 +2747,13 @@ def test_refresh_feed_landing_resync_false_skips_resync_step(tmp_path, capsys, m
     assert process.calls == []
 
 
-def test_refresh_feed_runs_configured_resync_commands_when_resync_is_true(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_runs_configured_resync_commands_when_resync_is_true(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["true"]\n',
+    _write_refresh_feed_project_policy(
+        tmp_path,
+        monkeypatch,
+        'landing_resync = true\nlanding_resync_commands = ["true"]\n',
     )
     vcs = _FakeVcs()
     process = _FakeProcess(results={"true": ProcessResult(returncode=0, stdout="", stderr="")})
@@ -2990,12 +2771,13 @@ def test_refresh_feed_runs_configured_resync_commands_when_resync_is_true(
     assert process.calls == [["true"]]
 
 
-def test_refresh_feed_resync_command_failure_is_reported_not_swallowed(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_resync_command_failure_is_reported_not_swallowed(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["false"]\n',
+    _write_refresh_feed_project_policy(
+        tmp_path,
+        monkeypatch,
+        'landing_resync = true\nlanding_resync_commands = ["false"]\n',
     )
     vcs = _FakeVcs()
     process = _FakeProcess(results={"false": ProcessResult(returncode=1, stdout="", stderr="nope")})
@@ -3011,19 +2793,18 @@ def test_refresh_feed_resync_command_failure_is_reported_not_swallowed(
     assert exit_code != 0
 
 
-def test_refresh_feed_resync_command_launch_failure_reports_mrs_deploy_019(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_resync_command_launch_failure_reports_mrs_deploy_019(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["missing-binary"]\n',
+    _write_refresh_feed_project_policy(
+        tmp_path,
+        monkeypatch,
+        'landing_resync = true\nlanding_resync_commands = ["missing-binary"]\n',
     )
     vcs = _FakeVcs()
     process = _FakeProcess(raise_on={"missing-binary"})
 
-    exit_code = deploy_module.run_refresh_feed(
-        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
-    )
+    deploy_module.run_refresh_feed(_refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness())
 
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
@@ -3031,19 +2812,18 @@ def test_refresh_feed_resync_command_launch_failure_reports_mrs_deploy_019(
     assert payload["verdict"] == "unevaluable"
 
 
-def test_refresh_feed_resync_command_with_bare_shell_syntax_is_never_spawned(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_resync_command_with_bare_shell_syntax_is_never_spawned(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["true && false"]\n',
+    _write_refresh_feed_project_policy(
+        tmp_path,
+        monkeypatch,
+        'landing_resync = true\nlanding_resync_commands = ["true && false"]\n',
     )
     vcs = _FakeVcs()
     process = _FakeProcess()
 
-    exit_code = deploy_module.run_refresh_feed(
-        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
-    )
+    deploy_module.run_refresh_feed(_refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness())
 
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
@@ -3051,9 +2831,7 @@ def test_refresh_feed_resync_command_with_bare_shell_syntax_is_never_spawned(
     assert process.calls == []  # never spawned
 
 
-def test_refresh_feed_with_no_active_project_reports_mrs_policy_005(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_with_no_active_project_reports_mrs_policy_005(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     exit_code = deploy_module.run_refresh_feed(
@@ -3070,9 +2848,7 @@ def test_refresh_feed_with_no_active_project_reports_mrs_policy_005(
     assert exit_code == 0
 
 
-def test_refresh_feed_hard_main_read_failure_reports_mrs_deploy_003(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_hard_main_read_failure_reports_mrs_deploy_003(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     vcs = _FakeVcs(main_raises=True)
@@ -3096,10 +2872,11 @@ def test_refresh_feed_is_a_provable_noop_across_two_runs(tmp_path, capsys, monke
     home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
     home = home_root / "acme"
-    _write_prior_run_with_harness_run_id(
-        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
-    )
-    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["true"]\n',
+    _write_prior_run_with_harness_run_id(tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01")
+    _write_refresh_feed_project_policy(
+        tmp_path,
+        monkeypatch,
+        'landing_resync = true\nlanding_resync_commands = ["true"]\n',
     )
     snapshot = RunStatusSnapshot(
         paused_stage=None,
@@ -3115,9 +2892,7 @@ def test_refresh_feed_is_a_provable_noop_across_two_runs(tmp_path, capsys, monke
         vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
         process = _FakeProcess(results={"true": ProcessResult(returncode=0, stdout="", stderr="")})
         harness = _FakeHarness(snapshot=snapshot)
-        deploy_module.run_refresh_feed(
-            _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=harness
-        )
+        deploy_module.run_refresh_feed(_refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=harness)
         return capsys.readouterr().out
 
     first = _run_once()
@@ -3134,9 +2909,7 @@ def test_refresh_feed_is_a_provable_noop_across_two_runs(tmp_path, capsys, monke
 # =====================================================================
 
 
-def test_refresh_feed_whitespace_only_resync_command_is_reported_not_crashed(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_whitespace_only_resync_command_is_reported_not_crashed(tmp_path, capsys, monkeypatch):
     """P1 (HIGH, both reviewers): a whitespace-only ``landing_resync_commands``
     entry ``shlex.split()``s CLEANLY to an empty token list -- distinct from
     a ``ValueError`` -- and must never reach ``ProcessPort.run`` with an
@@ -3162,9 +2935,7 @@ def test_refresh_feed_whitespace_only_resync_command_is_reported_not_crashed(
     assert exit_code != 0
 
 
-def test_refresh_feed_resync_command_oserror_is_reported_not_crashed(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_resync_command_oserror_is_reported_not_crashed(tmp_path, capsys, monkeypatch):
     """P2 (HIGH): ``_run_resync_commands``'s own catch is broadened beyond
     ``ProcessError`` alone -- a ``ProcessPort`` implementation that lets a
     raw ``OSError`` escape ``run`` must still be reported, not crash the
@@ -3198,9 +2969,7 @@ def test_refresh_feed_resync_command_passes_a_real_timeout(tmp_path, capsys, mon
     vcs = _FakeVcs()
     process = _FakeProcess(results={"true": ProcessResult(returncode=0, stdout="", stderr="")})
 
-    deploy_module.run_refresh_feed(
-        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
-    )
+    deploy_module.run_refresh_feed(_refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness())
 
     assert process.timeout_calls == [deploy_module._RESYNC_TIMEOUT_S]
     assert deploy_module._RESYNC_TIMEOUT_S is not None
@@ -3229,9 +2998,7 @@ def test_refresh_feed_resync_command_timeout_is_reported_not_hung(tmp_path, caps
     assert exit_code != 0
 
 
-def test_refresh_feed_degrades_gracefully_when_run_status_snapshot_raises(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_degrades_gracefully_when_run_status_snapshot_raises(tmp_path, capsys, monkeypatch):
     """P2 (HIGH): ``HarnessPort.run_status_snapshot``'s own docstring
     promises "never raises", but ``_gather_claimed_commits`` defends its
     OWN identical promise anyway -- an implementation that raises degrades
@@ -3241,9 +3008,7 @@ def test_refresh_feed_degrades_gracefully_when_run_status_snapshot_raises(
     home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
     home = home_root / "acme"
-    _write_prior_run_with_harness_run_id(
-        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
-    )
+    _write_prior_run_with_harness_run_id(tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01")
     vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
     harness = _FakeHarness(raises=ValueError("simulated state.json corruption"))
 
@@ -3262,9 +3027,7 @@ def test_refresh_feed_degrades_gracefully_when_run_status_snapshot_raises(
     ]
 
 
-def test_refresh_feed_degrades_gracefully_when_fs_exists_raises(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_degrades_gracefully_when_fs_exists_raises(tmp_path, capsys, monkeypatch):
     """P2 (HIGH): ``_gather_claimed_commits``'s own ``fs.exists(home)``
     guard is broadened beyond ``FsError`` alone -- an ``FsPort``
     implementation that lets a raw ``OSError`` escape ``exists`` must still
@@ -3300,9 +3063,7 @@ def test_gather_claimed_commits_skips_a_malformed_story_key_not_fatal(tmp_path, 
     home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
     home = home_root / "acme"
-    _write_prior_run_with_harness_run_id(
-        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
-    )
+    _write_prior_run_with_harness_run_id(tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01")
     snapshot = RunStatusSnapshot(
         paused_stage=None,
         paused_story_key=None,
@@ -3322,9 +3083,7 @@ def test_gather_claimed_commits_skips_a_malformed_story_key_not_fatal(tmp_path, 
     assert [str(claim.story_key) for claim in claims] == ["1.2"]
 
 
-def test_refresh_feed_policy_is_file_probe_oserror_still_reports_policyioerror(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_policy_is_file_probe_oserror_still_reports_policyioerror(tmp_path, capsys, monkeypatch):
     """P2 (HIGH): confirms the SAME failure mode the finding names --
     ``candidate.is_file()`` raising ``OSError`` is treated as "file present"
     (the established convention: fail toward attempting the read, never
@@ -3337,9 +3096,7 @@ def test_refresh_feed_policy_is_file_probe_oserror_still_reports_policyioerror(
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     missing = tmp_path / "nonexistent-policy.toml"
     monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: missing)
-    monkeypatch.setattr(
-        Path, "is_file", lambda self: (_ for _ in ()).throw(OSError("simulated probe failure"))
-    )
+    monkeypatch.setattr(Path, "is_file", lambda self: (_ for _ in ()).throw(OSError("simulated probe failure")))
 
     exit_code = deploy_module.run_refresh_feed(
         _refresh_feed_args(), vcs=_FakeVcs(), fs=LocalFs(), process=_FakeProcess(), harness=_FakeHarness()
@@ -3352,9 +3109,7 @@ def test_refresh_feed_policy_is_file_probe_oserror_still_reports_policyioerror(
     assert exit_code != 0
 
 
-def test_refresh_feed_early_refusal_still_includes_resync_commands_key(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_early_refusal_still_includes_resync_commands_key(tmp_path, capsys, monkeypatch):
     """P5 (MEDIUM): an early-refusal path (no active project) still carries
     ``resync_commands`` in its envelope, matching the happy path's own
     shape (AD-14's "one envelope for every command")."""
@@ -3376,9 +3131,7 @@ def test_refresh_feed_early_refusal_still_includes_resync_commands_key(
     assert payload["data"]["resync_skipped"] is True
 
 
-def test_refresh_feed_noop_reconciliation_holds_even_with_volatile_resync_output(
-    tmp_path, capsys, monkeypatch
-):
+def test_refresh_feed_noop_reconciliation_holds_even_with_volatile_resync_output(tmp_path, capsys, monkeypatch):
     """P4 (MEDIUM, Blind Hunter): the provable-no-op guarantee applies to
     the RECONCILIATION portion of the report (``data.stories`` plus every
     finding) -- never to a resync command's own raw stdout/stderr, which is
@@ -3390,9 +3143,7 @@ def test_refresh_feed_noop_reconciliation_holds_even_with_volatile_resync_output
     home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
     home = home_root / "acme"
-    _write_prior_run_with_harness_run_id(
-        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
-    )
+    _write_prior_run_with_harness_run_id(tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01")
     _write_refresh_feed_project_policy(
         tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["fetch"]\n'
     )
@@ -3482,9 +3233,7 @@ def test_deploy_writer_id_p1_pid_reuse_does_not_mispair_a_global_fold(tmp_path, 
     fs = LocalFs()
 
     findings_a: list = []
-    run_a = deploy_module._DeployRun(
-        fs, tmp_path, "acme", deploy_module._deploy_writer_id("promote")
-    )
+    run_a = deploy_module._DeployRun(fs, tmp_path, "acme", deploy_module._deploy_writer_id("promote"))
     intent_a = run_a.write(
         findings_a,
         kind="deploy-promote-commit",
@@ -3494,9 +3243,7 @@ def test_deploy_writer_id_p1_pid_reuse_does_not_mispair_a_global_fold(tmp_path, 
     # Run A "crashes" here -- no outcome is ever written for intent_a.
 
     findings_b: list = []
-    run_b = deploy_module._DeployRun(
-        fs, tmp_path, "acme", deploy_module._deploy_writer_id("promote")
-    )
+    run_b = deploy_module._DeployRun(fs, tmp_path, "acme", deploy_module._deploy_writer_id("promote"))
     intent_b = run_b.write(
         findings_b,
         kind="deploy-promote-commit",
@@ -3522,9 +3269,7 @@ def test_deploy_writer_id_p1_pid_reuse_does_not_mispair_a_global_fold(tmp_path, 
     assert fold_findings == []
 
 
-def test_fold_deploy_journal_p3_reports_a_finding_on_blanket_fold_failure(
-    tmp_path, capsys, monkeypatch
-):
+def test_fold_deploy_journal_p3_reports_a_finding_on_blanket_fold_failure(tmp_path, capsys, monkeypatch):
     """Code review (2026-08-06, P3, Blind Hunter, HIGH): `_fold_deploy_journal`'s
     outer `fold()` call can itself fail on a shape `fold` does not
     tolerate. That used to degrade SILENTLY to an empty `FoldResult` --
@@ -3572,9 +3317,7 @@ def test_fold_deploy_journal_p3_reports_a_finding_on_blanket_fold_failure(
     assert exit_code == 0
 
 
-def test_promote_reconciles_one_open_intent_while_leaving_a_disjoint_one_open(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_reconciles_one_open_intent_while_leaving_a_disjoint_one_open(tmp_path, capsys, monkeypatch):
     """P5 (MEDIUM, Edge Case Hunter): two DISTINCT open intents of the same
     kind, from two different crashed runs, each naming a disjoint
     story-key subset -- `_reconcile_open_intents`'s loop must reconcile
@@ -3617,9 +3360,7 @@ def test_promote_reconciles_one_open_intent_while_leaving_a_disjoint_one_open(
 
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
     reconciliations = [
-        line
-        for line in journal_lines
-        if line["phase"] == "outcome" and line["kind"] == "reconciliation"
+        line for line in journal_lines if line["phase"] == "outcome" and line["kind"] == "reconciliation"
     ]
     assert len(reconciliations) == 1
     assert reconciliations[0]["intent_id"] == confirmed_intent["id"]
@@ -3711,14 +3452,7 @@ class _PartialCommitFailureVcs(_FakeVcs):
 
 
 def _write_ledger(tmp_path: Path, slug: str, text: str) -> Path:
-    ledger_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "sprint-status-ledger.yaml"
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     ledger_path.write_text(text, encoding="utf-8")
     return ledger_path
@@ -3732,10 +3466,7 @@ def _ledger_text(*entries: tuple[str, str]) -> str:
 
 
 def _write_tier3_feed(tmp_path: Path, slug: str, text: str) -> Path:
-    feed_path = (
-        tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts"
-        / "sprint-status.yaml"
-    )
+    feed_path = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "sprint-status.yaml"
     feed_path.parent.mkdir(parents=True, exist_ok=True)
     feed_path.write_text(text, encoding="utf-8")
     return feed_path
@@ -3752,9 +3483,7 @@ def _not_loop_native_subject(branch_segment: str, pr: int = 500) -> str:
     return f"Merge pull request #{pr} from rxm7706/acme/{branch_segment}"
 
 
-def test_reconcile_completions_advances_and_promotes_a_not_loop_native_story(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_advances_and_promotes_a_not_loop_native_story(tmp_path, capsys, monkeypatch):
     """The headline scenario (I/O matrix row 1): a backlog story merged via
     a plain GitHub PR, with a valid, durable Tier-3 spec -- advances the
     ledger AND promotes the spec, in two dedicated commits, and closes
@@ -3768,9 +3497,7 @@ def test_reconcile_completions_advances_and_promotes_a_not_loop_native_story(
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["advanced"] == ["5.9"]
@@ -3797,9 +3524,7 @@ def test_reconcile_completions_advances_and_promotes_a_not_loop_native_story(
     assert "promote" in spec_commit[1]
 
 
-def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(tmp_path, capsys, monkeypatch):
     """I/O matrix row 2: corroborated and not-loop-native-landed, but the
     tracked ledger carries no row for it at all -- never advanced, never
     invented, reported. Spec promotion is a SEPARATE concern from the
@@ -3812,9 +3537,7 @@ def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("1-1-x", "done"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     codes = [f["code"] for f in payload["findings"]]
@@ -3832,9 +3555,7 @@ def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(
     assert vcs.commit_calls == [((dest,), vcs.commit_calls[0][1])]
 
 
-def test_reconcile_completions_excludes_a_marshal_native_landed_key(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_excludes_a_marshal_native_landed_key(tmp_path, capsys, monkeypatch):
     """I/O matrix row 3: a story merged via the AD-24 templated form (what
     ``deploy land-story`` itself renders) is Marshal-driven -- Story 5.4's
     own sync already owns it, and reconcile-completions leaves it alone
@@ -3848,9 +3569,7 @@ def test_reconcile_completions_excludes_a_marshal_native_landed_key(
     vcs = _FakeVcs(main_subjects=("Merge acme/4-3 into main",))
     harness = _FakeReconcileHarness(ledger_statuses=(("4-3-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["advanced"] == []
@@ -3861,24 +3580,18 @@ def test_reconcile_completions_excludes_a_marshal_native_landed_key(
     assert vcs.commit_calls == []
 
 
-def test_reconcile_completions_git_match_without_corroborating_spec_is_silent(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_git_match_without_corroborating_spec_is_silent(tmp_path, capsys, monkeypatch):
     """I/O matrix row 4: a bare git match with no valid/durable spec
     (possible cross-project collision) never triggers a write, and is not
     reported by THIS command -- Story 5.4's own ``--reconcile-ledger``
     already covers this direction."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(
-        parents=True, exist_ok=True
-    )
+    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(parents=True, exist_ok=True)
     _write_ledger(tmp_path, "acme", _ledger_text(("7-1-title", "backlog")))
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("7-1-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("7-1-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     # Per this story's own I/O matrix: "Not advanced, not reported (5.4's
@@ -3895,9 +3608,7 @@ def test_reconcile_completions_git_match_without_corroborating_spec_is_silent(
     assert vcs.commit_calls == []
 
 
-def test_reconcile_completions_tracked_spec_alone_with_no_merge_evidence_never_advances(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_tracked_spec_alone_with_no_merge_evidence_never_advances(tmp_path, capsys, monkeypatch):
     """Review fix, 2026-08-12, high-severity: the contract's own "a git
     match alone never triggers a write" bullet reads BOTH directions -- a
     tracked spec alone (corroborated via `scan.already_promoted`, with NO
@@ -3911,9 +3622,7 @@ def test_reconcile_completions_tracked_spec_alone_with_no_merge_evidence_never_a
     vcs = _FakeVcs(main_subjects=())  # zero merge evidence anywhere in history
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["findings"] == []
@@ -3937,9 +3646,7 @@ def test_reconcile_completions_blocked_row_is_never_force_advanced(tmp_path, cap
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "blocked"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["advanced"] == []
@@ -3951,18 +3658,14 @@ def test_reconcile_completions_blocked_row_is_never_force_advanced(tmp_path, cap
     assert payload["data"]["promoted"] == ["5.9"]
 
 
-def test_reconcile_completions_in_progress_row_is_never_force_advanced(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_in_progress_row_is_never_force_advanced(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
     ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "in-progress")))
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "in-progress"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["advanced"] == []
@@ -3970,9 +3673,7 @@ def test_reconcile_completions_in_progress_row_is_never_force_advanced(
     assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-title", "in-progress"))
 
 
-def test_reconcile_completions_already_done_key_is_a_clean_no_op(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_already_done_key_is_a_clean_no_op(tmp_path, capsys, monkeypatch):
     """I/O matrix row 5: AD-21's convergence property -- a FULLY CONVERGED
     system (ledger already `done` AND the spec already promoted -- a key
     that is merely `done` in the ledger but NOT yet promoted is no longer
@@ -3987,9 +3688,7 @@ def test_reconcile_completions_already_done_key_is_a_clean_no_op(
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "done"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["advanced"] == []
@@ -4001,22 +3700,16 @@ def test_reconcile_completions_already_done_key_is_a_clean_no_op(
     assert ledger_path.read_text(encoding="utf-8") == before
 
 
-def test_reconcile_completions_ledger_unreadable_degrades_to_report_only(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_ledger_unreadable_degrades_to_report_only(tmp_path, capsys, monkeypatch):
     """I/O matrix row 6: the tracked ledger cannot be read at all -- the
     WHOLE run degrades to report-only, MRS-DEPLOY-024 (WARN), and never
     crashes."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
-    harness = _FakeReconcileHarness(
-        ledger_raises=True, ledger_error_message="sprint status file not found: acme"
-    )
+    harness = _FakeReconcileHarness(ledger_raises=True, ledger_error_message="sprint status file not found: acme")
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     codes = [f["code"] for f in payload["findings"]]
@@ -4030,9 +3723,7 @@ def test_reconcile_completions_ledger_unreadable_degrades_to_report_only(
     assert vcs.commit_calls == []
 
 
-def test_reconcile_completions_ledger_commit_failure_still_attempts_promotion(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_ledger_commit_failure_still_attempts_promotion(tmp_path, capsys, monkeypatch):
     """I/O matrix row 7: the ledger's OWN commit fails (MRS-DEPLOY-025,
     ERROR) -- but spec promotion for the SAME advanced key is still
     attempted, and succeeds, independently (two dedicated commits, one per
@@ -4045,14 +3736,10 @@ def test_reconcile_completions_ledger_commit_failure_still_attempts_promotion(
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
     ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
-    vcs = _PartialCommitFailureVcs(
-        fail_path=ledger_path, main_subjects=(_not_loop_native_subject("5-9-title"),)
-    )
+    vcs = _PartialCommitFailureVcs(fail_path=ledger_path, main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     codes = [f["code"] for f in payload["findings"]]
@@ -4083,9 +3770,7 @@ def test_reconcile_completions_ledger_commit_failure_still_attempts_promotion(
     assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-title", "backlog"))
 
 
-def test_reconcile_completions_ledger_commit_failure_recovers_on_a_later_run(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_ledger_commit_failure_recovers_on_a_later_run(tmp_path, capsys, monkeypatch):
     """Proves the rollback fix composes correctly for full recovery: a
     ledger commit failure this run rolls the local write back to its
     pre-advance text (review fix, 2026-08-12, high-severity -- a stranded
@@ -4105,9 +3790,7 @@ def test_reconcile_completions_ledger_commit_failure_recovers_on_a_later_run(
     )
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    first_exit = deploy_module.run_reconcile_completions(
-        _args(), vcs=failing_vcs, fs=LocalFs(), harness=harness
-    )
+    first_exit = deploy_module.run_reconcile_completions(_args(), vcs=failing_vcs, fs=LocalFs(), harness=harness)
     first_payload = json.loads(capsys.readouterr().out)
     assert first_payload["data"]["advanced"] == []
     assert first_payload["data"]["promoted"] == ["5.9"]
@@ -4118,9 +3801,7 @@ def test_reconcile_completions_ledger_commit_failure_recovers_on_a_later_run(
     # of the ledger file -- the rollback above already restored it, and
     # the SAME `_FakeReconcileHarness` fixture is reused unmodified.
     non_failing_vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
-    second_exit = deploy_module.run_reconcile_completions(
-        _args(), vcs=non_failing_vcs, fs=LocalFs(), harness=harness
-    )
+    second_exit = deploy_module.run_reconcile_completions(_args(), vcs=non_failing_vcs, fs=LocalFs(), harness=harness)
     second_payload = json.loads(capsys.readouterr().out)
 
     assert second_payload["data"]["advanced"] == ["5.9"]
@@ -4131,9 +3812,7 @@ def test_reconcile_completions_ledger_commit_failure_recovers_on_a_later_run(
     assert non_failing_vcs.commit_calls[0][0] == (ledger_path,)
 
 
-def test_reconcile_completions_toctou_mismatch_reports_mrs_deploy_026_and_writes_nothing(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_toctou_mismatch_reports_mrs_deploy_026_and_writes_nothing(tmp_path, capsys, monkeypatch):
     """Review fix, 2026-08-12, high-severity: `render_ledger_advancements`
     reports back which raw keys it actually matched -- a whole-batch match
     failure (modeled here by a ledger file whose real, on-disk raw key
@@ -4146,15 +3825,11 @@ def test_reconcile_completions_toctou_mismatch_reports_mrs_deploy_026_and_writes
     all)."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
-    ledger_path = _write_ledger(
-        tmp_path, "acme", _ledger_text(("5-9-a-different-raw-spelling", "backlog"))
-    )
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-a-different-raw-spelling", "backlog")))
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     codes = [f["code"] for f in payload["findings"]]
@@ -4166,9 +3841,7 @@ def test_reconcile_completions_toctou_mismatch_reports_mrs_deploy_026_and_writes
     assert payload["data"]["promoted"] == ["5.9"]
     assert exit_code == 0  # WARN never blocks
     assert (ledger_path,) not in [paths for paths, _ in vcs.commit_calls]
-    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(
-        ("5-9-a-different-raw-spelling", "backlog")
-    )
+    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-a-different-raw-spelling", "backlog"))
 
 
 class _SpecsDirLockRaisingFs(LocalFs):
@@ -4189,9 +3862,7 @@ class _SpecsDirLockRaisingFs(LocalFs):
         return super().acquire_advisory_lock(path, timeout_s=timeout_s)
 
 
-def test_reconcile_completions_promotion_lock_failure_is_retried_on_a_later_run(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_promotion_lock_failure_is_retried_on_a_later_run(tmp_path, capsys, monkeypatch):
     """A promotion failure (lock contention on `specs_dir`) for a key
     whose ledger advancement SUCCEEDED in the SAME run does not orphan
     that key's promotion: `to_promote_scoped` is scoped to
@@ -4206,9 +3877,7 @@ def test_reconcile_completions_promotion_lock_failure_is_retried_on_a_later_run(
     specs_dir = _specs_dir(tmp_path, "acme")
     promotion_locked_fs = _SpecsDirLockRaisingFs(raising_path=specs_dir)
 
-    first_exit = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=promotion_locked_fs, harness=harness
-    )
+    first_exit = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=promotion_locked_fs, harness=harness)
     first_payload = json.loads(capsys.readouterr().out)
 
     # The ledger advanced -- its OWN, separate lock on `ledger_path.parent`
@@ -4227,9 +3896,7 @@ def test_reconcile_completions_promotion_lock_failure_is_retried_on_a_later_run(
     # -- but the spec is STILL promoted, proving `to_promote_scoped` no
     # longer depends on the (now-empty) `advanced_dot_keys` set.
     harness_second = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "done"),))
-    second_exit = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness_second
-    )
+    second_exit = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness_second)
     second_payload = json.loads(capsys.readouterr().out)
 
     assert second_payload["data"]["advanced"] == []  # already done -- no-op
@@ -4239,9 +3906,7 @@ def test_reconcile_completions_promotion_lock_failure_is_retried_on_a_later_run(
     assert dest.read_text(encoding="utf-8") == _VALID_SPEC
 
 
-def test_reconcile_completions_ledger_lock_contention_reports_warn_and_skips_the_write(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_ledger_lock_contention_reports_warn_and_skips_the_write(tmp_path, capsys, monkeypatch):
     """The ledger's own read-modify-write sequence acquires an advisory
     lock on the ledger's OWN parent directory (a SEPARATE resource from
     `_execute_promotion_plan`'s own `specs_dir` lock) -- proven here
@@ -4277,9 +3942,7 @@ def test_reconcile_completions_ledger_lock_contention_reports_warn_and_skips_the
     try:
         assert held_event.wait(timeout=5.0), "background holder never acquired the real lock"
 
-        exit_code = deploy_module.run_reconcile_completions(
-            _args(), vcs=vcs, fs=LocalFs(), harness=harness
-        )
+        exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
     finally:
         release_event.set()
         holder.join(timeout=5.0)
@@ -4302,9 +3965,7 @@ def test_reconcile_completions_ledger_lock_contention_reports_warn_and_skips_the
     assert payload["data"]["promoted"] == ["5.9"]
 
 
-def test_reconcile_completions_dirty_ledger_skips_the_write_but_promotion_still_proceeds(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_dirty_ledger_skips_the_write_but_promotion_still_proceeds(tmp_path, capsys, monkeypatch):
     """A pre-existing uncommitted edit to the tracked ledger (an ordinary,
     expected case -- other writers, including bmad-loop itself, touch this
     file) must never be silently folded into this command's own commit --
@@ -4320,17 +3981,13 @@ def test_reconcile_completions_dirty_ledger_skips_the_write_but_promotion_still_
     )
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-DEPLOY-024" in codes
     finding = next(
-        f
-        for f in payload["findings"]
-        if f["code"] == "MRS-DEPLOY-024" and "uncommitted changes" in f["message"]
+        f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-024" and "uncommitted changes" in f["message"]
     )
     assert finding["severity"] == "warn"
     assert payload["data"]["advanced"] == []
@@ -4342,9 +3999,7 @@ def test_reconcile_completions_dirty_ledger_skips_the_write_but_promotion_still_
     assert payload["data"]["promoted"] == ["5.9"]
 
 
-def test_reconcile_completions_already_promoted_spec_still_advances_the_ledger(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_already_promoted_spec_still_advances_the_ledger(tmp_path, capsys, monkeypatch):
     """A key corroborated via `scan.already_promoted` (a valid,
     git-committed tracked copy already exists in the archive --
     `_write_tracked_spec`) rather than `scan.plan.to_promote`, with the
@@ -4360,9 +4015,7 @@ def test_reconcile_completions_already_promoted_spec_still_advances_the_ledger(
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["findings"] == []
@@ -4376,9 +4029,7 @@ def test_reconcile_completions_already_promoted_spec_still_advances_the_ledger(
     assert vcs.commit_calls[0][0] == (ledger_path,)
 
 
-def test_reconcile_completions_ledger_commit_has_an_ad6_intent_outcome_pair(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_ledger_commit_has_an_ad6_intent_outcome_pair(tmp_path, capsys, monkeypatch):
     """Review fix, 2026-08-12, medium-severity: the ledger commit -- this
     command's own headline durable write -- now has an AD-6 intent/
     outcome pair, like every sibling write command in this module
@@ -4389,15 +4040,11 @@ def test_reconcile_completions_ledger_commit_has_an_ad6_intent_outcome_pair(
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
     assert exit_code == 0
 
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
-    ledger_entries = [
-        line for line in journal_lines if line["kind"] == deploy_module._LEDGER_COMMIT_KIND
-    ]
+    ledger_entries = [line for line in journal_lines if line["kind"] == deploy_module._LEDGER_COMMIT_KIND]
     intents = [e for e in ledger_entries if e["phase"] == "intent"]
     outcomes = [e for e in ledger_entries if e["phase"] == "outcome"]
     assert len(intents) == 1
@@ -4407,9 +4054,7 @@ def test_reconcile_completions_ledger_commit_has_an_ad6_intent_outcome_pair(
     assert outcomes[0]["id"] != intents[0]["id"]
 
 
-def test_reconcile_completions_reconciles_a_prior_open_ledger_intent(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_reconciles_a_prior_open_ledger_intent(tmp_path, capsys, monkeypatch):
     """A crashed prior `reconcile-completions` run left an open intent for
     "3.8"; THIS run's own fresh ledger read confirms its row now reads
     `done` -- the intent is closed with a `reconciliation` outcome,
@@ -4426,16 +4071,12 @@ def test_reconcile_completions_reconciles_a_prior_open_ledger_intent(
     vcs = _FakeVcs()
     harness = _FakeReconcileHarness(ledger_statuses=(("3-8-title", "done"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
     assert exit_code == 0
 
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
     reconciliations = [
-        line
-        for line in journal_lines
-        if line["phase"] == "outcome" and line["kind"] == "reconciliation"
+        line for line in journal_lines if line["phase"] == "outcome" and line["kind"] == "reconciliation"
     ]
     assert len(reconciliations) == 1
     assert reconciliations[0]["payload"]["reconciled_kind"] == deploy_module._LEDGER_COMMIT_KIND
@@ -4452,15 +4093,11 @@ def test_reconcile_completions_closes_the_tier3_feed_divergence_after_a_successf
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
     ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
-    feed_path = _write_tier3_feed(
-        tmp_path, "acme", "development_status:\n  5-9-title: backlog\n"
-    )
+    feed_path = _write_tier3_feed(tmp_path, "acme", "development_status:\n  5-9-title: backlog\n")
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["findings"] == []
@@ -4485,9 +4122,7 @@ def test_reconcile_completions_missing_tier3_feed_reports_mrs_deploy_027_ledger_
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     codes = [f["code"] for f in payload["findings"]]
@@ -4500,9 +4135,7 @@ def test_reconcile_completions_missing_tier3_feed_reports_mrs_deploy_027_ledger_
     assert (ledger_path,) in [paths for paths, _ in vcs.commit_calls]
 
 
-def test_reconcile_completions_never_reads_or_writes_a_live_runs_own_journal(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_never_reads_or_writes_a_live_runs_own_journal(tmp_path, capsys, monkeypatch):
     """Story 5.9's own CAP-4 isolation AC, proven by a test: a live
     bmad-loop run mid-run on a DIFFERENT story, on the same station, is
     neither read from nor written to. ``_FakeReconcileHarness`` raises
@@ -4523,28 +4156,17 @@ def test_reconcile_completions_never_reads_or_writes_a_live_runs_own_journal(
     # deploy-action journal under `implementation-artifacts/runs/`, which
     # THIS run legitimately writes to (AD-6) via `FsPort`, never
     # `HarnessPort`.
-    live_run_journal = (
-        tmp_path / "loop-home" / ".bmad-loop" / "runs" / "live-run-id" / "journal.jsonl"
-    )
+    live_run_journal = tmp_path / "loop-home" / ".bmad-loop" / "runs" / "live-run-id" / "journal.jsonl"
     live_run_journal.parent.mkdir(parents=True, exist_ok=True)
     live_run_journal.write_bytes(b'{"kind": "story-transition", "story": "9.1"}\n')
     before = live_run_journal.read_bytes()
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
 
     after = live_run_journal.read_bytes()
     assert after == before
 
-    ledger_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "sprint-status-ledger.yaml"
     assert harness.ledger_calls == [ledger_path]
 
     # Sanity: this was not a trivial no-op that happened to touch nothing
@@ -4561,9 +4183,7 @@ def test_reconcile_completions_text_format_smoke(tmp_path, capsys, monkeypatch):
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
 
-    exit_code = deploy_module.run_reconcile_completions(
-        _args(format="text"), vcs=vcs, fs=LocalFs(), harness=harness
-    )
+    exit_code = deploy_module.run_reconcile_completions(_args(format="text"), vcs=vcs, fs=LocalFs(), harness=harness)
 
     out = capsys.readouterr().out
     assert "deploy reconcile-completions" in out
@@ -4580,9 +4200,7 @@ def test_reconcile_completions_subparser_is_registered():
     subparsers = parser.add_subparsers(dest="command")
     deploy_module.add_deploy_subparser(subparsers)
 
-    args = parser.parse_args(
-        ["deploy", "reconcile-completions", "--project", "acme", "--format", "json"]
-    )
+    args = parser.parse_args(["deploy", "reconcile-completions", "--project", "acme", "--format", "json"])
     assert args.handler is deploy_module.run_reconcile_completions
     assert args.project == "acme"
     assert args.format == "json"
@@ -4606,9 +4224,7 @@ def test_scan_promotions_worktree_only_copy_is_discovered(tmp_path, monkeypatch)
     _write_tier3_spec(worktree, "acme", "1-2", _VALID_SPEC)
     vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
-    scan = deploy_module._scan_promotions(
-        tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree
-    )
+    scan = deploy_module._scan_promotions(tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree)
 
     assert scan.plan is not None
     promoted = {str(candidate.story_key): candidate for candidate in scan.plan.to_promote}
@@ -4628,9 +4244,7 @@ def test_scan_promotions_worktree_copy_wins_on_key_collision(tmp_path, monkeypat
     _write_tier3_spec(worktree, "acme", "1-2", worktree_text)
     vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
-    scan = deploy_module._scan_promotions(
-        tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree
-    )
+    scan = deploy_module._scan_promotions(tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree)
 
     assert scan.plan is not None
     promoted = {str(candidate.story_key): candidate for candidate in scan.plan.to_promote}

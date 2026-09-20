@@ -38,3 +38,16 @@ https://github.com/rxm7706/local-recipes/pull/296
 
 **Commands:**
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `ccecbf5f1c` (2026-08-07, "scribe: Story 1.5 — seed promotion, the real end-to-end proof (closes Epic 1)"); also `2c9e0f9180` (2026-08-07, "steward: Story 1.5 — the operator can see every credential, never a secret value"); also `b0bf0a6979` (2026-07-31, "doctor: Story 1.5 — `doctor check` CLI, --json, and the speed budget (EPIC 1 COMPLETE, 5/5"). Ledger row `1-5-seed-promotion-the-end-to-end-proof: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/memory/MEMORY.md`, `.claude/memory/feedback/bmad-runs-cfe-retro.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

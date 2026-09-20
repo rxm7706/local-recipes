@@ -14,10 +14,10 @@ here.
 from __future__ import annotations
 
 import json
+import tomllib
 from pathlib import Path
 
 import pytest
-import tomllib
 
 import pyforge.marshal
 from pyforge.marshal.core import policy, verdict
@@ -87,20 +87,12 @@ def test_all_defaults_values_match_default_policy():
     assert seed["idle_threshold_minutes"].value == DEFAULT_POLICY["idle_threshold_minutes"]
     assert seed["max_tokens_per_story"].value == DEFAULT_POLICY["max_tokens_per_story"]
     assert seed["max_tokens_per_run"].value == DEFAULT_POLICY["max_tokens_per_run"]
-    assert (
-        seed["max_wall_clock_minutes_per_story"].value
-        == DEFAULT_POLICY["max_wall_clock_minutes_per_story"]
-    )
-    assert (
-        seed["max_wall_clock_minutes_per_run"].value
-        == DEFAULT_POLICY["max_wall_clock_minutes_per_run"]
-    )
+    assert seed["max_wall_clock_minutes_per_story"].value == DEFAULT_POLICY["max_wall_clock_minutes_per_story"]
+    assert seed["max_wall_clock_minutes_per_run"].value == DEFAULT_POLICY["max_wall_clock_minutes_per_run"]
 
 
 def test_project_overrides_one_key():
-    effective, findings = compose(
-        project_slug="acme", project={"gate_mode": "none"}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"gate_mode": "none"}, flags={})
     assert findings == ()
     seed = effective.seed_view()
     assert seed["gate_mode"].value == "none"
@@ -156,9 +148,7 @@ def test_malformed_gate_mode_falls_back_to_default():
 
 
 def test_negative_attempt_count_falls_back_to_default():
-    effective, findings = compose(
-        project_slug="acme", project={"max_dev_attempts": -1}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"max_dev_attempts": -1}, flags={})
     seed = effective.seed_view()
     assert seed["max_dev_attempts"].value == DEFAULT_POLICY["max_dev_attempts"]
     assert seed["max_dev_attempts"].layer is PolicyLayer.DEFAULT
@@ -205,12 +195,8 @@ def test_worktree_seed_paths_never_hardcodes_a_project_name():
 
 
 def test_determinism_identical_inputs_produce_identical_hash():
-    first, _ = compose(
-        project_slug="acme", project={"gate_mode": "none"}, flags={"max_dev_attempts": 5}
-    )
-    second, _ = compose(
-        project_slug="acme", project={"gate_mode": "none"}, flags={"max_dev_attempts": 5}
-    )
+    first, _ = compose(project_slug="acme", project={"gate_mode": "none"}, flags={"max_dev_attempts": 5})
+    second, _ = compose(project_slug="acme", project={"gate_mode": "none"}, flags={"max_dev_attempts": 5})
     assert first.content_hash == second.content_hash
 
 
@@ -341,9 +327,7 @@ def test_model_tier_map_cross_provider_inline_table_accepted():
             "dev": {"harness": "gemini", "model": "gemini-3.7-flash"},
         }
     }
-    effective, findings = compose(
-        project_slug="acme", project={"model_tier_map": tier_map}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"model_tier_map": tier_map}, flags={})
     assert findings == ()
     assert effective.model_tier_map.value["easy"]["dev"]["model"] == "gemini-3.7-flash"
 
@@ -385,11 +369,7 @@ def test_mcp_servers_default_is_empty_mapping():
 def test_mcp_servers_valid_shape_accepted():
     effective, findings = compose(
         project_slug="acme",
-        project={
-            "mcp_servers": {
-                "atlas": {"command": "atlas-mcp", "args": ["--stdio"], "env": {"FOO": "bar"}}
-            }
-        },
+        project={"mcp_servers": {"atlas": {"command": "atlas-mcp", "args": ["--stdio"], "env": {"FOO": "bar"}}}},
         flags={},
     )
     assert findings == ()
@@ -445,9 +425,7 @@ def test_mcp_servers_unknown_entry_key_falls_back_and_reports():
 
 
 def test_mcp_servers_non_mapping_falls_back_and_reports():
-    effective, findings = compose(
-        project_slug="acme", project={"mcp_servers": "not-a-mapping"}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"mcp_servers": "not-a-mapping"}, flags={})
     assert effective.mcp_servers.value == DEFAULT_POLICY["mcp_servers"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
@@ -492,17 +470,13 @@ def test_context_valid_shape_accepted():
 
 
 def test_context_enabled_without_aggressiveness_omits_the_key():
-    effective, findings = compose(
-        project_slug="acme", project={"context": {"wire": {"enabled": True}}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"context": {"wire": {"enabled": True}}}, flags={})
     assert findings == ()
     assert effective.context.value == {"wire": {"enabled": True}}
 
 
 def test_context_rejects_non_mapping_falls_back_and_reports():
-    effective, findings = compose(
-        project_slug="acme", project={"context": "not-a-mapping"}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"context": "not-a-mapping"}, flags={})
     assert effective.context.value == DEFAULT_POLICY["context"]
     assert effective.context.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
@@ -535,32 +509,24 @@ def test_context_accepts_auto_enabled_for_wire_layer():
     """Story 46.4: the literal string "auto" is valid ``enabled`` only for
     the ``wire`` layer -- the tri-state resolved later, against the
     concrete harness profile, by ``harness_profile.resolve_wire_enabled``."""
-    effective, findings = compose(
-        project_slug="acme", project={"context": {"wire": {"enabled": "auto"}}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"context": {"wire": {"enabled": "auto"}}}, flags={})
     assert findings == ()
     assert effective.context.value == {"wire": {"enabled": "auto"}}
     assert effective.context.layer is PolicyLayer.PROJECT
 
 
-@pytest.mark.parametrize(
-    "layer", [name for name in policy.CONTEXT_LAYER_NAMES if name != "wire"]
-)
+@pytest.mark.parametrize("layer", [name for name in policy.CONTEXT_LAYER_NAMES if name != "wire"])
 def test_context_rejects_auto_enabled_for_non_wire_layers(layer):
     """The "auto" tri-state is ``wire``-only; the other 4 layers keep the
     existing strict-``bool``-only posture."""
-    effective, findings = compose(
-        project_slug="acme", project={"context": {layer: {"enabled": "auto"}}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"context": {layer: {"enabled": "auto"}}}, flags={})
     assert effective.context.value == DEFAULT_POLICY["context"]
     assert effective.context.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
 
 
 def test_context_rejects_non_bool_enabled():
-    effective, findings = compose(
-        project_slug="acme", project={"context": {"wire": {"enabled": "yes"}}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"context": {"wire": {"enabled": "yes"}}}, flags={})
     assert effective.context.value == DEFAULT_POLICY["context"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
@@ -589,9 +555,7 @@ def test_context_rejects_unknown_entry_key():
 
 
 def test_context_value_is_deeply_immutable():
-    effective, _ = compose(
-        project_slug="acme", project={"context": {"wire": {"enabled": True}}}, flags={}
-    )
+    effective, _ = compose(project_slug="acme", project={"context": {"wire": {"enabled": True}}}, flags={})
     with pytest.raises(TypeError):
         effective.context.value["output"] = {"enabled": True}  # type: ignore[index]
 
@@ -658,9 +622,7 @@ def test_resolve_context_layers_wire_explicit_bool_still_resolves_to_bool():
 
 
 def test_resolve_context_layers_fills_default_aggressiveness_when_omitted():
-    effective, _ = compose(
-        project_slug="acme", project={"context": {"output": {"enabled": True}}}, flags={}
-    )
+    effective, _ = compose(project_slug="acme", project={"context": {"output": {"enabled": True}}}, flags={})
     resolved = policy.resolve_context_layers(effective)
     assert resolved["output"] == {"enabled": True, "aggressiveness": "medium"}
 
@@ -683,17 +645,12 @@ def test_dispatch_max_parallel_two_on_real_marshal_policy_does_not_fire_scm_clam
     """Story 33.8: dispatch.max_parallel=2 composes without MRS-POLICY-007 --
     that advisory applies to scm max_parallel (SEED) only, not dispatch."""
     repo_root = Path(__file__).resolve().parents[6]
-    policy_path = (
-        repo_root
-        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    )
+    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
     if not policy_path.is_file():
         pytest.skip("marshal-policy.toml not present in this checkout")
 
     parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
-    effective, findings = compose(
-        project_slug="pyforge-marshal", project=parsed, flags={}
-    )
+    effective, findings = compose(project_slug="pyforge-marshal", project=parsed, flags={})
     assert effective.dispatch.value == {"max_parallel": 2}
     codes = {f.code for f in findings}
     assert "MRS-POLICY-007" not in codes
@@ -711,10 +668,7 @@ def test_the_real_pyforge_marshal_policy_declares_no_context_block():
     `test_dispatch.py::test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch`
     for the fully-composed (repo-defaults + project) resolution."""
     repo_root = Path(__file__).resolve().parents[6]
-    policy_path = (
-        repo_root
-        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    )
+    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
     if not policy_path.is_file():
         pytest.skip("marshal-policy.toml not present in this checkout")
 
@@ -745,6 +699,7 @@ def test_context_rejects_malformed_escalation_threshold():
     assert effective.context.value == {}
     assert any(f.code == "MRS-POLICY-002" for f in findings)
 
+
 # --- scope_violation_mode validation (Story 28.15, CAP-17) --------------------
 
 
@@ -766,18 +721,14 @@ def test_scope_violation_mode_default_is_warn_not_hard():
 
 @pytest.mark.parametrize("mode", ["hard", "warn", "off"])
 def test_scope_violation_mode_accepts_closed_vocabulary(mode):
-    effective, findings = compose(
-        project_slug="acme", project={"scope_violation_mode": mode}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"scope_violation_mode": mode}, flags={})
     assert findings == ()
     assert effective.scope_violation_mode.value == mode
     assert effective.scope_violation_mode.layer is PolicyLayer.PROJECT
 
 
 def test_scope_violation_mode_rejects_value_outside_closed_vocabulary():
-    effective, findings = compose(
-        project_slug="acme", project={"scope_violation_mode": "yolo"}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"scope_violation_mode": "yolo"}, flags={})
     assert effective.scope_violation_mode.value == DEFAULT_POLICY["scope_violation_mode"]
     assert effective.scope_violation_mode.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
@@ -802,12 +753,8 @@ def test_scope_violation_mode_is_per_station_two_projects_compose_independently(
     itself is the per-station isolation boundary: each call gets its own
     `project` mapping, so one station's declared mode can never leak into
     another's composed EffectivePolicy."""
-    station_a, _ = compose(
-        project_slug="pyforge-a", project={"scope_violation_mode": "hard"}, flags={}
-    )
-    station_b, _ = compose(
-        project_slug="pyforge-b", project={"scope_violation_mode": "off"}, flags={}
-    )
+    station_a, _ = compose(project_slug="pyforge-a", project={"scope_violation_mode": "hard"}, flags={})
+    station_b, _ = compose(project_slug="pyforge-b", project={"scope_violation_mode": "off"}, flags={})
     station_c, _ = compose(project_slug="pyforge-c", project={}, flags={})
     assert station_a.scope_violation_mode.value == "hard"
     assert station_b.scope_violation_mode.value == "off"
@@ -853,9 +800,7 @@ def test_epic_surfaces_multiple_epics():
 
 
 def test_epic_surfaces_rejects_non_mapping_falls_back_and_reports():
-    effective, findings = compose(
-        project_slug="acme", project={"epic_surfaces": "not-a-mapping"}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"epic_surfaces": "not-a-mapping"}, flags={})
     assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
     assert effective.epic_surfaces.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
@@ -863,18 +808,14 @@ def test_epic_surfaces_rejects_non_mapping_falls_back_and_reports():
 
 
 def test_epic_surfaces_rejects_non_string_epic_key():
-    effective, findings = compose(
-        project_slug="acme", project={"epic_surfaces": {2: ["a/**"]}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"epic_surfaces": {2: ["a/**"]}}, flags={})
     assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
 
 
 def test_epic_surfaces_rejects_empty_string_epic_key():
-    effective, findings = compose(
-        project_slug="acme", project={"epic_surfaces": {"": ["a/**"]}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"epic_surfaces": {"": ["a/**"]}}, flags={})
     assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
@@ -885,36 +826,28 @@ def test_epic_surfaces_rejects_non_numeric_epic_key():
     previously composed successfully with no diagnostic and could never
     match any real epic (str(story_key.epic) is always plain digits) -- a
     permanently dead, silently-inert allowlist entry."""
-    effective, findings = compose(
-        project_slug="acme", project={"epic_surfaces": {"epic-2": ["a/**"]}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"epic_surfaces": {"epic-2": ["a/**"]}}, flags={})
     assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
 
 
 def test_epic_surfaces_rejects_non_str_tuple_value():
-    effective, findings = compose(
-        project_slug="acme", project={"epic_surfaces": {"2": "recipes/x/**"}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"epic_surfaces": {"2": "recipes/x/**"}}, flags={})
     assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
 
 
 def test_epic_surfaces_rejects_empty_glob_string_in_value():
-    effective, findings = compose(
-        project_slug="acme", project={"epic_surfaces": {"2": ["a/**", ""]}}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"epic_surfaces": {"2": ["a/**", ""]}}, flags={})
     assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
 
 
 def test_epic_surfaces_value_is_deeply_immutable():
-    effective, _ = compose(
-        project_slug="acme", project={"epic_surfaces": {"2": ["a/**"]}}, flags={}
-    )
+    effective, _ = compose(project_slug="acme", project={"epic_surfaces": {"2": ["a/**"]}}, flags={})
     with pytest.raises(TypeError):
         effective.epic_surfaces.value["3"] = ("b/**",)  # type: ignore[index]
 
@@ -931,9 +864,7 @@ def test_epic_surfaces_flag_layer_wins_over_project():
 
 
 def test_verify_commands_non_string_entry_falls_back_and_reports():
-    effective, findings = compose(
-        project_slug="acme", project={"verify_commands": ["ok", 123]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"verify_commands": ["ok", 123]}, flags={})
     assert effective.verify_commands.value == DEFAULT_POLICY["verify_commands"]
     assert effective.verify_commands.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
@@ -942,9 +873,7 @@ def test_verify_commands_non_string_entry_falls_back_and_reports():
 
 
 def test_verify_commands_valid_list_accepted():
-    effective, findings = compose(
-        project_slug="acme", project={"verify_commands": ["pytest -q"]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"verify_commands": ["pytest -q"]}, flags={})
     assert findings == ()
     assert effective.verify_commands.value == ("pytest -q",)
     assert effective.verify_commands.layer is PolicyLayer.PROJECT
@@ -1069,11 +998,7 @@ def test_landing_rules_rejects_rule_with_neither_label_nor_required_check():
     required_check' row: rejected, finding names the layer and the rule."""
     effective, findings = compose(
         project_slug="acme",
-        project={
-            "landing_rules": [
-                {"name": "meaningless", "trigger_path_glob": "a/**", "trigger_mode": "exclude"}
-            ]
-        },
+        project={"landing_rules": [{"name": "meaningless", "trigger_path_glob": "a/**", "trigger_mode": "exclude"}]},
         flags={},
     )
     assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
@@ -1103,9 +1028,7 @@ def test_landing_rules_rejects_duplicate_name_in_the_same_tuple():
 
 
 def test_landing_rules_rejects_non_list():
-    effective, findings = compose(
-        project_slug="acme", project={"landing_rules": "not-a-list"}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"landing_rules": "not-a-list"}, flags={})
     assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
@@ -1114,11 +1037,7 @@ def test_landing_rules_rejects_non_list():
 def test_landing_rules_rejects_empty_name():
     effective, findings = compose(
         project_slug="acme",
-        project={
-            "landing_rules": [
-                {"name": "", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"}
-            ]
-        },
+        project={"landing_rules": [{"name": "", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"}]},
         flags={},
     )
     assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
@@ -1129,11 +1048,7 @@ def test_landing_rules_rejects_empty_name():
 def test_landing_rules_rejects_empty_trigger_path_glob():
     effective, findings = compose(
         project_slug="acme",
-        project={
-            "landing_rules": [
-                {"name": "x", "trigger_path_glob": "", "trigger_mode": "exclude", "label": "x"}
-            ]
-        },
+        project={"landing_rules": [{"name": "x", "trigger_path_glob": "", "trigger_mode": "exclude", "label": "x"}]},
         flags={},
     )
     assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
@@ -1187,15 +1102,9 @@ def test_landing_rules_flag_layer_wins_over_project():
     effective, findings = compose(
         project_slug="acme",
         project={
-            "landing_rules": [
-                {"name": "p", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"}
-            ]
+            "landing_rules": [{"name": "p", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"}]
         },
-        flags={
-            "landing_rules": [
-                {"name": "f", "trigger_path_glob": "b/**", "trigger_mode": "include", "label": "y"}
-            ]
-        },
+        flags={"landing_rules": [{"name": "f", "trigger_path_glob": "b/**", "trigger_mode": "include", "label": "y"}]},
     )
     assert findings == ()
     assert effective.landing_rules.value == (
@@ -1247,11 +1156,7 @@ def test_landing_rules_rejects_trigger_mode_outside_closed_vocabulary(bad_mode):
 def test_landing_rules_accepts_both_trigger_modes(mode):
     effective, findings = compose(
         project_slug="acme",
-        project={
-            "landing_rules": [
-                {"name": "x", "trigger_path_glob": "a/**", "trigger_mode": mode, "label": "y"}
-            ]
-        },
+        project={"landing_rules": [{"name": "x", "trigger_path_glob": "a/**", "trigger_mode": mode, "label": "y"}]},
         flags={},
     )
     assert findings == ()
@@ -1333,9 +1238,7 @@ def test_landing_rules_malformed_finding_names_the_specific_bad_rule():
 
 @pytest.mark.parametrize("strategy", ["merge", "squash", "rebase"])
 def test_landing_merge_strategy_accepts_closed_vocabulary(strategy):
-    effective, findings = compose(
-        project_slug="acme", project={"landing_merge_strategy": strategy}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"landing_merge_strategy": strategy}, flags={})
     assert findings == ()
     assert effective.landing_merge_strategy.value == strategy
     assert effective.landing_merge_strategy.layer is PolicyLayer.PROJECT
@@ -1344,9 +1247,7 @@ def test_landing_merge_strategy_accepts_closed_vocabulary(strategy):
 def test_landing_merge_strategy_rejects_value_outside_closed_vocabulary():
     """The I/O & Edge-Case Matrix's 'landing_merge_strategy outside the
     closed vocabulary' row."""
-    effective, findings = compose(
-        project_slug="acme", project={"landing_merge_strategy": "fast-forward"}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"landing_merge_strategy": "fast-forward"}, flags={})
     assert effective.landing_merge_strategy.value == DEFAULT_POLICY["landing_merge_strategy"]
     assert effective.landing_merge_strategy.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
@@ -1376,9 +1277,7 @@ def test_landing_rules_value_is_a_tuple_of_landing_rule_instances():
     effective, _ = compose(
         project_slug="acme",
         project={
-            "landing_rules": [
-                {"name": "x", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "y"}
-            ]
+            "landing_rules": [{"name": "x", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "y"}]
         },
         flags={},
     )
@@ -1393,9 +1292,7 @@ def test_content_hash_handles_a_nonempty_landing_rules():
     effective, _ = compose(
         project_slug="acme",
         project={
-            "landing_rules": [
-                {"name": "x", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "y"}
-            ]
+            "landing_rules": [{"name": "x", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "y"}]
         },
         flags={},
     )
@@ -1425,9 +1322,7 @@ def test_landing_resync_commands_valid_list_accepted():
 
 
 def test_landing_resync_commands_non_string_entry_falls_back_and_reports():
-    effective, findings = compose(
-        project_slug="acme", project={"landing_resync_commands": ["ok", 123]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"landing_resync_commands": ["ok", 123]}, flags={})
     assert effective.landing_resync_commands.value == DEFAULT_POLICY["landing_resync_commands"]
     assert effective.landing_resync_commands.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
@@ -1436,9 +1331,7 @@ def test_landing_resync_commands_non_string_entry_falls_back_and_reports():
 
 
 def test_landing_resync_commands_rejects_empty_string_entry():
-    effective, findings = compose(
-        project_slug="acme", project={"landing_resync_commands": [""]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"landing_resync_commands": [""]}, flags={})
     assert effective.landing_resync_commands.value == ()
     assert findings[0].code == "MRS-POLICY-002"
 
@@ -1447,9 +1340,7 @@ def test_landing_resync_commands_rejects_empty_string_entry():
 
 
 def test_idle_threshold_minutes_project_override_applies():
-    effective, findings = compose(
-        project_slug="acme", project={"idle_threshold_minutes": 10}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"idle_threshold_minutes": 10}, flags={})
     assert findings == ()
     field = effective.seed_view()["idle_threshold_minutes"]
     assert field.value == 10
@@ -1460,9 +1351,7 @@ def test_idle_threshold_minutes_accepts_a_fractional_value():
     """Unlike the int-only attempt-count fields, a fractional minute value
     is accepted -- useful for a synthetic sub-minute threshold no
     whole-number value could express."""
-    effective, findings = compose(
-        project_slug="acme", project={"idle_threshold_minutes": 0.5}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"idle_threshold_minutes": 0.5}, flags={})
     assert findings == ()
     assert effective.seed_view()["idle_threshold_minutes"].value == 0.5
 
@@ -1502,12 +1391,8 @@ def test_idle_threshold_minutes_accepts_a_fractional_value():
     ],
 )
 def test_idle_threshold_minutes_rejects_non_positive_or_non_numeric_values(bad_value):
-    effective, findings = compose(
-        project_slug="acme", project={"idle_threshold_minutes": bad_value}, flags={}
-    )
-    assert effective.seed_view()["idle_threshold_minutes"].value == DEFAULT_POLICY[
-        "idle_threshold_minutes"
-    ]
+    effective, findings = compose(project_slug="acme", project={"idle_threshold_minutes": bad_value}, flags={})
+    assert effective.seed_view()["idle_threshold_minutes"].value == DEFAULT_POLICY["idle_threshold_minutes"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
     assert findings[0].path == "project"
@@ -1650,9 +1535,7 @@ def test_max_parallel_requested_above_one_preserves_value_and_fires_clamp_adviso
     Marshal itself), and a registered WARN finding names both the requested
     value and bmad_loop 0.9.0's own unbuilt Phase 5 scheduler as cause. The
     verdict stays in the OK half of the lattice (WARN only)."""
-    effective, findings = compose(
-        project_slug="acme", project={"max_parallel": 4}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"max_parallel": 4}, flags={})
     field = effective.seed_view()["max_parallel"]
     assert field.value == 4
     assert field.layer is PolicyLayer.PROJECT
@@ -1669,9 +1552,7 @@ def test_max_parallel_exactly_one_explicit_no_advisory():
     """Matrix row 'Exactly 1': max_parallel = 1 explicitly -- resolves to 1,
     no advisory (matches the harness's own effective behavior, so nothing
     is reported)."""
-    effective, findings = compose(
-        project_slug="acme", project={"max_parallel": 1}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"max_parallel": 1}, flags={})
     field = effective.seed_view()["max_parallel"]
     assert field.value == 1
     assert field.layer is PolicyLayer.PROJECT
@@ -1685,9 +1566,7 @@ def test_max_parallel_malformed_values_fall_back_via_existing_machinery(bad_valu
     the existing MRS-POLICY-003 malformed-seed-value finding -- and, since
     the RESOLVED value is exactly 1 (never > 1), MRS-POLICY-007 never fires
     alongside it."""
-    effective, findings = compose(
-        project_slug="acme", project={"max_parallel": bad_value}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"max_parallel": bad_value}, flags={})
     assert effective.seed_view()["max_parallel"].value == DEFAULT_POLICY["max_parallel"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
@@ -1699,9 +1578,7 @@ def test_max_parallel_malformed_values_fall_back_via_existing_machinery(bad_valu
 def test_max_parallel_accepts_a_large_valid_int():
     """The validator's floor is 1, not a ceiling -- an operator declaring
     intent for a future, larger fan-out width must compose cleanly too."""
-    effective, findings = compose(
-        project_slug="acme", project={"max_parallel": 16}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"max_parallel": 16}, flags={})
     assert effective.seed_view()["max_parallel"].value == 16
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-007"
@@ -1875,13 +1752,9 @@ def test_stream_capture_kb_rejects_an_arbitrary_precision_int_without_raising():
     huge = int("9" * 400)
     assert huge > 0  # it is not the >= 0 floor that must reject this
 
-    effective, findings = compose(
-        project_slug="acme", project={"stream_capture_kb": huge}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"stream_capture_kb": huge}, flags={})
 
-    assert effective.seed_view()["stream_capture_kb"].value == DEFAULT_POLICY[
-        "stream_capture_kb"
-    ]
+    assert effective.seed_view()["stream_capture_kb"].value == DEFAULT_POLICY["stream_capture_kb"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
     assert findings[0].path == "project"
@@ -1890,9 +1763,7 @@ def test_stream_capture_kb_rejects_an_arbitrary_precision_int_without_raising():
 def test_stream_capture_kb_zero_is_legal():
     """Matrix row 'Zero capture': 0 = capture nothing is a legitimate
     policy on both sides (bmad-loop 0.11's own load floor is >= 0)."""
-    effective, findings = compose(
-        project_slug="acme", project={"stream_capture_kb": 0}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"stream_capture_kb": 0}, flags={})
     assert findings == ()
     field = effective.seed_view()["stream_capture_kb"]
     assert field.value == 0
@@ -1912,9 +1783,7 @@ def test_review_min_score_defaults_to_eighty():
 
 @pytest.mark.parametrize("value", [0, 1, 80, 99, 100])
 def test_review_min_score_accepts_the_full_legal_range(value):
-    effective, findings = compose(
-        project_slug="acme", project={"review_min_score": value}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"review_min_score": value}, flags={})
     assert findings == ()
     field = effective.seed_view()["review_min_score"]
     assert field.value == value
@@ -1925,12 +1794,8 @@ def test_review_min_score_accepts_the_full_legal_range(value):
 def test_review_min_score_rejects_out_of_range_ints(value):
     """Matrix row: out of [0, 100] falls back to the default, reported as
     MRS-POLICY-003 (a malformed SEED field), never raised."""
-    effective, findings = compose(
-        project_slug="acme", project={"review_min_score": value}, flags={}
-    )
-    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY[
-        "review_min_score"
-    ]
+    effective, findings = compose(project_slug="acme", project={"review_min_score": value}, flags={})
+    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY["review_min_score"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
     assert findings[0].path == "project"
@@ -1940,24 +1805,16 @@ def test_review_min_score_rejects_bool_even_though_bool_is_an_int_subclass():
     """`True`/`False` must never compose as 1/0 -- same strict int-not-bool
     discipline as every other numeric SEED knob (`_valid_stream_capture_kb`,
     `_valid_attempt_count`)."""
-    effective, findings = compose(
-        project_slug="acme", project={"review_min_score": True}, flags={}
-    )
-    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY[
-        "review_min_score"
-    ]
+    effective, findings = compose(project_slug="acme", project={"review_min_score": True}, flags={})
+    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY["review_min_score"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
     assert findings[0].path == "project"
 
 
 def test_review_min_score_rejects_a_numeric_string():
-    effective, findings = compose(
-        project_slug="acme", project={"review_min_score": "80"}, flags={}
-    )
-    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY[
-        "review_min_score"
-    ]
+    effective, findings = compose(project_slug="acme", project={"review_min_score": "80"}, flags={})
+    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY["review_min_score"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
     assert findings[0].path == "project"
@@ -2074,9 +1931,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
-            dispatch=PolicyField(
-                value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}
-            ),
+            dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
             _seed=seed,
         )
 
@@ -2100,9 +1955,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
-            dispatch=PolicyField(
-                value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}
-            ),
+            dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -2126,9 +1979,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
-            dispatch=PolicyField(
-                value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}
-            ),
+            dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -2141,31 +1992,15 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
                 "max_review_cycles": PolicyField(value=3, layer="default", raw_source=3),
                 "max_followup_reviews": PolicyField(value=1, layer="default", raw_source=1),
                 "idle_threshold_minutes": PolicyField(value=25, layer="default", raw_source=25),
-                "max_tokens_per_story": PolicyField(
-                    value=50_000_000, layer="default", raw_source=50_000_000
-                ),
-                "max_tokens_per_run": PolicyField(
-                    value=500_000_000, layer="default", raw_source=500_000_000
-                ),
-                "max_wall_clock_minutes_per_story": PolicyField(
-                    value=240, layer="default", raw_source=240
-                ),
-                "max_wall_clock_minutes_per_run": PolicyField(
-                    value=600, layer="default", raw_source=600
-                ),
+                "max_tokens_per_story": PolicyField(value=50_000_000, layer="default", raw_source=50_000_000),
+                "max_tokens_per_run": PolicyField(value=500_000_000, layer="default", raw_source=500_000_000),
+                "max_wall_clock_minutes_per_story": PolicyField(value=240, layer="default", raw_source=240),
+                "max_wall_clock_minutes_per_run": PolicyField(value=600, layer="default", raw_source=600),
                 "max_parallel": PolicyField(value=1, layer="default", raw_source=1),
-                "review_on_timeout": PolicyField(
-                    value="retry", layer="default", raw_source="retry"
-                ),
-                "review_on_status_contradiction": PolicyField(
-                    value="escalate", layer="default", raw_source="escalate"
-                ),
-                "dev_contract_nudge": PolicyField(
-                    value=True, layer="default", raw_source=True
-                ),
-                "operator_enabled": PolicyField(
-                    value=True, layer="default", raw_source=True
-                ),
+                "review_on_timeout": PolicyField(value="retry", layer="default", raw_source="retry"),
+                "review_on_status_contradiction": PolicyField(value="escalate", layer="default", raw_source="escalate"),
+                "dev_contract_nudge": PolicyField(value=True, layer="default", raw_source=True),
+                "operator_enabled": PolicyField(value=True, layer="default", raw_source=True),
                 "stream_capture_kb": PolicyField(value=256, layer="default", raw_source=256),
             },
         )
@@ -2184,9 +2019,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 
 def test_schema_file_declares_the_thirty_three_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
-    schema = json.loads(
-        (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
-    )
+    schema = json.loads((package_dir / "schemas" / "policy.json").read_text(encoding="utf-8"))
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == {
         "verify_commands",
@@ -2236,12 +2069,8 @@ def test_content_hash_differs_when_only_the_winning_layer_differs():
     flag override) must not collide on content_hash -- otherwise
     materialize()'s write-once check would silently keep stale provenance
     under a hash that no longer reflects which layer actually won."""
-    from_project, _ = compose(
-        project_slug="acme", project={"gate_mode": "none"}, flags={}
-    )
-    from_flag, _ = compose(
-        project_slug="acme", project={}, flags={"gate_mode": "none"}
-    )
+    from_project, _ = compose(project_slug="acme", project={"gate_mode": "none"}, flags={})
+    from_flag, _ = compose(project_slug="acme", project={}, flags={"gate_mode": "none"})
     assert from_project.seed_view()["gate_mode"].value == "none"
     assert from_flag.seed_view()["gate_mode"].value == "none"
     assert from_project.seed_view()["gate_mode"].layer != from_flag.seed_view()["gate_mode"].layer
@@ -2289,9 +2118,7 @@ def test_malformed_finding_redacts_a_secret_shaped_key(monkeypatch):
 
     monkeypatch.setattr(policy_module, "_STATIC_KEYS", frozenset({"api_token"}))
     monkeypatch.setattr(policy_module, "_ALL_KEYS", frozenset({"api_token"}))
-    finding = policy_module._malformed_finding(
-        "MRS-POLICY-002", "api_token", "project", "sk-live-secretvalue"
-    )
+    finding = policy_module._malformed_finding("MRS-POLICY-002", "api_token", "project", "sk-live-secretvalue")
     assert "sk-live-secretvalue" not in finding.message
     assert REDACTED_SENTINEL in finding.message
 
@@ -2394,9 +2221,7 @@ def test_worktree_seed_extras_reject_unclean_or_escaping_paths(bad_extras):
     absolute paths) -- a rejected list is reported (MRS-POLICY-002) and the
     field falls back to the generated base, never composing a
     traversal-shaped or absolute seed path."""
-    effective, findings = compose(
-        project_slug="acme", project={"worktree_seed_paths": bad_extras}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"worktree_seed_paths": bad_extras}, flags={})
     assert effective.worktree_seed_paths.value == (
         "_bmad-output/projects/acme/implementation-artifacts",
         "_bmad/custom/.active-project",
@@ -2426,9 +2251,7 @@ def test_worktree_seed_extras_accept_clean_relative_paths():
 def test_verify_commands_rejects_empty_string_entry():
     """An empty verify command is no command at all -- same rule the scalar
     merge_subject_template already applies to the empty string."""
-    effective, findings = compose(
-        project_slug="acme", project={"verify_commands": ["pytest -q", ""]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"verify_commands": ["pytest -q", ""]}, flags={})
     assert effective.verify_commands.value == DEFAULT_POLICY["verify_commands"]
     assert effective.verify_commands.layer is PolicyLayer.DEFAULT
     assert len(findings) == 1
@@ -2436,9 +2259,7 @@ def test_verify_commands_rejects_empty_string_entry():
 
 
 def test_frozen_surfaces_rejects_empty_string_entry():
-    effective, findings = compose(
-        project_slug="acme", project={"frozen_surfaces": [""]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"frozen_surfaces": [""]}, flags={})
     assert effective.seed_view()["frozen_surfaces"].value == DEFAULT_POLICY["frozen_surfaces"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
@@ -2458,9 +2279,7 @@ def test_worktree_seed_extras_reject_entries_outside_the_path_charset(bad_entry)
     only, letting backslash traversal, drive letters, NUL bytes (a later
     Path() consumer dies on an embedded null), `~` (escapes the worktree
     under any expanduser), and whitespace compose cleanly."""
-    effective, findings = compose(
-        project_slug="acme", project={"worktree_seed_paths": [bad_entry]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"worktree_seed_paths": [bad_entry]}, flags={})
     assert effective.worktree_seed_paths.value == (
         "_bmad-output/projects/acme/implementation-artifacts",
         "_bmad/custom/.active-project",
@@ -2474,9 +2293,7 @@ def test_malformed_finding_does_not_claim_a_fallback_that_did_not_happen():
     one: the excluded-not-poisoned semantics retain the project value, so
     the finding text must not assert 'falling back to the Marshal default'
     -- the effective value printed one line away would contradict it."""
-    effective, findings = compose(
-        project_slug="acme", project={"gate_mode": "none"}, flags={"gate_mode": "bogus"}
-    )
+    effective, findings = compose(project_slug="acme", project={"gate_mode": "none"}, flags={"gate_mode": "bogus"})
     gate_mode = effective.seed_view()["gate_mode"]
     assert gate_mode.value == "none"
     assert gate_mode.layer is PolicyLayer.PROJECT
@@ -2494,9 +2311,7 @@ def test_model_tier_map_rejects_empty_difficulty_and_model_names(tier_map):
     """An empty difficulty class or model name is no instance of the concept
     at all -- the same empty-string rule every other string field already
     enforces (an Epic 3/4 stage resolution would inherit it silently)."""
-    effective, findings = compose(
-        project_slug="acme", project={"model_tier_map": tier_map}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"model_tier_map": tier_map}, flags={})
     assert effective.model_tier_map.value == DEFAULT_POLICY["model_tier_map"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-002"
@@ -2591,9 +2406,7 @@ def test_harness_preference_default_is_the_neutral_five_profile_order():
 
 
 def test_harness_preference_composes_from_the_project_layer():
-    effective, findings = compose(
-        project_slug="acme", project={"harness_preference": ["gemini"]}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"harness_preference": ["gemini"]}, flags={})
     assert findings == ()
     assert effective.harness_preference.value == ("gemini",)
     assert effective.harness_preference.layer == PolicyLayer.PROJECT
@@ -2611,9 +2424,7 @@ def test_harness_preference_composes_from_the_project_layer():
     ],
 )
 def test_harness_preference_malformed_layer_is_excluded(bad):
-    effective, findings = compose(
-        project_slug="acme", project={"harness_preference": bad}, flags={}
-    )
+    effective, findings = compose(project_slug="acme", project={"harness_preference": bad}, flags={})
     assert [f.code for f in findings] == ["MRS-POLICY-002"]
     assert effective.harness_preference.layer == PolicyLayer.DEFAULT
 
@@ -2657,9 +2468,7 @@ def test_repo_defaults_layer_applies_to_seed_fields_too():
 
 
 def test_repo_defaults_unknown_key_names_the_repo_layer():
-    _, findings = compose(
-        project_slug="acme", repo_defaults={"bogus_key": 1}, project={}, flags={}
-    )
+    _, findings = compose(project_slug="acme", repo_defaults={"bogus_key": 1}, project={}, flags={})
     assert [f.code for f in findings] == ["MRS-POLICY-001"]
     assert "repo_defaults" in findings[0].message
 

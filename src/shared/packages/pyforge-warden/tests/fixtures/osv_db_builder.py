@@ -79,17 +79,11 @@ def _entry_for_record(raw: bytes, record_path: Path, ecosystem: str) -> str:
     except json.JSONDecodeError as exc:
         raise ValueError(f"OSV record {record_path} is not valid JSON: {exc}") from exc
     if not isinstance(record, dict):
-        raise ValueError(
-            f"OSV record {record_path} top level is {type(record).__name__}, "
-            "expected a JSON object"
-        )
+        raise ValueError(f"OSV record {record_path} top level is {type(record).__name__}, expected a JSON object")
 
     record_id = record.get("id")
     if not isinstance(record_id, str) or not record_id:
-        raise ValueError(
-            f"OSV record {record_path} has a missing or non-string 'id' "
-            f"(got {record_id!r})"
-        )
+        raise ValueError(f"OSV record {record_path} has a missing or non-string 'id' (got {record_id!r})")
     # The zip entry must be a flat ``<id>.json`` — reject any id that would
     # escape the archive root or nest (path traversal / unexpected layout).
     if record_id != Path(record_id).name or record_id in (".", ".."):
@@ -111,16 +105,10 @@ def _entry_for_record(raw: bytes, record_path: Path, ecosystem: str) -> str:
     matchable = False
     for entry in affected:
         if not isinstance(entry, dict):
-            raise ValueError(
-                f"OSV record {record_id} has a non-object 'affected' entry "
-                f"({type(entry).__name__})"
-            )
+            raise ValueError(f"OSV record {record_id} has a non-object 'affected' entry ({type(entry).__name__})")
         package = entry.get("package")
         if package is not None and not isinstance(package, dict):
-            raise ValueError(
-                f"OSV record {record_id} has a non-object 'affected[].package' "
-                f"({type(package).__name__})"
-            )
+            raise ValueError(f"OSV record {record_id} has a non-object 'affected[].package' ({type(package).__name__})")
         package = package or {}
         if package.get("ecosystem") != ecosystem:
             continue
@@ -132,12 +120,8 @@ def _entry_for_record(raw: bytes, record_path: Path, ecosystem: str) -> str:
         # [{}]` are present-but-unmatchable (osv could never match them) and
         # must NOT count — else the record is shelved yet silently false-clean,
         # the same hole an absent spec opens (review F3/EC2).
-        has_versions = isinstance(versions, list) and any(
-            isinstance(v, str) and v for v in versions
-        )
-        has_ranges = isinstance(ranges, list) and any(
-            isinstance(r, dict) and r.get("events") for r in ranges
-        )
+        has_versions = isinstance(versions, list) and any(isinstance(v, str) and v for v in versions)
+        has_ranges = isinstance(ranges, list) and any(isinstance(r, dict) and r.get("events") for r in ranges)
         if isinstance(name, str) and name and (has_versions or has_ranges):
             matchable = True
     if not matchable:
@@ -188,9 +172,7 @@ def build_offline_db(
     # on a file whose extension is .json only by case, so the § 11 "drop a JSON
     # record and rebuild" workflow (Story 2.5) can't lose a record.
     case_variant = sorted(
-        p.name
-        for p in records_dir.iterdir()
-        if p.is_file() and p.suffix != ".json" and p.suffix.lower() == ".json"
+        p.name for p in records_dir.iterdir() if p.is_file() and p.suffix != ".json" and p.suffix.lower() == ".json"
     )
     if case_variant:
         raise ValueError(
@@ -203,9 +185,7 @@ def build_offline_db(
     # case-variant check above only inspects the top level — a nested record was
     # silently dropped (partial-coverage false-clean). Detect and fail loud.
     nested = sorted(
-        str(p.relative_to(records_dir))
-        for p in records_dir.rglob("*.json")
-        if p.is_file() and p.parent != records_dir
+        str(p.relative_to(records_dir)) for p in records_dir.rglob("*.json") if p.is_file() and p.parent != records_dir
     )
     if nested:
         raise ValueError(
@@ -222,8 +202,7 @@ def build_offline_db(
         entry_name = _entry_for_record(raw, record_path, ecosystem)
         if entry_name in entries:
             raise ValueError(
-                f"duplicate OSV record id for {entry_name!r} while building "
-                f"{ecosystem} all.zip from {records_dir}"
+                f"duplicate OSV record id for {entry_name!r} while building {ecosystem} all.zip from {records_dir}"
             )
         entries[entry_name] = raw
 

@@ -45,10 +45,9 @@ from pathlib import Path
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError
 
-from ..core.harness_profile import HarnessProfile, WireWrap, load_profiles
+from ..core.harness_profile import HarnessProfile, WireWrap, load_profiles, wire_port_for_worktree
 from ..core.harness_profile import render_dispatch_argv as _render_dispatch_argv
 from ..core.harness_profile import resolve_wire_wrap as _resolve_wire_wrap
-from ..core.harness_profile import wire_port_for_worktree
 from ..ports.build_harness import (
     DispatchLaunchResult,
     HarnessCandidateSkip,
@@ -90,9 +89,7 @@ _SPEC_SURFACE_OBLIGATION = (
 )
 
 
-def _resolve_binary(
-    binary: str, fallback_bin_dirs: Sequence[str], repo_root: Path | None
-) -> str | None:
+def _resolve_binary(binary: str, fallback_bin_dirs: Sequence[str], repo_root: Path | None) -> str | None:
     """``PATH`` first, then the given repo-root-relative fallback dirs (the
     pixi-env CLIs are invisible to a bare operator PATH -- honest probing
     rather than assuming dispatch always runs under ``pixi run``). Returns
@@ -124,26 +121,16 @@ def _authcheck_failure(profile: HarnessProfile, binary_path: str) -> str | None:
         return None
     argv = [binary_path, *profile.authcheck_args]
     try:
-        result = PosixProcess().run(
-            argv, cwd=Path.cwd(), timeout_s=_AUTHCHECK_TIMEOUT_S
-        )
+        result = PosixProcess().run(argv, cwd=Path.cwd(), timeout_s=_AUTHCHECK_TIMEOUT_S)
     except ProcessError as exc:
         return f"authcheck {argv!r} could not run: {exc.__cause__ or exc}"
     output = (result.stdout or "") + (result.stderr or "")
     if result.returncode != 0:
         tail = output.strip().splitlines()[-1] if output.strip() else ""
-        return (
-            f"authcheck {argv!r} exited {result.returncode}"
-            + (f" ({tail})" if tail else "")
-        )
-    if profile.authcheck_ok_pattern and not re.search(
-        profile.authcheck_ok_pattern, output
-    ):
+        return f"authcheck {argv!r} exited {result.returncode}" + (f" ({tail})" if tail else "")
+    if profile.authcheck_ok_pattern and not re.search(profile.authcheck_ok_pattern, output):
         tail = output.strip().splitlines()[-1] if output.strip() else "<no output>"
-        return (
-            f"authcheck {argv!r} output did not confirm login "
-            f"(wanted /{profile.authcheck_ok_pattern}/, got: {tail})"
-        )
+        return f"authcheck {argv!r} output did not confirm login (wanted /{profile.authcheck_ok_pattern}/, got: {tail})"
     return None
 
 
@@ -151,9 +138,7 @@ class BmadBuildHarness:
     """``BuildHarnessPort``'s sole implementation (Story 22.1; profile-
     driven since Story 22.8)."""
 
-    def binary_present(
-        self, preference: Sequence[str] = (), repo_root: Path | None = None
-    ) -> HarnessResolution:
+    def binary_present(self, preference: Sequence[str] = (), repo_root: Path | None = None) -> HarnessResolution:
         profiles, profile_errors = load_profiles(repo_root)
         skipped: list[HarnessCandidateSkip] = []
         for name in preference:
@@ -169,9 +154,7 @@ class BmadBuildHarness:
                     )
                 )
                 continue
-            binary_path = _resolve_binary(
-                profile.binary, profile.fallback_bin_dirs, repo_root
-            )
+            binary_path = _resolve_binary(profile.binary, profile.fallback_bin_dirs, repo_root)
             if binary_path is None:
                 skipped.append(
                     HarnessCandidateSkip(
@@ -192,9 +175,7 @@ class BmadBuildHarness:
             # wrapper carries no credentials of its own; it launches the
             # CLI whose auth was just confirmed).
             wrapper_binary_path = (
-                _resolve_binary(
-                    profile.wrapper.binary, profile.wrapper.fallback_bin_dirs, repo_root
-                )
+                _resolve_binary(profile.wrapper.binary, profile.wrapper.fallback_bin_dirs, repo_root)
                 if profile.wrapper is not None
                 else None
             )
@@ -309,15 +290,11 @@ class BmadBuildHarness:
             # and nothing more.
             binary_dir = str(Path(resolution.binary_path).parent)
             existing_path = child_env.get("PATH", "")
-            child_env["PATH"] = (
-                f"{binary_dir}{os.pathsep}{existing_path}" if existing_path else binary_dir
-            )
+            child_env["PATH"] = f"{binary_dir}{os.pathsep}{existing_path}" if existing_path else binary_dir
         try:
             log_file = open(log_path, "wb")  # noqa: SIM115
         except (OSError, ValueError) as exc:
-            raise BuildHarnessError(
-                f"cannot open dispatch log {str(log_path)!r}: {exc}"
-            ) from exc
+            raise BuildHarnessError(f"cannot open dispatch log {str(log_path)!r}: {exc}") from exc
         with log_file:
             try:
                 # Story 14.4, CAP-6: stays raw subprocess, exempted
@@ -342,9 +319,7 @@ class BmadBuildHarness:
                     env=child_env,
                 )
             except (OSError, ValueError) as exc:
-                raise BuildHarnessError(
-                    f"cannot launch session harness {list(argv)!r}: {exc}"
-                ) from exc
+                raise BuildHarnessError(f"cannot launch session harness {list(argv)!r}: {exc}") from exc
         return DispatchLaunchResult(
             pid=process.pid,
             command=tuple(argv),

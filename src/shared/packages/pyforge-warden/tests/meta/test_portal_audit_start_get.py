@@ -36,15 +36,7 @@ def _warden_fabric(root: Path) -> Path:
 
 def _client_path(root: Path) -> Path:
     return (
-        root
-        / "src"
-        / "shared"
-        / "packages"
-        / "django-pyforge"
-        / "src"
-        / "django_pyforge"
-        / "assertion"
-        / "client.py"
+        root / "src" / "shared" / "packages" / "django-pyforge" / "src" / "django_pyforge" / "assertion" / "client.py"
     )
 
 

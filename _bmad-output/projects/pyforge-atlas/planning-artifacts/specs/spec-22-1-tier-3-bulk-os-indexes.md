@@ -2,7 +2,7 @@
 title: 'Tier 3 bulk OS indexes — homebrew, nixpkgs, spack, debian, fedora (Story 23.1, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'pending-local-verify'
@@ -365,7 +365,8 @@ real data.
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
+Reconciled 2026-09-20: the `in-review` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `86d1cdf3ee 2026-09-17 land atlas fold: one chain — 13 Dreams, 10 Specs, rekey 2026-09-17` — that promotion is the ruling this record now reflects.
 
 Implementation complete (Cursor bmad-build-auto dispatch). Added `datasets/tier3_sources.py`
 (five `ExternalRefreshDataset` subclasses + parse functions), `flag_tier3_channels` + five
@@ -378,3 +379,7 @@ Verification: initial `kedro-catalog-check` failed on hardcoded URLs (fixed); fu
 `kedro-catalog-check`, `kedro-test`, and `duckdb-singularity` pending — shell unavailable in
 the completing agent turn. Run locally before merge.
 
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `22-1-tier-3-bulk-os-indexes: done`).
+- Auto Run Result `Status: in-review` → `done` (see the reconcile line under it).

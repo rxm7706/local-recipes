@@ -2,7 +2,7 @@
 title: 'Downstream handoff to Mason — structured candidate handoff with a required health-screen verdict (S-13.5, FR-68/CAP-5)'
 type: 'feature'
 created: '2026-08-10'
-status: shipped
+status: done
 baseline_revision: '24e89ba9d8c2d91108ca33a1ed20d4145ba90a1f'
 final_revision: '34d1e280d12d2d16a08b2e6272c661af024d1926'
 review_loop_iteration: 0
@@ -378,3 +378,6 @@ implemented, tested, and verified green. The 2 deferred findings are about
 `spec_surface_check.py` itself (a detector this story does not own or touch)
 and do not block or affect story 13.5's shipped behavior.
 
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `12-5-downstream-handoff-to-mason-fr-68: done`).

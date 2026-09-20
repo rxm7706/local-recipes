@@ -70,9 +70,7 @@ def _is_platform_attr(node: ast.expr) -> bool:
         return False
     if not isinstance(node.value, ast.Name):
         return False
-    return (node.value.id == "os" and node.attr == "name") or (
-        node.value.id == "sys" and node.attr == "platform"
-    )
+    return (node.value.id == "os" and node.attr == "name") or (node.value.id == "sys" and node.attr == "platform")
 
 
 def _is_string_constant(node: ast.expr) -> bool:

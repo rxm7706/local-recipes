@@ -77,15 +77,19 @@ def _ports(
     listed = listed if listed is not None else {"runs": [{"id": "20260914-201759-bd47", "status": "running"}]}
     status = status if status is not None else _loop_status()
     home = home if home is not None else {"state": "running", "dispatch_run_id": "herald-OLD"}
-    prs = prs if prs is not None else [
-        {
-            "number": 1373,
-            "title": "herald",
-            "headRefName": "loop/pyforge-herald",
-            "state": "OPEN",
-            "updatedAt": "2026-09-15T00:00:00Z",
-        }
-    ]
+    prs = (
+        prs
+        if prs is not None
+        else [
+            {
+                "number": 1373,
+                "title": "herald",
+                "headRefName": "loop/pyforge-herald",
+                "state": "OPEN",
+                "updatedAt": "2026-09-15T00:00:00Z",
+            }
+        ]
+    )
     slugs = slugs if slugs is not None else ["pyforge-herald"]
     queue = queue if queue is not None else ["21.5", "21.6", "21.7"]
 
@@ -436,8 +440,8 @@ def test_dispatch_outranks_loop_is_a_strict_newer_than_comparison():
 
 
 def test_dispatch_journal_last_fact_takes_the_latest_of_launch_start_end():
-    from pyforge.marshal.core.dispatch import DispatchJournalFacts
     from pyforge.marshal.cli.watch import _dispatch_journal_last_fact
+    from pyforge.marshal.core.dispatch import DispatchJournalFacts
 
     launched = datetime(2026, 9, 18, 6, 0, 0, tzinfo=timezone.utc)
     facts = DispatchJournalFacts(
@@ -471,7 +475,6 @@ def test_dispatch_journal_last_fact_takes_the_latest_of_launch_start_end():
 
 
 def test_loop_journal_last_fact_takes_the_last_parseable_ts():
-    from pyforge.marshal.cli.watch import _loop_journal_last_fact
 
     text = "\n".join(
         [
@@ -788,6 +791,7 @@ import sys as _sys
 
 import pytest
 from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.cli import watch as watch_mod
 from pyforge.marshal.core.model import Finding, Severity
 
@@ -910,9 +914,10 @@ def test_list_row_live_row_and_newest_row_edge_shapes():
     assert watch_mod._list_row({"runs": [{"run_id": "b"}]}, "b") == {"run_id": "b"}
     assert watch_mod._live_loop_row({"runs": None}) is None
     assert watch_mod._live_loop_row({"runs": [{"status": "finished"}]}) is None
-    assert watch_mod._live_loop_row(
-        {"runs": [{"id": "1", "status": "running"}, {"id": "2", "status": "paused"}]}
-    ) == {"id": "2", "status": "paused"}
+    assert watch_mod._live_loop_row({"runs": [{"id": "1", "status": "running"}, {"id": "2", "status": "paused"}]}) == {
+        "id": "2",
+        "status": "paused",
+    }
     assert watch_mod._newest_row({"runs": []}) is None
     assert watch_mod._newest_row({"runs": "nope"}) is None
     assert watch_mod._newest_row({"runs": [{"id": "1"}, "junk"]}) is None
@@ -1007,9 +1012,9 @@ def test_session_completions_and_currently_running_for_dispatch():
     }
     assert watch_mod._session_completions(snap, []) == ["11.1 -- completion completed"]
     assert watch_mod._session_completions(dict(snap, dispatch_completion_verdict="live"), []) == []
-    assert watch_mod._session_completions(
-        dict(snap, current_story=None, dispatch_completion_verdict="failed"), []
-    ) == ["dispatch -- completion failed"]
+    assert watch_mod._session_completions(dict(snap, current_story=None, dispatch_completion_verdict="failed"), []) == [
+        "dispatch -- completion failed"
+    ]
     assert watch_mod._currently_running(snap, []) == {
         "story": "11.1",
         "phase": "finished",
@@ -1043,9 +1048,10 @@ def test_user_action_composes_every_part():
     assert text.startswith("blocking: needs operator; ")
     assert "stale unrelated dispatch record 'old-dispatch'" in text
     assert text.endswith("supervisor liveness (marshal status homes[0].state): paused-on-escalation")
-    assert watch_mod._user_action(
-        status={}, overall="escalated", stale_dispatch=None, home_state=None
-    ) == "blocking: escalated"
+    assert (
+        watch_mod._user_action(status={}, overall="escalated", stale_dispatch=None, home_state=None)
+        == "blocking: escalated"
+    )
 
 
 def test_parse_queue_reads_epics_headings_minus_ledger_done(tmp_path: Path):
@@ -1100,9 +1106,7 @@ def test_default_ports_list_runs_and_run_status_go_through_bmad_loop(tmp_path: P
     ],
     ids=["launch-failure", "non-zero", "non-json", "non-object"],
 )
-def test_default_ports_run_json_failures_become_loop_cli_errors(
-    tmp_path: Path, monkeypatch, response, reason
-):
+def test_default_ports_run_json_failures_become_loop_cli_errors(tmp_path: Path, monkeypatch, response, reason):
     _fake_home(monkeypatch, tmp_path, "acme")
     ports = watch_mod._default_ports(_RecordingProcess({"list": response}), tmp_path)
     with pytest.raises(LoopCliError) as excinfo:
@@ -1113,11 +1117,7 @@ def test_default_ports_run_json_failures_become_loop_cli_errors(
 
 def test_default_ports_marshal_home_reads_homes_zero(tmp_path: Path):
     process = _RecordingProcess(
-        {
-            watch_mod._MARSHAL_STATUS_MODULE: _ok(
-                {"data": {"homes": [{"state": "running", "dispatch_run_id": "d1"}]}}
-            )
-        }
+        {watch_mod._MARSHAL_STATUS_MODULE: _ok({"data": {"homes": [{"state": "running", "dispatch_run_id": "d1"}]}})}
     )
     ports = watch_mod._default_ports(process, tmp_path)
     assert ports.marshal_home("acme") == {"state": "running", "dispatch_run_id": "d1"}
@@ -1164,9 +1164,7 @@ def test_marshal_status_module_is_executable_by_this_interpreter(tmp_path: Path)
     ids=["launch-failure", "non-json", "non-object", "no-homes", "junk-home"],
 )
 def test_default_ports_marshal_home_is_advisory_and_degrades_to_none(tmp_path: Path, response):
-    ports = watch_mod._default_ports(
-        _RecordingProcess({watch_mod._MARSHAL_STATUS_MODULE: response}), tmp_path
-    )
+    ports = watch_mod._default_ports(_RecordingProcess({watch_mod._MARSHAL_STATUS_MODULE: response}), tmp_path)
     assert ports.marshal_home("acme") is None
 
 
@@ -1233,9 +1231,7 @@ def test_default_ports_discover_projects_and_load_queue_read_the_repo(tmp_path: 
     (projects / "zeta" / "planning-artifacts").mkdir(parents=True)
     (projects / "alpha").mkdir()
     (projects / "stray-file.md").write_text("x", encoding="utf-8")
-    (projects / "zeta" / "planning-artifacts" / "epics.md").write_text(
-        "### Story 9.1: only\n", encoding="utf-8"
-    )
+    (projects / "zeta" / "planning-artifacts" / "epics.md").write_text("### Story 9.1: only\n", encoding="utf-8")
     assert ports.discover_projects() == ["alpha", "zeta"]
     assert ports.load_queue is not None
     assert ports.load_queue("zeta") == ["9.1"]
@@ -1339,9 +1335,7 @@ def test_run_watch_uses_the_injected_process_for_default_ports(tmp_path: Path, m
     `ProcessPort` -- proven by the recorded argv of the first call."""
     _fake_home(monkeypatch, tmp_path)  # no loop home -> list_runs returns {"runs": []}
     process = _RecordingProcess({watch_mod._MARSHAL_STATUS_MODULE: ProcessError("no marshal")})
-    rc = run_watch(
-        _args(project="acme"), process=process, now=_NOW, cache_dir=tmp_path / "cache", repo=tmp_path
-    )
+    rc = run_watch(_args(project="acme"), process=process, now=_NOW, cache_dir=tmp_path / "cache", repo=tmp_path)
     payload = _payload(capsys)
     assert rc == 4
     assert any(f["code"] == "MRS-WATCH-002" for f in payload["findings"])
@@ -1441,9 +1435,7 @@ def test_status_failure_after_a_live_row_is_a_loop_cli_error(tmp_path: Path, cap
     rc = _run(tmp_path, _args(project="pyforge-herald"), ports)
     payload = _payload(capsys)
     assert rc == 4
-    assert any(
-        f["code"] == "MRS-WATCH-001" and "bmad-loop status" in f["message"] for f in payload["findings"]
-    )
+    assert any(f["code"] == "MRS-WATCH-001" and "bmad-loop status" in f["message"] for f in payload["findings"])
 
 
 def test_live_row_without_an_id_is_no_active_run(tmp_path: Path, capsys):

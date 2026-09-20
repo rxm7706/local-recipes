@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.workspace import (
     RepoSetStartResult,
@@ -19,9 +20,7 @@ from pyforge.steward.workspace import (
 
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
-    )
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
 def _make_repo(tmp_path: Path, name: str) -> Path:
@@ -90,9 +89,7 @@ def test_start_repo_set_creates_worktrees_and_code_workspace(
     config = primary / ".steward" / "repo-sets.yaml"
     _write_repo_sets(config, primary=primary, secondary=secondary)
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
 
     result = start_repo_set("fleet-feature", from_ref="origin/main")
 
@@ -110,18 +107,12 @@ def test_start_repo_set_creates_worktrees_and_code_workspace(
         assert records[0].branch == "f-fleet-feature"
 
 
-def test_start_repo_set_names_missing_members(
-    two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_start_repo_set_names_missing_members(two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     primary, secondary = two_repos
     config = primary / ".steward" / "repo-sets.yaml"
-    _write_repo_sets(
-        config, primary=primary, secondary=secondary, missing_name="ghost"
-    )
+    _write_repo_sets(config, primary=primary, secondary=secondary, missing_name="ghost")
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
 
     with pytest.raises(WorkspaceError, match="missing local repos.*ghost"):
         start_repo_set("fleet-feature")
@@ -130,33 +121,23 @@ def test_start_repo_set_names_missing_members(
     assert not load_bookkeeping(secondary / ".steward" / "workspaces.yaml")
 
 
-def test_cli_repo_set_start_json(
-    two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cli_repo_set_start_json(two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     primary, secondary = two_repos
     config = primary / ".steward" / "repo-sets.yaml"
     _write_repo_sets(config, primary=primary, secondary=secondary)
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
 
     rc = main(["workspace", "start", "fleet-feature", "--json"])
     assert rc == EXIT_OK
 
 
-def test_cli_repo_set_missing_member_fails(
-    two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cli_repo_set_missing_member_fails(two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     primary, secondary = two_repos
     config = primary / ".steward" / "repo-sets.yaml"
-    _write_repo_sets(
-        config, primary=primary, secondary=secondary, missing_name="ghost"
-    )
+    _write_repo_sets(config, primary=primary, secondary=secondary, missing_name="ghost")
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
 
     rc = main(["workspace", "start", "fleet-feature", "--json"])
     assert rc == EXIT_FAILED

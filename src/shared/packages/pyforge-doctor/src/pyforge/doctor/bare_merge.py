@@ -130,7 +130,7 @@ def _git(target: Path, *args: str) -> str | None:
     """
     try:
         return run_git(target, list(args))
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
 
 
@@ -145,7 +145,7 @@ def _classify_diff_paths(paths: list[str]) -> frozenset[str]:
         for prefix in (_PROJECTS_REL, _PACKAGES_REL):
             head = f"{prefix}/"
             if path.startswith(head):
-                slug = path[len(head):].split("/", 1)[0]
+                slug = path[len(head) :].split("/", 1)[0]
                 if slug:
                     slugs.add(slug)
                 break
@@ -205,17 +205,20 @@ def known_story_keys(target: Path, project_slug: str) -> frozenset[StoryKeyRef]:
     path = target / _PROJECTS_REL / project_slug / _LEDGER_SUFFIX
     try:
         text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return frozenset()
     keys: set[StoryKeyRef] = set()
     for raw_key in _parse_ledger_statuses(text):
         match = _LEDGER_KEY_RE.match(raw_key)
         if match is None:
             continue
-        keys.add(StoryKeyRef(
-            epic=int(match.group(1)), seq=int(match.group(2)),
-            suffix=match.group(3) or "",
-        ))
+        keys.add(
+            StoryKeyRef(
+                epic=int(match.group(1)),
+                seq=int(match.group(2)),
+                suffix=match.group(3) or "",
+            )
+        )
     return frozenset(keys)
 
 

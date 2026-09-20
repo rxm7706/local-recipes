@@ -55,13 +55,8 @@ def test_is_dead_test_scaffolding_true_for_the_archived_doctor_test_tree():
     holds a ``conftest.py`` plus seven ``__init__.py``-only subpackages and
     zero ``test_*.py`` files (``22da995c``)."""
     repo_root = _require_repo_root()
-    fixture_dir = (
-        repo_root / "archive" / "_bmad-output" / "projects" / "pyforge-doctor"
-        / "tests"
-    )
-    relpaths = [
-        str(p.relative_to(fixture_dir)) for p in sorted(fixture_dir.rglob("*.py"))
-    ]
+    fixture_dir = repo_root / "archive" / "_bmad-output" / "projects" / "pyforge-doctor" / "tests"
+    relpaths = [str(p.relative_to(fixture_dir)) for p in sorted(fixture_dir.rglob("*.py"))]
     assert relpaths, "the archived fixture tree is unexpectedly empty"
     assert hd.is_dead_test_scaffolding(relpaths) is True
 
@@ -69,10 +64,7 @@ def test_is_dead_test_scaffolding_true_for_the_archived_doctor_test_tree():
 def test_is_dead_test_scaffolding_false_for_this_packages_real_tests():
     """Negative: this repo's own ``src/shared/packages/pyforge-doctor/
     tests/`` tree holds real ``test_*.py`` files."""
-    relpaths = [
-        str(p.relative_to(_THIS_PACKAGE_TESTS))
-        for p in sorted(_THIS_PACKAGE_TESTS.rglob("*.py"))
-    ]
+    relpaths = [str(p.relative_to(_THIS_PACKAGE_TESTS)) for p in sorted(_THIS_PACKAGE_TESTS.rglob("*.py"))]
     assert hd.is_dead_test_scaffolding(relpaths) is False
 
 
@@ -85,8 +77,13 @@ def test_is_hollow_sprint_status_true_for_the_archived_sprint_status():
     ``completion_percentage: 0%`` (``f7654a4c``, CAP-2)."""
     repo_root = _require_repo_root()
     fixture = (
-        repo_root / "archive" / "_bmad-output" / "projects" / "pyforge-doctor"
-        / "planning-artifacts" / "sprint-status.yaml"
+        repo_root
+        / "archive"
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "sprint-status.yaml"
     )
     parsed = yaml.safe_load(fixture.read_text(encoding="utf-8"))
     assert hd.is_hollow_sprint_status(parsed) is True
@@ -98,8 +95,7 @@ def test_is_hollow_sprint_status_false_for_the_live_sprint_status_ledger():
     ``stories: []`` shape."""
     repo_root = _require_repo_root()
     fixture = (
-        repo_root / "_bmad-output" / "projects" / "pyforge-doctor"
-        / "planning-artifacts" / "sprint-status-ledger.yaml"
+        repo_root / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts" / "sprint-status-ledger.yaml"
     )
     parsed = yaml.safe_load(fixture.read_text(encoding="utf-8"))
     assert hd.is_hollow_sprint_status(parsed) is False
@@ -139,10 +135,7 @@ def test_is_readme_placeholder_true_for_the_pre_fix_literal_stub():
     """Positive: verbatim from ``5c5e3727^:_bmad-output/projects/
     pyforge-doctor/README.md`` (CAP-4) — inlined per the story spec, no
     ``git show`` at test time."""
-    content = (
-        "doctor is a [role] station in the PyForge factory, responsible for "
-        "[responsibilities]."
-    )
+    content = "doctor is a [role] station in the PyForge factory, responsible for [responsibilities]."
     assert hd.is_readme_placeholder(content) is True
 
 
@@ -150,9 +143,7 @@ def test_is_readme_placeholder_false_for_the_live_readme():
     """Negative: this repo's current, live README carries real per-station
     prose, post-CAP-4."""
     repo_root = _require_repo_root()
-    fixture = (
-        repo_root / "_bmad-output" / "projects" / "pyforge-doctor" / "README.md"
-    )
+    fixture = repo_root / "_bmad-output" / "projects" / "pyforge-doctor" / "README.md"
     content = fixture.read_text(encoding="utf-8")
     assert hd.is_readme_placeholder(content) is False
 
@@ -186,10 +177,7 @@ def test_is_orphan_file_true_for_the_self_marked_closed_resume_doc():
     RESUME-EPIC-10.md``, self-marked with a "✅ CLOSED" banner, has no
     inbound reference (``f7654a4c``, CAP-5)."""
     repo_root = _require_repo_root()
-    fixture = (
-        repo_root / "archive" / "_bmad-output" / "projects" / "pyforge-atlas"
-        / "RESUME-EPIC-10.md"
-    )
+    fixture = repo_root / "archive" / "_bmad-output" / "projects" / "pyforge-atlas" / "RESUME-EPIC-10.md"
     assert fixture.is_file()
     assert hd.is_orphan_file("RESUME-EPIC-10.md", has_inbound_references=False) is True
 
@@ -200,7 +188,11 @@ def test_is_orphan_file_true_for_the_unbannered_herald_intake_draft():
     all — proves the predicate does not require one (``f7654a4c``, CAP-5)."""
     repo_root = _require_repo_root()
     fixture = (
-        repo_root / "archive" / "_bmad-output" / "projects" / "pyforge-herald"
+        repo_root
+        / "archive"
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-herald"
         / "planning-artifacts"
         / "intake-video-scripts-manticore-2026-07-31.md"
     )
@@ -213,26 +205,20 @@ def test_is_orphan_file_true_for_the_unbannered_herald_intake_draft():
 def test_is_orphan_file_false_for_a_conventional_name_even_unreferenced():
     """Negative: ``epics.md`` is found by directory convention, not inbound
     reference — absence of a reference alone is never sufficient."""
-    assert hd.is_orphan_file(
-        "planning-artifacts/epics.md", has_inbound_references=False
-    ) is False
+    assert hd.is_orphan_file("planning-artifacts/epics.md", has_inbound_references=False) is False
 
 
 def test_is_orphan_file_false_for_a_non_conventional_but_referenced_file():
     """Negative (synthetic): a non-conventional name is still not orphaned
     once something else in the repo references it."""
-    assert hd.is_orphan_file(
-        "planning-artifacts/NOTES-random.md", has_inbound_references=True
-    ) is False
+    assert hd.is_orphan_file("planning-artifacts/NOTES-random.md", has_inbound_references=True) is False
 
 
 def test_is_orphan_file_false_for_a_conventional_directory():
     """Negative: the `_CONVENTIONAL_DIRECTORIES` branch, uncovered by any
     other test -- a file under `specs/` is conventional regardless of its
     own filename."""
-    assert hd.is_orphan_file(
-        "planning-artifacts/specs/spec-9-1-foo.md", has_inbound_references=False
-    ) is False
+    assert hd.is_orphan_file("planning-artifacts/specs/spec-9-1-foo.md", has_inbound_references=False) is False
 
 
 def test_is_orphan_file_false_for_tea_test_design_artifacts():
@@ -240,29 +226,32 @@ def test_is_orphan_file_false_for_tea_test_design_artifacts():
     output -- the fixed filenames, the `test-design/` handoff subdirectory,
     and the `reviews/` report directory -- are all conventional regardless
     of inbound reference, same shape as `test-architecture.md` above."""
-    assert hd.is_orphan_file(
-        "planning-artifacts/test-design-architecture.md", has_inbound_references=False
-    ) is False
-    assert hd.is_orphan_file(
-        "planning-artifacts/test-design-qa.md", has_inbound_references=False
-    ) is False
-    assert hd.is_orphan_file(
-        "planning-artifacts/test-design-progress-system.md", has_inbound_references=False
-    ) is False
-    assert hd.is_orphan_file(
-        "planning-artifacts/test-design/pyforge-marshal-handoff.md",
-        has_inbound_references=False,
-    ) is False
-    assert hd.is_orphan_file(
-        "planning-artifacts/reviews/tea-equivalence-2026-09-07.md",
-        has_inbound_references=False,
-    ) is False
+    assert hd.is_orphan_file("planning-artifacts/test-design-architecture.md", has_inbound_references=False) is False
+    assert hd.is_orphan_file("planning-artifacts/test-design-qa.md", has_inbound_references=False) is False
+    assert hd.is_orphan_file("planning-artifacts/test-design-progress-system.md", has_inbound_references=False) is False
+    assert (
+        hd.is_orphan_file(
+            "planning-artifacts/test-design/pyforge-marshal-handoff.md",
+            has_inbound_references=False,
+        )
+        is False
+    )
+    assert (
+        hd.is_orphan_file(
+            "planning-artifacts/reviews/tea-equivalence-2026-09-07.md",
+            has_inbound_references=False,
+        )
+        is False
+    )
 
 
 def test_is_orphan_file_false_for_a_conventional_filename_glob():
     """Negative: the `_CONVENTIONAL_FILENAME_GLOBS` branch, uncovered by any
     other test -- a dated readiness-report filename is conventional."""
-    assert hd.is_orphan_file(
-        "planning-artifacts/implementation-readiness-report-2026-08-15.md",
-        has_inbound_references=False,
-    ) is False
+    assert (
+        hd.is_orphan_file(
+            "planning-artifacts/implementation-readiness-report-2026-08-15.md",
+            has_inbound_references=False,
+        )
+        is False
+    )

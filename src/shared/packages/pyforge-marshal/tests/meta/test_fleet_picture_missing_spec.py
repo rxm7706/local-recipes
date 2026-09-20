@@ -6,6 +6,7 @@ remedy). Same importlib harness as conda-forge-expert's
 ``test_fleet_picture_awaiting_operator.py`` — lives here so marshal changes
 do not touch ``conda-forge-expert`` (``test_skf_domain_skill`` guard).
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -19,9 +20,7 @@ AWAITING_LABEL = "awaiting-operator (run bmad-loop confirm)"
 
 
 def _load_fleet_picture():
-    spec = importlib.util.spec_from_file_location(
-        "fleet_picture_missing_spec_test", FLEET_PICTURE
-    )
+    spec = importlib.util.spec_from_file_location("fleet_picture_missing_spec_test", FLEET_PICTURE)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["fleet_picture_missing_spec_test"] = mod
     spec.loader.exec_module(mod)
@@ -32,8 +31,7 @@ def test_missing_spec_awaiting_operator_uses_the_spec_path_remedy():
     """Story 28.19: MRS-DISP-005 refuse names the expected spec glob."""
     mod = _load_fleet_picture()
     remedy = (
-        "missing tracked spec: author "
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-39-4-*.md"
+        "missing tracked spec: author _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-39-4-*.md"
     )
     cell = mod.station_state(
         running=False,

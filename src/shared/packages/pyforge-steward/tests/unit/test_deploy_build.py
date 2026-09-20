@@ -15,8 +15,10 @@ import sys
 
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.deploy import (
-    DeployDuty,
     _STEWARD_LEDGER_RELATIVE_PATH as _LEDGER_RELATIVE_PATH,
+)
+from pyforge.steward.deploy import (
+    DeployDuty,
     build_dashboard,
 )
 
@@ -50,9 +52,7 @@ def test_build_dashboard_propagates_a_nonzero_exit(tmp_path):
 
 def test_deploy_dashboard_build_via_cli_round_trips(tmp_path, monkeypatch):
     _write_ledger_fixture(tmp_path)
-    monkeypatch.setattr(
-        "pyforge.steward.deploy.repo_root", lambda: tmp_path
-    )
+    monkeypatch.setattr("pyforge.steward.deploy.repo_root", lambda: tmp_path)
     monkeypatch.setattr(
         "pyforge.steward.deploy._DEFAULT_BUILD_CMD",
         (sys.executable, "-c", "pass"),

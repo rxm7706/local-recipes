@@ -18,6 +18,7 @@ story work; this story ships the gate and the named-module failure surface.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -47,9 +48,7 @@ STATIONS: tuple[str, ...] = (
     "warden",
 )
 
-_PACKAGE_PATH_RE = re.compile(
-    r"(?:^|/)src/shared/packages/pyforge-([a-z0-9-]+)/(?:src|tests)(?:/|$)"
-)
+_PACKAGE_PATH_RE = re.compile(r"(?:^|/)src/shared/packages/pyforge-([a-z0-9-]+)/(?:src|tests)(?:/|$)")
 
 _DEFAULT_THRESHOLDS_TOML = """\
 # Per-station coverage floors for Story 19.3 / FR-131.
@@ -88,10 +87,7 @@ class ModuleFailure:
     suite: Suite
 
     def line(self) -> str:
-        return (
-            f"  - {self.module}: {self.percent:.1f}% "
-            f"(threshold {self.threshold:.0f}% {self.suite})"
-        )
+        return f"  - {self.module}: {self.percent:.1f}% (threshold {self.threshold:.0f}% {self.suite})"
 
 
 def default_thresholds_path() -> Path:
@@ -115,9 +111,7 @@ def load_thresholds(path: Path | None = None) -> dict[str, Thresholds]:
     defaults_table = data.get("defaults") or {}
     defaults = Thresholds(
         unit=float(defaults_table.get("unit", DEFAULT_UNIT_THRESHOLD)),
-        integration=float(
-            defaults_table.get("integration", DEFAULT_INTEGRATION_THRESHOLD)
-        ),
+        integration=float(defaults_table.get("integration", DEFAULT_INTEGRATION_THRESHOLD)),
     )
     stations_table = data.get("stations") or {}
     out: dict[str, Thresholds] = {"": defaults}
@@ -240,8 +234,7 @@ def format_failure_message(
     if percents:
         total = sum(percents.values()) / len(percents)
         lines.append(
-            f"aggregate mean across measured modules: {total:.1f}% "
-            f"(not a substitute for the named modules above)"
+            f"aggregate mean across measured modules: {total:.1f}% (not a substitute for the named modules above)"
         )
     return "\n".join(lines)
 
@@ -263,10 +256,7 @@ def evaluate_suite(
         measured = len(percents)
         return (
             True,
-            (
-                f"coverage gate OK for pyforge-{station} {suite}: "
-                f"{measured} module(s) ≥ {threshold:.0f}%"
-            ),
+            (f"coverage gate OK for pyforge-{station} {suite}: {measured} module(s) ≥ {threshold:.0f}%"),
         )
     return False, format_failure_message(
         failures,
@@ -321,6 +311,68 @@ def touched_source_modules(paths: Iterable[str]) -> frozenset[str]:
     return frozenset(found)
 
 
+def ast_fingerprint(source: str) -> str | None:
+    """A formatting-insensitive fingerprint of one Python source.
+
+    The ``ast.dump`` of the module after two normalisations: every ``import``
+    statement is dropped (at any nesting) and every docstring is dropped.
+    That makes the fingerprint invariant under exactly what a lint/format
+    landing changes -- ``ruff format`` (quotes, wrapping, trailing commas,
+    docstring indentation, PEP 758 ``except A, B:``), ``I001`` import sorting
+    and merging, ``F401`` unused-import removal, a type-only import under
+    ``TYPE_CHECKING`` -- none of which carries behaviour a coverage floor
+    should demand a test for. Any other statement-level change (a renamed
+    variable, a removed assignment, a new branch) moves it. ``None`` when the
+    source does not parse, so a caller treats an unparseable file as changed.
+
+    Steward Story 66.1 (2026-09-20): the first fleet-wide reformat made every
+    module "touched" by the name-only diff, and the touched-module coverage
+    floor measured the whole fleet at once. A gate that fires on formatting
+    measures the formatter, not the code.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+
+    def normalise(body: list[ast.stmt]) -> list[ast.stmt]:
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            body = body[1:]
+        return [s for s in body if not isinstance(s, (ast.Import, ast.ImportFrom))]
+
+    for node in ast.walk(tree):
+        for field in ("body", "orelse", "finalbody"):
+            value = getattr(node, field, None)
+            if isinstance(value, list) and value and all(isinstance(s, ast.stmt) for s in value):
+                setattr(node, field, normalise(value))
+        if isinstance(node, ast.Try):
+            for handler in node.handlers:
+                handler.body = normalise(handler.body)
+    return ast.dump(tree, include_attributes=False)
+
+
+def format_only_paths(pairs: Mapping[str, tuple[str | None, str | None]]) -> frozenset[str]:
+    """Paths whose base and head sources share an :func:`ast_fingerprint`.
+
+    ``pairs`` maps a repo-relative path to ``(base_source, head_source)``;
+    a missing side (``None``: added or deleted file) or an unparseable side
+    is never format-only.
+    """
+    out: set[str] = set()
+    for path, (base, head) in pairs.items():
+        if base is None or head is None:
+            continue
+        fb, fh = ast_fingerprint(base), ast_fingerprint(head)
+        if fb is not None and fb == fh:
+            out.add(path)
+    return frozenset(out)
+
+
 def filter_percents(
     percents: Mapping[str, float],
     modules: Iterable[str],
@@ -331,9 +383,7 @@ def filter_percents(
         return {}
     out: dict[str, float] = {}
     for name, pct in percents.items():
-        if name in wanted or any(
-            name == m or name.startswith(m + ".") for m in wanted
-        ):
+        if name in wanted or any(name == m or name.startswith(m + ".") for m in wanted):
             out[name] = float(pct)
     return out
 
@@ -368,9 +418,7 @@ def evaluate_coverage_payload(
         # measured. Absent modules are N/A for the suite (e.g. unit-only
         # code never imported by integration) — do not zero-fill them.
         percents = filter_percents(percents, wanted)
-    return evaluate_suite(
-        percents, suite=suite, threshold=thr, station=station
-    )
+    return evaluate_suite(percents, suite=suite, threshold=thr, station=station)
 
 
 def _cmd_evaluate(args: argparse.Namespace) -> int:
@@ -382,9 +430,7 @@ def _cmd_evaluate(args: argparse.Namespace) -> int:
         else:
             only = [
                 line.strip()
-                for line in Path(args.only_modules_file)
-                .read_text(encoding="utf-8")
-                .splitlines()
+                for line in Path(args.only_modules_file).read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ]
     ok, message = evaluate_coverage_payload(
@@ -403,9 +449,7 @@ def _cmd_touched(args: argparse.Namespace) -> int:
         paths = [line.strip() for line in sys.stdin if line.strip()]
     else:
         paths = [
-            line.strip()
-            for line in Path(args.paths_file).read_text(encoding="utf-8").splitlines()
-            if line.strip()
+            line.strip() for line in Path(args.paths_file).read_text(encoding="utf-8").splitlines() if line.strip()
         ]
     stations = sorted(touched_stations(paths))
     modules = sorted(touched_source_modules(paths)) if args.modules else []
@@ -438,9 +482,7 @@ def _cmd_show_thresholds(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m pyforge.marshal.coverage_gate",
-        description=(
-            "Coverage gates that name uncovered modules (Story 19.3 / FR-131)."
-        ),
+        description=("Coverage gates that name uncovered modules (Story 19.3 / FR-131)."),
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

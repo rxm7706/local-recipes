@@ -41,9 +41,7 @@ def test_deck_status_with_no_slug_is_not_a_usage_error():
     assert cli.main(["deck", "status", "--help"]) == 0
 
 
-def test_deck_status_no_slug_forwards_none_and_prints_a_json_array(
-    monkeypatch, capsys, tmp_path: Path
-):
+def test_deck_status_no_slug_forwards_none_and_prints_a_json_array(monkeypatch, capsys, tmp_path: Path):
     seen = {}
 
     def _fake(transport, *, slug, repo_root):
@@ -125,9 +123,7 @@ def test_deck_status_reports_a_stale_mirror_flag(monkeypatch, capsys):
     assert out[0]["stale_mirror"] is True
 
 
-def test_deck_status_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
-    monkeypatch, capsys
-):
+def test_deck_status_herald_error_reaches_dispatch_and_maps_to_its_exit_code(monkeypatch, capsys):
     def _fake(transport, *, slug, repo_root):
         raise HeraldError("bridge state file could not be read")
 
@@ -157,9 +153,7 @@ def _fake_account_status(**overrides):
 # --- Story 23.1: `--account` -------------------------------------------------
 
 
-def test_deck_status_account_forwards_repo_root_and_prints_a_json_array(
-    monkeypatch, capsys, tmp_path: Path
-):
+def test_deck_status_account_forwards_repo_root_and_prints_a_json_array(monkeypatch, capsys, tmp_path: Path):
     seen = {}
 
     def _fake(transport, *, repo_root):
@@ -179,9 +173,7 @@ def test_deck_status_account_forwards_repo_root_and_prints_a_json_array(
 
     monkeypatch.setattr(deck_pipeline, "account_status", _fake)
 
-    exit_code = cli.main(
-        ["deck", "status", "--account", "--repo-root", str(tmp_path)]
-    )
+    exit_code = cli.main(["deck", "status", "--account", "--repo-root", str(tmp_path)])
 
     assert exit_code == 0
     assert seen["repo_root"] == tmp_path

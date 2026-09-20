@@ -68,3 +68,15 @@ never a Frame element in any version (the field is `maintainer`; see
 `identifier`, `name`, `description`, `visibility`, `maintainer` — keyed on
 `identifier`, not `name`. Current shape: `docs/foundry/frames/README.md`.
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `dea36a14b3` (2026-09-13, "Merge pull request #1333 from rxm7706/steward-53-2-frames"). Ledger row `53-2-company-and-eight-station-frames-pass-in-repo-preflight: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `docs/foundry/frames/README.md`, `docs/foundry/frames/pyforge.frame.md`, `docs/foundry/frames/stations/atlas.frame.md`, `docs/foundry/frames/stations/doctor.frame.md`, `docs/foundry/frames/stations/herald.frame.md`, `docs/foundry/frames/stations/marshal.frame.md`, `docs/foundry/frames/stations/mason.frame.md`, `docs/foundry/frames/stations/scribe.frame.md`, `docs/foundry/frames/stations/steward.frame.md` (+4 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -7,7 +7,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-from pyforge.doctor.models import DoctorStatus, Source
+
+from pyforge.doctor.models import DoctorStatus
 from pyforge.doctor.sources import status_body_consistency as sbc
 
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "status_body"
@@ -25,10 +26,15 @@ def _write_roster(target: Path) -> None:
         json.dumps(
             {
                 "spec_statuses_terminal": [
-                    "shipped", "archived", "absorbed", "superseded",
+                    "shipped",
+                    "archived",
+                    "absorbed",
+                    "superseded",
                 ],
                 "spec_statuses_ended_acts": [
-                    "archived", "absorbed", "superseded",
+                    "archived",
+                    "absorbed",
+                    "superseded",
                 ],
             }
         ),
@@ -57,9 +63,7 @@ def _promissory_repo(tmp_path: Path) -> Path:
 
 
 def test_scan_body_fires_on_active_now_heading():
-    matches = sbc.scan_body_for_promissory_language(
-        "## The frontier — Moments 2–4, active now\n\nLead text.\n"
-    )
+    matches = sbc.scan_body_for_promissory_language("## The frontier — Moments 2–4, active now\n\nLead text.\n")
     assert len(matches) == 1
     assert matches[0].pattern_id == "active-now"
     assert matches[0].surface_kind == "heading"
@@ -94,14 +98,8 @@ def test_gather_promissory_fires_on_fixture_pair_and_stays_quiet(tmp_path: Path)
     assert promissory
     assert all(f.status == DoctorStatus.WARN for f in promissory)
 
-    dream_paths = {
-        f.evidence["path"] for f in promissory if f.evidence["path"].endswith("pyforge-herald.md")
-    }
-    spec_paths = {
-        f.evidence["path"]
-        for f in promissory
-        if "spec-pyforge-herald" in f.evidence["path"]
-    }
+    dream_paths = {f.evidence["path"] for f in promissory if f.evidence["path"].endswith("pyforge-herald.md")}
+    spec_paths = {f.evidence["path"] for f in promissory if "spec-pyforge-herald" in f.evidence["path"]}
     assert dream_paths
     assert spec_paths
     assert promissory[0].evidence["silent"] == 1
@@ -131,19 +129,12 @@ def test_gather_live_herald_pair_and_zero_false_positives():
     assert sbc.PROMISSORY_LANGUAGE_ACCEPTED is True
 
     findings = sbc.gather_promissory_language(repo_root)
-    promissory = [
-        f
-        for f in findings
-        if f.check == sbc._CHECK_PROMISSORY and f.status is DoctorStatus.WARN
-    ]
+    promissory = [f for f in findings if f.check == sbc._CHECK_PROMISSORY and f.status is DoctorStatus.WARN]
     assert promissory == []
     # Every finding the live gather returns is either the clean-state OK
     # summary or a non-promissory WARN (an unparseable/unreadable document);
     # never a promissory hit.
-    assert all(
-        f.status is DoctorStatus.OK or f.check != sbc._CHECK_PROMISSORY
-        for f in findings
-    )
+    assert all(f.status is DoctorStatus.OK or f.check != sbc._CHECK_PROMISSORY for f in findings)
 
 
 def test_gather_combined_includes_cap3(tmp_path: Path):
@@ -158,9 +149,7 @@ def test_scan_body_silent_on_quiet_fixture():
     assert sbc.scan_body_for_promissory_language(body) == ()
 
 
-def test_gather_measured_and_rejected_when_not_accepted(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
+def test_gather_measured_and_rejected_when_not_accepted(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     repo = _promissory_repo(tmp_path)
     monkeypatch.setattr(sbc, "PROMISSORY_LANGUAGE_ACCEPTED", False)
     findings = sbc.gather_promissory_language(repo)

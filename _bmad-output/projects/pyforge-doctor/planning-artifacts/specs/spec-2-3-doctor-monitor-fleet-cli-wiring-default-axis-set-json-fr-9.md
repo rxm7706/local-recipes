@@ -101,3 +101,16 @@ Checked specifically for: exception handling breadth (`_validate_monitor_args`/`
 **Follow-up review recommendation: false** -- the one finding was caught and fixed before any test ran against it; no residual risk.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `f46f39fea5` (2026-08-07, "herald: Story 2.3 — authored-source pull (Marp sources)"); also `c16df8fe60` (2026-08-07, "scribe: Story 2.3 — fact supersession in the compiled graph"); also `b06cf1a166` (2026-08-07, "doctor: Story 2.3 — doctor monitor --fleet CLI wiring, default axis set, --json"). Ledger row `2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json-fr-9: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -115,9 +115,7 @@ def _tracked_promoted_ids(tracked_text: str) -> frozenset[str]:
     literal never matches at all: ``<`` is not in the token's character
     class, so the regex simply does not match there -- nothing to strip in
     that case)."""
-    return frozenset(
-        match.group(0).rstrip("-") for match in _PROMOTED_ID_TOKEN_RE.finditer(tracked_text)
-    )
+    return frozenset(match.group(0).rstrip("-") for match in _PROMOTED_ID_TOKEN_RE.finditer(tracked_text))
 
 
 @dataclass(frozen=True)

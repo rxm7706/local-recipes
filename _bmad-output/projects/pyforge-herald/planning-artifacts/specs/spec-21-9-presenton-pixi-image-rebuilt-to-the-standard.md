@@ -73,3 +73,16 @@ trio file). `finalize_plan` against the live Design project (base etag
 `write_files` with inline `data` → new etag `1789645274081278`. Read back in full via
 `read_file` (92,582 bytes, not truncated) and SHA-256-compared against the local file:
 `e8d81e2966f5904f8e200696f661447b597f9f011c5124a19f9d4625df68163c` on both sides — byte-exact.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `6852f29fbb` (2026-09-17, "Merge pull request #1416 from rxm7706/herald/21-9-presenton-pixi-image-corruption-fix"); also `371757e264` (2026-09-17, "Merge pull request #1405 from rxm7706/herald/21-9-presenton-pixi-image-blocked-corrupt-pos"). Ledger row `21-9-presenton-pixi-image-rebuilt-to-the-standard: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-9-presenton-pixi-image-rebuilt-to-the-standard.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `presentations/presenton-pixi-image/README.md`, `presentations/presenton-pixi-image/project/Presenton Conda-Native Infographic standalone.html`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

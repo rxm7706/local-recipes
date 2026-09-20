@@ -49,3 +49,16 @@ Type / Effort / Deps: chore / M / —.
 ## Source
 
 Contract recovered from `epics.md` Story 41.1 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `c8988f5799` (2026-09-02, "steward: fix Story 41.1 backup chart defects and close its ledger row"). Ledger row `41-1-dead-scaffolding-is-archived-never-deleted: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-41-1-dr-contract-and-postgresql-backup.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/platform/deploy/charts/platform/templates/postgres-statefulset.yaml`, `src/platform/tests/test_chart_invariants.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

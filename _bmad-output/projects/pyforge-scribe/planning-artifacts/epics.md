@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-17"  # one-chain fold remint; Fold provenance names CAP-1..26  # Epic 17 + Story 17.1 minted in the reserved 16→18 hole
+updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-17  # one-chain fold remint; Fold provenance names CAP-1..26  # Epic 17 + Story 17.1 minted in the reserved 16→18 hole
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -735,6 +735,28 @@ authored into a per-tool file; Dream items (4)–(10) are seeded, not this epic'
 **Status:** done
 **Outcome (2026-09-20):** hand-driven in the fleet PR with marshal 46.11; see the tracked spec's Auto Run Result.
 
+## Epic 20: The managed instruction block carries no aspiration (spec-pyforge-scribe CAP-30)
+
+Minted 2026-09-20 (evening) from the Dream entry of the same name. Epic 19 is `done`, so the guard is a new epic (a fix on
+a done epic gets a new epic). **HARD boundaries:** scope is the text between the `bmad:context` markers only; the
+guard is a scribe meta-test, never a doctor detector or a PR gate of its own; it lands with steward Story 66.2,
+which retires the two lines it would red today.
+
+### Story 20.1: The parity meta-test reds a TODO inside the managed block
+
+As the maintainer of the instruction surface,
+I want `test_instruction_surface_parity.py` to fail on a `TODO:` / `FIXME:` / "not yet landed" line between the `bmad:context` markers,
+So that a decision without a Story cannot sit in the block as a line every session pays for.
+
+**Type:** feature • **Effort:** S • **Deps:** cross-project: steward 66.2 (the two lines standing on 2026-09-20) • **FR/AD:** spec-pyforge-scribe CAP-30 • Dream 2026-09-20 (evening)
+**Surface:** `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (one test + a planted-fixture self-test), `AGENTS.md` (nothing — the block is read, not written).
+**Given** two `TODO:` lines have stood in the managed block since 2026-09-04 with no Story behind them
+**When** this story lands
+**Then** a planted `TODO:` between the markers fails the meta-test naming the line; the live block passes; TODO text outside the markers is ignored
+**And** `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green
+
+**Outcome (2026-09-20):** done, hand-driven in PR #1553 with steward 66.2 — see the tracked spec's Auto Run Result.
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.
@@ -742,3 +764,14 @@ Every story in this epic set builds and tests against **Python 3.14 only**.
 (`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
 installs. No story's acceptance criteria change; recorded here so a future story is not
 written against a 3.12 assumption the estate cannot produce.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
+check ran.*

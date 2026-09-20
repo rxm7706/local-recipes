@@ -72,3 +72,16 @@ byte-exact match against the local file (`fc5ac86ad0264d8e082cbdc1646fc2a02b6cec
 — the corrupted boilerplate pattern is confirmed absent from the re-read content. The
 corrective push fully supersedes the corrupted etag; the live Design project now carries
 the real content.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `095c9a50c9` (2026-09-17, "Merge pull request #1418 from rxm7706/herald/21-7-wasm-analytics-stack-fix"); also `ce9c791abc` (2026-09-17, "Merge pull request #1407 from rxm7706/herald/21-7-wasm-analytics-stack-blocked-corrupt-pos"). Ledger row `21-7-wasm-analytics-stack-rebuilt-to-the-standard: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-7-wasm-analytics-stack-rebuilt-to-the-standard.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `presentations/wasm-analytics-stack/README.md`, `presentations/wasm-analytics-stack/project/Wasm Analytics Stack Infographic standalone.html`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

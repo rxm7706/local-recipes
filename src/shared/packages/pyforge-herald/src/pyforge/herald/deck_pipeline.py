@@ -133,19 +133,16 @@ class NpmLocalProver:
             )
         except subprocess.TimeoutExpired as exc:
             raise errors.HeraldError(
-                f"prove-before-cross failed: 'npm run {npm_script}' in "
-                f"{deck_dir} exceeded {self._timeout}s ({exc})"
+                f"prove-before-cross failed: 'npm run {npm_script}' in {deck_dir} exceeded {self._timeout}s ({exc})"
             ) from exc
         except OSError as exc:
             raise errors.HeraldError(
-                f"prove-before-cross failed: could not run 'npm run "
-                f"{npm_script}' in {deck_dir} ({exc})"
+                f"prove-before-cross failed: could not run 'npm run {npm_script}' in {deck_dir} ({exc})"
             ) from exc
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
-                f"prove-before-cross failed: 'npm run {npm_script}' in "
-                f"{deck_dir} exited {completed.returncode}: {tail}"
+                f"prove-before-cross failed: 'npm run {npm_script}' in {deck_dir} exited {completed.returncode}: {tail}"
             )
 
 
@@ -192,13 +189,9 @@ def seed(
 
     deck_dir = repo_root / "presentations" / slug
     if not deck_dir.is_dir():
-        raise errors.HeraldError(
-            f"cannot seed {slug!r}: no deck directory at {deck_dir}"
-        )
+        raise errors.HeraldError(f"cannot seed {slug!r}: no deck directory at {deck_dir}")
     readme_path = deck_dir / "README.md"
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing_state = state.read(resolved_state_path, slug)
     if existing_state is not None:
         raise errors.SeedConflictError(
@@ -251,19 +244,14 @@ def seed(
     prototype_filename = f"PyForge {persona}.dc.html"
     prototype_path = deck_dir / "project" / prototype_filename
     if not prototype_path.is_file():
-        raise errors.HeraldError(
-            f"cannot seed {slug!r}: no local prototype at {prototype_path} "
-            f"to prove and seed"
-        )
+        raise errors.HeraldError(f"cannot seed {slug!r}: no local prototype at {prototype_path} to prove and seed")
 
     (prover or NpmLocalProver()).prove(deck_dir)
 
     try:
         prototype_text = prototype_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
-        raise errors.HeraldError(
-            f"cannot seed {slug!r}: could not read {prototype_path} ({exc})"
-        ) from exc
+        raise errors.HeraldError(f"cannot seed {slug!r}: could not read {prototype_path} ({exc})") from exc
 
     prompt = transport.get_design_prompt(design_system_id=MODERNIST_DESIGN_SYSTEM_ID)
     if not prompt:
@@ -272,9 +260,7 @@ def seed(
             f"design-system prompt; the mandatory pre-write gate did not hold"
         )
 
-    project = transport.create_project(
-        name=f"PyForge {persona} deck", design_system_id=MODERNIST_DESIGN_SYSTEM_ID
-    )
+    project = transport.create_project(name=f"PyForge {persona} deck", design_system_id=MODERNIST_DESIGN_SYSTEM_ID)
     # Review finding: recording the new project used to happen only AFTER
     # every subsequent transport call succeeded. A failure anywhere in
     # finalize_plan/create_support_js/copy_files/write_files (an etag
@@ -333,9 +319,7 @@ def seed(
         project_id=project.project_id,
         file_url=project.url,
     )
-    return SeedResult(
-        project=project, persona=persona, prototype_filename=prototype_filename
-    )
+    return SeedResult(project=project, persona=persona, prototype_filename=prototype_filename)
 
 
 # --- CAP-2: pull (Design -> repo), Story 2.1 --------------------------------
@@ -368,9 +352,7 @@ class PullResult:
     committed: bool = False
 
 
-def _require_seeded_state(
-    state_path: Path, slug: str, *, verb: str = "pull"
-) -> state.DeckState:
+def _require_seeded_state(state_path: Path, slug: str, *, verb: str = "pull") -> state.DeckState:
     """The deck's recorded ``state.DeckState``, or a ``HeraldError`` naming
     ``herald deck seed`` -- pulling (and, since Story 5.1, pushing) needs a
     ``project_id`` to read from, and ``state.py`` is the only source of one
@@ -382,8 +364,7 @@ def _require_seeded_state(
     existing = state.read(state_path, slug)
     if existing is None:
         raise errors.HeraldError(
-            f"cannot {verb} {slug!r}: no bridge state recorded at {state_path} "
-            f"-- run 'herald deck seed {slug}' first"
+            f"cannot {verb} {slug!r}: no bridge state recorded at {state_path} -- run 'herald deck seed {slug}' first"
         )
     return existing
 
@@ -432,9 +413,7 @@ def _pull_and_land(
     would silently corrupt any pulled file that legitimately contains one of
     those substrings."""
     last_etag = existing.etags.get(artifact_key)
-    file_read = transport.read_file(
-        project_id=existing.project_id, path=remote_path, if_none_match=last_etag
-    )
+    file_read = transport.read_file(project_id=existing.project_id, path=remote_path, if_none_match=last_etag)
     if file_read.unchanged:
         return None
     if file_read.truncated:
@@ -566,19 +545,16 @@ class _PixiPartialDeckExporter:
             )
         except subprocess.TimeoutExpired as exc:
             raise errors.HeraldError(
-                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} "
-                f"exceeded {self._timeout}s ({exc})"
+                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} exceeded {self._timeout}s ({exc})"
             ) from exc
         except OSError as exc:
             raise errors.HeraldError(
-                f"deck-export failed: could not run {' '.join(cmd)!r} in "
-                f"{repo_root} ({exc})"
+                f"deck-export failed: could not run {' '.join(cmd)!r} in {repo_root} ({exc})"
             ) from exc
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
-                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} "
-                f"exited {completed.returncode}: {tail}"
+                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} exited {completed.returncode}: {tail}"
             )
 
 
@@ -610,8 +586,7 @@ class PptxTemplateExporter:
         template_rel = registry.read_potx_template(readme_path)
         if template_rel is None:
             raise errors.HeraldError(
-                f"cannot export {slug!r} via the .potx path: no PowerPoint "
-                f"template registered in {readme_path}"
+                f"cannot export {slug!r} via the .potx path: no PowerPoint template registered in {readme_path}"
             )
         content_plan_path = deck_dir / "src" / "content_plan.json"
         if not content_plan_path.is_file():
@@ -712,19 +687,16 @@ class SubprocessGitCommitter:
             )
         except subprocess.TimeoutExpired as exc:
             raise errors.HeraldError(
-                f"git commit failed: {' '.join(args)!r} in {repo_root} "
-                f"exceeded {self._timeout}s ({exc})"
+                f"git commit failed: {' '.join(args)!r} in {repo_root} exceeded {self._timeout}s ({exc})"
             ) from exc
         except OSError as exc:
             raise errors.HeraldError(
-                f"git commit failed: could not run {' '.join(args)!r} in "
-                f"{repo_root} ({exc})"
+                f"git commit failed: could not run {' '.join(args)!r} in {repo_root} ({exc})"
             ) from exc
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
-                f"git commit failed: {' '.join(args)!r} in {repo_root} exited "
-                f"{completed.returncode}: {tail}"
+                f"git commit failed: {' '.join(args)!r} in {repo_root} exited {completed.returncode}: {tail}"
             )
 
 
@@ -755,9 +727,7 @@ def pull_prototype(
     via ``committer`` (default ``SubprocessGitCommitter``, Story 2.2) --
     commit is opt-in, never implicit."""
     resolved_now = now or _default_now
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug)
     persona = _persona_from_slug(slug)
     prototype_filename = f"PyForge {persona}.dc.html"
@@ -783,9 +753,7 @@ def pull_prototype(
         )
 
     (prover or NpmLocalProver()).prove(deck_dir)
-    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(
-        slug=slug, repo_root=repo_root
-    )
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: the etag is now recorded only after prove+export both
     # succeed -- see `_pull_and_land`'s docstring for why recording it any
     # earlier makes a failed re-derivation unrecoverable via retry.
@@ -861,13 +829,10 @@ def pull_marp_source(
     unchanged pull)."""
     if kind not in _MARP_KINDS:
         raise errors.HeraldError(
-            f"cannot pull {slug!r}: unknown Marp source kind {kind!r}; "
-            f"expected one of {', '.join(sorted(_MARP_KINDS))}"
+            f"cannot pull {slug!r}: unknown Marp source kind {kind!r}; expected one of {', '.join(sorted(_MARP_KINDS))}"
         )
     resolved_now = now or _default_now
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug)
     short = _short_name(slug)
     remote_path = f"{short}-{kind}.md"
@@ -894,9 +859,7 @@ def pull_marp_source(
             committed=False,
         )
 
-    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(
-        slug=slug, repo_root=repo_root
-    )
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
     _record_pull_etag(
@@ -965,17 +928,13 @@ def pull_standalone_bundle(
     that boundary is deliberate. ``--commit`` behaves identically to Stories
     2.2/2.3's (opt-in, never on an unchanged pull)."""
     resolved_now = now or _default_now
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug)
     persona = _persona_from_slug(slug)
     remote_path = f"{persona} Infographic standalone.html"
     date_str = resolved_now().strftime("%Y-%m-%d")
     deck_dir = repo_root / "presentations" / slug
-    local_path = (
-        deck_dir / "src" / "marp" / f"{slug}-infographic-standalone-{date_str}.html"
-    )
+    local_path = deck_dir / "src" / "marp" / f"{slug}-infographic-standalone-{date_str}.html"
 
     file_read = _pull_and_land(
         transport,
@@ -995,9 +954,7 @@ def pull_standalone_bundle(
             committed=False,
         )
 
-    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(
-        slug=slug, repo_root=repo_root
-    )
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
     _record_pull_etag(
@@ -1165,9 +1122,7 @@ def _windowed_read(
     # load `transport/__init__.py`'s eager adapter imports.
     from .transport.base import FileRead
 
-    first = transport.read_file(
-        project_id=project_id, path=path, if_none_match=if_none_match
-    )
+    first = transport.read_file(project_id=project_id, path=path, if_none_match=if_none_match)
     if first.unchanged:
         return first
     if if_none_match is not None and first.etag == if_none_match:
@@ -1182,17 +1137,10 @@ def _windowed_read(
     previous_last_line: int | None = None
     while True:
         if window.body is None:
-            raise errors.HeraldError(
-                f"cannot read {path!r}: read_file reported a change but "
-                f"returned no body"
-            )
+            raise errors.HeraldError(f"cannot read {path!r}: read_file reported a change but returned no body")
         parts.append(_TRUNCATION_TRAILER_RE.sub("", window.body))
         etag = window.etag
-        no_window_declared = (
-            window.first_line is None
-            and window.last_line is None
-            and window.total_lines is None
-        )
+        no_window_declared = window.first_line is None and window.last_line is None and window.total_lines is None
         if no_window_declared:
             break  # the whole file arrived in this one call
         if window.last_line is None or window.total_lines is None:
@@ -1215,9 +1163,7 @@ def _windowed_read(
         if window.last_line >= window.total_lines:
             break  # this window reached end of file
         previous_last_line = window.last_line
-        window = transport.read_file(
-            project_id=project_id, path=path, offset=window.last_line + 1
-        )
+        window = transport.read_file(project_id=project_id, path=path, offset=window.last_line + 1)
     return FileRead(path=path, etag=etag, body="\n".join(parts), unchanged=False)
 
 
@@ -1274,9 +1220,7 @@ def adopt(
     if not artifacts:
         raise errors.HeraldError(f"cannot adopt {state_key!r}: no artifacts given")
     resolved_now = now or _default_now
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = state.read(resolved_state_path, state_key)
     bootstrapped = existing is None
     if existing is None:
@@ -1312,11 +1256,7 @@ def adopt(
             if_none_match=existing.etags.get(remote_path),
         )
         if file_read.unchanged:
-            results.append(
-                AdoptedArtifact(
-                    remote_path=remote_path, local_path=local_path, unchanged=True
-                )
-            )
+            results.append(AdoptedArtifact(remote_path=remote_path, local_path=local_path, unchanged=True))
             continue
         _atomic_write_text(local_path, file_read.body or "")
         new_etags = dict(existing.etags)
@@ -1327,11 +1267,7 @@ def adopt(
             last_pull=resolved_now().isoformat(),
         )
         state.write(resolved_state_path, state_key, existing)
-        results.append(
-            AdoptedArtifact(
-                remote_path=remote_path, local_path=local_path, unchanged=False
-            )
-        )
+        results.append(AdoptedArtifact(remote_path=remote_path, local_path=local_path, unchanged=False))
 
     return AdoptResult(
         state_key=state_key,
@@ -1430,9 +1366,7 @@ def _is_stale_mirror(files: Sequence[ListedFile]) -> bool:
     return nested >= _STALE_MIRROR_NESTED_PATH_THRESHOLD
 
 
-def _status_for_slug(
-    transport: DesignTransport, *, slug: str, state_path: Path
-) -> DeckStatus:
+def _status_for_slug(transport: DesignTransport, *, slug: str, state_path: Path) -> DeckStatus:
     """One deck's ``DeckStatus`` -- read-only throughout: ``state.read`` and
     ``transport.read_file``/``transport.list_files`` only, never a write to
     either surface."""
@@ -1529,9 +1463,7 @@ def status(
     directory), returns a single unlinked `DeckStatus` rather than raising:
     unlike `pull_*`, status reporting on an unseeded deck is itself a
     normal, informative answer, not an error."""
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     if slug is not None:
         # A single explicit slug: a structural failure (e.g. a bogus
         # tracked-artifact key -- AD-6) still raises plainly, matching
@@ -1542,9 +1474,7 @@ def status(
     return [_status_or_conflict(transport, one, resolved_state_path) for one in slugs]
 
 
-def _status_or_conflict(
-    transport: DesignTransport, slug: str, state_path: Path
-) -> DeckStatus:
+def _status_or_conflict(transport: DesignTransport, slug: str, state_path: Path) -> DeckStatus:
     """``_status_for_slug``, with one deck's structural failure (``state.py``
     is malformed for this slug, or names an artifact key this version does
     not recognize -- both raise ``errors.HeraldError``, AD-6) downgraded to
@@ -1651,9 +1581,7 @@ def _twinned_project_ids(repo_root: Path) -> dict[str, str]:
     return by_project_id
 
 
-def account_status(
-    transport: DesignTransport, *, repo_root: Path
-) -> list[AccountProjectStatus]:
+def account_status(transport: DesignTransport, *, repo_root: Path) -> list[AccountProjectStatus]:
     """CAP-1 (Story 23.1): enumerate every Design project the signed-in
     account can see and reconcile it against the registry, so
     ``herald deck status --account`` reports on all of it -- unlike CAP-3's
@@ -1867,16 +1795,12 @@ def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
     them yet (nothing to push, not an error)."""
     candidates: list[_ExportCandidate] = []
 
-    html_path = _newest_dated_match(
-        deck_dir / "src" / "marp", f"{slug}-infographic-standalone-", ".html"
-    )
+    html_path = _newest_dated_match(deck_dir / "src" / "marp", f"{slug}-infographic-standalone-", ".html")
     if html_path is not None:
         try:
             text = html_path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:
-            raise errors.HeraldError(
-                f"cannot push exports for {slug!r}: could not read {html_path} ({exc})"
-            ) from exc
+            raise errors.HeraldError(f"cannot push exports for {slug!r}: could not read {html_path} ({exc})") from exc
         candidates.append(
             _ExportCandidate(
                 filename=html_path.name,
@@ -1888,17 +1812,13 @@ def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
 
     pptx_dir = deck_dir / "src" / "pptx"
     for prefix_template in _PPTX_PREFIXES:
-        pptx_path = _newest_dated_match(
-            pptx_dir, prefix_template.format(slug=slug), ".pptx"
-        )
+        pptx_path = _newest_dated_match(pptx_dir, prefix_template.format(slug=slug), ".pptx")
         if pptx_path is None:
             continue
         try:
             raw_bytes = pptx_path.read_bytes()
         except OSError as exc:
-            raise errors.HeraldError(
-                f"cannot push exports for {slug!r}: could not read {pptx_path} ({exc})"
-            ) from exc
+            raise errors.HeraldError(f"cannot push exports for {slug!r}: could not read {pptx_path} ({exc})") from exc
         candidates.append(
             _ExportCandidate(
                 filename=pptx_path.name,
@@ -2029,9 +1949,7 @@ def push_exports(
     naming every mismatched file -- both after the state write and any
     Ledger append for the rest of the batch have already landed. Otherwise
     it returns ``ExportPushResult``."""
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug, verb="push")
     deck_dir = repo_root / "presentations" / slug
     resolved_export_dir = deck_dir if export_dir is None else export_dir
@@ -2077,9 +1995,7 @@ def push_exports(
         except errors.TransportCallError as exc:
             conflicts.append(f"{candidate.filename} ({exc})")
             continue
-        new_etags[f"{_EXPORT_ARTIFACT_PREFIX}{candidate.filename}"] = (
-            candidate.local_hash
-        )
+        new_etags[f"{_EXPORT_ARTIFACT_PREFIX}{candidate.filename}"] = candidate.local_hash
         pushed.append(candidate.filename)
         pushed_candidates[candidate.filename] = candidate
 
@@ -2091,9 +2007,7 @@ def push_exports(
             candidate = pushed_candidates[filename]
             expected = _candidate_raw_bytes(candidate)
             try:
-                raw = transport.fetch_rendered_bytes(
-                    project_id=existing.project_id, path=filename
-                )
+                raw = transport.fetch_rendered_bytes(project_id=existing.project_id, path=filename)
             except errors.TransportCallError:
                 # A transient read-back failure (network/HTTP) is not a byte
                 # mismatch, but it must be treated identically: the write
@@ -2150,9 +2064,7 @@ def push_exports(
         )
 
     if conflicts:
-        success_note = (
-            f" ({len(pushed)} other export(s) pushed successfully)" if pushed else ""
-        )
+        success_note = f" ({len(pushed)} other export(s) pushed successfully)" if pushed else ""
         raise errors.ExportConflictError(
             f"cannot push {len(conflicts)} export(s) for {slug!r}: "
             f"{'; '.join(conflicts)} -- refused rather than risk clobbering "
@@ -2166,6 +2078,4 @@ def push_exports(
             f"than record an unproven push"
         )
 
-    return ExportPushResult(
-        slug=slug, pushed=tuple(pushed), skipped=tuple(skipped), proven=tuple(proven)
-    )
+    return ExportPushResult(slug=slug, pushed=tuple(pushed), skipped=tuple(skipped), proven=tuple(proven))

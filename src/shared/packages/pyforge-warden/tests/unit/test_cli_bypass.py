@@ -23,7 +23,6 @@ import yaml
 from pyforge.warden.cli import main
 from pyforge.warden.report import TOOL_NAME
 
-
 # Follow-up review pass (2026-07-18): this module's fixtures declare
 # `requests==2.31.0`, whose license-axis outcome depended on whatever
 # requests metadata the AMBIENT pixi env happens to carry — the exact
@@ -41,9 +40,7 @@ def _fake_license_metadata(*, license_expression: str) -> Message:
 
 _PINNED_PYPI_LICENSE_METADATA: dict[str, Message] = {
     "requests": _fake_license_metadata(license_expression="Apache-2.0"),
-    "packaging": _fake_license_metadata(
-        license_expression="Apache-2.0 OR BSD-2-Clause"
-    ),
+    "packaging": _fake_license_metadata(license_expression="Apache-2.0 OR BSD-2-Clause"),
 }
 
 
@@ -59,19 +56,14 @@ def _pin_pypi_license_metadata(monkeypatch):
 
     monkeypatch.setattr(importlib.metadata, "metadata", fake_metadata)
 
+
 _FAR_FUTURE = "2099-01-01T00:00:00+00:00"
 _LONG_AGO = "2000-01-01T00:00:00+00:00"
 _RECENTLY_EXPIRED = "2000-06-01T00:00:00+00:00"
 
 
 def write_pyproject(directory: Path, deps: list[str], *, extra: str = "") -> None:
-    body = (
-        "[project]\n"
-        'name = "demo"\n'
-        'version = "0.0.1"\n'
-        f"dependencies = {json.dumps(deps)}\n"
-        f"{extra}"
-    )
+    body = f'[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = {json.dumps(deps)}\n{extra}'
     (directory / "pyproject.toml").write_text(body, encoding="utf-8")
 
 
@@ -180,9 +172,7 @@ def test_bypass_with_empty_string_reason_is_not_a_usage_error(capsys, tmp_path):
 # --- --bypass --reason "<text>" with blocking findings -------------------
 
 
-def test_bypass_with_blocking_findings_prints_stanza_and_exits_bypassed(
-    capsys, tmp_path
-):
+def test_bypass_with_blocking_findings_prints_stanza_and_exits_bypassed(capsys, tmp_path):
     _blocking_fixture(tmp_path)
     capsys.readouterr()
     rc = main(["scan", str(tmp_path), "--bypass", "--reason", "ci override"])
@@ -238,9 +228,7 @@ def test_bypass_json_format_writes_the_stanza_to_stderr_not_stdout(capsys, tmp_p
     assert "ci override" in err
 
 
-def test_authorized_by_falls_back_to_unknown_when_getpass_raises(
-    capsys, tmp_path, monkeypatch
-):
+def test_authorized_by_falls_back_to_unknown_when_getpass_raises(capsys, tmp_path, monkeypatch):
     import pyforge.warden.cli as cli_module
 
     def _raise() -> str:
@@ -303,17 +291,13 @@ def test_committed_waiver_is_echoed_in_text_format(capsys, tmp_path):
 
 def test_expired_waiver_leaves_the_original_finding_status(capsys, tmp_path):
     _blocking_fixture(tmp_path)
-    write_waiver_file(
-        tmp_path, accepted_at=_LONG_AGO, expires_at=_RECENTLY_EXPIRED
-    )
+    write_waiver_file(tmp_path, accepted_at=_LONG_AGO, expires_at=_RECENTLY_EXPIRED)
     rc, document, _ = scan_json(capsys, tmp_path)
     assert document["status"]["value"] == "warn"  # never bypassed
     assert rc == document["exit_code"] == 0
 
 
-def test_expired_waiver_shows_a_waiver_expired_notice_not_a_waiver_notice(
-    capsys, tmp_path
-):
+def test_expired_waiver_shows_a_waiver_expired_notice_not_a_waiver_notice(capsys, tmp_path):
     """Story 3.3: an expired match is no longer silently indistinguishable
     from "no waiver ever existed" -- it gets its own [waiver-expired] line
     (never the [waiver] applied-notice line), and that line must not
@@ -341,9 +325,7 @@ def test_expired_waiver_shows_a_waiver_expired_notice_not_a_waiver_notice(
 # --- expired waiver on a real policy-violation (Story 3.3) --------------
 
 
-def test_expired_waiver_on_a_real_critical_vuln_still_composes_policy_violation(
-    capsys, tmp_path
-):
+def test_expired_waiver_on_a_real_critical_vuln_still_composes_policy_violation(capsys, tmp_path):
     """I/O matrix row: a real critical-vuln finding, expired waiver on the
     same id -- status/exit_code are unchanged from today (the re-block
     mechanism itself is untouched), in both text and json format."""
@@ -365,10 +347,7 @@ def test_expired_waiver_on_a_real_critical_vuln_still_composes_policy_violation(
     assert rc_text == 1
     assert "status=policy-violation" in captured.out
     assert "exit_code=1" in captured.out
-    assert (
-        "[waiver-expired] vuln:PDOS-FIXTURE-0001:pdos-vuln-fixture@1.0.0"
-        in captured.out
-    )
+    assert "[waiver-expired] vuln:PDOS-FIXTURE-0001:pdos-vuln-fixture@1.0.0" in captured.out
     assert "[waiver]" not in captured.out
     assert "re-blocked" not in captured.out
 
@@ -376,26 +355,17 @@ def test_expired_waiver_on_a_real_critical_vuln_still_composes_policy_violation(
 # --- embedded-newline line forgery (Story 3.3 review finding) ------------
 
 
-def test_embedded_newline_in_authorized_by_never_forges_a_line_active_waiver(
-    capsys, tmp_path
-):
+def test_embedded_newline_in_authorized_by_never_forges_a_line_active_waiver(capsys, tmp_path):
     _blocking_fixture(tmp_path)
-    write_waiver_file(
-        tmp_path, authorized_by="alice\n  [forged] fake extra line"
-    )
+    write_waiver_file(tmp_path, authorized_by="alice\n  [forged] fake extra line")
     rc = main(["scan", str(tmp_path)])
     captured = capsys.readouterr()
     assert rc == 0
-    assert not any(
-        line.strip() == "[forged] fake extra line"
-        for line in captured.out.splitlines()
-    )
+    assert not any(line.strip() == "[forged] fake extra line" for line in captured.out.splitlines())
     assert "authorized_by=alice\\n  [forged] fake extra line" in captured.out
 
 
-def test_embedded_newline_in_authorized_by_never_forges_a_line_expired_waiver(
-    capsys, tmp_path
-):
+def test_embedded_newline_in_authorized_by_never_forges_a_line_expired_waiver(capsys, tmp_path):
     _blocking_fixture(tmp_path)
     write_waiver_file(
         tmp_path,
@@ -406,10 +376,7 @@ def test_embedded_newline_in_authorized_by_never_forges_a_line_expired_waiver(
     rc = main(["scan", str(tmp_path)])
     captured = capsys.readouterr()
     assert rc == 0
-    assert not any(
-        line.strip() == "[forged] fake extra line"
-        for line in captured.out.splitlines()
-    )
+    assert not any(line.strip() == "[forged] fake extra line" for line in captured.out.splitlines())
     assert "authorized_by=bob\\n  [forged] fake extra line" in captured.out
 
 
@@ -417,9 +384,7 @@ def test_embedded_newline_in_authorized_by_never_forges_a_line_expired_waiver(
 
 
 def test_malformed_waiver_yaml_is_a_config_parse_error(capsys, tmp_path):
-    (tmp_path / ".warden-waivers.yaml").write_text(
-        "version: 1\nwaivers:\n  - id: [unterminated\n", encoding="utf-8"
-    )
+    (tmp_path / ".warden-waivers.yaml").write_text("version: 1\nwaivers:\n  - id: [unterminated\n", encoding="utf-8")
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2
     assert rc == document["exit_code"]
@@ -431,9 +396,7 @@ def test_malformed_waiver_yaml_is_a_config_parse_error(capsys, tmp_path):
 
 
 def test_unknown_version_waiver_file_is_a_config_validation_error(capsys, tmp_path):
-    (tmp_path / ".warden-waivers.yaml").write_text(
-        "version: 2\nwaivers: []\n", encoding="utf-8"
-    )
+    (tmp_path / ".warden-waivers.yaml").write_text("version: 2\nwaivers: []\n", encoding="utf-8")
     rc, document, _ = scan_json(capsys, tmp_path)
     assert rc == 2
     assert document["status"]["value"] == "error"
@@ -459,12 +422,8 @@ def test_malformed_waiver_file_still_fails_closed_even_with_bypass(capsys, tmp_p
     families, so bypass_blocking cannot touch it, and the scan still fails
     closed at exit 2 regardless of --bypass."""
     _blocking_fixture(tmp_path)
-    (tmp_path / ".warden-waivers.yaml").write_text(
-        "version: 1\nwaivers:\n  - id: [unterminated\n", encoding="utf-8"
-    )
-    rc, document, err = scan_json(
-        capsys, tmp_path, ["--bypass", "--reason", "ci override"]
-    )
+    (tmp_path / ".warden-waivers.yaml").write_text("version: 1\nwaivers:\n  - id: [unterminated\n", encoding="utf-8")
+    rc, document, err = scan_json(capsys, tmp_path, ["--bypass", "--reason", "ci override"])
     assert rc == 2
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "error"
@@ -500,9 +459,7 @@ def test_warn_only_help_text_scopes_the_fail_on_no_effect_claim():
     assert "count" in help_text
 
 
-def test_warn_only_downgrades_a_real_policy_violation_to_warn_with_a_nudge(
-    capsys, tmp_path
-):
+def test_warn_only_downgrades_a_real_policy_violation_to_warn_with_a_nudge(capsys, tmp_path):
     _critical_vuln_fixture(tmp_path)
     rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only"])
     assert rc == 0
@@ -521,9 +478,7 @@ def test_warn_only_downgrades_a_real_policy_violation_to_warn_with_a_nudge(
     )
 
 
-def test_warn_only_nudge_counts_only_downgraded_findings_not_the_total(
-    capsys, tmp_path
-):
+def test_warn_only_nudge_counts_only_downgraded_findings_not_the_total(capsys, tmp_path):
     """Mixed-finding-count row: one native-warn hygiene DEP002 finding, one
     native-warn license:unknown finding (Story 6.2: pdos-vuln-fixture is not
     an installed package), and one native-warn currency:unknown finding
@@ -544,9 +499,7 @@ def test_warn_only_nudge_counts_only_downgraded_findings_not_the_total(
     assert "[warn-only] 1 finding not enforced" in captured.out
 
 
-def test_warn_only_nudge_pluralizes_for_multiple_downgraded_findings(
-    capsys, tmp_path
-):
+def test_warn_only_nudge_pluralizes_for_multiple_downgraded_findings(capsys, tmp_path):
     write_pyproject(tmp_path, ["pdos-vuln-fixture==1.0.0", "leftpad"])
     rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only"])
     assert rc == 0
@@ -561,13 +514,9 @@ def test_warn_only_nudge_pluralizes_for_multiple_downgraded_findings(
     )
 
 
-def test_warn_only_does_not_downgrade_a_tool_error_and_prints_no_nudge(
-    capsys, tmp_path
-):
+def test_warn_only_does_not_downgrade_a_tool_error_and_prints_no_nudge(capsys, tmp_path):
     _blocking_fixture(tmp_path)
-    (tmp_path / ".warden-waivers.yaml").write_text(
-        "version: 1\nwaivers:\n  - id: [unterminated\n", encoding="utf-8"
-    )
+    (tmp_path / ".warden-waivers.yaml").write_text("version: 1\nwaivers:\n  - id: [unterminated\n", encoding="utf-8")
     rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only"])
     assert rc == 2
     assert document["exit_code"] == 2
@@ -604,9 +553,7 @@ def test_warn_only_combined_with_bypass_is_bypassed_with_no_nudge(capsys, tmp_pa
     assert "[warn-only]" not in captured.out
 
 
-def test_warn_only_combined_with_an_active_waiver_is_bypassed_with_no_nudge(
-    capsys, tmp_path
-):
+def test_warn_only_combined_with_an_active_waiver_is_bypassed_with_no_nudge(capsys, tmp_path):
     _blocking_fixture(tmp_path)
     write_waiver_file(tmp_path)
     capsys.readouterr()
@@ -616,9 +563,7 @@ def test_warn_only_combined_with_an_active_waiver_is_bypassed_with_no_nudge(
     assert "[warn-only]" not in captured.out
 
 
-def test_warn_only_combined_with_an_expired_waiver_downgrades_with_a_nudge(
-    capsys, tmp_path
-):
+def test_warn_only_combined_with_an_expired_waiver_downgrades_with_a_nudge(capsys, tmp_path):
     """--warn-only + an expired waiver on the SAME finding: apply_waivers
     leaves the rung untouched (still policy-violation), then warn_blocking
     downgrades that same rung to warn -- status=warn, nudge present, and
@@ -636,17 +581,12 @@ def test_warn_only_combined_with_an_expired_waiver_downgrades_with_a_nudge(
     captured = capsys.readouterr()
     assert rc == 0
     assert "status=warn" in captured.out
-    assert (
-        "[waiver-expired] vuln:PDOS-FIXTURE-0001:pdos-vuln-fixture@1.0.0"
-        in captured.out
-    )
+    assert "[waiver-expired] vuln:PDOS-FIXTURE-0001:pdos-vuln-fixture@1.0.0" in captured.out
     assert "re-blocked" not in captured.out
     assert "[warn-only] 1 finding not enforced" in captured.out
 
 
-def test_warn_only_with_fail_under_coverage_breach_stays_indeterminate_no_nudge(
-    capsys, tmp_path
-):
+def test_warn_only_with_fail_under_coverage_breach_stays_indeterminate_no_nudge(capsys, tmp_path):
     """FR19 guardrail: the indeterminate:coverage-floor:<axis> rung is
     computed inside report.assemble_report, strictly AFTER cli.py calls
     warn_blocking -- it structurally survives --warn-only untouched, so the
@@ -670,9 +610,7 @@ def test_warn_only_with_fail_under_coverage_breach_stays_indeterminate_no_nudge(
     assert "[warn-only]" not in captured.out
 
 
-def test_warn_only_no_nudge_when_composed_warn_is_unrelated_to_warn_only(
-    capsys, tmp_path
-):
+def test_warn_only_no_nudge_when_composed_warn_is_unrelated_to_warn_only(capsys, tmp_path):
     """The residual gate-hole review-pass-2 caught: status == "warn" alone
     is not sufficient -- a lone native hygiene warn-tier finding (never
     policy-violation/indeterminate) must not trigger a nonsensical nudge
@@ -697,17 +635,13 @@ def test_fail_on_low_plus_warn_only_still_yields_warn_and_exit_zero(capsys, tmp_
     only dropping --warn-only (never raising --fail-on) re-enables
     enforcement."""
     _critical_vuln_fixture(tmp_path)
-    rc, document, _ = scan_json(
-        capsys, tmp_path, ["--warn-only", "--fail-on", "low"]
-    )
+    rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only", "--fail-on", "low"])
     assert rc == 0
     assert document["exit_code"] == 0
     assert document["status"]["value"] == "warn"
 
 
-def test_fail_on_changes_the_nudge_count_but_never_the_final_status_or_exit(
-    capsys, tmp_path
-):
+def test_fail_on_changes_the_nudge_count_but_never_the_final_status_or_exit(capsys, tmp_path):
     """Review-pass-2 finding: the composed status/exit code ARE --fail-on
     -invariant while --warn-only is set, but the nudge's printed
     downgraded-finding COUNT is NOT -- a stricter --fail-on floor makes

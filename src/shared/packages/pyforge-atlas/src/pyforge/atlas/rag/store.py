@@ -166,10 +166,7 @@ class DuckdbVssRagStore:
         self._ensure_table()
 
     def _ensure_table(self) -> None:
-        self.con.execute(
-            f"CREATE TABLE IF NOT EXISTS {self._table} "
-            f"(id VARCHAR, text VARCHAR, emb FLOAT[{self.dim}])"
-        )
+        self.con.execute(f"CREATE TABLE IF NOT EXISTS {self._table} (id VARCHAR, text VARCHAR, emb FLOAT[{self.dim}])")
 
     def index(self, artifacts: Any) -> int:
         """(Re)build the store from ``artifacts`` — an iterable of ``(id, text)`` pairs or
@@ -193,13 +190,10 @@ class DuckdbVssRagStore:
             self.con.execute(f"DROP INDEX IF EXISTS {self._index}")
             self.con.execute(f"DELETE FROM {self._table}")
             if prepared:
-                self.con.executemany(
-                    f"INSERT INTO {self._table} VALUES (?, ?, ?::FLOAT[{self.dim}])", prepared
-                )
+                self.con.executemany(f"INSERT INTO {self._table} VALUES (?, ?, ?::FLOAT[{self.dim}])", prepared)
             # Build the HNSW index (requires vss — proves provisioning). Safe on an empty table.
             self.con.execute(
-                f"CREATE INDEX {self._index} ON {self._table} "
-                f"USING HNSW (emb) WITH (metric = '{self._metric}')"
+                f"CREATE INDEX {self._index} ON {self._table} USING HNSW (emb) WITH (metric = '{self._metric}')"
             )
             self.con.execute("COMMIT")
         except Exception:

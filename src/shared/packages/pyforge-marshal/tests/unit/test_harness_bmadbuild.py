@@ -22,6 +22,7 @@ import time
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.adapters.harness_bmadbuild import (
     _SPEC_SURFACE_OBLIGATION,
     BmadBuildHarness,
@@ -73,15 +74,9 @@ def bare_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 # --- resolution --------------------------------------------------------------
 
 
-def test_resolution_skips_missing_binary_then_resolves(
-    tmp_path: Path, bare_path: Path
-) -> None:
-    _write_overlay(
-        tmp_path, "one", 'name = "one"\nbinary = "one-cli"\nargv = ["{prompt}"]\n'
-    )
-    _write_overlay(
-        tmp_path, "two", 'name = "two"\nbinary = "two-cli"\nargv = ["{prompt}"]\n'
-    )
+def test_resolution_skips_missing_binary_then_resolves(tmp_path: Path, bare_path: Path) -> None:
+    _write_overlay(tmp_path, "one", 'name = "one"\nbinary = "one-cli"\nargv = ["{prompt}"]\n')
+    _write_overlay(tmp_path, "two", 'name = "two"\nbinary = "two-cli"\nargv = ["{prompt}"]\n')
     _write_script(bare_path, "two-cli", "exit 0")
     harness = BmadBuildHarness()
     resolution = harness.binary_present(("one", "two"), repo_root=tmp_path)
@@ -100,14 +95,11 @@ def test_resolution_skips_unknown_profile_name(tmp_path: Path, bare_path: Path) 
     assert "unknown harness profile" in resolution.skipped[0].reason
 
 
-def test_resolution_authcheck_nonzero_exit_skips(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_resolution_authcheck_nonzero_exit_skips(tmp_path: Path, bare_path: Path) -> None:
     _write_overlay(
         tmp_path,
         "authy",
-        'name = "authy"\nbinary = "authy-cli"\nargv = ["{prompt}"]\n'
-        'authcheck_args = ["status"]\n',
+        'name = "authy"\nbinary = "authy-cli"\nargv = ["{prompt}"]\nauthcheck_args = ["status"]\n',
     )
     _write_script(bare_path, "authy-cli", 'echo "Authentication required" >&2\nexit 1')
     harness = BmadBuildHarness()
@@ -117,9 +109,7 @@ def test_resolution_authcheck_nonzero_exit_skips(
     assert "Authentication required" in resolution.skipped[0].reason
 
 
-def test_resolution_authcheck_pattern_miss_skips_despite_exit_zero(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_resolution_authcheck_pattern_miss_skips_despite_exit_zero(tmp_path: Path, bare_path: Path) -> None:
     """The 2026-08-27 lesson, regression-pinned: cursor's trust prompt and
     gemini's trust refusal both EXIT 0 -- output must confirm, exit code
     alone never suffices."""
@@ -159,8 +149,7 @@ def test_resolution_uses_fallback_bin_dirs(tmp_path: Path, bare_path: Path) -> N
     _write_overlay(
         tmp_path,
         "pixied",
-        'name = "pixied"\nbinary = "pixi-cli"\nargv = ["{prompt}"]\n'
-        'fallback_bin_dirs = ["envbin"]\n',
+        'name = "pixied"\nbinary = "pixi-cli"\nargv = ["{prompt}"]\nfallback_bin_dirs = ["envbin"]\n',
     )
     harness = BmadBuildHarness()
     resolution = harness.binary_present(("pixied",), repo_root=tmp_path)
@@ -207,9 +196,7 @@ def _launch_ready_resolution(tmp_path: Path, bare_path: Path) -> HarnessResoluti
     return BmadBuildHarness().binary_present(("fakecli",), repo_root=tmp_path)
 
 
-def test_dispatch_renders_profile_argv_env_and_detaches(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_renders_profile_argv_env_and_detaches(tmp_path: Path, bare_path: Path) -> None:
     resolution = _launch_ready_resolution(tmp_path, bare_path)
     assert resolution.profile == "fakecli"
     worktree = tmp_path / "wt"
@@ -260,9 +247,7 @@ def test_spec_surface_obligation_states_the_full_s13_7_contract() -> None:
     assert "location:" in _SPEC_SURFACE_OBLIGATION
 
 
-def test_dispatch_prompt_carries_the_spec_surface_obligation(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_prompt_carries_the_spec_surface_obligation(tmp_path: Path, bare_path: Path) -> None:
     """The obligation constant is not just defined -- it is actually wired
     into the prompt every dispatched session receives (``dispatch()``'s
     ``{prompt}`` argv placeholder, ``result.command[5]`` per the existing
@@ -283,9 +268,7 @@ def test_dispatch_prompt_carries_the_spec_surface_obligation(
     assert _SPEC_SURFACE_OBLIGATION in result.command[5]
 
 
-def test_dispatch_omitted_model_tier_reports_reason(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_omitted_model_tier_reports_reason(tmp_path: Path, bare_path: Path) -> None:
     resolution = _launch_ready_resolution(tmp_path, bare_path)
     worktree = tmp_path / "wt"
     worktree.mkdir()
@@ -318,9 +301,7 @@ def test_dispatch_refuses_a_falsy_resolution(tmp_path: Path) -> None:
         )
 
 
-def test_dispatch_refuses_spec_outside_worktree(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_refuses_spec_outside_worktree(tmp_path: Path, bare_path: Path) -> None:
     resolution = _launch_ready_resolution(tmp_path, bare_path)
     worktree = tmp_path / "wt"
     worktree.mkdir()
@@ -345,7 +326,7 @@ def test_dispatch_refuses_spec_outside_worktree(
 #: writing the verdict where the test can read it, and (c) execs the wrapped
 #: CLI it resolves OFF PATH with everything after its own `--` passed through
 #: verbatim -- the same contract `headroom wrap <tool> -- <tool args>` has.
-_WRAPPER_STUB = '''
+_WRAPPER_STUB = """
 import hashlib
 import os
 import shutil
@@ -384,7 +365,7 @@ store.joinpath("roundtrip.txt").write_text(
 tool = argv[1]
 tail = argv[argv.index("--") + 1 :]
 os.execv(shutil.which(tool), [tool, *tail])
-'''
+"""
 
 _WRAPPED_PROFILE_TOML = (
     'name = "fakecli"\nbinary = "fakecli"\n'
@@ -428,17 +409,13 @@ def _await_file(path: Path, *, tries: int = 200) -> str:
     raise AssertionError(f"{path} never appeared")
 
 
-def test_binary_present_resolves_the_wrapper_binary(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_binary_present_resolves_the_wrapper_binary(tmp_path: Path, bare_path: Path) -> None:
     resolution = _wired_resolution(tmp_path, bare_path)
     assert resolution.profile == "fakecli"
     assert resolution.wrapper_binary_path == str(bare_path / "wrapcli")
 
 
-def test_an_unresolvable_wrapper_never_disqualifies_the_profile(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_an_unresolvable_wrapper_never_disqualifies_the_profile(tmp_path: Path, bare_path: Path) -> None:
     """Graceful degradation is per LAYER, never per candidate: a missing
     wrapper turns the wire layer off, it does not make an otherwise
     dispatchable profile un-dispatchable."""
@@ -449,9 +426,7 @@ def test_an_unresolvable_wrapper_never_disqualifies_the_profile(
     assert resolution.skipped == ()
 
 
-def test_wrapper_resolves_through_its_own_fallback_bin_dirs(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_wrapper_resolves_through_its_own_fallback_bin_dirs(tmp_path: Path, bare_path: Path) -> None:
     """The wrapper probes through the IDENTICAL PATH-then-repo-root-relative
     resolution the profile's own binary does (the pixi-env case: headroom
     lives in `.pixi/envs/local-recipes/bin`, invisible to a bare operator
@@ -471,9 +446,7 @@ def test_wrapper_resolves_through_its_own_fallback_bin_dirs(
     assert resolution.wrapper_binary_path == str(envbin / "wrapcli")
 
 
-def test_dispatch_wraps_the_launch_and_scopes_the_store_to_the_worktree(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_wraps_the_launch_and_scopes_the_store_to_the_worktree(tmp_path: Path, bare_path: Path) -> None:
     """CAP-2's first AC end to end on the engine that owns this seam: an
     enabled wire layer -> the launched command is DEMONSTRABLY wrapped
     (profile-resolved wrapper first in argv, reported on the result for the
@@ -517,9 +490,7 @@ def test_dispatch_wraps_the_launch_and_scopes_the_store_to_the_worktree(
     assert "session output" in _await_file(tmp_path / "session.log")
 
 
-def test_dispatch_ccr_store_round_trip_is_byte_exact(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_ccr_store_round_trip_is_byte_exact(tmp_path: Path, bare_path: Path) -> None:
     """CAP-2's second AC ("a compressed artifact is retrievable byte-exact")
     proven at the seam marshal owns: the store directory marshal hands the
     wrapper is a real, writable directory in which a compress -> retrieve
@@ -546,15 +517,11 @@ def test_dispatch_ccr_store_round_trip_is_byte_exact(
     assert verdict.startswith("EXACT")
     # ...and it really was compressed, not stored verbatim -- otherwise
     # "byte-exact retrieval" would be a tautology about a copy.
-    compressed, original = (
-        int(field.split("=")[1]) for field in verdict.split("\n")[1].split(" ")
-    )
+    compressed, original = (int(field.split("=")[1]) for field in verdict.split("\n")[1].split(" "))
     assert compressed < original
 
 
-def test_wrapped_launch_tail_is_byte_identical_to_the_unwrapped_one(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_wrapped_launch_tail_is_byte_identical_to_the_unwrapped_one(tmp_path: Path, bare_path: Path) -> None:
     """CAP-2's third AC at the launch seam (the pure-render half is pinned in
     ``test_harness_profile.py``): identical inputs, wrapped vs unwrapped ->
     everything marshal composed, prompt included, crosses byte-identically.
@@ -588,9 +555,7 @@ def test_wrapped_launch_tail_is_byte_identical_to_the_unwrapped_one(
     assert off.wire.reason is None  # nothing enabled, nothing to report
 
 
-def test_dispatch_without_a_wire_layer_is_byte_identical_to_pre_28_2(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_without_a_wire_layer_is_byte_identical_to_pre_28_2(tmp_path: Path, bare_path: Path) -> None:
     """The default call shape (``wire_layer`` omitted entirely) still
     launches bare -- the parameter is optional so every existing caller and
     the whole pre-28.2 behavior survive untouched."""
@@ -612,9 +577,7 @@ def test_dispatch_without_a_wire_layer_is_byte_identical_to_pre_28_2(
     assert not (worktree / ".marshal").exists()
 
 
-def test_dispatch_degrades_when_the_wrapper_binary_is_absent(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_degrades_when_the_wrapper_binary_is_absent(tmp_path: Path, bare_path: Path) -> None:
     """CAP-2's fourth AC: instrument unavailable -> the layer disables with
     a NAMED reason and the run proceeds UNWRAPPED. Never a blocked run
     (a real pid comes back), never a silent no-op (the reason is there for
@@ -641,9 +604,7 @@ def test_dispatch_degrades_when_the_wrapper_binary_is_absent(
     assert not (worktree / ".marshal").exists()
 
 
-def test_dispatch_degrades_when_the_profile_declares_no_wrapper(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_degrades_when_the_profile_declares_no_wrapper(tmp_path: Path, bare_path: Path) -> None:
     resolution = _launch_ready_resolution(tmp_path, bare_path)
     worktree = tmp_path / "wt"
     worktree.mkdir()
@@ -663,9 +624,7 @@ def test_dispatch_degrades_when_the_profile_declares_no_wrapper(
     assert "declares no [wrapper]" in result.wire.reason
 
 
-def test_dispatch_degrades_when_the_ccr_store_cannot_be_created(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_degrades_when_the_ccr_store_cannot_be_created(tmp_path: Path, bare_path: Path) -> None:
     """Reversible-or-absent, enforced at the last moment it still can be: a
     store the wrapper cannot write to would make its compression
     irreversible, so an uncreatable store turns the layer OFF rather than
@@ -695,9 +654,7 @@ def test_dispatch_degrades_when_the_ccr_store_cannot_be_created(
     assert result.wire.store_dir is None
 
 
-def test_wrapped_launch_keeps_a_fallback_dir_cli_reachable(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_wrapped_launch_keeps_a_fallback_dir_cli_reachable(tmp_path: Path, bare_path: Path) -> None:
     """Wrapping replaces the resolved CLI PATH with the wrapper's, and the
     wrapper then resolves the CLI itself off PATH. A CLI that only lives in
     a profile ``fallback_bin_dirs`` entry -- the pixi-env case this repo
@@ -731,14 +688,10 @@ def test_wrapped_launch_keeps_a_fallback_dir_cli_reachable(
         log_path=tmp_path / "session.log",
         wire_layer=_WIRE_ON,
     )
-    assert "session output from the fallback dir" in _await_file(
-        tmp_path / "session.log"
-    )
+    assert "session output from the fallback dir" in _await_file(tmp_path / "session.log")
 
 
-def test_dispatch_child_survives_via_new_session(
-    tmp_path: Path, bare_path: Path
-) -> None:
+def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path) -> None:
     """The detach decision, pinned: Popen with start_new_session -- the
     returned pid IS the session process (no CLI self-backgrounding
     double-detach), so the dispatch supervisor's liveness probe is

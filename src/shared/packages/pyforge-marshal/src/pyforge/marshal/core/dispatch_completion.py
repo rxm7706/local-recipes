@@ -42,14 +42,12 @@ class DispatchCompletionInput:
 
     session_alive: bool
     git: DispatchGitFacts
-  # Harness notification/self-report — recorded for diagnostics only, never
-  # used as a verdict input (CAP-2 Always bullet).
+    # Harness notification/self-report — recorded for diagnostics only, never
+    # used as a verdict input (CAP-2 Always bullet).
     harness_reported_failure: bool = False
 
 
-def is_spec_only_narration(
-    changed_paths: tuple[str, ...], spec_relative_path: str | None
-) -> bool:
+def is_spec_only_narration(changed_paths: tuple[str, ...], spec_relative_path: str | None) -> bool:
     """True when the ENTIRE diff is the tracked story spec file itself.
 
     A session that only rewrites its own spec's frontmatter (a status flip,
@@ -64,9 +62,7 @@ def is_spec_only_narration(
     return set(changed_paths) == {spec_relative_path}
 
 
-def has_git_progress(
-    git: DispatchGitFacts, *, spec_relative_path: str | None = None
-) -> bool:
+def has_git_progress(git: DispatchGitFacts, *, spec_relative_path: str | None = None) -> bool:
     """True when git shows work beyond the launch baseline.
 
     A revert-to-baseline plus a spec-only status flip is not progress
@@ -102,10 +98,7 @@ def zombie_redispatch_evidence(
     if verdict != DispatchSessionVerdict.LIVE:
         return None
     if session_alive:
-        return (
-            f"story {story_key!r} already has a live dispatch session "
-            f"(session process alive)"
-        )
+        return f"story {story_key!r} already has a live dispatch session (session process alive)"
     parts = [
         f"story {story_key!r} dispatch session is still live by git facts",
         f"baseline {git.baseline_head_sha[:12]} -> current {git.current_head_sha[:12]}",

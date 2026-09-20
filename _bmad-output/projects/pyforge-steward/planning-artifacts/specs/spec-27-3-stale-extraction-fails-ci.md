@@ -2,7 +2,7 @@
 title: 'Stale extraction fails CI'
 type: 'feature'
 created: '2026-08-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: '23f8562970fa83083ab4fac93f43c4adf56693a4'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -83,7 +83,8 @@ deferred: []
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
+Reconciled 2026-09-20: the `in-review` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `598f40d026 2026-08-25 chore(steward): 27-3 ledger finalize` — that promotion is the ruling this record now reflects.
 Tests: `pytest tests/policy` → 53 passed (cwd src/platform); `python -m db.sqlmigrate_extraction` → ok (14 migrations)
 
 
@@ -95,3 +96,8 @@ First-party = migration modules whose path sits under `src/platform/` or `src/sh
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `27-3-stale-extraction-fails-ci: done`).
+- Auto Run Result `Status: in-review` → `done` (see the reconcile line under it).

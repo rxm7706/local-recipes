@@ -26,9 +26,7 @@ def _resolve_spec_md(repo_root: Path, slug: str) -> Path | None:
     governance = repo_root / "docs" / "governance" / slug / "SPEC.md"
     if governance.is_file():
         return governance
-    matches = sorted(
-        repo_root.glob(f"_bmad-output/projects/*/planning-artifacts/specs/{slug}/SPEC.md")
-    )
+    matches = sorted(repo_root.glob(f"_bmad-output/projects/*/planning-artifacts/specs/{slug}/SPEC.md"))
     return matches[0] if matches else None
 
 
@@ -48,8 +46,7 @@ def test_deferred_specs_entries_name_open_specs_live() -> None:
 
     assert not stale, (
         "DEFERRED_SPECS contains entries whose Specs are no longer open — "
-        "remove them rather than leaving inert exemptions:\n  "
-        + "\n  ".join(stale)
+        "remove them rather than leaving inert exemptions:\n  " + "\n  ".join(stale)
     )
 
 
@@ -59,12 +56,8 @@ def test_live_tree_reports_zero_spec_status_missing() -> None:
     repo_root = _require_repo_root()
     findings = board.gather_chain_completeness(repo_root)
     missing = [f for f in findings if f.check == "spec-status-missing"]
-    assert not missing, (
-        "live tree still has Specs with no status: key:\n  "
-        + "\n  ".join(
-            f"{f.evidence['project']}/{f.evidence['subject']}: {f.message}"
-            for f in missing
-        )
+    assert not missing, "live tree still has Specs with no status: key:\n  " + "\n  ".join(
+        f"{f.evidence['project']}/{f.evidence['subject']}: {f.message}" for f in missing
     )
 
 

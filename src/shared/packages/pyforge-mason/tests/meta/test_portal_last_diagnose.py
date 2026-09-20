@@ -76,10 +76,7 @@ def _raw_http_imports(tree: ast.AST) -> list[str]:
 
 
 def _pyforge_import_allowed(module: str) -> bool:
-    return any(
-        module == prefix or module.startswith(prefix + ".")
-        for prefix in _ALLOWED_PYFORGE_IMPORTS
-    )
+    return any(module == prefix or module.startswith(prefix + ".") for prefix in _ALLOWED_PYFORGE_IMPORTS)
 
 
 def _pyforge_imports(tree: ast.AST) -> list[str]:
@@ -94,9 +91,7 @@ def _pyforge_imports(tree: ast.AST) -> list[str]:
             )
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
-            if (
-                module == "pyforge" or module.startswith("pyforge.")
-            ) and not _pyforge_import_allowed(module):
+            if (module == "pyforge" or module.startswith("pyforge.")) and not _pyforge_import_allowed(module):
                 found.append(f"from {module} import ...")
     return found
 
@@ -111,9 +106,7 @@ def test_chrome_home_calls_portal_client_last_diagnose():
 
 def test_home_template_renders_last_diagnose_in_host_chrome():
     root = _repo_root()
-    html = (
-        _portal_root(root) / "templates" / "mason_portal" / "home.html"
-    ).read_text(encoding="utf-8")
+    html = (_portal_root(root) / "templates" / "mason_portal" / "home.html").read_text(encoding="utf-8")
     if 'id="mason-last-diagnose"' not in html:
         raise PortalDiagnoseContractError("home template must render #mason-last-diagnose")
     if '{% extends "django_pyforge/base.html" %}' not in html:

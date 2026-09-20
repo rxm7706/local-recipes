@@ -114,3 +114,16 @@ of Epic 10 attempts to close that gap itself.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `b5976d4a41` (2026-08-08, "herald: Story specs 10.1-10.6 (Epic 10, Operations Notices)"); also `d50fa325b1` (2026-08-08, "herald: Story 10.1/10.3/10.6 — notice storage, redirects, lifecycle"). Ledger row `10-6-notice-lifecycle: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-10-1-notice-data-model-and-archive-storage.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-10-2-notice-authoring-workflow-cli.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-10-3-notice-archive-and-redirects.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-10-4-notice-cli.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-10-5-operations-web-tab.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-10-6-notice-lifecycle.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

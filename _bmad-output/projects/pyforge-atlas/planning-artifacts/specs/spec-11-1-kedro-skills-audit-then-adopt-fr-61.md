@@ -2,7 +2,7 @@
 title: 'kedro-skills audit-then-adopt'
 type: 'feature'
 created: '2026-08-09'
-status: shipped
+status: done
 review_loop_iteration: 1
 followup_review_recommended: false
 context: []
@@ -395,3 +395,6 @@ security/data surface beyond dashboard column rendering.
 **Residual risk:** low. The one deferred finding (`depends_on` key drift in a gitignored, generated
 artifact) is confirmed inert — no shipped code currently reads that field.
 
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `11-1-kedro-skills-audit-then-adopt-fr-61: done`).

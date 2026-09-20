@@ -37,9 +37,7 @@ def test_normalize_dot_feed_key_with_suffix():
 
 
 def test_normalize_hyphen_key_with_trailing_slug():
-    key = normalize(
-        "1-2-story-identity-merge-subject-rendering-and-feed-completeness"
-    )
+    key = normalize("1-2-story-identity-merge-subject-rendering-and-feed-completeness")
     assert key == StoryKey(epic=1, seq=2, suffix="")
 
 
@@ -208,9 +206,7 @@ def test_merge_subject_round_trip(key, template):
 
 
 def test_render_merge_subject_substitutes_the_hyphen_form():
-    subject = render_merge_subject(
-        StoryKey(epic=6, seq=1, suffix="a"), "Merge {key} into main", _PROJECT_SLUG
-    )
+    subject = render_merge_subject(StoryKey(epic=6, seq=1, suffix="a"), "Merge {key} into main", _PROJECT_SLUG)
     assert subject == "Merge 6-1a into main"
 
 
@@ -236,23 +232,17 @@ def test_render_merge_subject_rejects_a_template_without_the_placeholder():
 
 def test_render_merge_subject_rejects_a_template_with_two_placeholders():
     with pytest.raises(ValueError):
-        render_merge_subject(
-            StoryKey(epic=1, seq=2), "{key} then {key}", _PROJECT_SLUG
-        )
+        render_merge_subject(StoryKey(epic=1, seq=2), "{key} then {key}", _PROJECT_SLUG)
 
 
 def test_parse_merge_subject_rejects_non_conforming_subject():
     with pytest.raises(MergeSubjectConformanceError):
-        parse_merge_subject(
-            "totally different text", "Merge {key} into main", _PROJECT_SLUG
-        )
+        parse_merge_subject("totally different text", "Merge {key} into main", _PROJECT_SLUG)
 
 
 def test_parse_merge_subject_rejects_a_malformed_extracted_key():
     with pytest.raises(MergeSubjectConformanceError):
-        parse_merge_subject(
-            "Merge not-a-key into main", "Merge {key} into main", _PROJECT_SLUG
-        )
+        parse_merge_subject("Merge not-a-key into main", "Merge {key} into main", _PROJECT_SLUG)
 
 
 def test_parse_merge_subject_rejects_a_malformed_template_too():
@@ -268,9 +258,7 @@ def test_merge_subject_conformance_error_is_a_value_error():
 
 def test_merge_subject_conformance_error_chains_the_original_failure():
     with pytest.raises(MergeSubjectConformanceError) as excinfo:
-        parse_merge_subject(
-            "totally different text", "Merge {key} into main", _PROJECT_SLUG
-        )
+        parse_merge_subject("totally different text", "Merge {key} into main", _PROJECT_SLUG)
     assert excinfo.value.__cause__ is not None
 
 
@@ -280,9 +268,7 @@ def test_merge_subject_conformance_error_carries_a_real_mrs_ident_002_finding():
     claim. A caller extracts ``.finding`` the same way ``resolve_feed``'s
     ``.findings`` tuple is used."""
     with pytest.raises(MergeSubjectConformanceError) as excinfo:
-        parse_merge_subject(
-            "totally different text", "Merge {key} into main", _PROJECT_SLUG
-        )
+        parse_merge_subject("totally different text", "Merge {key} into main", _PROJECT_SLUG)
     finding = excinfo.value.finding
     assert finding.code == "MRS-IDENT-002"
     assert verdict.compute_verdict([finding]) == Verdict.UNEVALUABLE

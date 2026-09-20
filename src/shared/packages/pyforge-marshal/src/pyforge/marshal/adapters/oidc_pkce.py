@@ -232,9 +232,7 @@ class PkceLogin:
 
         def wait_for_callback() -> None:
             try:
-                callback_holder.append(
-                    capture_authorization_code(timeout_s=self._timeout_s, server=server)
-                )
+                callback_holder.append(capture_authorization_code(timeout_s=self._timeout_s, server=server))
             except BaseException as exc:  # pragma: no cover - surfaced below
                 error_holder.append(exc)
 

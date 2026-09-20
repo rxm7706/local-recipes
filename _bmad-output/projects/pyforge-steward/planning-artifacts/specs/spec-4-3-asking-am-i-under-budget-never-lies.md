@@ -90,3 +90,16 @@ warnings: []
 **Results (2026-08-07):**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- 197 passed (full Epic 4 suite, run together with Stories 4.1/4.2 in the same session; this story's own share is `test_budget_check.py`'s 5 tests plus `test_no_cost_integration_sdk_imported_in_budget`).
 - **Live verification (real, not faked):** `steward budget check` was run against this repo's real, unmodified checkout state — output: the exact `_NOT_CONFIGURED_MESSAGE` text, process exit code `3` (confirmed via `echo $?` immediately after, not inferred).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `c9537c2b06` (2026-08-07, "herald: Story 4.3 -- halt on auth error"); also `9535a9ce97` (2026-08-07, "steward: sync sprint-status ledger — Epic 4 done (Stories 4.1-4.3); all 4 epics closed"); also `7c969d5bcb` (2026-08-07, "steward: Story 4.3 — Asking "am I under budget?" never lies"). Ledger row `4-3-asking-am-i-under-budget-never-lies: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-4-3-halt-on-auth-error.md`, `src/shared/packages/pyforge-herald/tests/test_cli_watch.py`, `src/shared/packages/pyforge-herald/tests/test_watch.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -99,3 +99,16 @@ dependency order. **Do not** remove `cf_atlas.db` seeds in this story (Story 21.
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `e8162cae74` (2026-09-13, "docs(herald): seed deck-family-currency — Dream, Spec CAP-1..5, Epic 20, Story 20.1"); also `ec4dc5dfd4` (2026-09-06, "feat(pyforge-doctor): suite drift derives each member's probe class (Story 20.1)"). Ledger row `20-1-relocate-atlas-data-defaults-and-add-pyforge-atlas-bootstrap: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-20-1-the-standard-has-one-home-and-the-deck-spec-points-to-it.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/.memlog.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/SPEC.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/deck-inventory.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/infographic-standard.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `docs/dreams/README.md`, `docs/dreams/deck-family-currency.md`, `docs/specs/presentation-deck.md` (+2 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

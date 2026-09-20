@@ -44,12 +44,8 @@ from pyforge.scribe.models import GraphNode, GraphNodeKind
 #: Default `answer()` / `scribe recall` candidate kinds (Story 8.5 / CAP-4).
 #: `code` stays in the store for `index report` and `--kind code`; it is
 #: not a default lexical/semantic peer of memory, Dreams, or SPECs.
-DEFAULT_RECALL_KINDS: frozenset[GraphNodeKind] = frozenset(
-    {"memory", "memlog", "commit", "doc", "transcript"}
-)
-_ALL_RECALL_KINDS: frozenset[str] = frozenset(
-    {"memory", "memlog", "commit", "doc", "transcript", "code"}
-)
+DEFAULT_RECALL_KINDS: frozenset[GraphNodeKind] = frozenset({"memory", "memlog", "commit", "doc", "transcript"})
+_ALL_RECALL_KINDS: frozenset[str] = frozenset({"memory", "memlog", "commit", "doc", "transcript", "code"})
 #: User-facing `--mode` bags (Story 16.1 / CAP-11). Distinct from
 #: `answer(..., mode=)` which is lexical vs semantic ranking.
 RECALL_MODE_KINDS: dict[str, frozenset[str]] = {
@@ -60,10 +56,41 @@ RECALL_MODE_KINDS: dict[str, frozenset[str]] = {
 
 _STOPWORDS = frozenset(
     {
-        "a", "an", "the", "did", "do", "does", "we", "i", "is", "are", "was",
-        "were", "to", "of", "in", "on", "for", "and", "or", "why", "what",
-        "when", "how", "this", "that", "it", "be", "have", "has", "had",
-        "with", "at", "by", "from", "our",
+        "a",
+        "an",
+        "the",
+        "did",
+        "do",
+        "does",
+        "we",
+        "i",
+        "is",
+        "are",
+        "was",
+        "were",
+        "to",
+        "of",
+        "in",
+        "on",
+        "for",
+        "and",
+        "or",
+        "why",
+        "what",
+        "when",
+        "how",
+        "this",
+        "that",
+        "it",
+        "be",
+        "have",
+        "has",
+        "had",
+        "with",
+        "at",
+        "by",
+        "from",
+        "our",
     }
 )
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -110,9 +137,7 @@ def _scope_prefix(scope: str) -> str:
 
 #: Herald fact ledger compiled by Story 8.3. Scoped retrieve admits the
 #: ledger whose directory name equals `--scope` (Story 9.1 / CAP-1).
-_FACTS_LEDGER_CITATION_RE = re.compile(
-    r"^presentations/(?P<slug>[^/]+)/facts\.yaml$"
-)
+_FACTS_LEDGER_CITATION_RE = re.compile(r"^presentations/(?P<slug>[^/]+)/facts\.yaml$")
 
 
 def _citation_in_scope(citation: str, scope: str | None) -> bool:
@@ -141,10 +166,7 @@ def resolve_recall_kinds(kinds: frozenset[str] | None) -> frozenset[str]:
         return DEFAULT_RECALL_KINDS
     unknown = kinds - _ALL_RECALL_KINDS
     if unknown:
-        raise ValueError(
-            f"unknown recall kind(s) {sorted(unknown)!r}; "
-            f"expected one of {sorted(_ALL_RECALL_KINDS)}"
-        )
+        raise ValueError(f"unknown recall kind(s) {sorted(unknown)!r}; expected one of {sorted(_ALL_RECALL_KINDS)}")
     return kinds
 
 
@@ -163,10 +185,7 @@ def resolve_recall_selection(
     if surface is not None:
         bag = RECALL_MODE_KINDS.get(surface)
         if bag is None:
-            raise ValueError(
-                f"unknown recall mode {surface!r}; "
-                f"expected one of {sorted(RECALL_MODE_KINDS)}"
-            )
+            raise ValueError(f"unknown recall mode {surface!r}; expected one of {sorted(RECALL_MODE_KINDS)}")
         return bag
     return resolve_recall_kinds(kinds)
 
@@ -208,9 +227,7 @@ def answer(
     """
     allowed = resolve_recall_selection(kinds=kinds, surface=surface)
     if mode == "semantic":
-        return _answer_semantic(
-            query, store, repo_root=repo_root, scope=scope, kinds=allowed
-        )
+        return _answer_semantic(query, store, repo_root=repo_root, scope=scope, kinds=allowed)
     if mode != "lexical":
         raise ValueError(f"unknown recall mode {mode!r}; expected 'lexical' or 'semantic'")
 
@@ -264,9 +281,7 @@ def _answer_semantic(
         if _withheld_as_stale(node, store, repo_root):
             continue
         if _citation_is_resolvable(node.citation, repo_root):
-            return RecallAnswer(
-                grounded=True, text=node.text, citation=node.citation, node_id=node.id
-            )
+            return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
     return _no_grounded_answer()
 
 

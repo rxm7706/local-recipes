@@ -49,3 +49,16 @@ Type / Effort / Deps: change / S / S-3.8.
 ## Source
 
 Contract recovered from `epics.md` Story 3.9 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `c307e84480` (2026-08-09, "marshal 3.9 + 3.10: the durability guarantee holds; its signal did not"). Ledger row `3-9-a-retired-story-branch-is-not-a-push-failure: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/conda-forge-expert/tests/meta/test_unpushed_work_check.py`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/.memlog.md`, `docs/dashboard/data.js`, `docs/dreams/durable-runs.md`, `scripts/.spec-surface-baseline.json`, `scripts/unpushed_work_check.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` (+4 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

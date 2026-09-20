@@ -99,13 +99,7 @@ def _write_curated(memory_root: Path, capture_type: str, slug: str, text: str) -
     type_dir.mkdir(parents=True, exist_ok=True)
     path = type_dir / f"{slug}.md"
     path.write_text(
-        "---\n"
-        f'name: "{slug}"\n'
-        f'description: "{text[:60]}"\n'
-        "metadata:\n"
-        f"  type: {capture_type}\n"
-        "---\n"
-        f"{text}\n",
+        f'---\nname: "{slug}"\ndescription: "{text[:60]}"\nmetadata:\n  type: {capture_type}\n---\n{text}\n',
         encoding="utf-8",
     )
     return path
@@ -114,9 +108,7 @@ def _write_curated(memory_root: Path, capture_type: str, slug: str, text: str) -
 # --- I/O Matrix row 1: un-curated decision surfaces ------------------------
 
 
-def test_uncurated_decision_surfaces_as_one_candidate(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_uncurated_decision_surfaces_as_one_candidate(transcript_root: Path, memory_root: Path) -> None:
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -139,9 +131,7 @@ def test_uncurated_decision_surfaces_as_one_candidate(
 
 
 def test_curated_covered_content_stays_quiet(transcript_root: Path, memory_root: Path) -> None:
-    _write_curated(
-        memory_root, "project", "sqlite-cache", "We decided to use SQLite for the local cache."
-    )
+    _write_curated(memory_root, "project", "sqlite-cache", "We decided to use SQLite for the local cache.")
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -155,12 +145,8 @@ def test_curated_covered_content_stays_quiet(transcript_root: Path, memory_root:
     assert proposal.candidates == ()
 
 
-def test_curated_dedup_does_not_suppress_unrelated_content(
-    transcript_root: Path, memory_root: Path
-) -> None:
-    _write_curated(
-        memory_root, "project", "sqlite-cache", "We decided to use SQLite for the local cache."
-    )
+def test_curated_dedup_does_not_suppress_unrelated_content(transcript_root: Path, memory_root: Path) -> None:
+    _write_curated(memory_root, "project", "sqlite-cache", "We decided to use SQLite for the local cache.")
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -206,9 +192,7 @@ def test_non_assistant_entries_are_never_mined(transcript_root: Path, memory_roo
 # --- I/O Matrix row 4: malformed transcript line ----------------------------
 
 
-def test_malformed_json_line_is_skipped_scanning_continues(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_malformed_json_line_is_skipped_scanning_continues(transcript_root: Path, memory_root: Path) -> None:
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -244,9 +228,7 @@ def test_blank_lines_are_skipped(transcript_root: Path, memory_root: Path) -> No
 # --- I/O Matrix row 5: missing transcript root ------------------------------
 
 
-def test_missing_transcript_root_raises_value_error_naming_source(
-    memory_root: Path, tmp_path: Path
-) -> None:
+def test_missing_transcript_root_raises_value_error_naming_source(memory_root: Path, tmp_path: Path) -> None:
     missing = tmp_path / "does-not-exist"
     with pytest.raises(ValueError, match="--source"):
         scan_transcripts(missing, memory_root)
@@ -255,9 +237,7 @@ def test_missing_transcript_root_raises_value_error_naming_source(
 # --- Full-text vs. truncated snippet ----------------------------------------
 
 
-def test_candidate_at_or_beyond_truncation_boundary_keeps_full_text(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_candidate_at_or_beyond_truncation_boundary_keeps_full_text(transcript_root: Path, memory_root: Path) -> None:
     long_sentence = (
         "We decided to migrate the entire ingestion pipeline from the legacy REST "
         "polling architecture to a fully event-driven Kafka-based system after "
@@ -309,9 +289,7 @@ def test_file_level_read_failure_does_not_abort_other_files(
     assert "webhook retry queue" in proposal.candidates[0].text
 
 
-def test_non_utf8_transcript_file_is_skipped_not_fatal(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_non_utf8_transcript_file_is_skipped_not_fatal(transcript_root: Path, memory_root: Path) -> None:
     bad_path = transcript_root / "aaa-bad.jsonl"
     bad_path.write_bytes(b"\xff\xfe\x00garbage-not-utf8")
     _write_jsonl(
@@ -329,9 +307,7 @@ def test_non_utf8_transcript_file_is_skipped_not_fatal(
 # --- Intra-scan dedup --------------------------------------------------------
 
 
-def test_repeated_sentence_within_one_file_yields_one_candidate(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_repeated_sentence_within_one_file_yields_one_candidate(transcript_root: Path, memory_root: Path) -> None:
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -346,9 +322,7 @@ def test_repeated_sentence_within_one_file_yields_one_candidate(
     assert len(proposal.candidates) == 1
 
 
-def test_repeated_sentence_across_two_files_yields_one_candidate(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_repeated_sentence_across_two_files_yields_one_candidate(transcript_root: Path, memory_root: Path) -> None:
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -368,9 +342,7 @@ def test_repeated_sentence_across_two_files_yields_one_candidate(
 # --- Multi-file sorted scan order -------------------------------------------
 
 
-def test_multi_file_scan_is_in_sorted_filename_order(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_multi_file_scan_is_in_sorted_filename_order(transcript_root: Path, memory_root: Path) -> None:
     _write_jsonl(
         transcript_root,
         "zzz-second.jsonl",
@@ -396,9 +368,7 @@ def _set_mtime(path: Path, mtime_s: int) -> None:
     os.utime(path, ns=(mtime_s * 1_000_000_000, mtime_s * 1_000_000_000))
 
 
-def test_file_count_cap_prefers_newest_files_and_warns(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_file_count_cap_prefers_newest_files_and_warns(transcript_root: Path, memory_root: Path) -> None:
     oldest = _write_jsonl(
         transcript_root,
         "aaa-oldest.jsonl",
@@ -432,9 +402,7 @@ def test_file_count_cap_prefers_newest_files_and_warns(
     assert "max_files=2" in proposal.warnings[0]
 
 
-def test_byte_budget_skips_files_beyond_it_newest_first(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_byte_budget_skips_files_beyond_it_newest_first(transcript_root: Path, memory_root: Path) -> None:
     older = _write_jsonl(
         transcript_root,
         "aaa-older.jsonl",
@@ -459,9 +427,7 @@ def test_byte_budget_skips_files_beyond_it_newest_first(
     assert f"max_total_bytes={budget}" in proposal.warnings[0]
 
 
-def test_per_file_timeout_keeps_partial_results_with_warning(
-    transcript_root: Path, memory_root: Path
-) -> None:
+def test_per_file_timeout_keeps_partial_results_with_warning(transcript_root: Path, memory_root: Path) -> None:
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -509,9 +475,7 @@ def test_cache_hit_avoids_rereading_unchanged_files(
     assert second.warnings == ()
 
 
-def test_cache_is_invalidated_when_the_file_changes(
-    transcript_root: Path, memory_root: Path, tmp_path: Path
-) -> None:
+def test_cache_is_invalidated_when_the_file_changes(transcript_root: Path, memory_root: Path, tmp_path: Path) -> None:
     path = _write_jsonl(
         transcript_root,
         "session-a.jsonl",
@@ -550,18 +514,14 @@ def test_cached_matches_still_dedup_against_newly_curated_memory(
     first = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
     assert len(first.candidates) == 1
 
-    _write_curated(
-        memory_root, "project", "sqlite-cache", "We decided to use SQLite for the local cache."
-    )
+    _write_curated(memory_root, "project", "sqlite-cache", "We decided to use SQLite for the local cache.")
 
     second = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
 
     assert second.candidates == ()
 
 
-def test_malformed_cache_is_ignored_and_replaced(
-    transcript_root: Path, memory_root: Path, tmp_path: Path
-) -> None:
+def test_malformed_cache_is_ignored_and_replaced(transcript_root: Path, memory_root: Path, tmp_path: Path) -> None:
     _write_jsonl(
         transcript_root,
         "session-a.jsonl",

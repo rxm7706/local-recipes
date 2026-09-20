@@ -107,10 +107,7 @@ def _materialize_patterns(patterns: Sequence[str]) -> tuple[str, ...]:
     if isinstance(patterns, str):
         raise UsageError(
             f"skip patterns must be a sequence of glob strings, got a bare str {patterns!r}",
-            remedy=(
-                "wrap a single pattern in a tuple or list --"
-                f" ({patterns!r},) rather than {patterns!r}"
-            ),
+            remedy=(f"wrap a single pattern in a tuple or list -- ({patterns!r},) rather than {patterns!r}"),
         )
     materialized = tuple(patterns)
     for pattern in materialized:
@@ -235,10 +232,7 @@ def record_skip(patterns: Sequence[str], pattern: str) -> tuple[str, ...]:
     if not isinstance(pattern, str) or not pattern.strip():
         raise UsageError(
             f"skip pattern must be a non-blank string, got {pattern!r}",
-            remedy=(
-                "pass a glob naming the artifact path to skip, e.g."
-                " --skip 'docs/dreams/*.md'"
-            ),
+            remedy=("pass a glob naming the artifact path to skip, e.g. --skip 'docs/dreams/*.md'"),
         )
     # ONE consumption of `patterns`, reused for both the comparison and the
     # result (found in review): a generator read a second time is empty, so
@@ -328,9 +322,7 @@ def apply_skips(plan: Plan, patterns: Sequence[str]) -> Plan:
         # addition could quietly break.
         return plan
     skipped_ids = {entry.artifact_id for entry in newly_skipped}
-    skipped = tuple(
-        sorted((*plan.skipped, *newly_skipped), key=lambda entry: entry.artifact_id)
-    )
+    skipped = tuple(sorted((*plan.skipped, *newly_skipped), key=lambda entry: entry.artifact_id))
     # `dataclasses.replace`, never a field-by-field reconstruction (found in
     # review): naming every field here would silently DROP any field a
     # future story adds to `RepoFingerprint` or `Plan` -- a data-loss bug
@@ -345,9 +337,7 @@ def apply_skips(plan: Plan, patterns: Sequence[str]) -> Plan:
             if artifact_id not in skipped_ids
         ),
     )
-    return dataclasses.replace(
-        plan, actions=tuple(kept), repo_fingerprint=fingerprint, skipped=skipped
-    )
+    return dataclasses.replace(plan, actions=tuple(kept), repo_fingerprint=fingerprint, skipped=skipped)
 
 
 class _HasArtifactId(Protocol):

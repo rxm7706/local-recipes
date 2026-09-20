@@ -2,7 +2,7 @@
 title: 'Story 1.4: Rotating a key never breaks what already trusted it'
 type: 'feature'
 created: '2026-07-30'
-status: 'draft'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -94,3 +94,17 @@ warnings: []
 - `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (Stories 1.1-1.3's existing suite + this story's new tests)
 - `pixi run -e pyforge-steward steward keys rotate --help` -- expected: shows `--scope`/`--new-identity`
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `8c2e40b53e` (2026-08-07, "Merge pull request #291 from rxm7706/steward/1-4-to-1-7-credential-lifecycle"). Ledger row `1-4-rotating-a-key-never-breaks-what-already-trusted-it: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-1-4-rotating-a-key-never-breaks-what-already-trusted-it.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-1-5-the-operator-can-see-every-credential-steward-knows-about-never-a-secret-value.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `pixi.lock`, `pixi.toml`, `src/shared/packages/pyforge-steward/pixi.toml`, `src/shared/packages/pyforge-steward/pyproject.toml`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py`, `src/shared/packages/pyforge-steward/tests/conformance/test_keys_audit_cli.py` (+4 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `draft` → `done` (ledger row `1-4-rotating-a-key-never-breaks-what-already-trusted-it: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -168,11 +168,7 @@ def weighted_total(tokens: TokenCounts, cache_read_weight: float) -> int:
     """bmad-loop-compatible weighted token tally."""
     if not math.isfinite(cache_read_weight):
         return tokens.input_tokens + tokens.output_tokens
-    return (
-        tokens.input_tokens
-        + tokens.output_tokens
-        + round(tokens.cache_read_tokens * cache_read_weight)
-    )
+    return tokens.input_tokens + tokens.output_tokens + round(tokens.cache_read_tokens * cache_read_weight)
 
 
 def estimate_spend_usd(
@@ -182,18 +178,11 @@ def estimate_spend_usd(
     """Estimated USD spend from declared per-1M prices × token counts."""
     if price.input_per_million < 0 or price.output_per_million < 0:
         return None
-    total = (
-        tokens.input_tokens * price.input_per_million
-        + tokens.output_tokens * price.output_per_million
-    ) / _MILLION
+    total = (tokens.input_tokens * price.input_per_million + tokens.output_tokens * price.output_per_million) / _MILLION
     if price.cache_read_per_million is not None and tokens.cache_read_tokens:
-        total += (
-            tokens.cache_read_tokens * price.cache_read_per_million
-        ) / _MILLION
+        total += (tokens.cache_read_tokens * price.cache_read_per_million) / _MILLION
     if price.cache_write_per_million is not None and tokens.cache_creation_tokens:
-        total += (
-            tokens.cache_creation_tokens * price.cache_write_per_million
-        ) / _MILLION
+        total += (tokens.cache_creation_tokens * price.cache_write_per_million) / _MILLION
     if not math.isfinite(total):
         return None
     return round(total, 6)

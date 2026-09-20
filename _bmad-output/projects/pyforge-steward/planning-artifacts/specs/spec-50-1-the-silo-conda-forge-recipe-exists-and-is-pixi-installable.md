@@ -101,3 +101,16 @@ follow-up, not part of this story's own scope.
   conda-forge PRs without confirmation).
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `42dbaea6e0` (2026-09-10, "chore(steward): promote Story 50.1 to done in sprint ledger"); also `0187ec00b5` (2026-09-10, "feat(recipes): add Silo conda-forge recipe (pyforge-steward Story 50.1)"). Ledger row `50-1-the-silo-conda-forge-recipe-exists-and-is-pixi-installable: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-50-1-the-silo-conda-forge-recipe-exists-and-is-pixi-installable.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

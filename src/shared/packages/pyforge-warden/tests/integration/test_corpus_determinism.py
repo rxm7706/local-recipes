@@ -26,9 +26,7 @@ import pytest
 
 from pyforge.warden.cli import main
 
-CORPUS_RECIPES_DIR = (
-    Path(__file__).resolve().parent.parent / "fixtures" / "corpus" / "recipes"
-)
+CORPUS_RECIPES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "corpus" / "recipes"
 
 pytestmark = pytest.mark.slow
 
@@ -41,9 +39,7 @@ def _run_scan(capsys, *extra: str) -> tuple[int, str, str]:
 
 
 def test_corpus_recipes_dir_is_provisioned():
-    assert CORPUS_RECIPES_DIR.is_dir(), (
-        f"{CORPUS_RECIPES_DIR} missing -- run scripts/harvest_corpus.py"
-    )
+    assert CORPUS_RECIPES_DIR.is_dir(), f"{CORPUS_RECIPES_DIR} missing -- run scripts/harvest_corpus.py"
     assert next(CORPUS_RECIPES_DIR.rglob("recipe.yaml"), None) is not None
     assert next(CORPUS_RECIPES_DIR.rglob("meta.yaml"), None) is not None
 
@@ -59,9 +55,7 @@ def test_full_corpus_deterministic_twice_run_is_byte_identical(capsys):
     # The non-empty half matters too (follow-up review finding: is_dir()
     # alone still passed vacuously on an existing-but-emptied corpus,
     # e.g. a wiped-then-failed harvest).
-    assert CORPUS_RECIPES_DIR.is_dir(), (
-        f"{CORPUS_RECIPES_DIR} missing -- run scripts/harvest_corpus.py"
-    )
+    assert CORPUS_RECIPES_DIR.is_dir(), f"{CORPUS_RECIPES_DIR} missing -- run scripts/harvest_corpus.py"
     assert next(CORPUS_RECIPES_DIR.rglob("recipe.yaml"), None) is not None, (
         f"{CORPUS_RECIPES_DIR} contains no manifests -- run scripts/harvest_corpus.py"
     )

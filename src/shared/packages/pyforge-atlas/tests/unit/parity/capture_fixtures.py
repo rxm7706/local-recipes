@@ -39,8 +39,7 @@ class LegacyCaptureSource(Protocol):
     ever opened in the loop.
     """
 
-    def node_names(self) -> Iterable[str]:
-        ...
+    def node_names(self) -> Iterable[str]: ...
 
     def capture(self, node: str) -> dict:
         """Return ``{"phase": str, "inputs": {catalog: [records]},

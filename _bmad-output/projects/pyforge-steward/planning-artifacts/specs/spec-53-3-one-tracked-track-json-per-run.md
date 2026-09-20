@@ -60,3 +60,15 @@ and the stated retention
 **And** Guards/Gates are readable from the record, not inferred from policy TOML
 **Status:** done
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `aedec54f4f` (2026-09-13, "Merge pull request #1334 from rxm7706/steward-53-3-track"). Ledger row `53-3-one-tracked-track-json-per-run: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md`, `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `docs/foundry/tracks/FIELDS.md`, `docs/foundry/tracks/example-track.json`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/data/track.schema.json`, `src/shared/packages/pyforge-steward/src/pyforge/steward/track.py`, `src/shared/packages/pyforge-steward/tests/fixtures/track-run-sparse/journal.jsonl`, `src/shared/packages/pyforge-steward/tests/fixtures/track-run/gate-record.json`, `src/shared/packages/pyforge-steward/tests/fixtures/track-run/journal.jsonl` (+4 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -113,6 +113,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
+
 from pyforge.scribe.extras.graphify import graphify_extra_enabled, ingest_repo
 from pyforge.scribe.graph_store import GraphStore
 from pyforge.scribe.models import CAPTURE_TYPES, GraphNode, GraphNodeKind, parse_capture_file
@@ -161,9 +162,7 @@ _MAX_POINTER_IDS = 60
 _MAX_POINTER_HEADINGS = 40
 _FR_TOKEN_RE = re.compile(r"\bFR-\d+\b")
 _AD_TOKEN_RE = re.compile(r"\bAD-\d+\b")
-_POINTER_HEADING_RE = re.compile(
-    r"^#{1,3}\s+(?P<label>(?:Epic\s+\d+|Story\s+\d+\.\d+)\b.*)$"
-)
+_POINTER_HEADING_RE = re.compile(r"^#{1,3}\s+(?P<label>(?:Epic\s+\d+|Story\s+\d+\.\d+)\b.*)$")
 
 
 class CompileInProgressError(PyforgeError, RuntimeError):
@@ -228,9 +227,7 @@ def compile_graph(
 
         store = open_graph_store(store_path or default_store_path(repo_root))
 
-    resolved_path = Path(
-        getattr(store, "store_path", store_path or default_store_path(repo_root))
-    )
+    resolved_path = Path(getattr(store, "store_path", store_path or default_store_path(repo_root)))
 
     with _compile_lock(resolved_path):
         warnings: list[str] = []
@@ -273,9 +270,7 @@ def compile_graph(
         for node in _read_git_surface(repo_root, max_commits, warnings):
             store.upsert_node(node)
 
-        resolved_transcript_root = (
-            transcript_root if transcript_root is not None else default_transcript_root()
-        )
+        resolved_transcript_root = transcript_root if transcript_root is not None else default_transcript_root()
         transcript_nodes = _read_transcript_surface(
             memory_root,
             resolved_transcript_root,
@@ -294,9 +289,7 @@ def compile_graph(
 
         invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
 
-        stale_count = _apply_staleness(
-            store, repo_root, warnings, compiled_at=compile_started
-        )
+        stale_count = _apply_staleness(store, repo_root, warnings, compiled_at=compile_started)
 
         store.commit()
 
@@ -371,9 +364,7 @@ def _compile_lock(store_target: Path):
 # --- surface: .claude/memory/ -------------------------------------------------
 
 
-def _read_memory_surface(
-    memory_root: Path, repo_root: Path, warnings: list[str]
-) -> list[GraphNode]:
+def _read_memory_surface(memory_root: Path, repo_root: Path, warnings: list[str]) -> list[GraphNode]:
     nodes: list[GraphNode] = []
     for capture_type in CAPTURE_TYPES:
         type_dir = memory_root / capture_type
@@ -571,9 +562,7 @@ def _read_story_spec_surface(repo_root: Path) -> list[GraphNode]:
         ledger_path = project_dir / _LEDGER_RELPATH
         if not ledger_path.is_file():
             continue
-        statuses = _parse_ledger_story_status(
-            ledger_path.read_text(encoding="utf-8", errors="replace")
-        )
+        statuses = _parse_ledger_story_status(ledger_path.read_text(encoding="utf-8", errors="replace"))
         specs = project_dir / "planning-artifacts" / "specs"
         if not specs.is_dir():
             continue
@@ -664,9 +653,7 @@ def _pointer_headings(text: str) -> list[str]:
     return headings
 
 
-def _node_from_planning_pointer(
-    path: Path, *, role: str, repo_root: Path
-) -> GraphNode:
+def _node_from_planning_pointer(path: Path, *, role: str, repo_root: Path) -> GraphNode:
     relpath = path.relative_to(repo_root).as_posix()
     raw = path.read_text(encoding="utf-8", errors="replace")
     status = _frontmatter_status(raw) or "-"
@@ -727,11 +714,7 @@ def _node_from_library_catalog_extract(path: Path, *, repo_root: Path) -> GraphN
         (line.strip("# ").strip() for line in raw.splitlines() if line.startswith("#")),
         relpath,
     )
-    headings = [
-        line.strip()
-        for line in raw.splitlines()
-        if line.startswith("## ")
-    ][:_MAX_POINTER_HEADINGS]
+    headings = [line.strip() for line in raw.splitlines() if line.startswith("## ")][:_MAX_POINTER_HEADINGS]
     lines = [
         "pointer:library-catalog",
         f"path:{relpath}",
@@ -1022,7 +1005,7 @@ def _transcript_valid_from(candidate: TranscriptCandidate) -> datetime:
     """
     try:
         parsed = datetime.fromisoformat(candidate.timestamp)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         # TypeError: a transcript entry whose `timestamp` field is a JSON
         # number (or any other non-string value) makes `fromisoformat`
         # raise TypeError rather than ValueError -- review finding.
@@ -1031,7 +1014,7 @@ def _transcript_valid_from(candidate: TranscriptCandidate) -> datetime:
         return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
     try:
         return datetime.fromtimestamp(candidate.source_file.stat().st_mtime, tz=timezone.utc)
-    except (OSError, OverflowError):
+    except OSError, OverflowError:
         # OverflowError: `fromtimestamp()` can raise this for an
         # out-of-range mtime, per its own docs -- review finding.
         return datetime.now(timezone.utc)
@@ -1083,8 +1066,7 @@ def _apply_supersession(
             source_node = node_by_id.get(source_id)
             if target_id not in node_by_id:
                 warnings.append(
-                    f"{path}: supersedes {record.supersedes!r} does not resolve to a known "
-                    "memory node -- skipped"
+                    f"{path}: supersedes {record.supersedes!r} does not resolve to a known memory node -- skipped"
                 )
                 continue
             ended_at = source_node.valid_from if source_node is not None else datetime.now(timezone.utc)
@@ -1159,9 +1141,7 @@ def _apply_staleness(
     return flagged
 
 
-def source_committed_after(
-    repo_root: Path, node: GraphNode, compiled_at: datetime
-) -> bool:
+def source_committed_after(repo_root: Path, node: GraphNode, compiled_at: datetime) -> bool:
     """True when this node's git-trackable source has a commit after
     `compiled_at` (Story 11.1). Missing git or no history is False."""
     relpath = _staleness_source_path(node)
@@ -1192,7 +1172,7 @@ def _git_latest_commit_time(repo_root: Path, relpath: str, git_bin: str) -> date
             timeout=10,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except OSError, subprocess.TimeoutExpired:
         return None
     if completed.returncode != 0:
         return None

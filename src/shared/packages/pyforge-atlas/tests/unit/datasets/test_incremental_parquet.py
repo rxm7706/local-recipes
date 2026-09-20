@@ -44,9 +44,7 @@ def test_save_preserves_caller_supplied_fetched_at(tmp_path):
 
 
 def test_custom_fetched_at_column(tmp_path):
-    ds = IncrementalParquetDataset(
-        filepath=_fp(tmp_path), fetched_at_column="downloads_fetched_at"
-    )
+    ds = IncrementalParquetDataset(filepath=_fp(tmp_path), fetched_at_column="downloads_fetched_at")
     ds.save(pd.DataFrame({"conda_name": ["a"]}))
     back = ds.load()
     assert "downloads_fetched_at" in back.columns
@@ -63,7 +61,7 @@ def test_ms_normalization_and_coercion_created_nan_is_filled(tmp_path):
     ds.save(df)
     back = ds.load().set_index("conda_name")
     assert back.loc["ms", "fetched_at"] == 1_700_000_000  # ms -> s
-    assert pd.notna(back.loc["junk", "fetched_at"])        # coercion-NaN was filled
+    assert pd.notna(back.loc["junk", "fetched_at"])  # coercion-NaN was filled
     assert back.loc["junk", "fetched_at"] > 0
 
 
@@ -175,18 +173,14 @@ def test_second_load_over_persisted_parquet_needs_no_refetch(tmp_path):
     ttl = 1000
     ds = IncrementalParquetDataset(filepath=_fp(tmp_path), ttl_seconds=ttl)
     # persist a mix: one fresh row, one stale row
-    df = pd.DataFrame(
-        {"conda_name": ["fresh", "stale"], "fetched_at": [now - 10, now - 5000]}
-    )
+    df = pd.DataFrame({"conda_name": ["fresh", "stale"], "fetched_at": [now - 10, now - 5000]})
     ds.save(df)
 
     # a NEW instance (simulating a re-run / resumed pipeline) reads the SAME
     # persisted Parquet and reconstructs the freshness verdict with no re-fetch
     resumed = IncrementalParquetDataset(filepath=_fp(tmp_path), ttl_seconds=ttl)
     reloaded = resumed.load()
-    verdict = dict(
-        zip(reloaded["conda_name"], resumed.stale_mask(reloaded, now=now))
-    )
+    verdict = dict(zip(reloaded["conda_name"], resumed.stale_mask(reloaded, now=now)))
     # only the stale row is surfaced for re-fetch; the fresh row is skipped
     assert bool(verdict["fresh"]) is False
     assert bool(verdict["stale"]) is True
@@ -215,9 +209,7 @@ def test_constructs_offline_from_catalog_shaped_config(tmp_path):
     """The resolution test builds each flipped entry from config carrying only
     type/filepath/metadata — ttl_seconds must be optional and construction must
     touch no network."""
-    ds = IncrementalParquetDataset(
-        filepath=_fp(tmp_path), metadata={"layer": "primary"}
-    )
+    ds = IncrementalParquetDataset(filepath=_fp(tmp_path), metadata={"layer": "primary"})
     assert ds.ttl_seconds is None
     described = ds._describe()
     assert described["ttl_seconds"] is None

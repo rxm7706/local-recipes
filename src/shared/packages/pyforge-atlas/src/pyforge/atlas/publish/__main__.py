@@ -31,10 +31,15 @@ _DEFAULT_TARGET = _HERE / "_site"
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="publish", description=__doc__)
-    parser.add_argument("--target", type=Path, default=_DEFAULT_TARGET,
-                        help=f"static-host output directory (default: {_DEFAULT_TARGET})")
-    parser.add_argument("--seed", type=Path, default=_DEFAULT_SEED,
-                        help=f"seed CSV for the demo dataset (default: {_DEFAULT_SEED})")
+    parser.add_argument(
+        "--target",
+        type=Path,
+        default=_DEFAULT_TARGET,
+        help=f"static-host output directory (default: {_DEFAULT_TARGET})",
+    )
+    parser.add_argument(
+        "--seed", type=Path, default=_DEFAULT_SEED, help=f"seed CSV for the demo dataset (default: {_DEFAULT_SEED})"
+    )
     parser.add_argument("--rows-per-chunk", type=int, default=250_000)
     parser.add_argument("--row-group-size", type=int, default=100_000)
     args = parser.parse_args(argv)

@@ -2,7 +2,7 @@
 title: 'Story 6.4: KEV feed provisioning, enrichment & the --fail-on-kev gate'
 type: 'feature'
 created: '2026-07-18'
-status: 'draft'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -103,3 +103,17 @@ warnings: [oversized]
 
 **Manual checks (if no CLI):**
 - Confirm `report-schema.json` is byte-identical after this story (no edits) via `git diff --stat` on that file.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `7a04a8f56b` (2026-08-21, "mason: promote Story 6.4 spec to tracked, mark 6-4 + epic-6 done in the sprint ledger"); also `f04553bced` (2026-08-21, "mason: record CAP-4's re-scope gate decision -- adjust (Story 6.4)"); also `4a65026bb0` (2026-08-07, "herald: Story 6.4 — Evidence Link Validation Protocol"). Ledger row `6-4-kev-feed-provisioning-enrichment-the-fail-on-kev-gate: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-6-4-the-re-scope-gate-measured-cost-recorded-decision.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `draft` → `done` (ledger row `6-4-kev-feed-provisioning-enrichment-the-fail-on-kev-gate: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

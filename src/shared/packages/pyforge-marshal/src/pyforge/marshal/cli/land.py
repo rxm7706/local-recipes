@@ -135,6 +135,8 @@ from .config import (
 )
 
 if TYPE_CHECKING:
+    from pyforge.marshal.cli.deploy import _DeployRun
+
     # Story 5.6 (FR-65/AD-50): `run_land`'s `context` parameter below is
     # type-only -- this module's own internal logic is NOT retrofitted to
     # CONSUME it in this pass (see cli/main.py's own module docstring and
@@ -298,13 +300,9 @@ def _evaluate_required_checks(
         if rule.required_check is None or not rule_applies(rule, changed_paths):
             continue
         try:
-            status = forge.check_run_status(
-                repo_ref, ForgeRef(head_sha), ForgeRef(rule.required_check)
-            )
+            status = forge.check_run_status(repo_ref, ForgeRef(head_sha), ForgeRef(rule.required_check))
         except ForgeCommandError as exc:
-            report.append(
-                {"rule": rule.name, "required_check": rule.required_check, "status": None}
-            )
+            report.append({"rule": rule.name, "required_check": rule.required_check, "status": None})
             error_findings.append(
                 Finding(
                     code=_MRS_LAND_004,
@@ -317,9 +315,7 @@ def _evaluate_required_checks(
                 )
             )
             continue
-        report.append(
-            {"rule": rule.name, "required_check": rule.required_check, "status": status}
-        )
+        report.append({"rule": rule.name, "required_check": rule.required_check, "status": status})
         if status == "success":
             if rule.label is not None:
                 fired_labels.append(rule.label)
@@ -378,11 +374,11 @@ def run_land(
     # and cli/init.py are never imported at module level here.
     from .deploy import (
         _BATCH_PR_WRITE_KIND,
-        _DeployRun,
         _batch_pr_body,
         _batch_pr_redact,
         _batch_pr_title,
         _deploy_writer_id,
+        _DeployRun,
         _evaluate_hygiene,
         _gather_gate_verdicts,
         _land_redact_text,
@@ -434,10 +430,7 @@ def run_land(
             Finding(
                 code=_MRS_LAND_001,
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot resolve the loop-home station branch "
-                    f"{head_branch!r} for {slug!r}'s landing: {exc}"
-                ),
+                message=(f"cannot resolve the loop-home station branch {head_branch!r} for {slug!r}'s landing: {exc}"),
             )
         )
         return _emit(args, data, findings)
@@ -472,10 +465,7 @@ def run_land(
     # run_batch_pr`): `core/policy.py::compose` never raises, so a
     # malformed `landing_rules` layer degrades to an EMPTY rule set unless
     # refused here, before that empty set is ever trusted.
-    if any(
-        finding.severity is Severity.ERROR and "'landing_rules'" in finding.message
-        for finding in policy_findings
-    ):
+    if any(finding.severity is Severity.ERROR and "'landing_rules'" in finding.message for finding in policy_findings):
         findings.append(
             Finding(
                 code=_MRS_LAND_002,
@@ -507,10 +497,7 @@ def run_land(
             Finding(
                 code="MRS-DEPLOY-007",
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot compute the merge base of {head_branch!r} and "
-                    f"{base!r}: {exc}"
-                ),
+                message=(f"cannot compute the merge base of {head_branch!r} and {base!r}: {exc}"),
             )
         )
         return _emit(args, data, findings)
@@ -521,10 +508,7 @@ def run_land(
             Finding(
                 code="MRS-DEPLOY-007",
                 severity=Severity.ERROR,
-                message=(
-                    f"cannot enumerate commits between {merge_base_sha!r} and "
-                    f"{head_branch!r}: {exc}"
-                ),
+                message=(f"cannot enumerate commits between {merge_base_sha!r} and {head_branch!r}: {exc}"),
             )
         )
         return _emit(args, data, findings)
@@ -614,14 +598,10 @@ def run_land(
             harness=harness,
             process=process,
         )
-        promoted = _promote_deferred_work(
-            fs, vcs, root, slug, wave_keys, clock, deploy_run, findings
-        )
+        promoted = _promote_deferred_work(fs, vcs, root, slug, wave_keys, clock, deploy_run, findings)
         if promoted:
             data["deferred_work_promoted"] = list(promoted)
-        sprint_promoted = _promote_sprint_ledger(
-            fs, vcs, root, slug, wave_keys, deploy_run, findings, base=base
-        )
+        sprint_promoted = _promote_sprint_ledger(fs, vcs, root, slug, wave_keys, deploy_run, findings, base=base)
         if sprint_promoted:
             data["sprint_ledger_promoted"] = list(sprint_promoted)
         home_current = _resync_home_branch(
@@ -856,8 +836,7 @@ def run_land(
                     code="MRS-DEPLOY-014",
                     severity=Severity.ERROR,
                     message=(
-                        f"PR #{pr.number} opened/updated, but applying "
-                        f"label(s) {list(deduped_labels)} failed: {exc}"
+                        f"PR #{pr.number} opened/updated, but applying label(s) {list(deduped_labels)} failed: {exc}"
                     ),
                 )
             )
@@ -1034,9 +1013,7 @@ def run_land(
     promoted = _promote_deferred_work(fs, vcs, root, slug, wave_keys, clock, deploy_run, findings)
     if promoted:
         data["deferred_work_promoted"] = list(promoted)
-    sprint_promoted = _promote_sprint_ledger(
-        fs, vcs, root, slug, wave_keys, deploy_run, findings, base=base
-    )
+    sprint_promoted = _promote_sprint_ledger(fs, vcs, root, slug, wave_keys, deploy_run, findings, base=base)
     if sprint_promoted:
         data["sprint_ledger_promoted"] = list(sprint_promoted)
 
@@ -1044,9 +1021,7 @@ def run_land(
     # merged, and under whose authority (the story's own Always bullet) --
     # redacted at capture via `_land_redact_text`, reused rather than
     # reimplemented (AD-34).
-    required_summary = _land_redact_text(
-        json.dumps([entry["required_check"] for entry in required_report])
-    )
+    required_summary = _land_redact_text(json.dumps([entry["required_check"] for entry in required_report]))
     deploy_run.write(
         findings,
         kind=_LAND_OBSERVATION_KIND,
@@ -1140,22 +1115,8 @@ def _promote_deferred_work(
     ``MRS-LAND-010`` WARN and returns ``()`` -- never blocking ``land``'s
     own exit code (the wave's own landing already succeeded by the time
     this best-effort step runs)."""
-    tier3_path = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "deferred-work.md"
-    )
-    tracked_path = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "deferred-work-ledger.md"
-    )
+    tier3_path = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "deferred-work.md"
+    tracked_path = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "deferred-work-ledger.md"
 
     tier3_text = fs.read_text(tier3_path)
     if not tier3_text:
@@ -1174,9 +1135,7 @@ def _promote_deferred_work(
         return ()
 
     try:
-        lock = fs.acquire_advisory_lock(
-            tracked_path, timeout_s=_LAND_DEFERRED_WORK_LOCK_TIMEOUT_S
-        )
+        lock = fs.acquire_advisory_lock(tracked_path, timeout_s=_LAND_DEFERRED_WORK_LOCK_TIMEOUT_S)
     except FsError as exc:
         findings.append(
             Finding(
@@ -1211,16 +1170,13 @@ def _promote_deferred_work(
                 )
                 return ()
             fresh_tracked_text = ""
-        to_promote = deferred_work.deferrals_to_promote(
-            candidates, landing_keys, fresh_tracked_text
-        )
+        to_promote = deferred_work.deferrals_to_promote(candidates, landing_keys, fresh_tracked_text)
         if not to_promote:
             return ()
 
         promoted_date = clock.now().date().isoformat()
         entry_text = "\n".join(
-            deferred_work.render_ledger_entry(candidate, promoted_date=promoted_date)
-            for candidate in to_promote
+            deferred_work.render_ledger_entry(candidate, promoted_date=promoted_date) for candidate in to_promote
         )
         prefix = fresh_tracked_text.rstrip("\n")
         new_text = (prefix + "\n\n" if prefix else "") + entry_text
@@ -1231,17 +1187,12 @@ def _promote_deferred_work(
                 Finding(
                     code=_MRS_LAND_010,
                     severity=Severity.WARN,
-                    message=(
-                        f"cannot write the promoted deferred-work entries "
-                        f"to {str(tracked_path)!r}: {exc}"
-                    ),
+                    message=(f"cannot write the promoted deferred-work entries to {str(tracked_path)!r}: {exc}"),
                 )
             )
             return ()
 
-        promoted_ids = tuple(
-            deferred_work.promoted_id(candidate.story_key) for candidate in to_promote
-        )
+        promoted_ids = tuple(deferred_work.promoted_id(candidate.story_key) for candidate in to_promote)
         message = (
             f"marshal: promote {len(promoted_ids)} deferred-work "
             f"entr{'y' if len(promoted_ids) == 1 else 'ies'} for {slug!r}"
@@ -1395,22 +1346,8 @@ def _promote_sprint_ledger(
     if not wave_keys:
         return ()
 
-    ledger_path = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
-    feed_path = (
-        root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "sprint-status.yaml"
-    )
+    ledger_path = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "sprint-status-ledger.yaml"
+    feed_path = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "sprint-status.yaml"
 
     feed_text = fs.read_text(feed_path)
     ledger_text = fs.read_text(ledger_path)
@@ -1440,9 +1377,7 @@ def _promote_sprint_ledger(
         return ()
 
     try:
-        lock = fs.acquire_advisory_lock(
-            ledger_path, timeout_s=_LAND_SPRINT_LEDGER_LOCK_TIMEOUT_S
-        )
+        lock = fs.acquire_advisory_lock(ledger_path, timeout_s=_LAND_SPRINT_LEDGER_LOCK_TIMEOUT_S)
     except FsError as exc:
         findings.append(
             Finding(
@@ -1464,10 +1399,7 @@ def _promote_sprint_ledger(
         fresh_ledger = fs.read_text(ledger_path)
         if fresh_ledger is None:
             fresh_ledger = ""
-        ledger_rel = (
-            f"_bmad-output/projects/{slug}/planning-artifacts/"
-            "sprint-status-ledger.yaml"
-        )
+        ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
         try:
             vcs.fetch(root, "origin", base)
             remote_text = vcs.file_text_at_ref(root, f"origin/{base}", ledger_rel)
@@ -1490,9 +1422,7 @@ def _promote_sprint_ledger(
 
         promote_mod = _load_promote_sprint_status_module()
         project_key = slug.removeprefix("pyforge-")
-        src_rel = (
-            f"_bmad-output/projects/{slug}/implementation-artifacts/sprint-status.yaml"
-        )
+        src_rel = f"_bmad-output/projects/{slug}/implementation-artifacts/sprint-status.yaml"
         working = fresh_ledger
         feed_synced = False
 
@@ -1505,20 +1435,13 @@ def _promote_sprint_ledger(
                     Finding(
                         code=_MRS_LAND_011,
                         severity=Severity.WARN,
-                        message=(
-                            f"Tier-3 sprint feed at {str(feed_path)!r} could "
-                            f"not be parsed for promotion: {exc}"
-                        ),
+                        message=(f"Tier-3 sprint feed at {str(feed_path)!r} could not be parsed for promotion: {exc}"),
                         path=str(feed_path),
                     )
                 )
                 incoming = {}
             if incoming:
-                existing = (
-                    gen.parse_sprint_status(ledger_path)
-                    if fresh_ledger.strip()
-                    else {}
-                )
+                existing = gen.parse_sprint_status(ledger_path) if fresh_ledger.strip() else {}
                 refusal = _land_feed_sync_refusal(promote_mod, existing, incoming)
                 if refusal is not None:
                     label, detail = refusal
@@ -1527,8 +1450,7 @@ def _promote_sprint_ledger(
                             code=_MRS_LAND_011,
                             severity=Severity.WARN,
                             message=(
-                                f"refusing to promote sprint ledger for "
-                                f"{slug!r}: feed would {label} key(s): {detail}"
+                                f"refusing to promote sprint ledger for {slug!r}: feed would {label} key(s): {detail}"
                             ),
                             path=str(ledger_path),
                         )
@@ -1547,8 +1469,7 @@ def _promote_sprint_ledger(
 
         promoted_keys = tuple(sorted(matched))
         message = (
-            f"marshal: promote sprint-status ledger for {slug!r} "
-            f"({len(promoted_keys)} key(s) -> done)"
+            f"marshal: promote sprint-status ledger for {slug!r} ({len(promoted_keys)} key(s) -> done)"
             if promoted_keys
             else f"marshal: promote sprint-status ledger for {slug!r} (feed sync)"
         )
@@ -1681,10 +1602,7 @@ def _resync_home_branch(
     try:
         expected_sha = vcs.resolve_ref(git_repo_root, head_branch)
     except VcsCommandError as exc:
-        return _warn(
-            f"could not resolve {head_branch!r}'s own tip before resyncing "
-            f"with 'origin/{base}': {exc}"
-        )
+        return _warn(f"could not resolve {head_branch!r}'s own tip before resyncing with 'origin/{base}': {exc}")
     try:
         home_sha = vcs.worktree_head_sha(home)
     except VcsCommandError as exc:
@@ -1740,9 +1658,7 @@ def _run_resync_if_enabled(
     if not resync_enabled:
         return False
     refresh_args = argparse.Namespace(project=slug, format=args.format)
-    _resync_data, resync_findings = reconcile_feed(
-        refresh_args, vcs=vcs, fs=fs, process=process, harness=harness
-    )
+    _resync_data, resync_findings = reconcile_feed(refresh_args, vcs=vcs, fs=fs, process=process, harness=harness)
     findings.extend(resync_findings)
     return True
 
