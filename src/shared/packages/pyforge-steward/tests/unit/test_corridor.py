@@ -639,7 +639,7 @@ def test_record_corridor_load_idempotent_on_concurrent_create_race(monkeypatch):
 
     class _Hit:
         def first(self):
-            return types.SimpleNamespace(transport="app-upload")
+            return types.SimpleNamespace(transport="app-upload", slice_name="", signer="")
 
     calls = {"n": 0}
 
