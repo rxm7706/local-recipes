@@ -2,7 +2,7 @@
 title: '53.1: The dispatched session is told and gated like a loop session'
 type: 'feature'
 created: '2026-09-20'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '1735cf9f13c71e279818146464ff3a167b01d066'
 review_loop_iteration: 0
 followup_review_recommended: false
