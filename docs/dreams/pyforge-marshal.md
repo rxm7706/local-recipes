@@ -407,6 +407,27 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   wrote the tracked spec directly. The promotion needs a merge rule for a twin whose
   `status:` is terminal while the tracked copy's is not (or whose Auto Run Result the tracked
   copy lacks). Hand-promoted for 51.2 and 51.9.
+- **2026-09-20 (night, the third drain)** — **Proposed: the watch is blind to the very runs
+  it was fixed to see, and a session that halts on its own reads as an operator stop.**
+  (7) `marshal watch --fleet` reported all eight stations *idle* at 00:38Z while three
+  dispatch sessions (doctor 26.1, steward 61.3, marshal 51.7) were live. Story 51.6 wired
+  the dispatch-run pattern into `cli/watch.py::_gather_station`, but the `marshal_home`
+  probe it reads shells out to `python -m pyforge.marshal status …`, and
+  `pyforge/marshal/__main__.py` does not exist — the console script is
+  `pyforge.marshal.cli.main:main` — so `ProcessError` → `None` on every call, and the unit
+  test for the probe *asserted that wrong argv* against a fake: the suite pinned the bug
+  in place. Nothing exercised the module name against the real interpreter. Operator
+  ruling (00:40Z): fix it, don't read journals by hand around it. (8) Doctor 26.1's
+  session (run `…233255320Z-8f2b958e`) halted on an intent gap the way the workflow says
+  to — code reverted, the tracked spec flipped to `blocked` with its triage log — but
+  left both *uncommitted* in the worktree and exited. The supervisor read
+  `session_alive: False` against a HEAD that still carried two wip commits with real code,
+  wrote `dispatch-finalize ok:false` and `dispatch-completion stop_reason:
+  external-operator-stop`, and never a `dispatch-blocked` row (CAP-252's detection reads
+  committed state only; marshal 51.7's earlier halt was detected only because that session
+  committed the blocked spec first). `fleet-picture` then shows the story `backlog` with no
+  trace of why. **Decomposed 2026-09-20:** (7) → CAP-257 / Story 51.10 (hand-driven, same
+  PR); (8) → CAP-258 / Story 51.11 (dispatch after 51.7 lands — same supervisor hub file).
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

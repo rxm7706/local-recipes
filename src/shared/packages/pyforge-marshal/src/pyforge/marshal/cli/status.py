@@ -1272,6 +1272,33 @@ def _gather_unpushed_work_findings(
 _FAILED_PATCH_GLOB = ".bmad-loop/runs/*/failed/*/changes.patch"
 
 
+def _dispatch_only_slugs(repo_root: Path) -> tuple[str, ...]:
+    """Story 51.12 (spec-pyforge-marshal CAP-259): every station whose
+    Tier-3 under THIS checkout carries at least one dispatch run
+    (``_bmad-output/projects/<slug>/implementation-artifacts/dispatch-runs/
+    <run>/journal.jsonl``), sorted by slug. A dispatch-only checkout -- one
+    station per clone, MRS-DISP-041's pattern -- has no ``loop/<slug>``
+    worktree at all, so ``run_status``'s worktree sweep yields no row for
+    it and ``_merge_dispatch_overlay`` has nothing to land on: the station
+    read as absent and ``marshal watch`` as idle while its dispatch session
+    ran (found 2026-09-20 00:47Z in the marshal and steward clones). Read
+    through ``cli/dispatch.py``'s own locators, never a second directory
+    convention."""
+    from ..core import dispatch as dispatch_core
+    from .dispatch import latest_dispatch_run_dir
+
+    projects_dir = dispatch_core.canonical_repo_root(repo_root) / "_bmad-output" / "projects"
+    if not projects_dir.is_dir():
+        return ()
+    return tuple(
+        sorted(
+            child.name
+            for child in projects_dir.iterdir()
+            if child.is_dir() and latest_dispatch_run_dir(repo_root, child.name) is not None
+        )
+    )
+
+
 def _gather_failed_patches(home: Path) -> tuple[tuple[Path, int], ...]:
     """Every REPORTABLE ``.bmad-loop/runs/*/failed/*/changes.patch`` under
     this home (Story 4.14, FR-176), as ``(path, size_bytes)`` pairs --
@@ -1594,7 +1621,7 @@ def run_status(
         )
         return _emit(args, data, findings)
 
-    fleet: list[tuple[str, Path]] = []
+    fleet: list[tuple[str, Path | None]] = []
     for entry in worktrees:
         if entry.branch is None or not entry.branch.startswith("loop/"):
             continue
@@ -1602,6 +1629,17 @@ def run_status(
         if args.project is not None and slug != args.project:
             continue
         fleet.append((slug, entry.path))
+    # Story 51.12 (CAP-259): a station with dispatch runs in this checkout's
+    # Tier-3 but no loop home here still gets a row -- a placeholder "home
+    # with no run yet" (`home=None`) that `_merge_dispatch_overlay` fills
+    # from the run journal exactly as it does for a loop-home row.
+    seen_slugs = {slug for slug, _ in fleet}
+    for slug in _dispatch_only_slugs(git_repo_root):
+        if slug in seen_slugs:
+            continue
+        if args.project is not None and slug != args.project:
+            continue
+        fleet.append((slug, None))
 
     # Story 5.5 (FR-62/AD-48): the fleet's own unpushed-work evidence,
     # gathered ONCE for the whole sweep (never per-home -- the detector's
@@ -1663,17 +1701,23 @@ def run_status(
 
     rows: list[dict[str, object]] = []
     for slug, home in fleet:
-        facts = _gather_home_facts(
-            fs=fs,
-            harness=harness,
-            process=process,
-            clock=clock,
-            home=home,
-            slug=slug,
-            branch=f"loop/{slug}",
-            latest_run_dir=_latest_run_dir,
-            resolve_harness_run_id=_resolve_harness_run_id_for_resume,
-        )
+        if home is None:
+            # Story 51.12 (CAP-259): dispatch-only station -- the spec's own
+            # "a home with no run yet" row shape (`has_run=False`, every
+            # other field a placeholder); the overlay below is its content.
+            facts = status_core.FleetHomeFacts(slug=slug, branch=f"loop/{slug}")
+        else:
+            facts = _gather_home_facts(
+                fs=fs,
+                harness=harness,
+                process=process,
+                clock=clock,
+                home=home,
+                slug=slug,
+                branch=f"loop/{slug}",
+                latest_run_dir=_latest_run_dir,
+                resolve_harness_run_id=_resolve_harness_run_id_for_resume,
+            )
         facts = _merge_dispatch_overlay(
             fs=fs,
             process=process,
@@ -1721,7 +1765,7 @@ def run_status(
         # filtered to real FILES by `_gather_failed_patches` itself, so a
         # non-empty tuple genuinely means "there is something to report"
         # and this gate never opens for a directory named `changes.patch`.
-        patch_paths = _gather_failed_patches(home)
+        patch_paths = _gather_failed_patches(home) if home is not None else ()
         if patch_paths:
             if not main_subjects_attempted:
                 main_subjects_attempted = True
