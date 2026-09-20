@@ -5,7 +5,7 @@ created: '2026-09-20'
 status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
-baseline_revision: '326870e985259412f799da04092a1f6299e357d4'
+baseline_revision: 'd50aedbd22c5b8a531f25d90fca1532a3cae6ace'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
