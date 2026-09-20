@@ -14,6 +14,7 @@ from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessPort
 
+from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
 from .core.dispatch_verification import reclassify_pre_existing_gate_findings
@@ -100,6 +101,36 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
     return found
 
 
+def _verify_commands_with_surface_guard(
+    effective: EffectivePolicy,
+) -> tuple[str, ...]:
+    """Story 53.1 (spec-53-1, CAP-261a): the S-13.7 guard, appended to a
+    dispatch session's own effective verify commands the SAME way
+    ``harness_bmadloop.render_policy_toml`` appends it to a loop home's
+    ``verify.commands`` -- one constant
+    (``adapters.harness_bmadloop._SURFACE_RECONCILE_COMMAND``), two
+    adapters. De-duplicated first so an operator who already declared the
+    guard in a station's ``marshal-policy.toml`` (never the intended path --
+    see that constant's own docstring, "derive, don't declare") still runs
+    it exactly once. The membership test collapses whitespace
+    (``" ".join(command.split())``) the same way ``gate.check_spec_binding``
+    does, so a station-declared guard that differs only in spacing still
+    de-duplicates instead of running twice.
+
+    Unlike the loop adapter, this is not a rendered file an operator can
+    read before a run starts -- it is folded in at USE time, right before
+    the commands actually execute and before ``check_spec_binding`` sees
+    them, so a dispatch session is gated on the guard exactly like a loop
+    session even though nothing in ``marshal-policy.toml`` ever declares
+    it."""
+    normalized_guard = " ".join(_SURFACE_RECONCILE_COMMAND.split())
+    verify = [
+        c for c in effective.verify_commands.value if " ".join(c.split()) != normalized_guard
+    ]
+    verify.append(_SURFACE_RECONCILE_COMMAND)
+    return tuple(verify)
+
+
 def run_verify_commands_only(
     effective: EffectivePolicy, *, process: ProcessPort, worktree: Path
 ) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...]]:
@@ -110,13 +141,23 @@ def run_verify_commands_only(
     aware) and do not transfer to a merge-tree preview worktree (see spec
     Design Notes). Used by ``dispatch_land.py`` to re-run verification
     against the tree ``git merge-tree --write-tree`` would actually produce
-    before landing, when the branch's baseline is behind ``origin/main``.
-    An empty ``verify_commands`` returns two empty tuples -- no
-    ``no_commands_configured_finding`` here; that policy-level warning
-    belongs to the branch's own verification pass, not this preview re-run."""
+    before landing, when the branch's baseline is behind ``origin/main``. No
+    ``no_commands_configured_finding`` here regardless of ``verify_commands``;
+    that policy-level warning belongs to the branch's own verification pass,
+    not this preview re-run.
+
+    Story 53.1 (spec-53-1): routed through ``_verify_commands_with_surface_guard``
+    like every other verify-command consumer, not the raw policy value --
+    unlike the scope/spec-binding/cross-surface layers, the S-13.7 guard is
+    filesystem-state-based (it reads whatever tree it runs in and compares
+    to a stored baseline), not a ``base...HEAD`` git diff, so the rationale
+    that excludes those layers from a merge-tree preview does not extend to
+    it: a merge-tree preview worktree is exactly the tree the guard needs to
+    check before landing. As a result this can no longer return two empty
+    tuples -- the guard is always present."""
     command_reports: list[dict[str, object]] = []
     findings: list[Finding] = []
-    for command in effective.verify_commands.value:
+    for command in _verify_commands_with_surface_guard(effective):
         report, finding = _run_verify_command(command, process=process, worktree=worktree)
         command_reports.append(report)
         if finding is not None:
@@ -181,11 +222,20 @@ def evaluate_dispatch_verification(
         "scope": "dispatch-worktree",
     }
 
-    commands = effective.verify_commands.value
+    commands = _verify_commands_with_surface_guard(effective)
     command_reports: list[dict[str, object]] = []
     scope_changed_files: tuple[str, ...] = ()
     scope_effective_surface: tuple[str, ...] = ()
     scope_check_completed = False
+    # Story 53.1: `commands` can no longer be empty -- the S-13.7 guard is
+    # unconditionally appended above, so a station with a bare
+    # `verify_commands = []` now runs the guard alone rather than nothing.
+    # This mirrors `harness_bmadloop.render_policy_toml`, which has never
+    # checked for emptiness before appending it either. The `not commands`
+    # branch stays as defensive dead code (never reachable today) rather
+    # than being deleted, so a future change to
+    # `_verify_commands_with_surface_guard` that CAN yield an empty tuple
+    # keeps reporting `MRS-GATE-004` instead of silently losing it.
     if not commands:
         if status_for(compute_verdict(findings)) is Status.OK:
             findings.append(gate.no_commands_configured_finding())
@@ -300,9 +350,16 @@ def evaluate_dispatch_verification(
 
     if spec_text is not None:
         declared_commands = spec_binding.parse_success_signal(spec_text)
-        binding_findings = gate.check_spec_binding(
-            declared_commands, effective.verify_commands.value
-        )
+        # Story 53.1: bind against the SAME widened `commands` the loop
+        # above actually ran, not the bare station policy -- the derived
+        # S-13.7 guard is an extra `policy_commands` entry no tracked spec
+        # declares, and `check_spec_binding`'s one-directional comparison
+        # already treats an undeclared extra as implicit, never a finding
+        # (see its own docstring). Binding against the narrower
+        # `effective.verify_commands.value` would work too (the guard is
+        # never in `declared_commands` either), but this keeps "what ran"
+        # and "what was checked" the same tuple.
+        binding_findings = gate.check_spec_binding(declared_commands, commands)
         findings.extend(binding_findings)
         data["spec_binding"] = {
             "story": str(story_key),
