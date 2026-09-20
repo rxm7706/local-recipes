@@ -2,12 +2,13 @@
 title: '61.4: Signed outbound slice'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 deferred: []
 declared_low_risk: false
+baseline_revision: 'ff2455866b3379fccf333e175e5166dab351c67e'
 ---
 
 <intent-contract>
