@@ -13,6 +13,7 @@ import csv
 import io
 import json
 import sys
+import types
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -55,7 +56,10 @@ from django.core.management import call_command  # noqa: E402
 
 call_command("migrate", run_syncdb=True, verbosity=0)
 
+from django.db import DataError  # noqa: E402
+
 from pyforge.steward.cli import build_parser  # noqa: E402
+from pyforge.steward.dashboard import glass_query as glass_query_module  # noqa: E402
 from pyforge.steward.dashboard.models import CorridorLoad  # noqa: E402
 from pyforge.steward.glass import (  # noqa: E402
     EMPTY_FILE_SHA256,
@@ -150,6 +154,47 @@ def test_compute_glass_reading_refused_when_dashboard_extra_not_importable(monke
     assert reading.status == "refused"
     assert reading.state is None
     assert reading.waybill is None
+
+
+# -- dashboard/glass_query.py's own refusal branches --
+#
+# These call `read_latest_corridor_load` directly (not through
+# `compute_glass_reading`) to exercise the environmental-failure paths its
+# docstring promises: django missing, settings unconfigured, the model
+# import failing, and the ORM exception group -- mirroring `test_corridor.py`'s
+# `record_corridor_load` refusal tests. Each uses a scoped `monkeypatch`
+# (`sys.modules` entries or a manager method), restored automatically once
+# the test returns -- no other test in this process observes the patch.
+
+
+def test_read_latest_corridor_load_refuses_when_django_is_not_importable(monkeypatch):
+    monkeypatch.setitem(sys.modules, "django", None)
+    result = glass_query_module.read_latest_corridor_load(direction="inbound")
+    assert result["status"] == "refused"
+
+
+def test_read_latest_corridor_load_refuses_when_settings_unconfigured(monkeypatch):
+    monkeypatch.delenv("DJANGO_SETTINGS_MODULE", raising=False)
+    fake_conf = types.ModuleType("django.conf")
+    fake_conf.settings = types.SimpleNamespace(configured=False)
+    monkeypatch.setitem(sys.modules, "django.conf", fake_conf)
+    result = glass_query_module.read_latest_corridor_load(direction="inbound")
+    assert result["status"] == "refused"
+
+
+def test_read_latest_corridor_load_refuses_when_model_import_fails(monkeypatch):
+    monkeypatch.setitem(sys.modules, "pyforge.steward.dashboard.models", None)
+    result = glass_query_module.read_latest_corridor_load(direction="inbound")
+    assert result["status"] == "refused"
+
+
+def test_read_latest_corridor_load_refuses_on_operational_error(monkeypatch):
+    def _raise_data_error(**kwargs):
+        raise DataError("db unreachable")
+
+    monkeypatch.setattr(CorridorLoad.objects, "filter", _raise_data_error)
+    result = glass_query_module.read_latest_corridor_load(direction="inbound")
+    assert result["status"] == "refused"
 
 
 # -- render_glass_table --
