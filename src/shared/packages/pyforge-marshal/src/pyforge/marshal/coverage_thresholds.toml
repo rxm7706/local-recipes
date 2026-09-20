@@ -23,4 +23,6 @@ integration = 70.0
 # opened by marshal Story 53.2 on 2026-09-20 — was retired by Story 53.3 the same day: the
 # module is ports-driven unit-covered above the fleet floor
 # (`tests/unit/test_dispatch_supervisor_main_loop.py`), so marshal carries no named coverage
-# debt and the touched-module gate is whole again.
+# debt and the touched-module gate is whole again. That emptiness is pinned by
+# `tests/unit/test_coverage_gate_module_floors.py::test_the_live_file_holds_no_module_exception`
+# — adding an entry here reds it, so a new exception is always a reviewed act.

@@ -1844,6 +1844,44 @@ def test_supervisor_heartbeats_a_live_session_then_terminalizes(
     assert any("auto-checkpoint" in message for _root, _paths, message in vcs.commits)
 
 
+def test_supervisor_checkpoints_a_live_session_only_once_idle_reaches_the_threshold(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real idle predicate, driven by a real monotonic interval.
+
+    The ``clock`` fixture steps ``monotonic()`` by 0.0, so in every other
+    tick-loop test ``idle_elapsed_s = time.monotonic() -
+    last_session_activity_monotonic`` is 0.0 and the threshold comparison
+    decides nothing -- the heartbeat test above has to stub
+    ``should_checkpoint_on_idle`` to reach the checkpoint at all. Here the
+    predicate is the real one and the clock advances, so the arithmetic is
+    what decides: frozen, no checkpoint; a tick's worth of idle, a
+    checkpoint.
+    """
+
+    def _one_run(*, mono_step: float) -> FakeVcs:
+        repo_root = _repo(tmp_path / f"step-{mono_step}")
+        run_dir = _run_dir(repo_root)
+        _seed_journal(run_dir, (_launch_line(),))
+        (run_dir / "session.log").write_text("working…\n", encoding="utf-8")
+        monkeypatch.setattr(supervisor_main, "time", _FakeClock(mono_step=mono_step))
+        vcs = FakeVcs(head_sha=_BASELINE, changed=(), dirty=True)
+        _run(
+            repo_root,
+            fs=FakeFs(),
+            vcs=vcs,
+            process=FakeProcess(alive=[True, False]),
+            publisher=FakePublisher(),
+        )
+        return vcs
+
+    frozen = _one_run(mono_step=0.0)
+    advancing = _one_run(mono_step=float(supervisor_main._TICK_SECONDS))
+
+    assert not any("auto-checkpoint" in message for _root, _paths, message in frozen.commits)
+    assert any("auto-checkpoint" in message for _root, _paths, message in advancing.commits)
+
+
 def test_supervisor_treats_an_unreadable_worktree_status_as_clean(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
