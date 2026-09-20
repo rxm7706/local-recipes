@@ -434,6 +434,28 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and `cli/watch.py::_snapshot_dispatch` treats any verdict outside its own invented set
   `{"", "None", "pending", "in-progress"}` as terminal — its tests use `"passed"`/`"pending"`,
   strings the supervisor never emits. → CAP-260 / Story 51.13 (hand-driven, same night).
+- **2026-09-20 (morning) — Proposed: the dispatch landing pays its own surface tax.** Operator
+  ruling 08:40Z after seven autonomous landings in twelve hours (26.1, 61.3, 51.11, 29.1, 61.4,
+  46.7, 65.x) each left `main` red on `spec-surface` until a human named the paths: *"we need
+  a permanent fix, it's causing churn and rerun."* The cause is mechanical, not behavioural —
+  item (3) of the 2026-09-19 entry, never decomposed: bmad-loop pays the tax because
+  `harness_bmadloop::render_policy_toml` appends `python scripts/spec_surface_reconcile.py` to
+  every loop's verify commands (the S-13.7 guard, CAP-239), so a loop story cannot go green
+  until the session names its paths; `marshal factory dispatch` never got that guard —
+  `dispatch_verify` runs only the station's `verify_commands`, the `harness_bmadbuild` prompt
+  says nothing about memlogs, and nothing in the dispatch path runs `deferred_work_intake`, so
+  a frontmatter deferral with no `location:` is refused later by hand too. Two halves, both
+  needed: the producer is told and gated (as the loop is), and the landing reconciles from git
+  facts as the safety net — `dispatch_land` names every governed path the branch changed on the
+  owning Spec and each co-governor the detector names, stamps exactly those Specs, journals
+  that it had to, then merges — so `main` is never red and no landing waits on a human. Not a
+  blanket stamp: the entry is per-file naming derived from `git diff`, the stamp is scoped to
+  the Specs whose drift is only this branch's files, and a session that reconciled itself
+  triggers nothing. **Decomposed 2026-09-20:** CAP-261 / **Epic 53** — Story 53.1 (the
+  dispatched session is told and gated: prompt obligation + the S-13.7 guard in its
+  verification, the deferral `location:` rule), Story 53.2 (the landing reconciles from git
+  facts and runs intake; journals MRS-DISP-047 when it had to). (2), (4), (5) of the 2026-09-19
+  entry remain undecomposed.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
