@@ -22,6 +22,7 @@ from pyforge.marshal.core.dispatch_completion import (
     DispatchSessionVerdict,
 )
 from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_supervisor.__main__ import (
     _attempted_change_patch_paths,
     _blocked_halt_reason,
@@ -216,6 +217,21 @@ def test_blocked_halt_reason_stale_baseline_mismatch(tmp_path: Path) -> None:
 
     assert reason is None
     assert stale is True
+
+
+def test_stale_blocked_finding_code_is_registered() -> None:
+    """The tick loop's ``elif stale:`` branch constructs a Finding with code
+    ``MRS-DISP-046`` (never exercised by ``_blocked_halt_reason`` alone,
+    which only returns the ``stale`` flag) -- registration lives in
+    findings.py/verdict.py, not in this helper, so this is the one place
+    that would have caught the code being unregistered: ``Finding.__post_init__``
+    raises ``UnregisteredFindingCodeError`` for any unregistered code."""
+    finding = Finding(
+        code="MRS-DISP-046",
+        severity=Severity.WARN,
+        message="stale blocked spec baseline mismatch",
+    )
+    assert finding.code == "MRS-DISP-046"
 
 
 def test_blocked_halt_reason_no_signal_when_no_spec(tmp_path: Path) -> None:
