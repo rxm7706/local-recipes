@@ -1142,6 +1142,10 @@ cmd = "python -m pyforge.doctor.sources docs-currency"
 description = "Mutator: regenerates docs/MAP.md's generated '## Page registry' section from docs/map.yaml — the only sanctioned way to edit the content between the docs-map:registry:begin/docs-map:registry:end markers (Story 30.2, spec-pyforge-doctor CAP-84). Run after editing docs/map.yaml, or after docs-currency-check reports the section stale."
 cmd = "python scripts/docs_map_render.py"
 
+[feature.guild-tasks.tasks.docs-map-render-test]
+description = "tests/scripts/test_docs_map_render.py — scripts/docs_map_render.py's schema-validated error handling and marker-splice logic (review pass 1, Story 30.2, spec-pyforge-doctor CAP-84). Lives here, not folded into pyforge-doctor-scripts-test (pyforge-ci), because docs_map_render.py imports pyforge.doctor.sources.docs_currency for its shared render/splice functions, which needs jsonschema — unavailable in pyforge-ci's deliberately dependency-free env (that file's own tests skip cleanly there via pytest.importorskip). pyforge-guild carries pyforge-doctor's run-deps already."
+cmd = "pytest tests/scripts/test_docs_map_render.py -q"
+
 [feature.guild-tasks.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."
 cmd = "python -m pyforge.doctor.sources pixi-currency-ledger"
