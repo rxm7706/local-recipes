@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+import types
 from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessResult
@@ -18,7 +20,8 @@ from pyforge.marshal.core.dispatch_landing import (
 )
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.identity import normalize, render_merge_subject
-from pyforge.marshal.dispatch_land import execute_dispatch_land
+from pyforge.marshal.core.model import Severity
+from pyforge.marshal.dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 
 
