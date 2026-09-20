@@ -58,9 +58,17 @@ class CorridorLoadAdmin(admin.ModelAdmin):
     `corridor_load.record_corridor_load` alone and never edited, added to,
     or deleted through the admin."""
 
-    list_display = ("direction", "waybill", "batch_sha", "transport", "loaded_at")
+    list_display = (
+        "direction",
+        "waybill",
+        "batch_sha",
+        "transport",
+        "slice_name",
+        "signer",
+        "loaded_at",
+    )
     list_filter = ("direction", "transport")
-    search_fields = ("batch_sha", "waybill")
+    search_fields = ("batch_sha", "waybill", "slice_name", "signer")
     ordering = ("-loaded_at",)
 
     def has_add_permission(self, request):
