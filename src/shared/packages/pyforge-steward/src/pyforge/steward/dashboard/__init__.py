@@ -22,7 +22,8 @@ reach `passport_sync` by dynamic import (one of the sanctioned base→dashboard
 reaches, pinned in `tests/meta/test_invariants.py`) — and since Story 61.1 —
 `corridor_load.py` does the same, reached by `corridor.load_extract` — and
 since Story 61.2 — `passport_mint.py` does the same, reached by
-`passport.mint_vendor_passport`;
+`passport.mint_vendor_passport` — and since Story 61.3 — `glass_query.py`
+does the same, reached by `glass.compute_glass_reading`;
 `declarations.py`,
 `middleware.py`, — since Story 9.4 — `export.py` (`ExportPolicy` +
 `authorize_export`/`maybe_encrypt_export`), and — since Story 9.2 —

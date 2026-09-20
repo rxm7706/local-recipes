@@ -66,6 +66,7 @@ DUTIES: tuple[str, ...] = (
     "catalog",
     "load",
     "passport",
+    "glass",
 )
 
 _HELP = {
@@ -81,6 +82,12 @@ _HELP = {
     "passport": (
         "vendor work-passport identity -- mints a FRESH UUID per inbound key, "
         "never merges by Jira key or GitHub number (Story 61.2)"
+    ),
+    "glass": (
+        "as-of glass -- standup/shipped freshness over the inbound/outbound corridor "
+        "(cites a waybill; empty on-time file fails; late drop leaves yesterday stale; "
+        "unborn before the first waybill); export is a flag-gated CSV/markdown plugin "
+        "(Story 61.3)"
     ),
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
@@ -218,6 +225,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_load_subparsers(duty_parser)
         elif name == "passport":
             _add_passport_subparsers(duty_parser)
+        elif name == "glass":
+            _add_glass_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -536,6 +545,36 @@ def _add_passport_subparsers(passport_parser: argparse.ArgumentParser) -> None:
         "--github-item-id", default=None, metavar="ID", help="GitHub item ID nickname (optional)"
     )
     mint.add_argument("--title", default="", metavar="TEXT", help="a human-readable title (optional)")
+
+
+def _add_glass_subparsers(glass_parser: argparse.ArgumentParser) -> None:
+    """Story 61.3: bare (report standup/shipped freshness, default) /
+    ``export``. ``--json`` sits on the parent only, mirroring ``load``/
+    ``passport``'s parent-only placement.
+    """
+    from .glass import GLASS_EXPORT_FORMATS
+
+    glass_parser.add_argument(
+        "--json", action="store_true", default=False, help="emit JSON instead of human-readable text"
+    )
+    glass_subs = glass_parser.add_subparsers(dest="glass_verb", metavar="{export}")
+    export = glass_subs.add_parser(
+        "export",
+        help="render a standup+shipped table (flag-gated: --flag enable_glass_export=true)",
+    )
+    export.add_argument(
+        "--format",
+        default="markdown",
+        choices=GLASS_EXPORT_FORMATS,
+        help="output format (default: markdown)",
+    )
+    export.add_argument(
+        "--flag",
+        action="append",
+        default=None,
+        metavar="NAME=VALUE",
+        help="feature-flag override, repeatable (e.g. --flag enable_glass_export=true)",
+    )
 
 
 def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
@@ -1299,6 +1338,10 @@ def resolve_duty(name: str) -> Duty:
         from .passport import PassportDuty
 
         return PassportDuty()
+    if name == "glass":
+        from .glass import GlassDuty
+
+        return GlassDuty()
     return NullDuty(name)
 
 
