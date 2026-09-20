@@ -1947,6 +1947,60 @@ def test_supervisor_finalizes_verifies_and_lands_a_finished_harness_session(
     assert publisher.completions
 
 
+class _LandsDuringFinalizeFs(FakeFs):
+    """A second journal writer lands the story while finalize runs.
+
+    The run journal is multi-writer: the dispatch CLI can land a story and
+    journal the outcome between the supervisor's own reads. That is why
+    ``__main__.py:1523-1525`` re-folds the journal after the finalize
+    sequence, and why ``:1540-1542`` terminalizes as ``COMPLETED`` from the
+    re-read instead of re-deriving a terminal verdict -- the finalize
+    sequence itself only commits, pushes, and verifies, so it can never be
+    the writer of that land entry.
+    """
+
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)  # type: ignore[arg-type]
+        self.injected = False
+
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        super().append_line(path, line, fsync=fsync)
+        if self.injected or dispatch_core.KIND_DISPATCH_FINALIZE not in line:
+            return
+        if '"phase": "outcome"' not in line:
+            return
+        self.injected = True
+        for extra in _land_outcome_lines({"verdict": "landed", "ok": True}, counter=900):
+            super().append_line(path, extra, fsync=False)
+
+
+def test_supervisor_completes_when_another_writer_lands_during_finalize(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    vcs = FakeVcs(branches=frozenset({branch}), head_sha=_MOVED)
+    fs = _LandsDuringFinalizeFs()
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert fs.injected
+    # This supervisor never landed: the concurrent outcome is what the
+    # post-finalize re-fold reads, so COMPLETED comes from the landing the
+    # other writer journaled, not from a second land attempt on top of it.
+    assert land_calls == []
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+
+
 def test_supervisor_lands_from_the_live_branch_then_completes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
