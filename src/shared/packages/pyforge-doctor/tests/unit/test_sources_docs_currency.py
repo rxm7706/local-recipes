@@ -201,6 +201,38 @@ def test_authored_page_with_current_source_reports_no_stale_finding(tmp_path: Pa
     assert finding.status == DoctorStatus.OK
 
 
+def test_authored_page_with_source_never_in_git_history_emits_warn(tmp_path: Path):
+    _init_repo(tmp_path)
+    pages = [_POINTER_PAGE, {
+        "path": "how-to/example.md",
+        "quadrant": "how-to",
+        "owner": "fleet",
+        "kind": "authored",
+    }]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(
+        tmp_path,
+        "how-to/example.md",
+        # never-committed.txt is named but never created/committed -- a
+        # typo, or a source that moved. A stronger signal than staleness,
+        # not "silently current".
+        frontmatter="sources:\n  - never-committed.txt\nverified: 2020-01-01\n",
+    )
+    _commit_all(tmp_path, "seed (never-committed.txt does not exist)")
+
+    findings = docs_currency.gather(tmp_path)
+    stale = [f for f in findings if f.check == "docs-currency-authored-stale"]
+    assert len(stale) == 1
+    assert stale[0].evidence["stale_sources"] == [
+        {
+            "source": "never-committed.txt",
+            "reason": "source not found in git history",
+            "verified": "2020-01-01",
+        }
+    ]
+
+
 # --- authored-page-stale: dead body references --------------------------------
 
 
