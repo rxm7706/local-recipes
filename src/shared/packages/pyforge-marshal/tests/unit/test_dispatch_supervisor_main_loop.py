@@ -2066,16 +2066,22 @@ def test_supervisor_skips_publishing_when_no_handle_was_issued(tmp_path: Path, c
 def test_supervisor_survives_an_initial_fetch_failure(tmp_path: Path, clock: _FakeClock) -> None:
     repo_root = _repo(tmp_path)
     _seed_journal(_run_dir(repo_root), (_launch_line(),))
+    publisher = FakePublisher()
 
     code = _run(
         repo_root,
         fs=FakeFs(),
         vcs=FakeVcs(head_sha=_BASELINE, changed=(), fetch_raises=True),
         process=FakeProcess(alive=False),
-        publisher=FakePublisher(),
+        publisher=publisher,
     )
 
+    # Exit 0 alone would also hold for a supervisor that gave up before
+    # judging anything; the completion is what proves the swallowed fetch
+    # failure cost the run nothing -- same verdict as the fetching twin,
+    # `test_supervisor_journals_a_failed_run_to_completion`.
     assert code == 0
+    assert publisher.completions and publisher.completions[0][1] == DispatchSessionVerdict.FAILED.value
 
 
 def test_supervisor_exits_completed_once_the_story_is_merged_on_main(tmp_path: Path, clock: _FakeClock) -> None:
@@ -2136,5 +2142,10 @@ def test_main_threads_every_positional_into_the_supervisor(tmp_path: Path, monke
 def test_main_refuses_a_missing_positional(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(supervisor_main, "run_dispatch_supervisor", lambda **_kwargs: 0)
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as excinfo:
         supervisor_main.main(["only-one-argument"])
+
+    # A bare `raises(SystemExit)` would also pass on a clean `SystemExit(0)`,
+    # i.e. on a `main()` that quietly ran the supervisor with defaults. The
+    # refusal this pins is argparse's usage error.
+    assert excinfo.value.code == 2

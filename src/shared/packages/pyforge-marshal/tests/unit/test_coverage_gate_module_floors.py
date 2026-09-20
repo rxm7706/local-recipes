@@ -15,11 +15,13 @@ import pytest
 
 from pyforge.marshal.coverage_gate import (
     ModuleFloor,
+    default_thresholds_path,
     evaluate_coverage_payload,
     evaluate_suite,
     floor_for_module,
     load_module_floors,
     modules_below_threshold,
+    thresholds_for,
 )
 
 TOML = """[defaults]
@@ -104,5 +106,14 @@ def test_the_live_file_holds_no_module_exception() -> None:
     ``tests/unit/test_dispatch_supervisor_main_loop.py``, so its Story 53.2
     exception is gone and no other module has taken its place. A new entry
     here is a deliberate, reviewable act -- never a silent one.
+
+    ``load_module_floors`` returns ``{}`` for a *missing* file too, so the
+    emptiness assertion alone would stay green if the packaged thresholds
+    file were renamed or dropped -- taking every station floor with it. The
+    file's presence and its parsed station floor are asserted first, so this
+    test fails loudly on that, exactly as the presence-pinning test it
+    replaced would have.
     """
+    assert default_thresholds_path().is_file()
+    assert thresholds_for("marshal").for_suite("unit") == 80.0
     assert load_module_floors() == {}
