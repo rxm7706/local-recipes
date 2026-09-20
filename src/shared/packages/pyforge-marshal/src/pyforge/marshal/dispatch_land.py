@@ -353,6 +353,13 @@ def _reconcile_spec_surface_drift(
     foreign: dict[str, set[str]] = {}
     own: dict[str, set[str]] = {}
     for name, paths in by_spec.items():
+        overlap = paths & changed
+        if not overlap:
+            # Drift with zero overlap against this branch's own changed
+            # files is pre-existing and unrelated -- not this landing's to
+            # reconcile or refuse on (only a path THIS branch touched makes
+            # a spec's drift ours or foreign).
+            continue
         not_ours = paths - changed
         if not_ours:
             foreign[name] = not_ours
@@ -375,6 +382,14 @@ def _reconcile_spec_surface_drift(
             ),
             refuse=True,
         )
+
+    if not own:
+        # Every drifted spec had zero overlap with this branch's own
+        # changed files (all skipped above) -- nothing of this branch's to
+        # reconcile. Returning here (rather than falling through) also
+        # guards against building a bare `--write-baseline` with no
+        # `--spec` flags below, which Boundaries forbid outright.
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
 
     memlog_script = worktree / "_bmad" / "scripts" / "memlog.py"
     stamp_script = worktree / "scripts" / "spec_surface_check.py"
