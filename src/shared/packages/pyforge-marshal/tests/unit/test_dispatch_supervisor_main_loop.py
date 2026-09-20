@@ -2217,10 +2217,26 @@ def test_main_threads_every_supervisor_positional_and_ignores_the_log_path(
     )
 
     assert code == 0
-    assert captured["repo_root"] == repo_root
-    assert captured["session_pid"] == _SESSION_PID
-    assert captured["worktree"] == worktree
-    assert captured["merge_subject_template"] == _TEMPLATE
+    # The whole forwarded set, by name: a test that checks four of the eight
+    # passes over a dropped one, which is the failure it exists to catch.
+    assert captured == {
+        "repo_root": repo_root,
+        "slug": _SLUG,
+        "run_id": _RUN_ID,
+        "session_pid": _SESSION_PID,
+        "worktree": worktree,
+        "story_key": _STORY_KEY,
+        "baseline_head_sha": _BASELINE,
+        "merge_subject_template": _TEMPLATE,
+    }
+    # The ninth positional is deliberately absent from that set:
+    # `run_dispatch_supervisor` takes no `log_path`. `cli/dispatch.py`'s
+    # `_spawn_dispatch_supervisor` sends the supervisor log twice -- on argv, and
+    # as `spawn_detached(log_path=...)`, which is what actually redirects the
+    # child's output -- so argparse must accept the positional while the
+    # supervisor itself has nothing to do with it. Forwarding it would be a
+    # production change with no behaviour behind it.
+    assert "log_path" not in captured
 
 
 def test_main_refuses_a_missing_positional(monkeypatch: pytest.MonkeyPatch) -> None:
