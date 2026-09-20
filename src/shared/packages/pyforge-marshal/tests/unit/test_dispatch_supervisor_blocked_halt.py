@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
@@ -40,9 +41,10 @@ class FakeFs:
     through to the real tree since the tracked-spec resolution helpers glob
     real files on disk."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, raise_fs_error_for: frozenset[Path] = frozenset()) -> None:
         self.files: dict[Path, str] = {}
         self.appended: list[tuple[Path, str, bool]] = []
+        self._raise_fs_error_for = raise_fs_error_for
 
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
         self.appended.append((path, line, fsync))
@@ -55,6 +57,8 @@ class FakeFs:
         self.files[path] = content
 
     def read_text(self, path: Path) -> str | None:
+        if path in self._raise_fs_error_for:
+            raise FsError(f"cannot read {path} (test double)")
         try:
             return path.read_text(encoding="utf-8")
         except OSError:
@@ -543,5 +547,63 @@ def test_promote_blocked_twin_noop_when_no_spec_resolves(tmp_path: Path) -> None
         story_key="99.9",
         worktree=worktree,
     )
+
+    assert vcs.isolated_promote_calls == []
+
+
+def test_promote_blocked_twin_never_raises_on_worktree_read_fs_error(
+    tmp_path: Path,
+) -> None:
+    """Best-effort per its own docstring ("Never raises") -- an FsError
+    reading the worktree's own spec (permission denied, corrupt encoding)
+    must not escape and unwind the already-committed blocked verdict."""
+    worktree = _worktree(tmp_path)
+    relative = _seed_spec(
+        repo_root=tmp_path,
+        worktree=worktree,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        text=_BLOCKED_SPEC_TEXT,
+    )
+    fs = FakeFs(raise_fs_error_for=frozenset({worktree / relative}))
+    vcs = FakeVcs()
+
+    _promote_blocked_twin(
+        fs=fs,
+        vcs=vcs,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=worktree,
+    )  # must not raise
+
+    assert vcs.isolated_promote_calls == []
+
+
+def test_promote_blocked_twin_never_raises_on_primary_read_fs_error(
+    tmp_path: Path,
+) -> None:
+    """Same guarantee for the primary checkout's tracked twin read."""
+    worktree = _worktree(tmp_path)
+    _seed_spec(
+        repo_root=tmp_path,
+        worktree=worktree,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        text=_BLOCKED_SPEC_TEXT,
+    )
+    specs_dir = dispatch_core.planning_specs_dir(tmp_path, _SLUG)
+    primary_spec_path = specs_dir / f"spec-{_STORY_KEY.replace('.', '-')}.md"
+    fs = FakeFs(raise_fs_error_for=frozenset({primary_spec_path}))
+    vcs = FakeVcs()
+
+    _promote_blocked_twin(
+        fs=fs,
+        vcs=vcs,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=worktree,
+    )  # must not raise
 
     assert vcs.isolated_promote_calls == []
