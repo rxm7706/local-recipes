@@ -518,10 +518,35 @@ def test_fold_dispatch_journal_reads_sidecars_through_the_fs_port(tmp_path: Path
     fs = FakeFs()
     run_dir = _run_dir(_repo(tmp_path))
     _seed_journal(run_dir, (_launch_line(),))
+    findings = [
+        Finding(code="MRS-DISP-037", severity=Severity.WARN, message=f"padding finding {index:04d} " * 6).to_json_dict()
+        for index in range(60)
+    ]
+    # The offload is what puts a sidecar reference in the journal line; a
+    # journal with no offloaded entry folds identically whether or not the
+    # sidecar read works, which is why this test writes one first.
+    supervisor_main._append_entry(
+        fs,
+        run_dir,
+        build_entry(
+            id=JournalEntryId("dispatch-supervisor-1", 1),
+            ts="2026-09-20T10:00:00.000Z",
+            run_id=_RUN_ID,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.OUTCOME,
+            payload={"verdict": "landed", "ok": True, "land_findings": findings},
+            intent_id=JournalEntryId("dispatch-supervisor-1", 0),
+        ),
+        fsync=False,
+        offload_fields=frozenset({"land_findings"}),
+    )
 
     folded = supervisor_main._fold_dispatch_journal(fs, run_dir, fs.journal_text(run_dir))
 
     assert [entry.kind for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH)] == ["dispatch-launch"]
+    landed = folded.by_kind(dispatch_core.KIND_DISPATCH_LAND)
+    assert [entry.payload["verdict"] for entry in landed] == ["landed"]
+    assert [len(entry.payload["land_findings"]) for entry in landed] == [len(findings)]
 
 
 def test_maybe_fetch_origin_main_only_fetches_on_the_fifth_tick(tmp_path: Path) -> None:
