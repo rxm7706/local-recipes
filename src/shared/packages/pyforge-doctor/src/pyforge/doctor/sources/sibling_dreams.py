@@ -129,8 +129,17 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
     # Local-only bookkeeping (Story 29.1): a hash the operator has already
     # reviewed and accepted for THIS Dream's sibling counterpart. Harmless to
     # read off a sibling fingerprint too -- siblings never declare it, and
-    # nothing reads this key on the sibling side.
-    ack = data.get("sibling-acknowledged")
+    # nothing reads this key on the sibling side. A real sha256 hex digest is
+    # a str, but an all-digit one YAML-parses as an int -- coerce numeric
+    # scalars back to their literal text instead of silently discarding them
+    # as "no acknowledgement" (still fails toward extra warn noise, never
+    # toward silence, either way).
+    ack_raw = data.get("sibling-acknowledged")
+    ack = (
+        str(ack_raw)
+        if isinstance(ack_raw, (int, float)) and not isinstance(ack_raw, bool)
+        else ack_raw
+    )
     # Body = everything after the closing fence line (UTF-8). Empty body →
     # sha256 of b"".
     marker = "\n---\n"
