@@ -343,31 +343,145 @@ class _RaisingIntakeProcess:
         raise ProcessError("deferred_work_intake.py could not be launched")
 
 
+class _FakeIntakeVcs:
+    """Records ``commit_paths_onto_remote_tip`` calls; never touches a real
+    git repo -- these tests never expect it to be called unless noted."""
+
+    def __init__(self, *, raises: bool = False) -> None:
+        self.raises = raises
+        self.calls: list[dict] = []
+
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message):
+        self.calls.append(
+            {"repo_root": repo_root, "remote": remote, "ref": ref, "writes": writes,
+             "message": message}
+        )
+        if self.raises:
+            from pyforge.marshal.adapters.vcs_git import VcsCommandError
+
+            raise VcsCommandError("push rejected")
+        return "new-sha"
+
+
 def test_run_deferred_work_intake_clean_run_returns_none(tmp_path: Path) -> None:
+    """The script runs but the tracked ledger's text is unchanged (the
+    fake process never touches the filesystem) -- no commit, no finding."""
     process = _FakeIntakeProcess(returncode=0)
-    assert _run_deferred_work_intake(process, tmp_path, "pyforge-steward") is None
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    assert _run_deferred_work_intake(process, fs, vcs, tmp_path, "pyforge-steward") is None
     [argv], [cwd] = zip(*process.calls)
     assert argv[-2:] == ["--project", "steward"]
     assert "--fix" in argv
     assert cwd == tmp_path
+    assert vcs.calls == []
 
 
 def test_run_deferred_work_intake_refusal_returns_warn_finding(tmp_path: Path) -> None:
     process = _FakeIntakeProcess(returncode=1, stderr="no resolvable location:")
-    finding = _run_deferred_work_intake(process, tmp_path, "pyforge-marshal")
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    finding = _run_deferred_work_intake(process, fs, vcs, tmp_path, "pyforge-marshal")
     assert finding is not None
     assert finding.code == "MRS-DISP-047"
     assert finding.severity == Severity.WARN
     assert "marshal" in finding.message
     assert "no resolvable location:" in finding.message
+    assert vcs.calls == []
 
 
 def test_run_deferred_work_intake_process_error_returns_warn_finding(tmp_path: Path) -> None:
-    finding = _run_deferred_work_intake(_RaisingIntakeProcess(), tmp_path, "pyforge-doctor")
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    finding = _run_deferred_work_intake(
+        _RaisingIntakeProcess(), fs, vcs, tmp_path, "pyforge-doctor"
+    )
     assert finding is not None
     assert finding.code == "MRS-DISP-047"
     assert finding.severity == Severity.WARN
     assert "doctor" in finding.message
+    assert vcs.calls == []
+
+
+def test_run_deferred_work_intake_publishes_change_and_restores_local_text(
+    tmp_path: Path,
+) -> None:
+    """Story 53.2 review (B5/B6): when ``--fix`` actually mutates the
+    tracked ledger, the new text is published onto ``origin/main`` via
+    ``commit_paths_onto_remote_tip`` and ``root``'s own working-tree copy is
+    restored to its pre-``--fix`` text -- never left dirty for the next
+    finalize's ``has_uncommitted_changes`` gate to trip over."""
+    tracked_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    )
+    tracked_path.parent.mkdir(parents=True)
+    tracked_path.write_text("# Deferred Work Ledger\n\nold entry\n", encoding="utf-8")
+
+    class _WritingProcess:
+        def __init__(self) -> None:
+            self.calls: list[tuple[list[str], Path]] = []
+
+        def run(self, tokens, *, cwd: Path):
+            self.calls.append((list(tokens), cwd))
+            tracked_path.write_text(
+                "# Deferred Work Ledger\n\nold entry\n\nnew entry\n", encoding="utf-8"
+            )
+            return ProcessResult(returncode=0, stdout="", stderr="")
+
+    process = _WritingProcess()
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    finding = _run_deferred_work_intake(process, fs, vcs, tmp_path, "pyforge-marshal")
+    assert finding is None
+    assert len(vcs.calls) == 1
+    call = vcs.calls[0]
+    assert call["remote"] == "origin"
+    assert call["ref"] == "main"
+    assert call["writes"] == (
+        (
+            "_bmad-output/projects/pyforge-marshal/planning-artifacts/"
+            "deferred-work-ledger.md",
+            "# Deferred Work Ledger\n\nold entry\n\nnew entry\n",
+        ),
+    )
+    # root's own working tree is restored to the pre-`--fix` text.
+    assert tracked_path.read_text(encoding="utf-8") == "# Deferred Work Ledger\n\nold entry\n"
+
+
+def test_run_deferred_work_intake_warns_when_publish_fails(tmp_path: Path) -> None:
+    """Story 53.2 review (B5): a failed publish to ``origin/main`` is a
+    WARN, never a crash -- and the local working tree is still restored."""
+    tracked_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    )
+    tracked_path.parent.mkdir(parents=True)
+    tracked_path.write_text("old\n", encoding="utf-8")
+
+    class _WritingProcess:
+        def run(self, tokens, *, cwd: Path):
+            tracked_path.write_text("new\n", encoding="utf-8")
+            return ProcessResult(returncode=0, stdout="", stderr="")
+
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs(raises=True)
+    finding = _run_deferred_work_intake(
+        _WritingProcess(), fs, vcs, tmp_path, "pyforge-marshal"
+    )
+    assert finding is not None
+    assert finding.code == "MRS-DISP-047"
+    assert finding.severity == Severity.WARN
+    assert "could not be published" in finding.message
+    assert tracked_path.read_text(encoding="utf-8") == "old\n"
 
 
 def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_list(
