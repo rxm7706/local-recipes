@@ -12,7 +12,7 @@ this module mirrors.
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 _SETTINGS_UNSET = (
     "DJANGO_SETTINGS_MODULE is unset and django settings are not configured "
@@ -20,7 +20,7 @@ _SETTINGS_UNSET = (
 )
 
 
-def _refused(direction: str, exc: BaseException) -> Dict[str, Any]:
+def _refused(direction: str, exc: BaseException) -> dict[str, Any]:
     return {
         "status": "refused",
         "direction": direction,

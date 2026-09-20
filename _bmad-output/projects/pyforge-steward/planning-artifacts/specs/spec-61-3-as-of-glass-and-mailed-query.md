@@ -487,6 +487,110 @@ inbound reading"). Re-derive `standup_htmx_view`/`shipped_htmx_view` and their t
   established "email is an empty slot until enabled" scope. Neither is logged as a separate
   finding above since the auditor did not file either as an unresolved gap.
 
+### 2026-09-19 — Review pass (2, post bad_spec re-derivation)
+
+- verdicts: 16 findings — high 0, medium 2, low 12, false 2, maybe-false 0
+- findings:
+  - `[low]` `[patch]` (Blind Hunter, grouped with Verification Gap Reviewer below — same defect)
+    `_HELP["glass"]` still reads "standup/shipped freshness over the inbound/outbound corridor,"
+    stale wording left over from before the direction fix — `glass` now only ever reads
+    `direction="inbound"`. Verified by reading `cli.py`. Action: reword to drop "outbound".
+  - `[false]` (Blind Hunter) `GlassDuty.run()`'s `export` branch returns `ok=True` on a successful
+    render regardless of the underlying readings' health (unlike bare's `_direction_ok`-gated
+    `ok`), so scripting off `export`'s `ok` field could miss a `refused`/`failed` reading. Refuted:
+    this spec's own Acceptance Criteria explicitly define export's `ok=True` as "a table was
+    rendered," a deliberately different, and equally valid, contract from bare's "is the data
+    healthy" — a report legitimately needs to render and be mailed even when it says "today's file
+    is empty" or "the system is currently refused"; that is the point of an export/mail plugin.
+  - `[medium]` `[patch]` (Blind Hunter, grouped with Edge Case Hunter below — same defect) Both the
+    bare and `export` branches of `GlassDuty.run()` call `compute_glass_reading(direction="inbound")`
+    **twice** — once for `standup`, once for `shipped` — two independent reads for what the Design
+    Notes and a dedicated test both assert is "the SAME reading." A `CorridorLoad` write landing
+    between the two calls lets `standup` and `shipped` diverge, eroding the very "do not invent a
+    second standup source of truth" invariant this story exists to protect. Verified by reading
+    `GlassDuty.run()`. Action: compute the inbound reading once, reuse it for both labels.
+  - `[low]` `[reject]` (Blind Hunter) A `CorridorLoad` row whose `batch_sha == EMPTY_FILE_SHA256`
+    but loaded on a prior day (not today) classifies as `stale`, and the stale message ("showing
+    the last known waybill") reads oddly when that waybill's content was itself empty. Rejected:
+    this is the explicitly-scoped, already-documented behavior (the empty-file check applies only
+    to today's citation per this spec's own Design Notes; a stale historical waybill is cited
+    as-is, never re-validated) — a genuinely rare compound edge case, and any fix (a distinct
+    sub-state or reworded message) adds new branches/complexity for a case unlikely to be met in
+    everyday use.
+  - `[low]` `[reject]` (Blind Hunter) The spec's own `## Verification` → "Manual checks" section
+    still says "a clean `ok=False` refusal for both directions," leftover wording from before the
+    direction fix (there is now one direction, read twice, under two labels). Rejected per this
+    workflow's own rule: a finding whose only fix is editing this build's spec is rejected outright.
+  - `[low]` `[patch]` (Blind Hunter) `dashboard/glass_query.py` uses `typing.Dict`/`Any` while the
+    sibling `glass.py` added in this same story consistently uses builtin generics (`dict[str, ...]`)
+    under the same `from __future__ import annotations` — an avoidable style inconsistency
+    introduced within one change. Action: use `dict`/`Any` builtin-generic style in `glass_query.py`
+    to match `glass.py`.
+  - `[low]` `[patch]` (Blind Hunter) `_GLASS_BADGE_CLS` has no entry for `unborn`, so it falls
+    through to the same grey used for `refused` — two very different situations (benign
+    never-happened vs. the system itself couldn't answer) render with the same badge color, and
+    "unborn" is a state a fresh install will show on day one, not a rare corner case. Verified by
+    reading `_render_glass_fragment`. Action: add a distinct color for `unborn`.
+  - `[carried]` `[low]` `[reject]` (Blind Hunter) Same claim as review pass 1's grouped
+    Blind-Hunter/Edge-Case-Hunter finding: `standup_htmx_view`/`shipped_htmx_view` call
+    `compute_glass_reading` with no `try/except`, and `glass_query.py`'s ORM-error catch is
+    narrower than the full exception surface a live DB could raise. Code still reads as that row
+    describes (unchanged in this regard). Same verdict and route stand: matches this same file's
+    own pre-existing, unremediated `backlog_htmx_view` posture — not a regression this story
+    introduces.
+  - `[false]` (Blind Hunter) No test exercises the freshness rule's day-boundary right at UTC
+    midnight, only clearly-fresh/clearly-stale fixtures. Refuted: the freshness rule is a pure
+    `.date()` equality comparison with no `<`/`<=` range arithmetic or `timedelta` offset math —
+    the class of bug a near-boundary test would catch (an off-by-one in a range or offset
+    calculation) does not exist in this code path; a boundary-specific test would exercise the
+    identical comparison the existing `days_ago=0`/`days_ago=2` fixtures already do.
+  - `[low]` `[patch]` (Blind Hunter) `test_glass_duty_bare_dashboard_extra_unavailable_is_not_ok_via_duty_layer`
+    asserts only `result.details["standup"]["status"] == "refused"`, never checking that `shipped`
+    mirrors the same refusal — a symmetry gap in an otherwise carefully paired test suite. Verified
+    by reading the test. Action: add the matching `shipped` assertion.
+  - `[carried]` `[low]` `[reject]` (Edge Case Hunter) Same claim as review pass 1's grouped finding:
+    `render_glass_table(readings, fmt)` indexes `readings["standup"]`/`["shipped"]` directly,
+    raising a bare `KeyError` for any other dict shape. Code still reads as that row describes.
+    Same verdict and route stand.
+  - `[low]` `[reject]` (Edge Case Hunter) `dashboard/glass_query.py`'s `django.setup()` call is
+    guarded only by `except (ImportError, ImproperlyConfigured)`; a hypothetical re-entrant-populate
+    `RuntimeError` from Django's own `apps.populate()` guard would escape uncaught. Rejected:
+    this exact shape is copied verbatim from the already-shipped, already-reviewed sibling
+    `corridor_load.py`/`passport_mint.py`/`passport_sync.py` idiom this story's own Code Map
+    directed it to mirror — the same theoretical gap already exists identically in three other
+    files, so widening it here alone (without touching the other three) is inconsistent and more
+    than the smallest fix for a race that requires calling this synchronous, single-threaded path
+    concurrently with itself.
+  - `[low]` `[reject]` (Edge Case Hunter) `loaded_at_dt` is only converted via `.astimezone(timezone.utc)`
+    when it is already timezone-aware; a naive value (a Django project configured `USE_TZ=False`)
+    is compared via its own naive `.date()` with no defensive guard. Verified the code no longer
+    risks the specific pass-1 concern (silently assuming host-local time via an unconditional
+    `.astimezone()` call on a naive value — that call is now conditional on `tzinfo is not None`).
+    Rejected on the same grounds as pass 1's identical finding: every settings.configure precedent
+    in this package fixes `USE_TZ=True`, so the naive branch is unreachable without a deliberate
+    misconfiguration against established convention, and a defensive raise adds a new guard for an
+    unmet condition.
+  - `[medium]` `[patch]` (Edge Case Hunter, grouped with Blind Hunter above — same defect) Same
+    TOCTOU claim: `standup`/`shipped` are each fetched via their own independent
+    `compute_glass_reading(direction="inbound")` call rather than one shared result. Same
+    verification and same action as the grouped Blind Hunter row above.
+  - `[low]` `[patch]` (Verification Gap Reviewer, "Other findings" — not itself a verification gap;
+    grouped with Blind Hunter above — same defect) Same `_HELP["glass"]` stale-wording claim.
+    Verified true by reading `cli.py`. Same action as the grouped Blind Hunter row above. The
+    layer's core brief reported "No verification gaps found."
+- Intent Alignment Auditor filed no discrete actionable finding this pass. Its report raised a
+  more fundamental question — whether the literal intent-contract text alone (given to it in
+  isolation) supports a two-entity "standup + shipped" surface at all, versus a single "standup"
+  surface — and noted the two-entity structure enters via material outside that narrow contract
+  (the Dream, CAP-141's success text). Resolved by this orchestrator, not the auditor (whose brief
+  is strictly descriptive): the story's own `## Binding` → `Surface:` line ("existing app views
+  standup and shipped"), sourced directly from `epics.md`'s Story 61.3 definition, authorizes the
+  two-view surface independently of the `<intent-contract>` tag — that Binding section is, by this
+  project's own spec-template convention, deliberately kept outside `<intent-contract>` while
+  still being load-bearing scope. Not an intent gap: the auditor was given only the narrower
+  contract by design, and the fuller scope it flagged as "external" is in fact the story's own
+  authoritative Surface declaration, not an invented addition.
+
 ## Design Notes
 
 - **Two views, one glass, ONE reading — "do not invent a second standup source of truth."**

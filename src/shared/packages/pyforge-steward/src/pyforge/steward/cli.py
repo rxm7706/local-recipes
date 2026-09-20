@@ -71,7 +71,7 @@ DUTIES: tuple[str, ...] = (
 
 _HELP = {
     "glass": (
-        "as-of glass -- standup/shipped freshness over the inbound/outbound corridor "
+        "as-of glass -- standup/shipped freshness over the inbound corridor "
         "(cites a waybill; empty on-time file fails; late drop leaves yesterday stale; "
         "unborn before the first waybill); export is a flag-gated CSV/markdown plugin "
         "(Story 61.3)"

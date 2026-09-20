@@ -236,8 +236,8 @@ class GlassDuty:
             verb = getattr(ns, "glass_verb", None)
 
             if verb is None:
-                standup = compute_glass_reading(direction="inbound")
-                shipped = compute_glass_reading(direction="inbound")
+                reading = compute_glass_reading(direction="inbound")
+                standup = shipped = reading
                 payload = {"standup": asdict(standup), "shipped": asdict(shipped)}
                 ok = _direction_ok(standup) and _direction_ok(shipped)
                 plain = f"{_line('standup', standup)} | {_line('shipped', shipped)}"
@@ -248,8 +248,8 @@ class GlassDuty:
                 if not eval_flag(FLAG_GLASS_EXPORT, False, overrides):
                     message = flag_off_message(FLAG_GLASS_EXPORT)
                     return _glass_result(False, {"message": message}, message, as_json)
-                standup = compute_glass_reading(direction="inbound")
-                shipped = compute_glass_reading(direction="inbound")
+                reading = compute_glass_reading(direction="inbound")
+                standup = shipped = reading
                 fmt = getattr(ns, "format", "markdown")
                 table = render_glass_table({"standup": standup, "shipped": shipped}, fmt)
                 return _glass_result(True, {"format": fmt, "table": table}, table, as_json)
