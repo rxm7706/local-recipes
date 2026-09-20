@@ -1061,12 +1061,23 @@ def _run_and_journal_landing(
             "pr_number": landing_result.pr_number,
             "merge_sha": landing_result.merge_sha,
             "marshal_native": landing_result.marshal_native,
+            # Story 53.2 review (I1): `envelope.findings` (MRS-DISP-047/048)
+            # must reach the journal payload, not just the coarse verdict
+            # strings above -- mirrors `scope_violation_advisories` (Story
+            # 28.15) so `marshal status`/`fleet-picture` can render it too.
+            "land_findings": [f.to_json_dict() for f in envelope.findings],
         },
     )
     counter += 1
     try:
         _append_entry(fs, run_dir, intent_entry, fsync=True)
-        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+        _append_entry(
+            fs,
+            run_dir,
+            outcome_entry,
+            fsync=False,
+            offload_fields=frozenset({LAND_FINDINGS_FIELD}),
+        )
     except FsError as exc:
         print(
             f"dispatch supervisor: cannot journal landing for {run_id!r}: {exc}",

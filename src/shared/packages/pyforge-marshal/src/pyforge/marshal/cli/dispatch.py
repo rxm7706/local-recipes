@@ -110,6 +110,7 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
+    resolve_land_findings_from_payload,
     resolve_scope_violation_advisories_from_payload,
     sidecar_texts_for_lines,
 )
