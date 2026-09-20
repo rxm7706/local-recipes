@@ -180,6 +180,57 @@ def test_resolve_story_spec_path_finds_tracked_spec(tmp_path: Path) -> None:
     assert resolved == spec
 
 
+class _FakeVcsForSpecTextAtRef:
+    """A minimal ``VcsPort`` double: ``file_text_at_ref`` looks up canned
+    content keyed by the exact ``(ref, path)`` pair it was called with --
+    review finding for Story 51.7/CAP-255: ``spec_text_at_ref`` itself
+    (the impure half every ``corroborated_merged_story_keys`` caller
+    shares) had no direct test at all before this."""
+
+    def __init__(self, content_by_ref_path: dict[tuple[str, str], str]) -> None:
+        self._content = content_by_ref_path
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        return self._content.get((ref, path))
+
+
+def test_spec_text_at_ref_reads_the_resolved_path_at_the_given_ref(tmp_path: Path) -> None:
+    """The local working tree only resolves the spec's stable PATH; the
+    CONTENT returned is whatever the ref holds there -- proving the two
+    halves (local path resolution, ref-scoped content read) are wired
+    together correctly, not just each independently correct."""
+    slug = "pyforge-doctor"
+    story = "27-4"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    spec = specs / f"spec-{story}-mint.md"
+    spec.write_text("---\nstatus: ready\n---\n", encoding="utf-8")
+    rel_path = spec.relative_to(dispatch_core.canonical_repo_root(tmp_path)).as_posix()
+    vcs = _FakeVcsForSpecTextAtRef({("origin/main", rel_path): "---\nstatus: done\n---\n"})
+    assert (
+        dispatch_core.spec_text_at_ref(vcs, tmp_path, slug, story)
+        == "---\nstatus: done\n---\n"
+    )
+
+
+def test_spec_text_at_ref_none_when_no_local_candidate_resolves(tmp_path: Path) -> None:
+    vcs = _FakeVcsForSpecTextAtRef({})
+    assert dispatch_core.spec_text_at_ref(vcs, tmp_path, "pyforge-doctor", "27-4") is None
+
+
+def test_spec_text_at_ref_none_when_ref_has_no_such_path(tmp_path: Path) -> None:
+    """A spec minted after ``ref`` was fetched (or never fetched at all):
+    the local candidate resolves but the ref has nothing there -- fails
+    closed, never falling back to the local working tree's own copy."""
+    slug = "pyforge-doctor"
+    story = "27-4"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}-mint.md").write_text("---\nstatus: ready\n---\n", encoding="utf-8")
+    vcs = _FakeVcsForSpecTextAtRef({})
+    assert dispatch_core.spec_text_at_ref(vcs, tmp_path, slug, story) is None
+
+
 def test_build_fleet_row_surfaces_live_dispatch(tmp_path: Path) -> None:
     facts = FleetHomeFacts(
         slug="pyforge-marshal",
