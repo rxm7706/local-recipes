@@ -21,10 +21,19 @@ _SETTINGS_UNSET = (
 )
 
 
-def _refused(vendor_id: str, exc: BaseException) -> Dict[str, Any]:
+def _refused(
+    vendor_id: str,
+    jira_key: Optional[str],
+    github_item_id: Optional[str],
+    title: str,
+    exc: BaseException,
+) -> Dict[str, Any]:
     return {
         "status": "refused",
         "vendor_id": vendor_id,
+        "jira_key": jira_key,
+        "github_item_id": github_item_id,
+        "title": title,
         "message": f"Django ORM unavailable ({type(exc).__name__}: {exc})",
     }
 
@@ -54,7 +63,7 @@ def record_vendor_passport(
         from django.conf import settings
         from django.core.exceptions import ImproperlyConfigured
     except ImportError as exc:
-        return _refused(vendor_id, exc)
+        return _refused(vendor_id, jira_key, github_item_id, title, exc)
 
     if not settings.configured and not os.environ.get("DJANGO_SETTINGS_MODULE"):
         return {"status": "refused", "vendor_id": vendor_id, "message": _SETTINGS_UNSET}
@@ -68,7 +77,7 @@ def record_vendor_passport(
 
         from pyforge.steward.dashboard.models import WorkPassport
     except (ImportError, ImproperlyConfigured) as exc:
-        return _refused(vendor_id, exc)
+        return _refused(vendor_id, jira_key, github_item_id, title, exc)
 
     passport_id = str(uuid.uuid4())
     try:
@@ -80,7 +89,7 @@ def record_vendor_passport(
             title=title,
         )
     except (ImproperlyConfigured, OperationalError, ProgrammingError) as exc:
-        return _refused(vendor_id, exc)
+        return _refused(vendor_id, jira_key, github_item_id, title, exc)
     except (DataError, IntegrityError) as exc:
         return {
             "status": "error",
@@ -94,4 +103,5 @@ def record_vendor_passport(
         "vendor_id": vendor_id,
         "jira_key": jira_key,
         "github_item_id": github_item_id,
+        "title": title,
     }

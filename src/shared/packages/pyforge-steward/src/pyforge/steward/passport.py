@@ -47,7 +47,7 @@ def mint_vendor_passport(
     """
     if not vendor_id or not vendor_id.strip():
         raise PassportMintError("vendor_id is required")
-    if not jira_key and not github_item_id:
+    if not (jira_key or "").strip() and not (github_item_id or "").strip():
         raise PassportMintError(
             "a vendor passport must carry at least one nickname "
             "(--jira-key or --github-item-id)"
@@ -65,7 +65,7 @@ def mint_vendor_passport(
         }
 
     return module.record_vendor_passport(
-        vendor_id=vendor_id,
+        vendor_id=vendor_id.strip(),
         jira_key=jira_key,
         github_item_id=github_item_id,
         title=title,
