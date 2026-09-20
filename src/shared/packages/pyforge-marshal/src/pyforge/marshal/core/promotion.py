@@ -164,26 +164,43 @@ def _classify_merge_subject(
     override that predates this story) still relies on ``known_keys`` here
     exactly as before -- the two mechanisms are complementary, not
     redundant."""
+    key, match = _classify_merge_subject_match(subject, template, project_slug)
+    if key is None:
+        return None
+    if (
+        match is not None
+        and known_keys is not None
+        and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+        and key not in known_keys
+    ):
+        return None
+    return key
+
+
+def _classify_merge_subject_match(
+    subject: str,
+    template: str,
+    project_slug: str,
+) -> tuple[StoryKey | None, LandingEvidenceMatch | None]:
+    """Shared first half of ``_classify_merge_subject`` and
+    ``corroborated_merged_story_keys`` (Story 51.7/CAP-255 review finding:
+    the two had duplicated this classification inline). Returns the parsed
+    key alongside the grammar's own ``LandingEvidenceMatch`` -- ``None`` for
+    the match specifically when the key was reached only through the
+    ``land/<station>-<epic>-<seq>`` recovery-branch fallback, which carries
+    no shape either caller's corroboration/``known_keys`` gating applies
+    to."""
     match = classify_merge_subject(subject, template=template, project_slug=project_slug)
     if match is not None:
-        key = _story_key_from_ref(match.key)
-        if key is None:
-            return None
-        if (
-            known_keys is not None
-            and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
-            and key not in known_keys
-        ):
-            return None
-        return key
+        return _story_key_from_ref(match.key), match
     gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
     if gh_match is not None:
         branch_match = classify_branch_name(
             gh_match.group("branch"), project_slug=project_slug
         )
         if branch_match is not None:
-            return _story_key_from_ref(branch_match.key)
-    return None
+            return _story_key_from_ref(branch_match.key), None
+    return None, None
 
 
 def _classify_commit(sha: str, subject: str, template: str, project_slug: str) -> StoryKey | None:
@@ -292,11 +309,10 @@ def corroborated_merged_story_keys(
     filesystem or git access happens in this module."""
     keys: set[StoryKey] = set()
     for subject in subjects:
-        match = classify_merge_subject(subject, template=template, project_slug=project_slug)
+        key, match = _classify_merge_subject_match(subject, template, project_slug)
+        if key is None:
+            continue
         if match is not None:
-            key = _story_key_from_ref(match.key)
-            if key is None:
-                continue
             if (
                 known_keys is not None
                 and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
@@ -305,17 +321,7 @@ def corroborated_merged_story_keys(
                 continue
             if _requires_spec_corroboration(match) and spec_status_for(key) != SPEC_STATUS_DONE:
                 continue
-            keys.add(key)
-            continue
-        gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
-        if gh_match is not None:
-            branch_match = classify_branch_name(
-                gh_match.group("branch"), project_slug=project_slug
-            )
-            if branch_match is not None:
-                key = _story_key_from_ref(branch_match.key)
-                if key is not None:
-                    keys.add(key)
+        keys.add(key)
     return frozenset(keys)
 
 
