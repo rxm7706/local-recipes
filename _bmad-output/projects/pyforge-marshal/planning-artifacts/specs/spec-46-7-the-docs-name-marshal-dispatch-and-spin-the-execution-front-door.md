@@ -18,6 +18,7 @@ deferred:
       (verified by grep across `sources/`), and detecting a bare skill invocation from outside
       that session's own transcript is a separate, non-trivial design problem, not a same-sized
       docs edit. Belongs to a follow-on story with its own CAP.
+    location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     severity: low
 ---
 
