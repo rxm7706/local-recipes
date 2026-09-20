@@ -53,9 +53,12 @@ yet"), so it produces nothing in either bucket.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from pyforge.core.landing_evidence import (
+    BranchDerivedShape,
+    LandingEvidenceMatch,
     LandingEvidenceShape,
     StoryKeyRef,
     classify_branch_name,
@@ -161,26 +164,43 @@ def _classify_merge_subject(
     override that predates this story) still relies on ``known_keys`` here
     exactly as before -- the two mechanisms are complementary, not
     redundant."""
+    key, match = _classify_merge_subject_match(subject, template, project_slug)
+    if key is None:
+        return None
+    if (
+        match is not None
+        and known_keys is not None
+        and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+        and key not in known_keys
+    ):
+        return None
+    return key
+
+
+def _classify_merge_subject_match(
+    subject: str,
+    template: str,
+    project_slug: str,
+) -> tuple[StoryKey | None, LandingEvidenceMatch | None]:
+    """Shared first half of ``_classify_merge_subject`` and
+    ``corroborated_merged_story_keys`` (Story 51.7/CAP-255 review finding:
+    the two had duplicated this classification inline). Returns the parsed
+    key alongside the grammar's own ``LandingEvidenceMatch`` -- ``None`` for
+    the match specifically when the key was reached only through the
+    ``land/<station>-<epic>-<seq>`` recovery-branch fallback, which carries
+    no shape either caller's corroboration/``known_keys`` gating applies
+    to."""
     match = classify_merge_subject(subject, template=template, project_slug=project_slug)
     if match is not None:
-        key = _story_key_from_ref(match.key)
-        if key is None:
-            return None
-        if (
-            known_keys is not None
-            and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
-            and key not in known_keys
-        ):
-            return None
-        return key
+        return _story_key_from_ref(match.key), match
     gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
     if gh_match is not None:
         branch_match = classify_branch_name(
             gh_match.group("branch"), project_slug=project_slug
         )
         if branch_match is not None:
-            return _story_key_from_ref(branch_match.key)
-    return None
+            return _story_key_from_ref(branch_match.key), None
+    return None, None
 
 
 def _classify_commit(sha: str, subject: str, template: str, project_slug: str) -> StoryKey | None:
@@ -220,6 +240,88 @@ def merged_story_keys(
         key = _classify_commit(sha, subject, template, project_slug)
         if key is not None:
             keys.add(key)
+    return frozenset(keys)
+
+
+#: Reads a story's tracked spec ``status:`` value as it stands on
+#: ``origin/main`` (or ``None`` when unreadable). Injected by the caller
+#: (marshal, never core/this module) -- ``corroborated_merged_story_keys``
+#: stays pure (AD-4): no filesystem, no git, no clock.
+SpecStatusReader = Callable[[StoryKey], str | None]
+
+
+def _requires_spec_corroboration(match: LandingEvidenceMatch) -> bool:
+    """Story 51.7/CAP-255: exactly one landing-evidence shape is also the
+    shape a mint, fallout or fix PR's branch equally well carries -- a
+    ``GITHUB_PR_MERGE_SUBJECT`` match reached through a bare station branch
+    (``BranchDerivedShape.STATION_BRANCH``). That branch names the story
+    key with no intent to land it (the 2026-09-18 ``doctor/27-4-mint``
+    incident: PR #1477 merged the MINT branch, not a landing, and
+    ``story_merged_on_main`` read true anyway).
+
+    Every other shape is unaffected and ``spec_status_for`` is never
+    called for it: the intent-scoped ``dispatch/<slug>/<key>`` branch
+    Story 22.9 mints only when marshal itself dispatched THIS key
+    (``BranchDerivedShape.DISPATCH_BRANCH``), the templated/bmad-loop/
+    recovery-commit/story-direct shapes (none of which reach this
+    function through a station branch), and the ``land/…``-branch
+    recovery fallback ``corroborated_merged_story_keys`` below tries
+    separately -- all trusted exactly as ``merged_story_keys`` already
+    trusts them."""
+    return (
+        match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
+        and match.branch_shape is BranchDerivedShape.STATION_BRANCH
+    )
+
+
+def corroborated_merged_story_keys(
+    subjects: tuple[str, ...],
+    template: str,
+    project_slug: str,
+    *,
+    spec_status_for: SpecStatusReader,
+    known_keys: frozenset[StoryKey] | None = None,
+) -> frozenset[StoryKey]:
+    """``merged_story_keys``, corroborated by content rather than trusting a
+    station branch's name alone (Story 51.7/CAP-255).
+
+    Same reachability surface as ``merged_story_keys`` -- every shape
+    ``classify_merge_subject`` recognizes, plus the identical ``land/
+    <station>-<epic>-<seq>`` recovery-branch fallback embedded in a GitHub
+    PR merge subject -- with exactly ONE additional gate: a match that
+    reached ``GITHUB_PR_MERGE_SUBJECT`` through a bare station branch
+    (see ``_requires_spec_corroboration``) counts as a landing only when
+    ``spec_status_for(key)`` reports the key's tracked spec as
+    ``status: done`` on ``origin/main`` -- a mint, fallout or fix PR merges
+    it at ``ready``/``backlog``, a landing merges the promoted twin.
+
+    Every other shape is trusted exactly as ``merged_story_keys`` already
+    trusts it; ``spec_status_for`` is never called for those, so a caller
+    whose reader is expensive (a git-show subprocess) pays for it only on
+    the one ambiguous shape.
+
+    ``known_keys`` (Story 35.1): forwarded verbatim, identical semantics to
+    ``merged_story_keys``'s own parameter -- this function does not relax
+    or replace that pre-existing templated-shape corroboration.
+
+    Pure (AD-4): ``spec_status_for`` is the caller's own injected reader
+    (marshal's ``cli``/dispatch-consumer layer, never core) -- no
+    filesystem or git access happens in this module."""
+    keys: set[StoryKey] = set()
+    for subject in subjects:
+        key, match = _classify_merge_subject_match(subject, template, project_slug)
+        if key is None:
+            continue
+        if match is not None:
+            if (
+                known_keys is not None
+                and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+                and key not in known_keys
+            ):
+                continue
+            if _requires_spec_corroboration(match) and spec_status_for(key) != SPEC_STATUS_DONE:
+                continue
+        keys.add(key)
     return frozenset(keys)
 
 
@@ -470,6 +572,48 @@ def is_valid_spec_text(text: str | None) -> bool:
         return False
     frontmatter = text[3:end]
     return any(_STATUS_KEY_RE.match(line.strip()) for line in frontmatter.splitlines())
+
+
+# The `status:` VALUE, not merely the key `is_valid_spec_text` proves exists
+# (Story 51.7/CAP-255) -- an optionally quoted bare token, mirroring
+# `core/dispatch.py`'s own `_DIFFICULTY_RE` value-capture convention. The
+# opening quote is captured and back-referenced at the close (review
+# finding) so a mismatched pair (`status: 'done"`) does not parse -- open
+# and close must be the same character, or both absent.
+_STATUS_VALUE_RE = re.compile(r"^status:\s*(['\"]?)([A-Za-z0-9_-]+)\1\s*$")
+
+#: A `status: done` string, the one value `corroborated_merged_story_keys`
+#: treats as landing evidence.
+SPEC_STATUS_DONE = "done"
+
+
+def read_spec_status(text: str | None) -> str | None:
+    """The tracked spec's own ``status:`` frontmatter VALUE (Story 51.7/
+    CAP-255).
+
+    ``is_valid_spec_text`` above only proves the KEY exists;
+    ``corroborated_merged_story_keys`` needs the value itself to tell a
+    landing (``status: done``) apart from a mint, fallout or fix PR's spec
+    (``status: ready``/``backlog``/…). Banner-tolerant (``_skip_leading_
+    banner``, Story 51.8/CAP-256) for the same recovered/minted-spec shapes
+    ``is_valid_spec_text`` already tolerates. Returns ``None`` for missing
+    or empty text, a missing frontmatter fence, or no ``status:`` key at
+    all -- never raises, so a caller can treat "unreadable" and "no status"
+    identically: both fail closed, never corroborating a landing."""
+    if text is None or not text.strip():
+        return None
+    text = _skip_leading_banner(text)
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None
+    frontmatter = text[3:end]
+    for line in frontmatter.splitlines():
+        match = _STATUS_VALUE_RE.match(line.strip())
+        if match is not None:
+            return match.group(2)
+    return None
 
 
 def classify_promotion_candidates(

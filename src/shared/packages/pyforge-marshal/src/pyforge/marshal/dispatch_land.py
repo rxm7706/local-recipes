@@ -368,7 +368,23 @@ def execute_dispatch_land(
         )
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
 
-    merged_keys = promotion.merged_story_keys(main_subjects, template, project_slug)
+    def _spec_status_for(candidate_key: StoryKey) -> str | None:
+        # Story 51.7/CAP-255: a station-branch match reached through a
+        # GitHub PR-merge subject only corroborates a landing when the
+        # key's tracked spec reads `status: done` on origin/main -- a
+        # mint/fallout/fix PR merges it ready/backlog, not done. Fails
+        # closed (never corroborates) on any git read failure.
+        try:
+            spec_text = dispatch_core.spec_text_at_ref(
+                vcs, git_repo_root, project_slug, str(candidate_key)
+            )
+        except VcsCommandError:
+            return None
+        return promotion.read_spec_status(spec_text)
+
+    merged_keys = promotion.corroborated_merged_story_keys(
+        main_subjects, template, project_slug, spec_status_for=_spec_status_for
+    )
     if key in merged_keys:
         data["already_landed"] = True
         envelope = build_envelope(

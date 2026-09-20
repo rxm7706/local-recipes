@@ -9,12 +9,14 @@ from pyforge.marshal.core.identity import StoryKey, render_merge_subject
 from pyforge.marshal.core.promotion import (
     SpecCandidate,
     classify_promotion_candidates,
+    corroborated_merged_story_keys,
     count_conforming_subjects,
     extract_story_key_from_bmadloop_merge_subject,
     extract_story_key_from_github_merge_subject,
     is_valid_spec_text,
     marshal_native_merged_keys,
     merged_story_keys,
+    read_spec_status,
 )
 
 _TEMPLATE = "Merge {key} into main"
@@ -405,6 +407,129 @@ def test_merged_story_keys_story_direct_commit_no_longer_poisons_a_foreign_stati
     assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset()
 
 
+# --- corroborated_merged_story_keys (Story 51.7/CAP-255) ----------------------
+#
+# The 2026-09-18 `doctor/27-4-mint` incident: PR #1477 merged a MINT branch
+# (spec-27-4 at `status: ready`), not a landing, and `merged_story_keys` read
+# 27.4 as already-landed anyway. `corroborated_merged_story_keys` requires a
+# `status: done` tracked spec before trusting a GITHUB_PR_MERGE_SUBJECT match
+# reached through a bare station branch -- every other shape is trusted
+# exactly as `merged_story_keys` already trusts it, with no `spec_status_for`
+# call at all.
+
+_REAL_SUBJECT_DOCTOR_27_4_MINT = "Merge pull request #1477 from rxm7706/doctor/27-4-mint"
+_DOCTOR_PROJECT_SLUG = "pyforge-doctor"
+
+
+def test_corroborated_merged_story_keys_excludes_a_mint_pr_whose_spec_is_not_done():
+    """The PR #1477 fixture itself: 27.4 is present in the unscoped
+    `merged_story_keys` but ABSENT from `corroborated_merged_story_keys`
+    while its tracked spec reads `status: ready` (a mint PR, not a
+    landing)."""
+    subjects = (_REAL_SUBJECT_DOCTOR_27_4_MINT,)
+    assert merged_story_keys(subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG) == frozenset(
+        {StoryKey(27, 4)}
+    )
+    assert (
+        corroborated_merged_story_keys(
+            subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG, spec_status_for=lambda key: "ready"
+        )
+        == frozenset()
+    )
+
+
+def test_corroborated_merged_story_keys_includes_a_landing_whose_spec_is_done():
+    """The same shape, once the tracked spec has been promoted to `status:
+    done` (a real landing merges the promoted twin) -- now corroborated."""
+    subjects = (_REAL_SUBJECT_DOCTOR_27_4_MINT,)
+    assert corroborated_merged_story_keys(
+        subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG, spec_status_for=lambda key: "done"
+    ) == frozenset({StoryKey(27, 4)})
+
+
+def test_corroborated_merged_story_keys_excludes_on_an_unreadable_spec():
+    """A git-read failure (unreadable ref, missing path, malformed
+    frontmatter) reports `None` and must fail closed -- never corroborate."""
+    subjects = (_REAL_SUBJECT_DOCTOR_27_4_MINT,)
+    assert corroborated_merged_story_keys(
+        subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG, spec_status_for=lambda key: None
+    ) == frozenset()
+
+
+def test_corroborated_merged_story_keys_never_calls_spec_status_for_a_dispatch_branch():
+    """Story 22.9's own `dispatch/<slug>/<key>` branch is an intent signal
+    marshal mints only when it dispatched THIS key -- trusted exactly as
+    `merged_story_keys` already trusts it, with no spec read at all."""
+    subject = "Merge pull request #900 from rxm7706/dispatch/pyforge-marshal/22.9"
+
+    def _boom(key):
+        raise AssertionError("spec_status_for must not be called for a dispatch branch")
+
+    assert corroborated_merged_story_keys(
+        (subject,), _TEMPLATE, _PROJECT_SLUG, spec_status_for=_boom
+    ) == frozenset({StoryKey(22, 9)})
+
+
+def test_corroborated_merged_story_keys_never_calls_spec_status_for_non_github_shapes():
+    """The templated, bmad-loop-native and recovery-commit shapes never
+    reach a station branch at all -- `spec_status_for` must not be called
+    for them either."""
+
+    def _boom(key):
+        raise AssertionError("spec_status_for must not be called")
+
+    subjects = (
+        "Merge 5.5 into main",
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
+        "into loop/pyforge-marshal (bmad-loop)",
+        "recover marshal 10-1 (Copier engine wrapper — the single seam)",
+    )
+    assert corroborated_merged_story_keys(
+        subjects, _TEMPLATE, _PROJECT_SLUG, spec_status_for=_boom
+    ) == frozenset({StoryKey(5, 5), StoryKey(2, 4), StoryKey(10, 1)})
+
+
+def test_corroborated_merged_story_keys_land_branch_fallback_needs_no_corroboration():
+    """The `land/<station>-<epic>-<seq>` recovery-branch fallback embedded
+    in a GitHub PR merge subject only fires once the grammar's own
+    merge-subject shapes have all failed -- it is not the
+    `GITHUB_PR_MERGE_SUBJECT` shape at all, so it is trusted with no spec
+    read, exactly as `merged_story_keys` already trusts it."""
+    subject = "Merge pull request #500 from rxm7706/land/marshal-10-1-recovery"
+
+    def _boom(key):
+        raise AssertionError("spec_status_for must not be called for the land/ fallback")
+
+    assert corroborated_merged_story_keys(
+        (subject,), _TEMPLATE, _PROJECT_SLUG, spec_status_for=_boom
+    ) == frozenset({StoryKey(10, 1)})
+
+
+def test_corroborated_merged_story_keys_known_keys_parity_with_merged_story_keys():
+    """`known_keys` gates the templated shape identically to
+    `merged_story_keys` -- this function does not relax or replace that
+    pre-existing Story 35.1 corroboration."""
+    subjects = ("Merge 22.5 into main", "Merge 22.11 into main")
+    doctors_own_keys = frozenset({StoryKey(22, 5)})
+    assert corroborated_merged_story_keys(
+        subjects,
+        _TEMPLATE,
+        "pyforge-doctor",
+        spec_status_for=lambda key: "done",
+        known_keys=doctors_own_keys,
+    ) == frozenset({StoryKey(22, 5)})
+
+
+def test_corroborated_merged_story_keys_regression_parity_with_real_subjects():
+    """Regression guard (the spec's own "0 regressions" bar): every real,
+    already-landed subject `merged_story_keys`'s own suite covers still
+    classifies once its ambiguous match is corroborated `status: done`."""
+    subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8, _REAL_SUBJECT_MARSHAL_4_2)
+    assert corroborated_merged_story_keys(
+        subjects, _TEMPLATE, _PROJECT_SLUG, spec_status_for=lambda key: "done"
+    ) == frozenset({StoryKey(2, 3), StoryKey(3, 8), StoryKey(4, 2)})
+
+
 # --- marshal_native_merged_keys (Story 5.9) -----------------------------------
 
 
@@ -637,6 +762,53 @@ def test_is_valid_spec_text_false_for_no_frontmatter_still_invalid():
     spec with no frontmatter at all once the (non-existent) banner is
     skipped."""
     assert is_valid_spec_text("\nno frontmatter here\n") is False
+
+
+# --- read_spec_status (Story 51.7/CAP-255) -------------------------------------
+
+
+def test_read_spec_status_extracts_the_value():
+    assert read_spec_status(_VALID_SPEC) == "shipped"
+
+
+def test_read_spec_status_none_for_none():
+    assert read_spec_status(None) is None
+
+
+def test_read_spec_status_none_for_empty_string():
+    assert read_spec_status("") is None
+
+
+def test_read_spec_status_none_for_no_frontmatter():
+    assert read_spec_status("just some body text, no frontmatter at all\n") is None
+
+
+def test_read_spec_status_none_for_unterminated_frontmatter():
+    assert read_spec_status("---\nstatus: 'shipped'\nno closing fence\n") is None
+
+
+def test_read_spec_status_none_for_frontmatter_missing_status():
+    assert read_spec_status("---\ntitle: 'x'\n---\n\nbody\n") is None
+
+
+def test_read_spec_status_none_for_status_as_a_bare_substring_not_a_key():
+    assert read_spec_status("---\ntitle: 'x'\nsubstatus: 'draft'\n---\n\nbody\n") is None
+
+
+def test_read_spec_status_unquoted_value():
+    assert read_spec_status("---\ntitle: 'x'\nstatus: done\n---\n\nbody\n") == "done"
+
+
+def test_read_spec_status_double_quoted_value():
+    text = "---\ntitle: 'x'\nstatus: \"ready\"\n---\n\nbody\n"
+    assert read_spec_status(text) == "ready"
+
+
+def test_read_spec_status_tolerates_a_leading_banner():
+    """Story 50.5/CAP-248's banner tolerance, extended to `read_spec_status`
+    per Story 51.8/CAP-256."""
+    text = "<!-- Promoted from implementation-artifacts/ -->\n" + _VALID_SPEC
+    assert read_spec_status(text) == "shipped"
 
 
 # --- classify_promotion_candidates -------------------------------------------

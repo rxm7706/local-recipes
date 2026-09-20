@@ -378,8 +378,27 @@ def gather_dispatch_git_facts(
     branch_merged = raw_branch_merged and current_head_sha != baseline_head_sha
     subjects = vcs.commit_subjects(repo_root, _MERGE_INTO)
     known_keys = _load_known_story_keys(fs, repo_root=repo_root, project_slug=project_slug)
-    merged_keys = promotion_core.merged_story_keys(
-        subjects, merge_subject_template, project_slug, known_keys=known_keys
+
+    def _spec_status_for(candidate_key: StoryKey) -> str | None:
+        # Story 51.7/CAP-255: a station-branch match reached through a
+        # GitHub PR-merge subject only corroborates a landing when the
+        # key's tracked spec reads `status: done` on origin/main -- a
+        # mint/fallout/fix PR merges it ready/backlog, not done. Fails
+        # closed (never corroborates) on any git read failure.
+        try:
+            spec_text = dispatch_core.spec_text_at_ref(
+                vcs, repo_root, project_slug, str(candidate_key)
+            )
+        except VcsCommandError:
+            return None
+        return promotion_core.read_spec_status(spec_text)
+
+    merged_keys = promotion_core.corroborated_merged_story_keys(
+        subjects,
+        merge_subject_template,
+        project_slug,
+        spec_status_for=_spec_status_for,
+        known_keys=known_keys,
     )
     story_merged = normalize(story_key) in merged_keys
     return DispatchGitFacts(

@@ -3222,10 +3222,26 @@ def _reconcile_campaign_blocked(
     reconciled: dict[str, dict[str, str]] = {}
     for slug, station_blocked in blocked.items():
         effective_policy = _compose_policy(slug)
-        merged = promotion_core.merged_story_keys(
+
+        def _spec_status_for(candidate_key: StoryKey, *, _slug: str = slug) -> str | None:
+            # Story 51.7/CAP-255: the same station-branch corroboration
+            # `dispatch_land`/`dispatch_supervisor` apply -- a mint/
+            # fallout/fix PR's station-branch merge must not prune a
+            # campaign's blocked entry as though it had actually landed.
+            # Fails closed (never corroborates) on any git read failure.
+            try:
+                spec_text = dispatch_core.spec_text_at_ref(
+                    vcs, repo_root, _slug, str(candidate_key)
+                )
+            except VcsCommandError:
+                return None
+            return promotion_core.read_spec_status(spec_text)
+
+        merged = promotion_core.corroborated_merged_story_keys(
             subjects,
             effective_policy.merge_subject_template.value,
             slug,
+            spec_status_for=_spec_status_for,
         )
         merged_feed = frozenset(render_feed_key(key) for key in merged)
         reconciled[slug] = prune_blocked_stories_merged_on_main(

@@ -9,10 +9,14 @@ the sole site that renders a dispatch branch string, and
 ``resolve_dispatch_branch`` is the sole site that decides which branch a
 station's work actually lives on. Everything else in the package -- worktree
 provisioning, the in-flight conflict guard's git facts, and landing --
-imports one of the two. The one function that is NOT pure is
-``resolve_dispatch_branch``: it must ask git which branches exist, so it
-takes a ``VcsPort`` (the same read-only port the CLI already holds) and
-performs no writes.
+imports one of the two. Not every function here is pure: ``resolve_dispatch_
+branch`` must ask git which branches exist; ``story_spec_candidates``/
+``resolve_story_spec_path`` glob and stat the LOCAL working tree to find a
+spec's physical path; ``spec_text_at_ref`` (Story 51.7/CAP-255) composes the
+latter with a ``VcsPort.file_text_at_ref`` read to return a spec's content
+as it stood at an arbitrary ref. All three take their I/O port (or read the
+local filesystem directly) rather than reaching for one themselves, and
+none of them write.
 """
 
 from __future__ import annotations
@@ -162,6 +166,43 @@ def resolve_story_spec_path(repo_root: Path, slug: str, story: str) -> Path | No
         if candidate.is_file():
             return candidate
     return None
+
+
+def spec_text_at_ref(
+    vcs: VcsPort,
+    repo_root: Path,
+    slug: str,
+    story: str,
+    *,
+    ref: str = "origin/main",
+) -> str | None:
+    """A story's tracked spec content as it stood at ``ref`` (Story 51.7/
+    CAP-255) -- the impure half of ``core.promotion.corroborated_merged_
+    story_keys``'s injected ``spec_status_for`` reader (the pure half,
+    ``core.promotion.read_spec_status``, parses the returned text).
+
+    Resolves the spec's repo-relative PATH against the LOCAL working tree
+    via ``resolve_story_spec_path`` -- the physical filename, once minted,
+    is stable across a story's status lifecycle; only the frontmatter
+    value inside it changes on promotion -- then reads that path's byte
+    content specifically at ``ref`` via ``VcsPort.file_text_at_ref``,
+    never the local working tree's own copy (which may be dirty, stale, or
+    simply sit on a different branch). Reads the local filesystem (path
+    resolution) and asks git for ref content; performs no writes.
+
+    Returns ``None`` (fails closed, never corroborating a landing) when
+    ``story`` does not parse as a story key, no local candidate resolves,
+    or ``ref`` has no such path (a spec minted after ``ref`` was fetched,
+    or not yet fetched at all)."""
+    path = resolve_story_spec_path(repo_root, slug, story)
+    if path is None:
+        return None
+    root = canonical_repo_root(repo_root)
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return None
+    return vcs.file_text_at_ref(repo_root, ref, rel.as_posix())
 
 
 def relocated_spec_path(spec_path: Path, repo_root: Path, worktree: Path) -> Path:
