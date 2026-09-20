@@ -121,6 +121,46 @@ def test_resolve_verdict_completed_when_land_journal_succeeded() -> None:
     assert verdict == DispatchSessionVerdict.COMPLETED
 
 
+def test_resolve_verdict_blocked_short_circuits_before_git_facts() -> None:
+    """Story 51.11 (CAP-258): an already-committed ``blocked`` verdict must
+    not be re-derived from fresh git facts -- doing so would re-introduce
+    the exact bug this story fixes (stale facts reading
+    ``stopped_externally``). ``fs``/``vcs``/``process`` are never touched
+    when this short-circuit fires."""
+    from pyforge.marshal.cli.dispatch import resolve_dispatch_session_verdict
+
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="51.11",
+        session_pid=999999,
+        model=None,
+        launched_at=None,
+        worktree_path="/tmp/wt",
+        baseline_head_sha="aaa",
+        completion_verdict="blocked",
+    )
+
+    class ExplodingProcess:
+        def is_alive(self, _pid: int) -> bool:
+            raise AssertionError("must not consult process facts")
+
+    from types import SimpleNamespace
+
+    effective = SimpleNamespace(
+        merge_subject_template=SimpleNamespace(value="Merge {key} into main")
+    )
+
+    verdict = resolve_dispatch_session_verdict(
+        fs=object(),
+        vcs=object(),
+        process=ExplodingProcess(),
+        repo_root=Path("/tmp"),
+        slug="pyforge-marshal",
+        journal=journal,
+        effective_policy=effective,
+    )
+    assert verdict == DispatchSessionVerdict.BLOCKED
+
+
 def test_zombie_redispatch_evidence_names_git_progress() -> None:
     git = DispatchGitFacts(
         baseline_head_sha="aaa111",

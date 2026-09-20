@@ -1,10 +1,14 @@
-"""HTMX view handler for the pyforge-steward sprint backlog dashboard (Story 65.1).
+"""HTMX view handlers for the pyforge-steward sprint backlog dashboard (Story
+65.1) and the as-of glass (Story 61.3).
 
-Reads through the same `SprintLedgerQueryEngine` as the CLI duty (CAP-5). Imports
-`django` lazily, inside the view, so the module itself loads without the
-`[dashboard]` extra; calling the view needs it. Like `views.py`, this ships the
-view only -- the adopter wires it into their own `urlpatterns` (AD-1), and there
-is no HTTP URLconf in this package to register it with.
+Reads through the same `SprintLedgerQueryEngine` as the CLI duty (CAP-5), and
+`glass.compute_glass_reading` for `standup_htmx_view`/`shipped_htmx_view`.
+Imports `django` lazily, inside each view, so the module itself loads without
+the `[dashboard]` extra; calling a view needs it. `glass.py` is a base-package
+module (no django), so importing it here at module level is safe. Like
+`views.py`, this ships views only -- the adopter wires them into their own
+`urlpatterns` (AD-1), and there is no HTTP URLconf in this package to
+register them with.
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
+from pyforge.steward.glass import GlassReading, compute_glass_reading
 from pyforge.steward.sprint_ledger_query import SprintLedgerQueryEngine
 
 _STATION_RE = re.compile(r"[A-Za-z0-9_-]+")
@@ -126,6 +131,75 @@ def backlog_htmx_view(request: Any) -> Any:
       </table>
     </div>
     """
+    response = HttpResponse(fragment, content_type="text/html")
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+_GLASS_BADGE_CLS = {
+    "fresh": "background:#238636;color:#fff",
+    "stale": "background:#9e6a03;color:#fff",
+    "failed": "background:#da3633;color:#fff",
+    "unborn": "background:#484f58;color:#fff",
+}
+
+
+def _render_glass_fragment(reading: GlassReading, title: str, dom_id: str) -> str:
+    """Shared renderer for `standup_htmx_view`/`shipped_htmx_view`: pure
+    string-building, HTML-escaped (`waybill`/`loaded_at`/`message` are
+    caller-supplied or free-text, same discipline `backlog_htmx_view` already
+    applies). `unborn` gets its own distinct grey; `refused` (a genuinely
+    different situation -- the system itself couldn't answer, not just a
+    benign never-happened) falls through to the default grey badge.
+    """
+    esc = html.escape
+    badge_cls = _GLASS_BADGE_CLS.get(reading.state or "", "background:#6e7681;color:#fff")
+    state_label = esc((reading.state or "refused").upper())
+    waybill = esc(reading.waybill or "-")
+    loaded_at = esc(reading.loaded_at or "-")
+    message_html = f'<div style="color:#8b949e">{esc(reading.message)}</div>' if reading.message else ""
+
+    return f"""
+    <div id="{esc(dom_id)}" class="htmx-fade-in">
+      <div style="margin-bottom:0.5rem">
+        <strong>{esc(title)}</strong>
+        <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;{badge_cls}">{state_label}</span>
+      </div>
+      <div>Waybill: <code>{waybill}</code></div>
+      <div>Loaded at (UTC): <code>{loaded_at}</code></div>
+      {message_html}
+    </div>
+    """
+
+
+def standup_htmx_view(request: Any) -> Any:
+    """Render the "any news from the vendor?" standup fragment — a
+    process-facing status over the inbound corridor's most recent load.
+    """
+    from django.http import HttpResponse
+
+    reading = compute_glass_reading(direction="inbound")
+    fragment = _render_glass_fragment(
+        reading, "Standup — any news from the vendor?", "glass-standup"
+    )
+    response = HttpResponse(fragment, content_type="text/html")
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def shipped_htmx_view(request: Any) -> Any:
+    """Render the "what testers can currently rely on" shipped fragment.
+
+    Reads the SAME inbound corridor reading as `standup_htmx_view` (the
+    Dream's "Testers pull a shipped shelf from the last inbound extract") --
+    the two views differ only in label/framing, never in data source.
+    """
+    from django.http import HttpResponse
+
+    reading = compute_glass_reading(direction="inbound")
+    fragment = _render_glass_fragment(
+        reading, "Shipped — what testers can currently rely on", "glass-shipped"
+    )
     response = HttpResponse(fragment, content_type="text/html")
     response["Cache-Control"] = "no-store"
     return response

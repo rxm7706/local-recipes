@@ -39,6 +39,15 @@ def test_terminal_dead_tail_is_not_treated_as_active_dispatch():
     assert not mod.dispatch_active(_terminal_live_row())
 
 
+def test_blocked_verdict_dead_tail_is_not_treated_as_active_dispatch():
+    """Story 51.11 (CAP-258): a `blocked` completion verdict is a terminal
+    dead-tail case too, matching `failed`/`stopped_externally`."""
+    mod = _load_fleet_picture()
+    row = _terminal_live_row(dispatch_completion_verdict="blocked")
+    assert mod.dispatch_terminal_dead_tail(row)
+    assert not mod.dispatch_active(row)
+
+
 def test_unpushed_dispatch_branch_attention_line():
     mod = _load_fleet_picture()
     live_row = {

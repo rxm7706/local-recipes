@@ -39,6 +39,7 @@ from pyforge.doctor.sources import (
     one_chain,
     general_docs_consistency,
     ledger,
+    live_proof_surfaces,
     marshal,
     pixi_currency,
     platform_policy,
@@ -79,6 +80,9 @@ _EXPECTED_DISPATCH = {
     # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
     # occupancy vs the docs/MAP.md allow-list.
     "docs-shelf-occupancy": docs_shelf.gather,
+    # Story 26.1 (spec-pyforge-doctor CAP-77) -- a touched surface
+    # catalogued in live-proof-surfaces.md gets an advisory finding naming it.
+    "live-proof-surface": live_proof_surfaces.gather,
 }
 
 

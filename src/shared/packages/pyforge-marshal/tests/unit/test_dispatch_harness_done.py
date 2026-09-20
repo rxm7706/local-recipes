@@ -5,7 +5,9 @@ from __future__ import annotations
 from pyforge.marshal.core.dispatch_harness_done import (
     blocks_harness_relaunch,
     followup_review_recommended,
+    has_auto_run_result,
     land_fail_operator_message,
+    parse_baseline_revision,
     parse_spec_status,
 )
 
@@ -80,6 +82,35 @@ def test_blank_line_with_no_banner_still_returns_none() -> None:
     skipped."""
     text = "\n---\nstatus: done\n---\n"
     assert parse_spec_status(text) is None
+
+
+# --- Story 51.11 (CAP-258): baseline_revision + Auto Run Result heading -----
+
+
+def test_parse_baseline_revision_reads_frontmatter_scalar() -> None:
+    text = (
+        "---\nstatus: blocked\nbaseline_revision: "
+        "'c8277c03c117ff4779d54a2ff9d900f519415971'\n---\n"
+    )
+    assert (
+        parse_baseline_revision(text)
+        == "c8277c03c117ff4779d54a2ff9d900f519415971"
+    )
+
+
+def test_parse_baseline_revision_missing_is_none() -> None:
+    text = "---\nstatus: blocked\n---\n"
+    assert parse_baseline_revision(text) is None
+
+
+def test_has_auto_run_result_true_when_heading_present() -> None:
+    text = "---\nstatus: blocked\n---\n\n## Auto Run Result\n\nStatus: escalated\n"
+    assert has_auto_run_result(text) is True
+
+
+def test_has_auto_run_result_false_when_absent() -> None:
+    text = "---\nstatus: blocked\n---\n\nNo such section here.\n"
+    assert has_auto_run_result(text) is False
 
 
 def test_operator_message_names_pr_and_chain() -> None:

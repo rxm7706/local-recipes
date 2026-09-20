@@ -1064,7 +1064,11 @@ def derive_dispatch_phase(facts: FleetHomeFacts) -> DispatchPhase | None:
         return None
     if facts.dispatch_completion_verdict == "completed":
         return "chaining" if _dispatch_tail_still_live(facts) else None
-    if facts.dispatch_completion_verdict in ("failed", "stopped_externally"):
+    if facts.dispatch_completion_verdict in (
+        "failed",
+        "stopped_externally",
+        "blocked",
+    ):
         return "verifying" if _dispatch_tail_still_live(facts) else None
     if landing_journal_indicates_complete(facts.dispatch_landing_verdict):
         return "chaining" if _dispatch_tail_still_live(facts) else None
@@ -1077,7 +1081,11 @@ def _dispatch_terminal_dead_tail(facts: FleetHomeFacts) -> bool:
     """True when factory dispatch ended in terminal failure with no live tail."""
     if not facts.dispatch_story:
         return False
-    if facts.dispatch_completion_verdict not in ("failed", "stopped_externally"):
+    if facts.dispatch_completion_verdict not in (
+        "failed",
+        "stopped_externally",
+        "blocked",
+    ):
         return False
     return derive_dispatch_phase(facts) is None
 

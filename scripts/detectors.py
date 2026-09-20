@@ -264,6 +264,10 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # occupancy vs the docs/MAP.md allow-list, beside its sibling repo-scope
     # sources -- offline, deterministic, no budget concerns.
     ("docs-shelf-occupancy", "docs-shelf-occupancy-check"),
+    # Story 26.1 (spec-pyforge-doctor CAP-77): a touched surface catalogued
+    # in live-proof-surfaces.md gets an advisory finding naming it -- reads
+    # only the tracked catalog + a git diff, offline, deterministic.
+    ("live-proof-surface", "live-proof-surface-check"),
 )
 
 

@@ -25,7 +25,12 @@ from ..core.dispatch_completion import (
     has_git_progress,
     is_spec_only_narration,
 )
-from ..core.dispatch_harness_done import parse_blocking_condition, parse_spec_status
+from ..core.dispatch_harness_done import (
+    has_auto_run_result,
+    parse_baseline_revision,
+    parse_blocking_condition,
+    parse_spec_status,
+)
 from ..core.supervise import resolve_terminal_session_verdict
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
@@ -45,7 +50,7 @@ from ..core.dispatch_verification import (
     judge_dispatch_verification,
     primary_gate_failure,
 )
-from ..core.dispatch_landing import DispatchLandingVerdict
+from ..core.dispatch_landing import DispatchLandingVerdict, blocked_twin_promotion_text
 from ..core.dispatch_push import may_push_dispatch_branch_before_verify
 from ..core.dispatch_supervisor_state import (
     landing_journal_indicates_complete,
@@ -618,6 +623,188 @@ def _journal_dispatch_blocked(
             file=sys.stderr,
         )
     return counter
+
+
+def _blocked_halt_reason(
+    *,
+    fs: FsPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    git_facts: DispatchGitFacts,
+) -> tuple[str | None, bool]:
+    """Classify an unexplained session exit against the worktree's own tracked
+    spec (Story 51.11, spec-pyforge-marshal CAP-258).
+
+    Returns ``(reason, stale)``:
+    - ``(reason, False)`` -- the worktree spec reads ``status: blocked`` with
+      an ``## Auto Run Result`` whose ``baseline_revision`` matches this
+      run's own baseline: a genuine self-halt the session never got to
+      commit. ``reason`` is the spec's own blocking condition, never
+      invented (Always bullet 3 -- no self-report is trusted, only the spec
+      file, git status and the process).
+    - ``(None, True)`` -- the spec reads ``blocked`` but its Auto Run
+      Result's ``baseline_revision`` does not match this run: a stale spec
+      left over from an earlier dispatch pass on the same story (Never
+      bullet 3) -- advisory only, never a block.
+    - ``(None, False)`` -- no reliable blocked signal (missing spec, a
+      different status, no Auto Run Result section, or no recorded
+      baseline to verify against).
+    """
+    _, spec_text = _worktree_story_spec(
+        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+    )
+    if spec_text is None or parse_spec_status(spec_text) != "blocked":
+        return None, False
+    if not has_auto_run_result(spec_text):
+        return None, False
+    baseline = parse_baseline_revision(spec_text)
+    if baseline is None:
+        return None, False
+    if baseline != git_facts.baseline_head_sha:
+        return None, True
+    reason = parse_blocking_condition(spec_text) or (
+        "harness halted on its own tracked spec's status: blocked"
+    )
+    return reason, False
+
+
+def _attempted_change_patch_paths(worktree: Path) -> tuple[Path, ...]:
+    """``*attempted-change*.patch`` files under the worktree, excluding the
+    backlinked ``implementation-artifacts`` Tier-3 store (Story 51.11).
+
+    That store already survives worktree teardown on the primary checkout
+    and must never be git-tracked (AGENTS.md: "only implementation-
+    artifacts/ is the backlinked Tier-3 store"; "nothing there may be
+    git-tracked"). A patch dropped anywhere else in the worktree has no
+    such protection, so it is committed onto the dispatch branch alongside
+    the blocked spec so it survives teardown too.
+    """
+    found: list[Path] = []
+    for candidate in worktree.rglob("*attempted-change*.patch"):
+        try:
+            relative = candidate.relative_to(worktree)
+        except ValueError:
+            continue
+        if "implementation-artifacts" in relative.parts:
+            continue
+        found.append(candidate)
+    return tuple(sorted(found))
+
+
+def _commit_and_journal_blocked_halt(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    reason: str,
+) -> tuple[int, bool]:
+    """Commit the worktree's uncommitted blocked-halt state onto the dispatch
+    branch and journal ``dispatch-blocked`` (Story 51.11).
+
+    Returns ``(counter, committed)``. ``committed`` is ``False`` on any git
+    failure, or when there is nothing to commit -- the classifier must never
+    claim a durable blocked record without one (narrows, never widens): the
+    caller must not adopt the ``blocked`` verdict unless this returns
+    ``True``.
+    """
+    try:
+        changed = vcs.changed_files(repo_root, worktree, base="HEAD")
+    except VcsCommandError:
+        return counter, False
+    patch_paths = _attempted_change_patch_paths(worktree)
+    paths_to_commit = tuple(Path(path) for path in changed) + tuple(
+        p.relative_to(worktree) for p in patch_paths
+    )
+    if not paths_to_commit:
+        return counter, False
+    try:
+        vcs.commit_paths(
+            worktree,
+            paths_to_commit,
+            "marshal: supervisor blocked halt (Story 51.11)",
+        )
+    except VcsCommandError:
+        return counter, False
+    counter = _journal_dispatch_blocked(
+        fs=fs,
+        run_dir=run_dir,
+        run_id=run_id,
+        writer_id=writer_id,
+        counter=counter,
+        story_key=story_key,
+        worktree=worktree,
+        reason=reason,
+    )
+    return counter, True
+
+
+def _promote_blocked_twin(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+) -> None:
+    """Best-effort: push the primary's tracked twin of the story spec to
+    ``blocked`` so the fleet picture shows it (Story 51.11).
+
+    Never raises -- the branch commit in ``_commit_and_journal_blocked_halt``
+    is the load-bearing durability guarantee; this is an additional
+    visibility promotion and must not unwind an already-committed blocked
+    verdict on failure. Pushes via a throwaway detached worktree onto
+    ``origin/main`` (AGENTS.md: never commit on the shared checkout) --
+    exactly like ``cli/land.py``'s sprint-status-ledger promotion.
+    """
+    spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story_key)
+    if spec_path is None:
+        return
+    try:
+        worktree_spec_path = dispatch_core.relocated_spec_path(
+            spec_path, repo_root, worktree
+        )
+    except ValueError:
+        return
+    try:
+        worktree_text = fs.read_text(worktree_spec_path)
+    except FsError:
+        return
+    if worktree_text is None:
+        return
+    try:
+        primary_text = fs.read_text(spec_path)
+    except FsError:
+        return
+    promoted = blocked_twin_promotion_text(
+        primary_text=primary_text, worktree_text=worktree_text
+    )
+    if promoted is None:
+        return
+    try:
+        canonical_root = dispatch_core.canonical_repo_root(repo_root)
+        relative = spec_path.resolve().relative_to(canonical_root)
+    except (ValueError, OSError):
+        return
+    try:
+        vcs.commit_paths_onto_remote_tip(
+            canonical_root,
+            remote="origin",
+            ref="main",
+            writes=((relative.as_posix(), promoted),),
+            message="marshal: promote blocked spec twin (Story 51.11)",
+        )
+    except VcsCommandError:
+        return
 
 
 def _run_supervisor_finalize_sequence(
@@ -1527,29 +1714,104 @@ def run_dispatch_supervisor(
             except (VcsCommandError, ValueError):
                 pass
 
+        stale_blocked_finding: dict[str, object] | None = None
+        if verdict is DispatchSessionVerdict.STOPPED_EXTERNALLY:
+            # Story 51.11 (CAP-258): before classifying an unexplained exit as
+            # an operator stop, read the worktree's own tracked spec -- a
+            # session that halted `blocked` correctly but exited before
+            # committing that halt is a blocked outcome, not an operator stop.
+            blocked_reason, stale = _blocked_halt_reason(
+                fs=fs,
+                repo_root=repo_root,
+                slug=slug,
+                story_key=story_key,
+                worktree=worktree,
+                git_facts=git_facts,
+            )
+            if blocked_reason is not None:
+                counter, committed = _commit_and_journal_blocked_halt(
+                    fs=fs,
+                    vcs=vcs,
+                    run_dir=run_dir,
+                    run_id=run_id,
+                    writer_id=writer_id,
+                    counter=counter,
+                    repo_root=repo_root,
+                    slug=slug,
+                    story_key=story_key,
+                    worktree=worktree,
+                    reason=blocked_reason,
+                )
+                if committed:
+                    verdict = DispatchSessionVerdict.BLOCKED
+                    try:
+                        git_facts = gather_dispatch_git_facts(
+                            vcs,
+                            fs=fs,
+                            repo_root=repo_root,
+                            worktree=worktree,
+                            story_key=story_key,
+                            project_slug=slug,
+                            baseline_head_sha=baseline_head_sha,
+                            merge_subject_template=merge_subject_template,
+                        )
+                    except (VcsCommandError, ValueError):
+                        pass
+                    _promote_blocked_twin(
+                        fs=fs,
+                        vcs=vcs,
+                        repo_root=repo_root,
+                        slug=slug,
+                        story_key=story_key,
+                        worktree=worktree,
+                    )
+            elif stale:
+                stale_blocked_finding = Finding(
+                    code="MRS-DISP-046",
+                    severity=Severity.WARN,
+                    message=(
+                        f"story {story_key!r} worktree spec reads status: "
+                        f"blocked but its baseline_revision does not match "
+                        f"this run's baseline {git_facts.baseline_head_sha!r} "
+                        f"-- treating as stopped_externally, not "
+                        f"re-attributing a stale blocked spec from an earlier "
+                        f"dispatch pass (Story 51.11)"
+                    ),
+                ).to_json_dict()
+
         stop_reason: str | None = None
         if verdict is DispatchSessionVerdict.STOPPED_EXTERNALLY:
             stop_reason = "external-operator-stop"
         elif verdict is DispatchSessionVerdict.FAILED:
             stop_reason = "failed"
+        intent_payload: dict[str, object] = {
+            "verdict": verdict.value,
+            "stop_reason": stop_reason,
+            "session_alive": session_alive,
+            "baseline_head_sha": git_facts.baseline_head_sha,
+            "current_head_sha": git_facts.current_head_sha,
+            "changed_paths": list(git_facts.changed_paths),
+            "branch_merged": git_facts.branch_merged,
+            "story_merged_on_main": git_facts.story_merged_on_main,
+        }
+        if stale_blocked_finding is not None:
+            intent_payload["finding"] = stale_blocked_finding
         intent_entry = build_entry(
             id=JournalEntryId(writer_id, counter),
             ts=_format_entry_ts(_now_utc()),
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_COMPLETION,
             phase=Phase.INTENT,
-            payload={
-                "verdict": verdict.value,
-                "stop_reason": stop_reason,
-                "session_alive": session_alive,
-                "baseline_head_sha": git_facts.baseline_head_sha,
-                "current_head_sha": git_facts.current_head_sha,
-                "changed_paths": list(git_facts.changed_paths),
-                "branch_merged": git_facts.branch_merged,
-                "story_merged_on_main": git_facts.story_merged_on_main,
-            },
+            payload=intent_payload,
         )
         counter += 1
+        completion_outcome_payload: dict[str, object] = {
+            "verdict": verdict.value,
+            "stop_reason": stop_reason,
+            "ok": True,
+        }
+        if stale_blocked_finding is not None:
+            completion_outcome_payload["finding"] = stale_blocked_finding
         outcome_entry = build_entry(
             id=JournalEntryId(writer_id, counter),
             ts=_format_entry_ts(_now_utc()),
@@ -1557,7 +1819,7 @@ def run_dispatch_supervisor(
             kind=dispatch_core.KIND_DISPATCH_COMPLETION,
             phase=Phase.OUTCOME,
             intent_id=intent_entry.id,
-            payload={"verdict": verdict.value, "stop_reason": stop_reason, "ok": True},
+            payload=completion_outcome_payload,
         )
         ended_at = _format_entry_ts(_now_utc())
         started_at = _launch_story_started_ts(folded, run_id) or ended_at

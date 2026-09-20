@@ -81,6 +81,11 @@ def derive_supervision_state(
         DispatchSessionVerdict.COMPLETED.value,
         DispatchSessionVerdict.FAILED.value,
         DispatchSessionVerdict.STOPPED_EXTERNALLY.value,
+        # Story 51.11 (CAP-258): a committed `blocked` verdict is terminal --
+        # without this, a dead session with committed wip would re-derive as
+        # LIVE (has_git_progress=True) and fleet tooling would think the run
+        # is still unsupervised-live.
+        DispatchSessionVerdict.BLOCKED.value,
     }:
         verdict = DispatchSessionVerdict(journal.completion_verdict)
         return DispatchSupervisionState(
