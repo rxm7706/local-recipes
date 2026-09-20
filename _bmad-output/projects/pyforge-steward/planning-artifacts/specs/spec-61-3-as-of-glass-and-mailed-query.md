@@ -6,6 +6,7 @@ status: 'ready'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
+warnings: ['oversized']
 deferred: []
 declared_low_risk: false
 ---
