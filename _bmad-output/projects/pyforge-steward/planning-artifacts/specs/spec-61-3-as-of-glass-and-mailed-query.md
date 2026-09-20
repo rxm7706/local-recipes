@@ -2,7 +2,7 @@
 title: '61.3: As-of glass and mailed query'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
 context: []
@@ -646,6 +646,151 @@ inbound reading"). Re-derive `standup_htmx_view`/`shipped_htmx_view` and their t
 
 **Manual checks:**
 - `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_glass.py src/shared/packages/pyforge-steward/tests/unit/test_cli.py src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py src/shared/packages/pyforge-steward/tests/meta/test_invariants.py -q` -- expected: all pass, including the new `glass.py` AST-guard assertion and `test_the_dashboard_module_split_is_pinned_not_merely_documented`.
-- `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pyforge.steward.cli glass` -- like `passport mint` (61.2), this needs a configured `DJANGO_SETTINGS_MODULE`, which a bare shell in this sandbox does not have; expected here is a clean `ok=False` refusal for both directions, never a raised `ImportError`/traceback. The real ORM path (`unborn`/`fresh`/`stale`/`failed`) is exercised and passes under the test suite's migrated in-memory SQLite database (`test_glass.py`), which is where this duty is actually verified end-to-end.
+- `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pyforge.steward.cli glass` -- like `passport mint` (61.2), this needs a configured `DJANGO_SETTINGS_MODULE`, which a bare shell in this sandbox does not have; expected here is a clean `ok=False` refusal for both readings, never a raised `ImportError`/traceback. The real ORM path (`unborn`/`fresh`/`stale`/`failed`) is exercised and passes under the test suite's migrated in-memory SQLite database (`test_glass.py`), which is where this duty is actually verified end-to-end.
 - `pixi run -e pyforge-steward pyforge-steward-coverage-gate` -- expected: `glass.py` and `dashboard/glass_query.py` at or above the station's coverage floor.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary of implemented change.** Standup ("any news from the vendor?") and shipped ("what
+testers can currently rely on") now share one as-of glass over the inbound corridor
+(`CorridorLoad`, Story 61.1): a new `steward glass` CLI duty (the 23rd) and two new HTMX views
+(`standup_htmx_view`, `shipped_htmx_view`) both read the SAME `compute_glass_reading(direction="inbound")`
+result — computed once per invocation and reused for both labels, never two independent reads —
+and classify it as `unborn` (nothing has ever loaded), `fresh` (today's non-empty drop), `stale`
+(the last drop was not today — "yesterday remains visible", generalized to any non-today load),
+or `failed` (today's drop is a zero-byte file, detected by comparing `batch_sha` against the
+well-known SHA-256 of empty bytes — no new schema, no `corridor.py` change). A mailed/export
+plugin (`steward glass export --format csv|markdown`) renders the same two-row table, gated
+off-by-default behind `FLAG_GLASS_EXPORT` via the estate's existing `sprint_ledger_query.eval_flag`
+engine. **A significant mid-flight correction:** the first implementation pass wired `shipped` to
+`direction="outbound"` ("what WE have sent"); review caught (independently, via two reviewer
+layers) that this contradicted the owning Dream's explicit "Testers pull a shipped shelf from the
+last **inbound** extract" and collided with Story 61.4's own, separate "signed outbound slice"
+territory. The spec was corrected (`## Spec Change Log`), code reverted to baseline, and
+re-derived from the corrected spec — `shipped` now reads inbound, same as standup, differing only
+in label/framing for two audiences.
+
+**Files changed.**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/glass.py` (NEW) — `GlassError`,
+  `GlassReading`, `GLASS_STATES`, `EMPTY_FILE_SHA256`, `compute_glass_reading` (direction
+  validated before the naive-`now` check, which is validated before `reference_now` is bound),
+  `render_glass_table` (CSV/markdown, with `|`/newline escaping in the markdown branch),
+  `FLAG_GLASS_EXPORT`-gated `GlassDuty` (bare computes the inbound reading once and reuses it for
+  both `standup`/`shipped` labels; `export` verb does the same).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/glass_query.py` (NEW) —
+  `read_latest_corridor_load()`, the read-only Django-ORM half (lazy `import django`, builtin
+  `dict[str, Any]` generics, relies on `CorridorLoad.Meta.ordering`).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views_htmx.py` — added
+  `standup_htmx_view`, `shipped_htmx_view` (both read the same inbound reading), and
+  `_render_glass_fragment` with a `_GLASS_BADGE_CLS` giving `unborn` its own distinct color
+  (separate from `refused`'s default grey).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` — registered the 23rd duty
+  `glass` (`DUTIES`, `_HELP` — now correctly saying "inbound corridor", `build_parser` elif-chain +
+  `_add_glass_subparsers`, `resolve_duty`).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/__init__.py` — module-split
+  docstring names `glass_query.py` as the fourth lazy-django-import dashboard module.
+- `src/shared/packages/pyforge-steward/tests/unit/test_glass.py` (NEW, 36 tests) — the state
+  machine (including the I/O Matrix's three required scenarios), `render_glass_table` (including a
+  `refused` reading and a `|`/newline-in-waybill escaping case), `GlassDuty.run()` (including a
+  refusal forced through the duty layer itself, asserting both `standup` and `shipped` mirror it),
+  `glass_query.py`'s own refusal branches, a `GLASS_STATES` self-check, and CLI parsing.
+- `src/shared/packages/pyforge-steward/tests/unit/test_cli.py`,
+  `tests/unit/test_restore_duty.py` — duty count 22 → 23.
+- `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py` — full
+  `fresh`/`stale`/`failed`/`unborn`/`refused` matrix for both views, plus a test proving they
+  render identically from one shared reading.
+- `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` — the 4th sanctioned
+  dashboard-reach AST guard (`glass.py` → `glass_query.py`), `glass_query.py` added to the pinned
+  module-split set.
+- This spec — planned, reviewed (2 passes), one `bad_spec` amendment, patched, re-verified.
+
+**Review findings breakdown** (33 findings total across two review passes; every row in
+`## Review Triage Log`).
+- **Pass 1** (17 findings: high 2, medium 1, low 11, false 3) surfaced the direction bug as a
+  grouped `high` `bad_spec` finding (Blind Hunter + Intent Alignment Auditor, independently, both
+  citing the Dream's "shipped shelf from the last inbound extract") plus a related `low` `bad_spec`
+  finding (missing "shipped" Acceptance Criteria). Code was reverted to baseline and re-derived
+  from the corrected spec — see `## Spec Change Log`. The remaining pass-1 findings (5 `low`
+  `patch`-routed, 1 `medium` `patch`-routed from the Verification Gap Reviewer) were folded
+  directly into the corrected spec's Code Map/Tests plan rather than patched separately (rule:
+  once `bad_spec` exists, lower entries are moot for that pass) — all five landed in the
+  re-derivation: a `GLASS_STATES` self-check test, a `render_glass_table`-with-`refused` test,
+  markdown `|`/newline escaping, a naive-`now` validation reorder, and a `GlassDuty`-level refusal
+  test. 3 `false` (ledger/epics.md decoupling — already-litigated per AGENTS.md; a Code-Map-vs-code
+  pseudocode "divergence" that misunderstood the Code Map's own documented role; an
+  unreachable-without-bypassing-the-CLI direction-validation claim). 5 `low` `reject` (an unguarded
+  `render_glass_table` dict access unlikely to be hit by its sole, correct caller; an unreachable
+  CLI-verb `else` branch matching 61.1/61.2's own already-litigated precedent; a hypothetical
+  `USE_TZ=False` naive-datetime risk against a package-wide `USE_TZ=True` convention; an ORM
+  exception set matching `corridor_load.py`'s own already-shipped, already-reviewed set).
+- **Pass 2** (16 findings: medium 2 grouped as 1, low 12, false 2), run fresh against the
+  re-derived diff: the TOCTOU gap the re-derivation introduced (two independent
+  `compute_glass_reading` calls where one shared reading was intended) was independently caught by
+  both Blind Hunter and Edge Case Hunter and patched (compute once, alias both labels) — the one
+  `medium`-severity patch this pass. 4 more `low` patches: stale `_HELP` wording still saying
+  "inbound/outbound" (also independently flagged by the Verification Gap Reviewer), a
+  `typing.Dict`/builtin-`dict` style inconsistency between the two new modules, `_GLASS_BADGE_CLS`
+  conflating `unborn` with `refused`, and a test asserting only `standup`'s (not `shipped`'s)
+  refusal. 2 `false` (export's `ok` deliberately means "table rendered", not "data healthy" — the
+  spec's own AC already says so; no boundary-arithmetic bug class exists for a pure `.date()`
+  equality check, so a midnight-boundary test would prove nothing new). 5 `low` `reject`: 2
+  `carried` from pass 1 (the `render_glass_table` KeyError and the ORM-exception-set/unguarded-view
+  claims — code unchanged, same verdict stands), a spec-prose-only wording fix rejected per the
+  "never patch this build's own spec" rule, a `django.setup()` exception-set gap matching three
+  sibling dashboard modules' identical, already-shipped shape, and the naive-`loaded_at` claim
+  re-verified against the now-changed (safer) conditional-`astimezone` code and still judged
+  unreachable under this package's `USE_TZ=True` convention.
+- The Intent Alignment Auditor filed no discrete actionable finding in either pass. Pass 1's
+  broader report independently corroborated the direction bug (logged as part of the grouped
+  `bad_spec` entry). Pass 2's broader report raised whether the intent-contract text alone
+  supports a two-view "standup + shipped" surface at all — resolved by this orchestrator: the
+  story's own `## Binding` → `Surface:` line (from `epics.md`'s Story 61.3 definition) authorizes
+  it independently of the narrower `<intent-contract>` tag the auditor is deliberately scoped to.
+
+**Follow-up review recommendation: `false`.** This is a first pass by the frontmatter's own
+`followup_pass` marker (this dispatch never resumed a `done` spec). The `bad_spec` loopback that
+resolved the direction bug is not itself a "patched" entry under the computation rule. In the
+final (pass 2) review, exactly one `medium`-severity entry was patched (the TOCTOU fix) and no
+`high` — below the "two-or-more medium, or any high" threshold for recommending a follow-up. The
+one component of this story genuinely unverified by a fresh review layer is the TOCTOU fix itself
+(computing the reading once and aliasing both labels) — verified here by re-reading the code and
+re-running the full suite, but not by a third independent review pass.
+
+**Verification performed.**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` (the dispatch's configured verify,
+  real env): 1534 passed / 4 skipped (pass-1 implementation) → 1540 passed / 4 skipped (pass-2
+  re-derivation, before and after the 5-item patch) — independently re-run by this orchestrator at
+  every stage, not just from the implementation subagents' own reports.
+- `pixi run -e pyforge-steward pyforge-steward-coverage-gate`: OK at every stage; final state
+  `glass.py` 95%, `dashboard/glass_query.py` 94%, both well above the 80% floor; 27/27 touched
+  modules ≥ 80%.
+- Manual CLI smoke check (`PYTHONPATH=... python -m pyforge.steward.cli glass`, bare shell, no
+  `DJANGO_SETTINGS_MODULE`): confirmed a clean `refused` message for both `standup` and `shipped`,
+  exit 1, no traceback — matches the spec's own stated expectation, re-confirmed after the patch
+  pass.
+- Matrix Test Audit: the I/O Matrix's three rows (empty-on-time-file, late drop, before first
+  waybill) are covered by `test_compute_glass_reading_failed_for_an_empty_todays_load`,
+  `test_compute_glass_reading_stale_when_last_load_was_not_today`, and
+  `test_compute_glass_reading_unborn_before_first_waybill` — independently re-run and confirmed
+  passing (`test_glass.py -q`: 35 passed before the patch pass).
+- Diff read in full by this orchestrator at every stage (pre-`bad_spec` diff, post-re-derivation
+  diff, post-patch diff), not merely summarized from any implementation subagent's own report, per
+  step-03/04's "judge against the diff" instruction.
+
+**Residual risks.**
+- No ledger/PR mechanics were run: `sprint-status-ledger.yaml`/`epics.md` still read `backlog` for
+  `61-3-as-of-glass-and-mailed-query` (ledger promotion via `sprint-ledger-sync`, and any PR/label
+  mechanics, are a separate step per AGENTS.md from this single-story `bmad-build-auto` dispatch);
+  this PR (once opened) touches only non-`recipes/` paths and needs the `maintenance` label; no
+  `pixi.toml` change was made, so `pr-preflight`/the shared-surface station-test rule does not
+  apply.
+- No wiring exists from an actual outbound "signed slice" (Story 61.4, not yet built) into this
+  glass — by design; `direction="outbound"` remains untouched by this story and is reserved for
+  61.4 alone, per this dispatch's own corrected Design Notes.
+- The TOCTOU fix (single read, aliased to both labels) removes the specific divergence risk
+  pass-2's reviewers found, but has not itself been re-reviewed by a fresh pass (see the follow-up
+  recommendation note above) — judged low-risk given its small, direct, easily-verified shape.
 
