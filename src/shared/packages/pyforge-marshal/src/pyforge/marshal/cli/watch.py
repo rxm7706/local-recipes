@@ -27,6 +27,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..core.context import MarshalContext
 from ..core.dispatch import DispatchJournalFacts
+from ..core.dispatch_completion import DispatchSessionVerdict
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
@@ -389,10 +390,28 @@ def _snapshot_loop(
     }
 
 
+def _dispatch_verdict_is_terminal(verdict: object) -> bool:
+    """Story 51.13 (spec-pyforge-marshal CAP-260): a dispatch run is finished
+    only when its completion verdict is a ``DispatchSessionVerdict`` member
+    other than ``LIVE`` -- the supervisor's own vocabulary
+    (``live | completed | failed | stopped_externally``). ``live``, absent,
+    empty or unknown values are NOT terminal: the row keeps the home's own
+    state. The pre-51.13 predicate treated anything outside an invented set
+    (``{"", "None", "pending", "in-progress"}``) as terminal, so every live
+    run read ``finished`` the moment CAP-257 made the probe return data."""
+    if not isinstance(verdict, str):
+        return False
+    try:
+        member = DispatchSessionVerdict(verdict)
+    except ValueError:
+        return False
+    return member is not DispatchSessionVerdict.LIVE
+
+
 def _snapshot_dispatch(slug: str, home: Mapping[str, Any], loop_sha: str | None, prs: list[Mapping[str, Any]]) -> dict[str, Any]:
     run_id = home.get("dispatch_run_id")
     verdict = home.get("dispatch_completion_verdict")
-    finished = bool(verdict) and str(verdict) not in {"", "None", "pending", "in-progress"}
+    finished = _dispatch_verdict_is_terminal(verdict)
     return {
         "pattern": "bmad-build-auto",
         "slug": slug,
@@ -476,7 +495,9 @@ def _session_completions(curr: Mapping[str, Any], rows: Sequence[Mapping[str, An
     if curr.get("pattern") == "bmad-build-auto":
         verdict = curr.get("dispatch_completion_verdict")
         story = curr.get("current_story")
-        if verdict and str(verdict) not in {"pending", "in-progress", "None"}:
+        # Story 51.13 (CAP-260): the same enum predicate as `_snapshot_dispatch`
+        # -- a `live` verdict is not a completion.
+        if _dispatch_verdict_is_terminal(verdict):
             return [f"{story or 'dispatch'} -- completion {verdict}"]
         return []
     return [f"{r['key']} -- {r['phase']}" for r in rows if str(r.get("phase") or "") in _DONE_PHASES]
