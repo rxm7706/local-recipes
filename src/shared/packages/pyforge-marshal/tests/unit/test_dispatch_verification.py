@@ -241,6 +241,154 @@ def test_evaluate_dispatch_verification_runs_gates_not_self_report(
     )
 
 
+def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_commands(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1 (spec-53-1, CAP-261a): a dispatch session's own declared
+    ``verify_commands`` run first, then the S-13.7 guard -- the SAME order
+    ``harness_bmadloop.render_policy_toml`` appends it in for a loop home,
+    via the SAME constant (``_SURFACE_RECONCILE_COMMAND``)."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    reports = envelope.data["commands"]
+    assert [report["command"] for report in reports] == [
+        "true",
+        _SURFACE_RECONCILE_COMMAND,
+    ]
+
+
+class FakeProcessGuardFails:
+    """Every command succeeds EXCEPT the S-13.7 guard itself -- isolates a
+    guard failure from the station's own declared commands, which the
+    existing ``FakeProcess`` (fails on ``false``) cannot express since the
+    guard is a fixed ``python ...`` invocation, never a station's choice."""
+
+    def run(self, tokens, *, cwd: Path):
+        if tokens and tokens[0] == "python":
+            return ProcessResult(returncode=1, stdout="", stderr="found drift")
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_evaluate_dispatch_verification_surface_guard_failure_refuses(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1: a session that lands green on its own declared commands
+    but leaves the S-13.7 guard's findings unaddressed is REFUSED exactly
+    like a failure in any other verify command -- the guard is not merely
+    advisory."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcessGuardFails(),
+        vcs=FakeVcs(),
+    )
+    inp = DispatchVerificationInput(findings=envelope.findings)
+    assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
+    guard_findings = [
+        f
+        for f in envelope.findings
+        if f.code == "MRS-GATE-001" and _SURFACE_RECONCILE_COMMAND in f.message
+    ]
+    assert guard_findings, envelope.findings
+
+
+def test_evaluate_dispatch_verification_spec_binding_stays_clean_with_derived_guard(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1, Edge-Case Matrix row 4: a tracked spec's own
+    ``## Verification`` declares only the station's own commands -- it never
+    names the S-13.7 guard, and the end-to-end ``spec_binding`` result must
+    stay clean anyway, not just the isolated ``core/gate.py`` unit
+    (``test_gate.py::test_check_spec_binding_derived_surface_guard_stays_implicit``
+    covers that unit; this proves the wiring through
+    ``evaluate_dispatch_verification`` too)."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["false", "true"]},
+        flags={},
+    )
+    spec_text = (
+        "## Verification\n"
+        "\n"
+        "**Commands:**\n"
+        "- `false` -- expected: exit 0\n"
+        "- `true` -- expected: exit 0\n"
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=spec_text,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    assert envelope.data["spec_binding"]["violations"] == 0
+
+
+def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1: an operator who already (wrongly -- see the guard
+    constant's own "derive, don't declare" docstring) declared the guard in
+    a station's ``verify_commands`` must not see it run, or bind, twice."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true", _SURFACE_RECONCILE_COMMAND]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    reports = envelope.data["commands"]
+    assert [report["command"] for report in reports] == [
+        "true",
+        _SURFACE_RECONCILE_COMMAND,
+    ]
+
+
 def test_evaluate_dispatch_verification_unconfigured_epic_still_denies_outside_default(
     tmp_path: Path,
 ) -> None:
