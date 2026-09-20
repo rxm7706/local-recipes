@@ -2,7 +2,7 @@
 title: '61.4: Signed outbound slice'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
