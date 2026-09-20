@@ -95,7 +95,9 @@ _HELP = {
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
         "(markdown/summary/json/table/sync-matrix/herald-facts/atlas-dataset/"
-        "static-dossier/jira-csv/github-json; exporters flag-gated via --flag)"
+        "static-dossier/jira-csv/github-json; exporters flag-gated via --flag); "
+        "every story carries a next field (done/running/ready/waits on .../"
+        "blocked/?), filterable with --ready / --running"
     ),
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
     "deploy": (
@@ -409,6 +411,25 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--unlinked", action="store_true", help="filter to stories missing Jira key or GitHub item ID"
+    )
+    parser.add_argument(
+        "--ready",
+        action="store_true",
+        help=(
+            "filter to stories whose next is ready (get_runnable_backlog()'s predicate: "
+            "backlog, every dep done); mutually exclusive with --running"
+        ),
+    )
+    parser.add_argument(
+        "--running",
+        action="store_true",
+        help=(
+            "filter to stories with a live dispatch or loop run on them, per one "
+            "'marshal watch --fleet' call (this checkout's own; when marshal is "
+            "unreachable every candidate's next becomes '?' instead, so --running "
+            "then matches nothing -- see next=? in other formats); mutually "
+            "exclusive with --ready"
+        ),
     )
     parser.add_argument(
         "--station", default=None, metavar="NAME", help="filter by station name (e.g. pyforge-steward)"

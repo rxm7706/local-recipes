@@ -28,6 +28,15 @@ Supports:
   a thin call into the `pyforge-steward[dashboard]` extra's `passport_sync`.
 - `get_runnable_backlog()` for Marshal's dispatch selection, using marshal's own
   dependency grammar (restated below) keyed by `(station, story_id)`.
+- Story 65.2 (CAP-150): every story carries a `next` field -- `done`, `running`,
+  `ready` (the same predicate `get_runnable_backlog()` uses), `waits on 1.2[, …]`
+  (bare canonical dep keys, never an `S-` prefix), `blocked`, or `?` (the running
+  fact was unavailable). `--ready`/`--running`
+  filter on it. The `running` fact comes from ONE `marshal watch --fleet --format
+  json` call per query, via `pyforge.core.process` -- never a `pyforge.marshal`
+  import, never a read of marshal's own journal. Unreachable marshal fails open:
+  every `next` that would read `running` reads `?` instead, with one warning; the
+  fact is this checkout's own (marshal's Tier-3 state is per clone).
 
 stdout carries payload only; every diagnostic this module emits goes to stderr.
 """
@@ -49,6 +58,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import yaml
+
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 # ── Repo-root resolution (mirrors `provision.py`'s walk-up precedent, keyed on
 # `scripts/bmad-loop-worktree` -- the one marker path that exists exactly once
@@ -222,6 +233,12 @@ class WorkPassportItem:
     fr_ad: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    #: Story 65.2 (CAP-150): `done` / `running` / `ready` / `waits on 1.2[, …]`
+    #: (bare canonical dep keys, never an `S-` prefix) / `blocked` / `?`. Set
+    #: by `SprintLedgerQueryEngine.query()` for every loaded story -- `""`
+    #: only ever appears on a `WorkPassportItem` built directly (e.g. a test
+    #: fixture), never on one a query returned.
+    next: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -256,6 +273,12 @@ class StationProgress:
     ready: int = 0
     other: int = 0
     completion_pct: float = 0.0
+    #: Story 65.2 (CAP-150): counts by the COMPUTED `next` field, distinct from
+    #: the `ready` bucket above (which counts the literal ledger status
+    #: `ready`). `next_ready` is `get_runnable_backlog()`'s predicate;
+    #: `next_running` is a live dispatch/loop run confirmed via marshal.
+    next_ready: int = 0
+    next_running: int = 0
 
 
 @dataclass
@@ -274,6 +297,10 @@ class EstateSummary:
     total_ready: int = 0
     total_other: int = 0
     overall_completion_pct: float = 0.0
+    #: Story 65.2 (CAP-150): estate-wide sums of `StationProgress.next_ready` /
+    #: `next_running`.
+    total_next_ready: int = 0
+    total_next_running: int = 0
 
 
 @dataclass
@@ -461,6 +488,7 @@ class MarkdownFormatter(QueryFormatterPlugin):
                 gh_str = f" GH: `{s.github_item_id}`" if s.github_item_id else ""
                 lines.append(f"- {status_badge} `{s.station}` / Story `{s.story_id}`: **{s.title}**{jira_str}{gh_str}")
                 lines.append(f"  - Passport UUID: `{s.passport_id}`")
+                lines.append(f"  - Next: {s.next}")
                 if s.effort or s.deps or s.fr_ad:
                     meta_parts = []
                     if s.effort:
@@ -492,7 +520,8 @@ class SummaryFormatter(QueryFormatterPlugin):
         for st_name, st in sorted(s.stations.items()):
             lines.append(
                 f"  {st_name}: {st.total_stories} stories, done {st.done}, backlog {st.backlog}, "
-                f"blocked {st.blocked}, in-progress {st.in_progress}, optional {st.optional}"
+                f"blocked {st.blocked}, in-progress {st.in_progress}, optional {st.optional}, "
+                f"ready {st.next_ready}, running {st.next_running}"
             )
         return "\n".join(lines)
 
@@ -534,13 +563,14 @@ class TableFormatter(QueryFormatterPlugin):
         if not result.stories:
             return "No stories matched."
 
-        headers = ["Station", "Story ID", "Status", "Jira Key", "GitHub Item", "Title"]
+        headers = ["Station", "Story ID", "Status", "Next", "Jira Key", "GitHub Item", "Title"]
         rows = []
         for s in result.stories:
             rows.append([
                 s.station,
                 s.story_id,
                 s.status.upper(),
+                s.next,
                 s.jira_key or "-",
                 s.github_item_id or "-",
                 s.title[:45] + ("..." if len(s.title) > 45 else "")
@@ -1131,14 +1161,166 @@ class TrackedLedgerSource(LedgerSourcePlugin):
         return ledger
 
 
+# --- Running fact (Story 65.2, CAP-150) ---
+
+# Restated, closed vocabulary read off marshal's OWN `watch --fleet --format
+# json` output (never its journal, never `pyforge.marshal` internals): a
+# project row counts as having a live run "on it" only when its `pattern` is
+# set AND its `status` is one of these EXPLICIT active words -- an allowlist,
+# not a denylist, so a missing/empty `status` (or any word this vocabulary
+# doesn't name) is never treated as active.
+_RUN_ACTIVE_STATUSES = frozenset({"running", "in-progress", "paused", "escalated"})
+_MARSHAL_WATCH_ARGV: Tuple[str, ...] = ("marshal", "watch", "--fleet", "--format", "json")
+_MARSHAL_WATCH_TIMEOUT_S = 120.0
+
+
+@dataclass(frozen=True)
+class RunningFact:
+    """The outcome of one `marshal watch --fleet --format json` call.
+
+    `ok=False` means unreachable/non-zero-exit/non-JSON -- CAP-150's fail-open
+    posture: every `next` that would read `running` reads `?` instead, and
+    `stations` stays empty. `stations` is this checkout's own -- marshal's
+    Tier-3 run state is per clone.
+    """
+
+    ok: bool
+    stations: frozenset = frozenset()
+    warning: Optional[str] = None
+
+
+def _fleet_running_stations(payload: Any) -> Optional[frozenset]:
+    """Every station slug the payload's `data.projects` reports as having a
+    live run on it -- `pattern` set and `status` an EXPLICIT active word.
+
+    Returns `None` when the payload's shape is malformed -- a missing/non-dict
+    `data`, or a missing/non-list `data.projects` -- distinguished from a
+    validly-shaped but EMPTY `projects` list (`frozenset()`), so a malformed
+    shape fails open (CAP-150) rather than silently reporting nothing running.
+    """
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(data, dict):
+        return None
+    projects = data.get("projects")
+    if not isinstance(projects, list):
+        return None
+    running: set = set()
+    for row in projects:
+        if not isinstance(row, dict):
+            continue
+        slug = row.get("slug")
+        pattern = row.get("pattern")
+        status = str(row.get("status") or "").strip().lower()
+        if isinstance(slug, str) and slug and pattern and status in _RUN_ACTIVE_STATUSES:
+            running.add(slug)
+    return frozenset(running)
+
+
+def fetch_running_stations(process: ProcessPort, root: Path) -> RunningFact:
+    """ONE `marshal watch --fleet --format json` call through
+    `pyforge.core.process` -- steward never imports `pyforge.marshal` and
+    never reads its journal (CAP-150's seam). Fail-open: `marshal` absent
+    from PATH, a non-zero exit, or non-JSON/non-object stdout all report
+    `RunningFact(ok=False, ...)` rather than raising.
+    """
+    try:
+        result = process.run(list(_MARSHAL_WATCH_ARGV), cwd=root, timeout_s=_MARSHAL_WATCH_TIMEOUT_S)
+    except ProcessError as exc:
+        return RunningFact(ok=False, warning=f"marshal watch --fleet unreachable: {exc}")
+    if result.returncode != 0:
+        return RunningFact(
+            ok=False,
+            warning=f"marshal watch --fleet exited {result.returncode}: {result.stderr.strip()[:200]}",
+        )
+    try:
+        payload = json.loads(result.stdout)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return RunningFact(ok=False, warning="marshal watch --fleet did not return JSON")
+    if not isinstance(payload, dict):
+        return RunningFact(ok=False, warning="marshal watch --fleet JSON was not an object")
+    stations = _fleet_running_stations(payload)
+    if stations is None:
+        return RunningFact(ok=False, warning="marshal watch --fleet JSON was missing a 'data.projects' list")
+    return RunningFact(ok=True, stations=stations)
+
+
+def _done_ids(stories: List[WorkPassportItem]) -> set:
+    """`(station, canonical_story_key)` for every `done` story -- the ONE done
+    set both `get_runnable_backlog()` and `_compute_next()` read (never a
+    second, divergent ready predicate)."""
+    return {(s.station, canonical_story_key(s.story_id)) for s in stories if s.status == "done"}
+
+
+def _unmet_deps(story: WorkPassportItem, done_ids: set) -> List[str]:
+    """This story's own declared deps not yet `done`, within its own station."""
+    return [dep for dep in story.deps if (story.station, dep) not in done_ids]
+
+
+def _compute_next(
+    story: WorkPassportItem,
+    done_ids: set,
+    running_fact: Optional[RunningFact],
+) -> str:
+    """`done` / `blocked` / `ready` / `waits on 1.2[, …]` (bare canonical dep
+    keys) / `running` / `?` -- or the story's own ledger status verbatim for
+    anything else (Story 65.2, CAP-150). `blocked` is checked before any deps
+    computation, so a blocked story is never reported `ready`.
+
+    A story whose LITERAL ledger status is the distinct known status `ready`
+    (never `backlog`) falls through to that same verbatim passthrough and so
+    also returns the string `"ready"` -- a text collision with the COMPUTED
+    `ready` value, which callers must not conflate: `query()`'s `ready_only`/
+    `running_only` filters and its `next_ready`/`next_running` tallies always
+    pair this string with a `story.status` check (`"backlog"` / `"in-progress"`
+    respectively), never `next` alone, so that passthrough can never be
+    admitted as if it were the computed value.
+    """
+    if story.status == "done":
+        return "done"
+    if story.status == "blocked":
+        return "blocked"
+    if story.status == "backlog":
+        unmet = _unmet_deps(story, done_ids)
+        return "ready" if not unmet else "waits on " + ", ".join(unmet)
+    if story.status == "in-progress":
+        if running_fact is None:
+            # No running-fact call was made for this query (library default) --
+            # trust the ledger's own claim rather than fabricate unavailability.
+            return "running"
+        if not running_fact.ok:
+            return "?"
+        return "running" if story.station in running_fact.stations else story.status
+    return story.status
+
+
+def _is_computed_ready(story: WorkPassportItem) -> bool:
+    """The COMPUTED `ready` (backlog, every dep done) -- never a story whose
+    LITERAL ledger status happens to be the distinct known status `ready`,
+    which would otherwise text-collide with `story.next == "ready"` alone."""
+    return story.status == "backlog" and story.next == "ready"
+
+
+def _is_computed_running(story: WorkPassportItem) -> bool:
+    """The COMPUTED `running` (an in-progress story marshal corroborated or,
+    absent a running-fact call, optimistically assumed) -- gated on status so
+    no other status could ever text-collide with `story.next == "running"`."""
+    return story.status == "in-progress" and story.next == "running"
+
+
 # --- Core Query Engine ---
 
 class SprintLedgerQueryEngine:
     """Engine for loading, filtering, querying, and exporting sprint ledgers."""
 
-    def __init__(self, root_dir: Optional[Path] = None, flags_file_path: Optional[Path] = None) -> None:
+    def __init__(
+        self,
+        root_dir: Optional[Path] = None,
+        flags_file_path: Optional[Path] = None,
+        process: Optional[ProcessPort] = None,
+    ) -> None:
         self.root_dir = Path(root_dir) if root_dir is not None else repo_root()
         self.flags_file_path = flags_file_path
+        self.process: ProcessPort = process if process is not None else PosixProcess()
         self.formatters = FormatterRegistry()
         self.sources = SourceRegistry()
         self.hooks = HookRegistry()
@@ -1170,8 +1352,19 @@ class SprintLedgerQueryEngine:
         epic_id: Optional[str] = None,
         search_term: Optional[str] = None,
         flag_overrides: Optional[Dict[str, Any]] = None,
+        ready_only: bool = False,
+        running_only: bool = False,
+        resolve_running: bool = False,
     ) -> QueryResult:
-        """Execute a query against estate sprint ledgers."""
+        """Execute a query against estate sprint ledgers.
+
+        `resolve_running` (Story 65.2, CAP-150): when true, makes ONE
+        `marshal watch --fleet --format json` call (via `self.process`) to
+        corroborate every `in-progress` story's `next` as `running`, or `?`
+        when marshal is unreachable (fail-open, one warning). Defaults to
+        false so the library/API default stays a pure, offline read; the
+        `ledger-query` CLI duty always passes `True`.
+        """
         filters: Dict[str, Any] = {
             "station": station,
             "statuses": statuses,
@@ -1180,6 +1373,8 @@ class SprintLedgerQueryEngine:
             "epic_id": epic_id,
             "search_term": search_term,
             "flag_overrides": dict(flag_overrides or {}),
+            "ready_only": ready_only,
+            "running_only": running_only,
         }
         warnings = self.hooks.trigger_pre_query(filters)
         # The query uses the dict every pre_query hook saw -- a hook may mutate it.
@@ -1189,6 +1384,8 @@ class SprintLedgerQueryEngine:
         unlinked_only = bool(filters.get("unlinked_only"))
         epic_id = filters.get("epic_id")
         search_term = filters.get("search_term")
+        ready_only = bool(filters.get("ready_only"))
+        running_only = bool(filters.get("running_only"))
 
         stations_to_scan = [station] if station else self.known_stations()
 
@@ -1233,8 +1430,34 @@ class SprintLedgerQueryEngine:
             if estate_summary.total_stories else 0.0
         )
 
+        # `next` (Story 65.2, CAP-150): computed over the FULL scanned set,
+        # before any filter below, so `--ready`/`--running` filter on the
+        # resolved value and `done_ids` sees every done story in scope.
+        done_ids = _done_ids(all_stories)
+        running_fact = fetch_running_stations(self.process, self.root_dir) if resolve_running else None
+        if running_fact is not None and not running_fact.ok:
+            message = running_fact.warning or "marshal watch --fleet unavailable"
+            _warn(message)
+            warnings.append(message)
+        for s in all_stories:
+            s.next = _compute_next(s, done_ids, running_fact)
+            progress = station_summaries.get(s.station)
+            if progress is not None:
+                if _is_computed_ready(s):
+                    progress.next_ready += 1
+                elif _is_computed_running(s):
+                    progress.next_running += 1
+        estate_summary.total_next_ready = sum(p.next_ready for p in station_summaries.values())
+        estate_summary.total_next_running = sum(p.next_running for p in station_summaries.values())
+
         # Apply Filters
         filtered_stories = all_stories
+
+        if ready_only:
+            filtered_stories = [s for s in filtered_stories if _is_computed_ready(s)]
+
+        if running_only:
+            filtered_stories = [s for s in filtered_stories if _is_computed_running(s)]
 
         if unimplemented_only:
             filtered_stories = [s for s in filtered_stories if s.status != "done"]
@@ -1301,14 +1524,11 @@ def get_runnable_backlog(engine: SprintLedgerQueryEngine, station: Optional[str]
 
     Mirrors marshal's `ready_backlog`: dependencies resolve within the story's
     own station, and `done` is keyed by `(station, story_id)` so equal ids across
-    stations never collide.
+    stations never collide. Story 65.2 (CAP-150): delegates to `query(ready_only=
+    True)` so this stays the ONE ready predicate -- `--ready` reads the exact
+    same `next == "ready"` classification, never a second, divergent one.
     """
-    res = engine.query(station=station)
-    done_ids = {(s.station, canonical_story_key(s.story_id)) for s in res.stories if s.status == "done"}
-    return [
-        s for s in res.stories
-        if s.status == "backlog" and all((s.station, dep) in done_ids for dep in s.deps)
-    ]
+    return engine.query(station=station, ready_only=True).stories
 
 
 class LedgerQueryDuty:
@@ -1333,6 +1553,8 @@ class LedgerQueryDuty:
 
         unimplemented = getattr(ns, "unimplemented", False)
         unlinked = getattr(ns, "unlinked", False)
+        ready = getattr(ns, "ready", False)
+        running = getattr(ns, "running", False)
         station = getattr(ns, "station", None)
         status_raw = getattr(ns, "status", None)
         epic_id = getattr(ns, "epic", None)
@@ -1340,6 +1562,12 @@ class LedgerQueryDuty:
         format_name = getattr(ns, "format", None) or "markdown"
         output_file = getattr(ns, "output", None)
         sync_pg = getattr(ns, "sync_postgres", False)
+
+        if ready and running:
+            return DutyResult(
+                ok=False,
+                summary="--ready and --running are mutually exclusive (a story's next can never be both)",
+            )
 
         known_stations = engine.known_stations()
         if station and station not in known_stations:
@@ -1376,6 +1604,12 @@ class LedgerQueryDuty:
             epic_id=str(epic_id).strip() if epic_id else None,
             search_term=search,
             flag_overrides=flag_overrides,
+            ready_only=ready,
+            running_only=running,
+            # Story 65.2 (CAP-150): the CLI is "one query" -- always resolve
+            # the running fact here (never in the bare library default), one
+            # `marshal watch --fleet` call per invocation, fail-open.
+            resolve_running=True,
         )
         output_str = engine.export(result, format_name=format_name)
         details: Dict[str, Any] = {

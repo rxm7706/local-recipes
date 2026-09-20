@@ -118,6 +118,12 @@
           "type": "number",
           "minimum": 0,
           "maximum": 100
+        },
+        "next_ready": {
+          "$ref": "#/$defs/count"
+        },
+        "next_running": {
+          "$ref": "#/$defs/count"
         }
       }
     },
@@ -183,6 +189,12 @@
           "type": "number",
           "minimum": 0,
           "maximum": 100
+        },
+        "total_next_ready": {
+          "$ref": "#/$defs/count"
+        },
+        "total_next_running": {
+          "$ref": "#/$defs/count"
         }
       }
     },
@@ -260,6 +272,10 @@
         },
         "updated_at": {
           "type": "string"
+        },
+        "next": {
+          "type": "string",
+          "description": "done / running / ready / 'waits on 1.2[, …]' (bare canonical dep keys, never an S- prefix) / blocked / ? (running fact unavailable), or the ledger's own status verbatim for any other status (Story 65.2, CAP-150)."
         }
       }
     },
