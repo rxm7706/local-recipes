@@ -101,7 +101,11 @@ class FakeFs:
 
     def read_text(self, path: Path) -> str | None:
         key = Path(path)
-        if key.name in self._read_fails_for:
+        # Keyed by basename *or* by full posix path: the blocked-twin promotion
+        # reads two files that share one basename (the story spec in the
+        # primary checkout and its worktree twin), and only a path key can
+        # refuse the second read while the first succeeds.
+        if key.name in self._read_fails_for or key.as_posix() in self._read_fails_for:
             raise FsError(f"read refused (test double): {key}")
         if key in self.files:
             return self.files[key]
@@ -1233,6 +1237,32 @@ def test_promote_blocked_twin_gives_up_on_an_unreadable_spec(tmp_path: Path) -> 
     assert vcs.remote_tip_writes == []
 
 
+def test_promote_blocked_twin_gives_up_when_only_the_primary_spec_is_unreadable(
+    tmp_path: Path,
+) -> None:
+    """The worktree twin reads clean and the primary checkout's copy refuses.
+
+    Both files carry the same basename, so this is the one arm that needs a
+    path-keyed refusal: it proves the promotion stops at the second read
+    rather than pushing a twin it never diffed.
+    """
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(
+        repo_root,
+        worktree,
+        primary=_READY_SPEC_TEXT,
+        worktree_text=_BLOCKED_SPEC_TEMPLATE.format(baseline=_BASELINE),
+    )
+    primary = dispatch_core.resolve_story_spec_path(repo_root, _SLUG, _STORY_KEY)
+    assert primary is not None
+    vcs = FakeVcs()
+
+    _promote(repo_root, worktree, vcs, FakeFs(read_fails_for=frozenset({primary.as_posix()})))
+
+    assert vcs.remote_tip_writes == []
+
+
 # ==========================================================================
 # _commit_and_journal_blocked_halt
 # ==========================================================================
@@ -2038,6 +2068,49 @@ def test_supervisor_survives_a_git_read_failure_after_finalize(
     assert code == 0
     assert dispatch_core.KIND_DISPATCH_FINALIZE in fs.journal_text(run_dir)
     assert publisher.completions
+
+
+def test_supervisor_survives_a_git_read_failure_after_the_live_branch_land(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """The LIVE-branch land re-reads git to re-derive the verdict; when that
+    read refuses, the tick keeps ``LIVE``, heartbeats, and tries again."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(
+        run_dir,
+        (
+            _launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "verified", "ok": True},
+                counter=1,
+            ),
+        ),
+    )
+    (run_dir / "session.log").write_text("budget-stop reached; idle-defer\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    land_calls = _patch_landing(monkeypatch)
+    fs = FakeFs()
+    vcs = _HeadShaFailsOnceJournaledVcs(
+        fs=fs,
+        run_dir=run_dir,
+        marker=dispatch_core.KIND_DISPATCH_LAND,
+        refusals=1,
+        head_sha=_MOVED,
+    )
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert vcs.refused == 1
+    # The land still happened exactly once: the refused re-read costs the tick
+    # its verdict, not the landing, and the next tick reads the journal that
+    # already holds it.
+    assert len(land_calls) == 1
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
 
 
 def test_supervisor_completes_when_another_writer_lands_during_finalize(
