@@ -22,7 +22,6 @@ from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import DispatchGitFacts, DispatchSessionVerdict
-from pyforge.marshal.core.dispatch_land import DispatchLandingResult
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.journal import (
@@ -32,6 +31,7 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
 )
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
+from pyforge.marshal.dispatch_land import DispatchLandingResult
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
 _SLUG = "pyforge-marshal"
