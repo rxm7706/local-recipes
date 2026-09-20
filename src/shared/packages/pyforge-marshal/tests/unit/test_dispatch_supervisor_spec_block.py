@@ -18,12 +18,18 @@ import pytest
 
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import DispatchGitFacts
+from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.core.model import build_envelope
+from pyforge.marshal.core.verdict import compute_verdict
+from pyforge.marshal.dispatch_land import DispatchLandingResult
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 from pyforge.marshal.dispatch_supervisor.__main__ import (
     _journal_dispatch_blocked,
     _land_or_journal_block,
+    _run_and_journal_landing,
     _spec_land_block_reason,
     _worktree_story_spec,
 )
@@ -369,3 +375,47 @@ def test_land_or_journal_block_lands_through_unchanged_when_not_blocked(
     assert recorded["story_key"] == _STORY_KEY
     assert recorded["verification_verdict"] == DispatchVerificationVerdict.VERIFIED
     assert recorded["worktree"] == worktree
+
+
+def test_run_and_journal_landing_forwards_run_id_to_execute_dispatch_land(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 53.2 review (V1): ``_run_and_journal_landing`` must forward
+    its own ``run_id`` into the real ``execute_dispatch_land`` call site --
+    that value is what ultimately reaches the spec-surface reconcile's
+    memlog ``--text`` annotation (the rest of that chain is covered by
+    ``test_dispatch_landing.py``'s own run-id-in-memlog-text assertion)."""
+    seen: dict[str, object] = {}
+
+    def _fake_execute(**kwargs: object):
+        seen["run_id"] = kwargs["run_id"]
+        result = DispatchLandingResult(verdict=DispatchLandingVerdict.LANDED)
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(()),
+            data={},
+            findings=(),
+        )
+        return result, envelope
+
+    monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _fake_execute)
+
+    run_dir = tmp_path / "run"
+    counter = _run_and_journal_landing(
+        fs=LocalFs(),
+        vcs=object(),
+        process=object(),
+        run_dir=run_dir,
+        run_id="run-53-2",
+        writer_id="test-writer",
+        counter=0,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=_worktree(tmp_path),
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        merge_subject_template=_MERGE_SUBJECT_TEMPLATE,
+    )
+
+    assert seen["run_id"] == "run-53-2"
+    assert counter == 2
