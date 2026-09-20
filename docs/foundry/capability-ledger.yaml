@@ -3073,6 +3073,25 @@ capabilities:
     heading: "the banner-skip family is complete"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-09-20 minted on the marshal Dream's 'third drain, night' entry: the watch probe dead in production (7), a halt read as an operator stop (8)
+  - id: pyforge-marshal:CAP-257
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the watch's marshal-status probe is executable and proven against the real interpreter"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-258
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a session that halts blocked with its verdict uncommitted is a blocked outcome, not an operator stop"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-259
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a dispatch-only checkout still has fleet rows"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
