@@ -876,6 +876,42 @@ def execute_dispatch_land(
             envelope,
         )
 
+    if reconcile_outcome.finding is not None:
+        # A non-refusing finding here is MRS-DISP-047: the reconcile
+        # actually committed and pushed onto `head_branch`, so the sha
+        # captured before this step is stale -- `forge.merge_pr`'s
+        # `expected_head_sha` (and the reported `data["head_sha"]`) must
+        # reflect the pushed reconcile commit, not the pre-reconcile tip.
+        try:
+            head_sha = vcs.resolve_ref(git_repo_root, head_branch)
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot resolve {head_branch!r} tip after reconciling "
+                        f"spec-surface drift: {exc} — refusing to land"
+                    ),
+                )
+            )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        data["head_sha"] = head_sha
+
     try:
         forge.merge_pr(
             repo_ref,
