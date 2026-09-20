@@ -8,6 +8,22 @@ import below — keep this line bare (`spec-pyforge-scribe` CAP-27).
 
 @AGENTS.md
 
+## Interactive session path
+
+`marshal factory dispatch` / `spin` are the **measured** path (policy-rendered, journaled,
+benchmarked). An interactive Claude Code session on the shared checkout is the **documented
+convenience path** — the same instruments, wired by hand, from repo root:
+
+```bash
+caveman-install --only claude --with-hooks   # once per machine: output-compression skill + hooks
+headroom wrap claude --code-memory none      # launch this session behind the wire-compression proxy
+```
+
+Neither path gets a second kit, and the interactive path gets no separate benchmark (operator
+decision 2026-09-16; `spec-pyforge-marshal` CAP-195, folded from `spec-marshal-token-economy`
+CAP-22). Once the session is open, retrieve/recall discipline replaces wholesale `epics.md` /
+PRD loads — see AGENTS.md § *Scribe recall (session path)* and `marshal context retrieve`.
+
 ## Behavioral Guidelines
 
 These five principles govern all work in this repo. The `conda-forge-expert` skill specializes them for recipe work; the BMAD skills apply them to planning/dev. Apply them globally.
