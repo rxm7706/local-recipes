@@ -28,6 +28,7 @@ surface:
   - scripts/scribe_nightly_trigger.py
   - scripts/scribe_install_nightly_trigger.py
   - scripts/scribe_graph_freshness_check.py
+  - scripts/claude_instruction_mode_check.py
   - AGENTS.md
   - GEMINI.md
   - .gemini/settings.json
@@ -152,6 +153,9 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 - **CAP-28 — `scribe capture` and `scribe recall` run from the session default environment** (minted 2026-09-19; Dream item (7), pixi-env half)
   - **intent:** The scribe core package (run-deps `typer`, `pydantic`, `pyforge-core`) is a member of the `pyforge-guild` feature, so every harness whose sandbox installs the Guild default (Claude Code remote hook, Cursor Cloud `environment.json`, Copilot `copilot-setup-steps.yml`, Devin repo setup) can `scribe capture` and `scribe recall` without a second environment; the heavy compile extras (`graphifyy`, `cocoindex`, `psycopg`) stay in `-e pyforge-scribe`, where `scribe graph compile` with an extra still runs.
   - **success:** `pixi run -e pyforge-guild scribe --help` lists `capture` / `recall` / `graph`; a scribe meta-test reads `pixi.toml` and reds when `pyforge-scribe` leaves `[feature.pyforge-guild.dependencies]` or when a governance doc still tells sessions that capture/recall need `-e pyforge-scribe`; `environment.yaml` unchanged; `llms-full-check` green.
+- **CAP-29 — the instruction surface is version-aware, not version-dependent (Claude Code's built-in `agents-md` mod, 2.1.277+)** (minted 2026-09-20; Dream entry of the same date)
+  - **intent:** `AGENTS.md` reaches Claude Code on every runtime — through `CLAUDE.md`'s bare `@AGENTS.md` import below 2.1.277 and on Bedrock / Vertex / Foundry, and additionally through the built-in `agents-md` mod in `claude-md-and-agents-md` mode on 2.1.277+ (deduped by path, never twice), which is also the only way a nested `AGENTS.md` (the atlas child) reaches Claude Code; the harness table states the version and the pinned mode; per-tool files carry no section `AGENTS.md` carries, compared after spelling normalisation; the operator's settings carry the pinned mode; a runtime check reports (warn, never gating) a Claude Code below 2.1.277 or a mode other than the pinned one.
+  - **success:** `AGENTS.md`'s Claude Code row names 2.1.277, the mod, the pinned mode and the import floor; `CLAUDE.md`'s duplicated guidelines collapse to a one-line pointer and the parity meta-test reds a normalised duplicate; `.claude/settings.json`'s `customInstructions` point at `AGENTS.md`; the research doc carries a dated addendum; `scripts/claude_instruction_mode_check.py` (runtime scope, registered in `scripts/detectors.py` outside `detectors-ci`) warns on <2.1.277 or a non-pinned mode and is silent when `claude` is absent; `pyforge-scribe-test` green; the dispatch-launch half is `spec-pyforge-marshal:CAP-262`.
 
 ## Constraints
 

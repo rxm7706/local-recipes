@@ -4,6 +4,8 @@ sources:
   - scripts/fleet-poll-hourly.sh
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
   - .claude/memory/reference/fleet-landing-pass-liveness.md
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py
+  - .claude/skills/bmad-sprint-ledger-query/SKILL.md
   - pixi.toml
 verified: 2026-09-20
 ---
@@ -35,6 +37,18 @@ pixi run -e pyforge-guild marshal watch --fleet               # ground-truth + d
 ```
 
 `marshal status` derives everything from run journals and state, never from a hand-maintained file. `UNSUPERVISED` means no Marshal supervisor sidecar, not that the engine is dead — before re-spinning, confirm liveness with `bmad-loop status <run_id> --json` and `bmad-loop list --json` in the loop home (`.claude/memory/reference/fleet-landing-pass-liveness.md`).
+
+## Done / Running / Next in one call
+
+`fleet-picture` gives totals, `marshal watch --fleet` gives what is live, and the sprint ledgers give every story's status — answering "what's done, what's running, and what's queued next" used to mean joining all three by hand. The `sprint-ledger-query` CLI (`.claude/skills/bmad-sprint-ledger-query/SKILL.md`, engine at `sprint_ledger_query.py`) does it in one call: every story carries a `next` field — `done`, `running` (a live dispatch or loop run confirmed on that story's station), `ready` (backlog with every declared dep `done` — `get_runnable_backlog()`'s own predicate, the same one Marshal's dispatch selection uses), `waits on 1.2[, …]` (bare canonical dep keys, never an `S-` prefix, naming the unmet deps), `blocked`, or `?` (the running fact was unavailable).
+
+```bash
+pixi run -e pyforge-guild sprint-ledger-query -- --unimplemented --format table   # the next column
+pixi run -e pyforge-guild sprint-ledger-query -- --ready --format table          # queued next
+pixi run -e pyforge-guild sprint-ledger-query -- --running --format table       # live right now
+```
+
+The `running` fact comes from ONE `marshal watch --fleet --format json` call per query (never a `pyforge.marshal` import, never a read of marshal's journal) and is **this checkout's own** — marshal's Tier-3 run state is per clone, so a `next: running` in one worktree can read `?` or a plain ledger status in another. An unreachable `marshal` fails open: every `next` that would read `running` instead reads `?`, with one warning; nothing else changes, including the exit code — this is reporting, never a gate.
 
 ## Automated Hourly Polling
 

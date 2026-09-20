@@ -170,9 +170,9 @@ def test_cli_class_falls_back_to_the_local_recipes_env_bin_dir(tmp_path: Path, m
     # declaring it missing.
     eq = _by_name()["bmad-eval-quality"]
     monkeypatch.setenv("PATH", str(tmp_path))
-    local_recipes_bin = tmp_path / ".pixi" / "envs" / "local-recipes" / "bin"
-    local_recipes_bin.mkdir(parents=True)
-    exe = local_recipes_bin / "eval-quality"
+    guild_bin = tmp_path / ".pixi" / "envs" / "pyforge-guild" / "bin"
+    guild_bin.mkdir(parents=True)
+    exe = guild_bin / "eval-quality"
     exe.write_text("#!/bin/sh\n", encoding="utf-8")
     exe.chmod(0o755)
     runnable = probe_wired(tmp_path, eq)

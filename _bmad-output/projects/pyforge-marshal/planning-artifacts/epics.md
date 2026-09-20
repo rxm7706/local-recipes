@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 48  # 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 300  # 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-18"   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
+updated: "2026-09-20"   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -6143,6 +6143,34 @@ layer — or the profile carries a dated finding and `auto` skips honestly
 **And** Devin stays the deliberate unverified stub (loud absence)
 **Status:** backlog
 
+### Story 46.11: The dispatched Claude session is launched with the instruction-file mode pinned
+
+As a fleet operator dispatching a story to Claude Code,
+I want the launch to pass `--settings` pinning the `agents-md` mod to `claude-md-and-agents-md`,
+So that nested `AGENTS.md` files (the atlas child) load in every dispatched session regardless of whose machine launched it.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-262 • the dispatch-launch half of scribe Story 19.3 (`spec-pyforge-scribe:CAP-29`); hand-driven 2026-09-20
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml` (`argv` gains `"--settings"` + the inline JSON token — substitution is literal `str.replace`, so the braces are safe), `tests/unit/test_harness_profile.py` (the rendered argv carries the option; `{prompt}` exactly once; wire-wrapped launch unchanged).
+**Given** Claude Code 2.1.277's built-in `agents-md` mod reads its `instructionFiles` option from user settings or `--settings`, never the project, and stays out of any project with a `CLAUDE.md` in the default mode
+**When** the claude profile's launch argv carries the option inline
+**Then** `render_dispatch_argv` yields `--settings` followed by JSON whose `pluginConfigs.agents-md@builtin.options.instructionFiles` is `claude-md-and-agents-md`; `{prompt}` appears exactly once; the wire-wrapped launch keeps the same tokens
+**And** an older Claude Code ignores the unknown plugin option and still reads `AGENTS.md` through the import — the pin is harmless below 2.1.277
+**Outcome (2026-09-20):** done, hand-driven — see the tracked spec's Auto Run Result.
+
+### Story 46.12: Marshal's shell-outs name the Guild env
+
+As a fleet operator running marshal where only `pyforge-guild` exists,
+I want the watch's bmad-loop probes, the gate's verify line and the scribe-CLI fallback to reach their commands through `-e pyforge-guild`,
+So that marshal never depends on the recipe factory's 10 GB environment being installed beside it.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-263 • Dream item (11); the env side is steward 63.6
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py` (`list_runs` / `run_status` argv → `-e pyforge-guild`), `core/gate.py:646` (`platform-ci-local` line), `adapters/scribe_cli.py:77-78` (fallback bin dirs), `tests/unit/test_watch.py` (argv assertions), related gate / scribe-CLI tests.
+**Given** `cli/watch.py` shells `pixi run -e local-recipes bmad-loop list|status` although bmad-loop is marshal's own run-dep and present in `pyforge-guild`
+**When** every argv names `-e pyforge-guild` and no `.pixi/envs/local-recipes` path remains
+**Then** the watch's fake-port tests assert the Guild argv; `grep -rn 'local-recipes' pyforge-marshal/src` finds only prose; steward 63.6's guard lists no marshal offender
+**And** `pyforge-marshal-test` green; the live watch on this host still names the running dispatch
+**Outcome (2026-09-20):** done, hand-driven in PR #1551 — see the tracked spec's Auto Run Result.
+
 ## Epic 47: The review bot remembers the correction you gave two weeks ago (spec-marshal-recall-in-the-loop CAP-1..4)
 
 Minted 2026-09-18 from `spec-marshal-recall-in-the-loop` (`fold-exemption: cross-station-seam` —
@@ -6767,4 +6795,59 @@ under `src/shared/packages/` reds it
 job + `core` filter output, the core leg first in `pyforge-station-tests`, a structural meta-test pinning the wiring
 (`test_conformance_lane_wired.py`, filesystem-derived roster), docs corrected; fixture proof exit 1 → exit 0 recorded on
 the tracked spec. Epic 52 done.
+
+## Epic 53: The dispatch landing pays its own surface tax (spec-pyforge-marshal CAP-261)
+
+Minted 2026-09-20 (morning) from the station Dream's entry of the same name (operator ruling 08:40Z after seven
+autonomous landings in twelve hours each left `main` red on `spec-surface` until a human named the paths — "we need a
+permanent fix, it's causing churn and rerun"). A new epic because Epic 51 is `done` (a done key never moves). The cause is
+mechanical: bmad-loop pays the tax through the S-13.7 guard `harness_bmadloop::render_policy_toml` appends to every loop's
+verify commands (CAP-239); `marshal factory dispatch` never got it — `dispatch_verify` runs only the station's
+`verify_commands`, the `harness_bmadbuild` prompt says nothing about memlogs, and nothing in the dispatch path runs
+`deferred_work_intake`. **HARD boundaries:** never a bare `--write-baseline`; never a stamp for a Spec whose drift includes
+files the branch did not change; the loop path stays byte-identical; no new gate or verdict owner; the supervisor never
+trusts a self-report — the reconcile is derived from `git diff`.
+
+### Story 53.1: The dispatched session is told and gated like a loop session
+
+As a fleet operator dispatching a story,
+I want the session to be told it must name every governed path it changes (and cite a repo path on every deferral), and to have the S-13.7 surface guard in its own verification,
+So that the producer pays the surface tax the way a bmad-loop session already does, and a session that forgets fails its own verification instead of landing red.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-261 (a) • extends CAP-239 to dispatch
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py` (the prompt: the obligation, the
+co-governor rule, never `--write-baseline`, `location:` on every `deferred:` entry), `dispatch_verify.py` / `cli/dispatch.py` (the guard
+`python scripts/spec_surface_reconcile.py` appended to the effective verify commands at render — derived, mirroring
+`harness_bmadloop._SURFACE_RECONCILE_COMMAND`, never declared per project), `core/gate.py::check_spec_binding` (the derived guard is implicit:
+a tracked spec that lists only the station's own `verify_commands` still binds), tests.
+**Given** on 2026-09-20 every dispatched session (26.1, 61.3, 51.11, 29.1, 61.4, 46.7) left its governed paths unnamed because nothing
+told it to and nothing checked
+**When** the prompt carries the obligation and the guard runs inside the session's verification
+**Then** a session that changes governed files and names them passes; one that does not fails its own verification with the guard's
+verdict naming the paths; `check_spec_binding` returns `()` for every existing pre-authored spec unchanged; the loop adapter's rendered
+policy is byte-identical
+**And** a `deferred:` entry the session writes without `location:` is called out by the prompt's rule and, when it still appears, is
+reported by the guard's output, never silently
+
+### Story 53.2: The landing reconciles from git facts and runs intake
+
+As a fleet operator,
+I want `dispatch_land` to name the branch's changed governed paths on the owning Spec and every co-governor from `git diff`, stamp exactly those Specs, and finalize to run intake — journaling that it had to,
+So that `main` is never red after an autonomous landing and no landing waits on a human, without ever laundering foreign drift.
+
+**Type:** feature • **Effort:** M • **Deps:** S-53.1 • **FR/AD:** spec-pyforge-marshal CAP-261 (b)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (after verify, before `forge.merge_pr`: the spec-surface
+verdict over the branch's changed paths via `pyforge.doctor.sources.chain::gather_spec_surface`; per-Spec classification own-drift vs foreign;
+the memlog events through `_bmad/scripts/memlog.py append`; scoped stamps through `scripts/spec_surface_check.py --write-baseline --spec`
+for exactly those Specs; a commit on the dispatch branch; `MRS-DISP-047` warn / `MRS-DISP-048` refusal in `core/findings.py`),
+`dispatch_land_finalize/__main__.py` (`scripts/deferred_work_intake.py --fix --project <station>`, refusals journaled), tests with the
+2026-09-20 fixture (six landings' changed paths, their owning Specs and co-governors), doctor's `sources/chain.py` untouched.
+**Given** the six 2026-09-20 landings and their fallout PRs (#1533, #1537, #1544, #1546) — every reconcile a human wrote was
+"Story X landed: <paths>" on the owner plus the co-governors the detector named
+**When** `dispatch_land` derives that entry from `git diff`, stamps only Specs whose drift is this branch's files, and merges
+**Then** on the fixture every path is named on the right Specs and `spec-surface` is green on the merged tree; a branch sharing a Spec
+with foreign drift is refused with `MRS-DISP-048` naming the foreign paths; a session that reconciled itself produces no entry and no
+finding; `MRS-DISP-047` is journaled whenever the landing had to name paths
+**And** finalize ingests the run's deferrals and journals any refusal; never a bare `--write-baseline`; the loop path is untouched
+
 

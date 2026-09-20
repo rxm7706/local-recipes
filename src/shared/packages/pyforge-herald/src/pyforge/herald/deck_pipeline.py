@@ -483,7 +483,7 @@ def _record_pull_etag(
 @runtime_checkable
 class DeckExporter(Protocol):
     """The injectable ``deck-export`` seam (re-derive step 4:
-    ``pixi run -e local-recipes deck-export <slug>``), mirroring
+    ``pixi run -e pyforge-guild deck-export <slug>``), mirroring
     ``LocalProver``'s pattern: a real implementation shells a bounded
     subprocess; every test injects a hand-written fake."""
 
@@ -494,7 +494,7 @@ class DeckExporter(Protocol):
 
 
 class PixiDeckExporter:
-    """The real ``DeckExporter``: ``pixi run -e local-recipes deck-export
+    """The real ``DeckExporter``: ``pixi run -e pyforge-guild deck-export
     <slug>`` in ``repo_root``, one bounded subprocess call. Never invoked by
     this package's own tests (every pull test injects a fake)."""
 
@@ -504,7 +504,7 @@ class PixiDeckExporter:
     def export(self, *, slug: str, repo_root: Path) -> None:
         try:
             completed = subprocess.run(
-                ["pixi", "run", "-e", "local-recipes", "deck-export", slug],
+                ["pixi", "run", "-e", "pyforge-guild", "deck-export", slug],
                 cwd=repo_root,
                 capture_output=True,
                 text=True,
@@ -513,25 +513,25 @@ class PixiDeckExporter:
             )
         except subprocess.TimeoutExpired as exc:
             raise errors.HeraldError(
-                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"deck-export failed: 'pixi run -e pyforge-guild deck-export "
                 f"{slug}' in {repo_root} exceeded {self._timeout}s ({exc})"
             ) from exc
         except OSError as exc:
             raise errors.HeraldError(
                 f"deck-export failed: could not run 'pixi run -e "
-                f"local-recipes deck-export {slug}' in {repo_root} ({exc})"
+                f"pyforge-guild deck-export {slug}' in {repo_root} ({exc})"
             ) from exc
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
-                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"deck-export failed: 'pixi run -e pyforge-guild deck-export "
                 f"{slug}' in {repo_root} exited {completed.returncode}: {tail}"
             )
 
 
 class _PixiPartialDeckExporter:
     """``PptxTemplateExporter``'s own subprocess seam: ``pixi run -e
-    local-recipes deck-export <slug> html infographic-pptx`` -- explicit
+    pyforge-guild deck-export <slug> html infographic-pptx`` -- explicit
     targets that exclude ``deck-pptx`` (Design Notes: "``.potx`` replaces
     only the 'deck' PPTX target"), one bounded subprocess call. Mirrors
     ``PixiDeckExporter``'s subprocess pattern exactly, over a fixed partial
@@ -549,7 +549,7 @@ class _PixiPartialDeckExporter:
             "pixi",
             "run",
             "-e",
-            "local-recipes",
+            "pyforge-guild",
             "deck-export",
             slug,
             "html",

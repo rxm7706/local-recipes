@@ -1,0 +1,15 @@
+# Team override for bmad-build-auto — local-recipes / PyForge estate.
+# Personal overrides go in bmad-build-auto.user.toml (gitignored).
+#
+# Marshal Story 46.7 (spec-pyforge-marshal CAP-192): the docs name `marshal factory
+# dispatch` / `spin` as the execution front door. The landing (PR merged ae33c246b0)
+# wrote this as a paragraph into .claude/skills/bmad-build-auto/SKILL.md, an
+# installer-owned file that `bmad-method install --action update` overwrites; moved
+# here 2026-09-20 so it survives the next update (customize.toml: "Facts kept in
+# context for the whole run").
+
+[workflow]
+
+persistent_facts = [
+  "Default execution path: `marshal factory dispatch` (single story) or `marshal factory spin` (multi-story) is the default way to run this skill — both launch it under marshal governance in an isolated worktree, journaled and benchmarked. Invoking this skill bare is sanctioned but unmeasured: it forgoes the shared substrate/compression layers dispatch wires up, the journal entry a supervised run writes, and the per-harness savings benchmark that reads that journal. Use bare invocation only when a dispatch/spin session isn't available.",
+]

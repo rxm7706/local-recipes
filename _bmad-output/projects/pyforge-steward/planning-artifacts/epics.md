@@ -4184,6 +4184,28 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **And** the four entry points call this one command and nothing else for preconditions (vocabulary-one-name-one-job: one mechanism, many surfaces); a cloud clone with no feed can land a ledger flip by following the printed remedy
 **Status:** backlog
 
+### Story 63.5: `pyforge-foundry-full` — the fleet's whole dependency closure is one locked artifact
+
+**Type:** feature • **Effort:** S • **Deps:** S-63.1 • **FR/AD:** `spec-pyforge-steward` CAP-151 • operator rulings 2026-09-20 10:10Z–10:30Z; hand-driven in the fleet PR #1551
+**Surface:** `pixi.toml` (`[environments] pyforge-foundry-full` = the union of every PyForge feature, `no-default-feature`; `bmad-eval-quality` pinned in `[feature.pyforge-steward.dependencies]`), `pixi.lock` (the union solved on all three platforms), `scripts/pixi_version_registry.py` (+ `docsite-check.yml`, an unregistered pin found by sweep); the union solve's findings fixed at their owners — `src/shared/packages/pyforge-mason/pixi.toml` + `engines/__init__.py` + `tests/meta/test_engine_version_range_sync.py` (engine ranges become floors, mason memlog decision) and `[feature.pyforge-warden.dependencies]` (`py-rattler` floor back to 0.25.0).
+**Given** a fresh worktree's steward suite failed because `eval-quality` was pinned only in `local-recipes` and `pyforge-guild`, and no environment ever resolved every station's extras together
+**When** the union env is declared and locked and the steward pin lands
+**Then** `pixi lock` solves `pyforge-foundry-full` (648 packages on linux-64); `pyforge-steward-test` passes in a station-envs-only worktree; `pyforge-station-tests` green on the lock; `llms-full-check` clean; `pixi-version-check` clean over 18 sites
+**And** the two inconsistencies the first solve exposed are fixed with reasons written beside the pins; the pixi 0.81.0 bump is deferred (conda-forge's `pixi` package is 0.80.0) and the retry command recorded
+**Status:** done
+**Outcome (2026-09-20):** landed in PR #1551; see the tracked spec's Auto Run Result.
+
+### Story 63.6: No station code assumes the `local-recipes` environment at runtime
+
+**Type:** feature • **Effort:** M • **Deps:** S-63.5 • **FR/AD:** `spec-pyforge-steward` CAP-152 • cross-station: marshal 46.12 and herald 25.1 own their shell-outs; this story owns the Guild side and the guard
+**Surface:** `pixi.toml` (`guild-tasks` gains `deck-export`, `deck-facts`, `deck-trio`, `platform-ci-local`, `wasm-build` and the bmad-loop probes' tasks, with their deps in `[feature.pyforge-guild.dependencies]`; the size delta reported), `src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py`, `upgrade.py`, `suite.py` (the `.pixi/envs/local-recipes` lookups read the Guild env's `share/` and `bin/`), `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` (new: every station's `src/` scanned for `-e local-recipes` / `.pixi/envs/local-recipes`), the affected steward tests' fixtures.
+**Given** the 2026-09-20 audit: marshal `cli/watch.py`, `core/gate.py`, `adapters/scribe_cli.py`; herald `deck_pipeline.py`, `sync_all.py`; steward `provision.py`, `upgrade.py`, `suite.py` all reach `local-recipes`, an env that does not exist at runtime
+**When** every shelled task is reachable from `pyforge-guild` and the guard scans every station's `src/`
+**Then** `pixi run -e pyforge-guild <task>` works for each; the guard lists exactly the marshal and herald offenders until 46.12 / 25.1 land, then zero
+**And** `pyforge-guild` stays the bare minimum — each added dep is named with the task that needs it; `pyforge-station-tests` green
+**Status:** done
+**Outcome (2026-09-20):** landed in PR #1551 with marshal 46.12 and herald 25.1 — see the tracked spec's Auto Run Result.
+
 ## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 
 Minted 2026-09-16 Dream-append-first from `docs/dreams/pyforge-steward.md` § *2026-09-16 — Frame
@@ -4239,3 +4261,25 @@ flags wired, stdout purity, HTML escaping, read-only audit admin, Postgres sync 
 `--epic` filter CAP-146 names, the sync task moved to the env that has django); tracked spec
 `specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md` carries
 the triage log and Auto Run Result; CAP-146..149 shipped, CAP-140 partially realized.
+
+### Story 65.2: The ledger query answers done / running / next in one call
+
+As a fleet operator asking what is completed, running and queued next by station,
+I want every story the query engine returns to carry a `next` field, with `--ready` / `--running` filters and per-station ready/running counts in the summary,
+So that `sprint-ledger-query -- --unimplemented --format table` is the one command, instead of `fleet-picture` + `sprint-ledger-query` + `marshal watch` + a hand-written join.
+
+**Type:** feature • **Effort:** S • **Deps:** S-65.1 • **FR/AD:** spec-pyforge-steward CAP-150 • operator ask 2026-09-20 08:00Z; added to the closed Epic 65 by the operator's choice — the `epic-65` key stays `done` (`ledger-regression` forbids moving a done key), this story is a `backlog` row beneath it
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py` (`next` on the story item — `done` / `running` / `ready` /
+`waits on S-x.y[, …]` / `blocked` / `?`; `--ready`, `--running` on the existing `ledger-query` duty — no new duty, duty-count invariants
+unchanged; the running fact from `marshal watch --fleet --format json` via `pyforge.core.process`, one call per query, fail-open to `?` +
+one WARN; summary counts; table/markdown/json columns), `.claude/skills/bmad-sprint-ledger-query/SKILL.md` (Quick Invocations gain `--ready` / `--running` and the `next` column — every documented
+invocation runs verbatim, CAP-149), `docs/how-to/monitor-the-fleet.md` (the one-command answer, with `sources:` naming the module and the skill —
+doctor Story 30.1's authored-page convention), `tests/unit/test_sprint_ledger_query.py` (fixture: the 2026-09-20 08:00Z ledgers/epics + a recorded watch payload; the unreachable-marshal case).
+**Given** at 2026-09-20 08:00Z the answer to "what is done, running and next, by station" took three commands and a hand-written script, though
+65.1 already ships the ready predicate as `get_runnable_backlog()`
+**When** the engine annotates every story with `next`, reads the running fact from marshal's own CLI, and the duty gains `--ready` / `--running`
+**Then** the fixture query reproduces that view verbatim (doctor 29.1 running; 24.1, 30.2 ready; 24.2, 24.3, 30.3 waiting; marshal 46.7 running;
+46.1, 46.2, 46.6, 46.9, 46.10, 47.1 ready; steward 61.4 running; 61.5, 59.3–59.7, 60.2–60.4, 62.2, 62.3, 63.3 ready), `--ready` equals
+`get_runnable_backlog()`, and `--running` equals the watch payload's running rows
+**And** steward never imports `pyforge.marshal` or parses its journal; with marshal unreachable `next` reads `?` with one WARN and the exit code is
+unchanged; the per-clone scope of the running fact is stated in `--help`, in the skill and in the how-to

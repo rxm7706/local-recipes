@@ -66,7 +66,7 @@ _SKF_CONFIG_TEXT = (
     "skills_output_folder: .claude/skills\n"
 )
 _PACKAGED_SOURCE_REL = (
-    ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
+    ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
 )
 _PACKAGED_FILES = {
     "skf-alpha/SKILL.md": "# skf-alpha\n",
@@ -145,7 +145,7 @@ def _write_rehearsal_repo(root: Path) -> Path:
     skill_dir.mkdir(parents=True)
     (skill_dir / _SKILL_FILE).write_text(_SKILL_OURS, encoding="utf-8")
 
-    pixi_bin = root / ".pixi" / "envs" / "local-recipes" / "bin"
+    pixi_bin = root / ".pixi" / "envs" / "pyforge-guild" / "bin"
     pixi_bin.mkdir(parents=True)
     (pixi_bin / "node").write_text("#!/bin/sh\n", encoding="utf-8")
     (pixi_bin / "node").chmod(0o755)
@@ -256,7 +256,7 @@ def _no_real_home(monkeypatch, tmp_path):
 def test_next_rehearsal_cap6_cap8_cap7_report_only(tmp_path, monkeypatch):
     paths = _rehearsal_fixture(tmp_path)
     repo = paths["repo"]
-    pixi_bin = repo / ".pixi" / "envs" / "local-recipes" / "bin"
+    pixi_bin = repo / ".pixi" / "envs" / "pyforge-guild" / "bin"
 
     real_which = shutil.which
 

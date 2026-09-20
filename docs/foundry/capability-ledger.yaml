@@ -802,6 +802,12 @@ capabilities:
     heading: "scribe capture and recall run from the session default environment"
     mode: rebuild
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-29
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "the instruction surface is version-aware, not version-dependent (Claude Code's built-in agents-md mod, 2.1.277+)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward
@@ -3098,6 +3104,24 @@ capabilities:
     heading: "the watch reads the dispatch verdict in the supervisor's own vocabulary"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-261
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the dispatch landing pays its own surface tax"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-262
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the dispatched Claude session is launched with the instruction-file mode pinned"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-263
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "marshal's shell-outs name the Guild env"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
@@ -4047,6 +4071,24 @@ capabilities:
     spec: pyforge-steward
     station: pyforge-steward
     heading: "three front doors, one engine"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-150
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the ledger query answers done / running / next in one call"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-151
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "pyforge-foundry-full: the fleet's whole dependency closure is one locked artifact"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-152
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "no station code assumes the local-recipes environment at runtime"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
@@ -5524,5 +5566,11 @@ capabilities:
     spec: pyforge-herald
     station: pyforge-herald
     heading: "the second `sync-all` run is proven unchanged on a real deck"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-51
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the deck pipeline runs from the Guild env"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

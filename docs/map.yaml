@@ -28,6 +28,10 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/configure-your-coding-agent.md
+    quadrant: how-to
+    owner: scribe
+    kind: authored
   - path: how-to/detect-concurrent-agent-activity.md
     quadrant: how-to
     owner: fleet

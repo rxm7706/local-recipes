@@ -65,6 +65,7 @@ These guides map the internal PyForge scripts to their corresponding human opera
 | [`how-to/run-and-understand-detectors.md`](how-to/run-and-understand-detectors.md) | How-to | Running `detectors-ci` locally and interpreting exit codes |
 | [`how-to/reconcile-spec-surface.md`](how-to/reconcile-spec-surface.md) | How-to | Reconciling `spec-surface-check` drift and stamping baselines |
 | [`how-to/monitor-the-fleet.md`](how-to/monitor-the-fleet.md) | How-to | Generating a real-time fleet picture and scanning the estate |
+| [`how-to/configure-your-coding-agent.md`](how-to/configure-your-coding-agent.md) | How-to | Per-harness setting or command so every coding agent starts from `AGENTS.md`; Claude Code's `agents-md` mode pin and host check |
 | [`how-to/manage-worktrees-with-bmad.md`](how-to/manage-worktrees-with-bmad.md) | How-to | Managing worktrees, branch sweeping, and `bmad-switch` caveats |
 | [`explanation/the-detector-framework.md`](explanation/the-detector-framework.md) | Explanation | Rationale for dynamic AST-discovery and the 'unknown, never green' inversion |
 
@@ -190,6 +191,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`how-to/ai-engine-operations.md`](how-to/ai-engine-operations.md) | fleet | authored |
 | [`how-to/air-gapped-mirror-setup.md`](how-to/air-gapped-mirror-setup.md) | fleet | authored |
 | [`how-to/antigravity-developer-startup.md`](how-to/antigravity-developer-startup.md) | fleet | authored |
+| [`how-to/configure-your-coding-agent.md`](how-to/configure-your-coding-agent.md) | scribe | authored |
 | [`how-to/detect-concurrent-agent-activity.md`](how-to/detect-concurrent-agent-activity.md) | fleet | authored |
 | [`how-to/disaster-recovery.md`](how-to/disaster-recovery.md) | fleet | authored |
 | [`how-to/driving-a-pyforge-station-backlog.md`](how-to/driving-a-pyforge-station-backlog.md) | fleet | authored |

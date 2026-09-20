@@ -35,7 +35,13 @@ pixi run -e pyforge-guild sprint-ledger-query -- --format static-dossier --flag 
 pixi run -e pyforge-steward sprint-ledger-postgres-sync -- --flag enable_postgres_sync=true
 ```
 
-Filters compose: `--station <dir under _bmad-output/projects/>`, `--status a,b` (known: backlog, in-progress, done, blocked, optional, in-review, review, ready-for-dev, ready), `--unimplemented` (status != done), `--unlinked` (missing Jira key or GitHub item id), `--epic ID` (one epic within the scanned stations), `--search TERM` (title / story id / Jira key). An unknown station or status is refused naming the known set.
+Filters compose: `--station <dir under _bmad-output/projects/>`, `--status a,b` (known: backlog, in-progress, done, blocked, optional, in-review, review, ready-for-dev, ready), `--unimplemented` (status != done), `--unlinked` (missing Jira key or GitHub item id), `--epic ID` (one epic within the scanned stations), `--search TERM` (title / story id / Jira key), `--ready` (`next == ready`, exactly `get_runnable_backlog()`'s predicate), `--running` (`next == running`, a live dispatch or loop run confirmed on that story's station). An unknown station or status is refused naming the known set.
+
+## The `next` field -- done / running / ready / waits-on / blocked / ? (Story 65.2, CAP-150)
+
+Every story the engine returns carries `next`: `done`, `running` (a live dispatch or loop run is on this story's station), `ready` (backlog, every declared dep `done` -- `get_runnable_backlog()`'s own predicate), `waits on 1.2[, …]` (bare canonical dep keys, never an `S-` prefix, naming the unmet deps), `blocked`, `?` (the running fact was unavailable), or the ledger's own status verbatim for anything outside this enum (e.g. `in-review`, or an `in-progress` story marshal did not corroborate -- a literal ledger status of `ready` or `in-progress` is one such passthrough, never conflated with the computed value: `--ready`/`--running` and the `next_ready`/`next_running` counts always pair the string with its owning status, `backlog`/`in-progress`). `table`, `markdown` and `json` all carry it; `summary` adds per-station `ready N, running N` counts.
+
+The `running` fact comes from ONE `marshal watch --fleet --format json` call per query (through `pyforge.core.process`, never a `pyforge.marshal` import, never a read of marshal's journal) and is **this checkout's own** -- marshal's Tier-3 run state is per clone, so two worktrees can disagree. When `marshal` is absent or the call fails, every `next` that would read `running` instead reads `?`, with one warning; every other column and the exit code are unaffected (fail-open, never a gate).
 
 ## No cross-station writes by default
 
@@ -62,7 +68,7 @@ Requires the `pyforge-steward[dashboard]` extra with configured Django settings 
 ## Available Formatters
 
 - `markdown`: Human-readable Markdown report with summary table and story list.
-- `summary`: Estate line plus one line per station (done / backlog / blocked / in-progress / optional).
+- `summary`: Estate line plus one line per station (done / backlog / blocked / in-progress / optional / ready / running).
 - `json`: Machine-readable JSON conforming to `$id: urn:local-recipes:pyforge-steward:sprint-ledger-query-schema` (shipped as `pyforge/steward/data/sprint-ledger-query.schema.json`).
 - `table`: ASCII formatted grid table.
 - `sync-matrix`: 3-way alignment table comparing Ledger ↔ Jira ↔ GitHub statuses. *(flag-gated)*
@@ -89,6 +95,13 @@ json_output = engine.export(result, format_name="json")
 # Deps grammar (S-46.4 / bare 46.4 / `steward S-32.1 (note)` / the `—`,
 # `none`, `n/a` sentinels), done keyed by (station, story_id)
 runnable_stories = get_runnable_backlog(engine, station="pyforge-steward")
+
+# `next` is always computed, offline by default (in-progress reads optimistic
+# "running", no I/O). Pass resolve_running=True for the corroborated fact --
+# ONE `marshal watch --fleet` call, fail-open to "?" -- the CLI duty always
+# does this; a bare library caller opts in.
+corroborated = engine.query(station="pyforge-steward", resolve_running=True)
+[s.next for s in corroborated.stories]
 
 # Plugins: engine.formatters.register(QueryFormatterPlugin), engine.sources.register(LedgerSourcePlugin),
 # engine.hooks.register(LedgerQueryHook) -- a duplicate formatter/source name raises ValueError.

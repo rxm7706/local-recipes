@@ -6446,7 +6446,8 @@ status: open
   evidence: `git log origin/main --format=%s | grep -E '46\.5'` on 2026-09-19; spec-landing-evidence-grammar (`parse_station_branch_name`) reads the branch name.
   location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   severity: medium
-  status: open
+  status: done
+  verified: 2026-09-20 — the premise was wrong, verified against main: the `wip: 46.5` commits in PR #1448 (whose TITLE named 28.24) carry 46.5's real contract — `core/layer_savings_sources.py` (`SILENT_LAYER_KEYS`/`CONFIGURED_LAYER_KEYS`/`classify_layer_kind`, `HARNESS_CURRENCY`, `read_rollup_by_harness`), `cli/status.py::_format_rollup_by_harness`, `tests/unit/test_layer_savings_sources.py`, `TestSavingsRollupByHarness` — and the tracked spec is `done` with an Auto Run Result. The only defect was the ledger row left at `backlog` because that landing was never finalized. Resolved by replaying `dispatch_land_finalize pyforge-marshal 46-5` (promote commit `4d165707d9`), which 51.7's corroboration (spec `done` + merge) admits; no re-mint, no 46.11.
   raised: 2026-09-19 — Owner: marshal. Found while preflighting the third drain's Epic 46 lane.
 
 ### DW-OPS-2026-09-19-4: the `headroom` MCP server entry points at a removed worktree's interpreter and fails to connect at every Claude Code session start; the `plugin:github` MCP answers 400 "Authorization header is badly formatted"
@@ -6468,4 +6469,26 @@ status: open
   origin: spec-deferred 81382d5938a6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-7: An advisory (never gating) doctor detector that could flag a bare `bmad-build-auto` dispatch was named in the Approach line but left unimplemented.
+
+- source_spec: `planning-artifacts/specs/spec-46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door.md`
+  summary: An advisory (never gating) doctor detector that could flag a bare `bmad-build-auto` dispatch was named in the Approach line but left unimplemented.
+  evidence: No AC requires it, `pyforge-doctor` has no existing "bare invocation" signal to extend (verified by grep across `sources/`), and detecting a bare skill invocation from outside that session's own transcript is a separate, non-trivial design problem, not a same-sized docs edit. Belongs to a follow-on story with its own CAP.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
+  origin: spec-deferred 541f60d707ba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-1: reclassify_pre_existing_gate_findings can downgrade a genuine S-13.7 guard failure (MRS-GATE-001) to a non-blocking MRS-GATE-014 WARN when this story's own drift is on a non-.py governed file (invisible to extract_failure_paths_from_verify_output's four .py-only patterns) and the guard's combined output also names an unrelated, genuinely pre-existing drift finding on a .py file elsewhere in the repo -- that unrelated .py path is the only one extracted, it falls outside this story's blast radius,... [truncated, 604 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session.md`
+  summary: reclassify_pre_existing_gate_findings can downgrade a genuine S-13.7 guard failure (MRS-GATE-001) to a non-blocking MRS-GATE-014 WARN when this story's own drift is on a non-.py governed file (invisible to extract_failure_paths_from_verify_output's four .py-only patterns) and the guard's combined output also names an unrelated, genuinely pre-existing drift finding on a .py file elsewhere in the repo -- that unrelated .py path is the only one extracted, it falls outside this story's blast radius,... [truncated, 604 chars total]
+  evidence: extract_failure_paths_from_verify_output (core/dispatch_verification.py) restricts all four regexes to .py paths; gather_spec_surface's "drift" finding detail (pyforge-doctor core/chain.py, _drift_findings) embeds the governed path in prose with no extension restriction, so a non-.py drift line never matches extraction while a co-occurring .py drift line elsewhere does -- reclassify_pre_existing_gate_findings' any()-over-extracted-paths check then sees only the unrelated, out-of-blast-radius .py path and downgrades. Root cause predates this story (extract_failure_paths_from_verify_output's .py-only scope is unchanged by this diff); this story is what first routes the S-13.7 guard's broad, multi-path, mixed-extension output through it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py:81 (extract_failure_paths_from_verify_output), src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispat... [truncated, 262 chars total]
+  origin: spec-deferred 8762706175c0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

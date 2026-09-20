@@ -148,7 +148,7 @@ reds a missing pointer or a duplicated section (`spec-pyforge-scribe` CAP-27; re
 
 | Harness | How it reaches `AGENTS.md` |
 |---|---|
-| Claude Code | `CLAUDE.md` imports it (`@AGENTS.md`) — with a `CLAUDE.md` present Claude Code reads `AGENTS.md` only through that import |
+| Claude Code | `CLAUDE.md` imports it (`@AGENTS.md`) — the floor on every runtime. **≥ 2.1.277** (2026-09-18) also ships a built-in `agents-md` mod; its default mode `claude-md-or-agents-md` *stays out of any project that has a `CLAUDE.md`*, so this repo pins `instructionFiles: claude-md-and-agents-md` (operator user settings; marshal's dispatch launch passes it via `--settings`, Story 46.11) — then every `AGENTS.md` loads beside `CLAUDE.md`, deduped by path (the import never double-loads), and a nested `AGENTS.md` (e.g. `src/shared/packages/pyforge-atlas/AGENTS.md`) attaches on `Read`. Below 2.1.277 and on Bedrock / Vertex / Foundry only the import applies. Currency: `python scripts/claude_instruction_mode_check.py` (runtime, advisory). |
 | Gemini CLI / Antigravity | `.gemini/settings.json` → `context.fileName: ["AGENTS.md", "GEMINI.md"]`; `GEMINI.md` is the Gemini-only addendum |
 | Cursor | native (root and nested `AGENTS.md`); `.cursor/rules/*.mdc` add glob-scoped rules only |
 | GitHub Copilot cloud agent / CLI | native (root + nested; nearest wins); `.github/copilot-instructions.md` is the Copilot-only addendum; `.github/workflows/copilot-setup-steps.yml` installs the Guild env |
@@ -295,9 +295,13 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
    no matter who does the work (Claude, Cursor, Gemini, Devin, Copilot, a human, or any agentic
    framework). BMAD specs track status in the framework; legacy `docs/specs/*.md` track it in
    `status:` frontmatter.
-3. **Autonomy.** Marshal (`bmad-loop` / `bmad-build-auto`) can watch `docs/dreams/`, run `bmad-spec`
-   on a new Dream, and drive the build unattended — so "a Dream is written" can trigger "BMAD
-   creates the spec" with no human in the loop.
+3. **Autonomy, and the measured front door.** Marshal (`bmad-loop` / `bmad-build-auto`) can watch
+   `docs/dreams/`, run `bmad-spec` on a new Dream, and drive the build unattended — so "a Dream is
+   written" can trigger "BMAD creates the spec" with no human in the loop. The default way to run
+   a story is `marshal factory dispatch` (single story) or `marshal factory spin` (multi-story):
+   both journal the run and benchmark it against the shared substrate/compression layers.
+   Invoking `bmad-build-auto` bare is a sanctioned but unmeasured path — it forgoes those layers,
+   the journal entry, and the per-harness savings benchmark that reads it.
 4. **Gap-closure and realization work are not exempt.** Closing a realization gap, realizing a
    capability, or fixing an effort whose stories already exist still starts with a **Dream seed**
    (`status: dreamt`, an owning station, Kinships to every chain it binds) and `bmad-spec`

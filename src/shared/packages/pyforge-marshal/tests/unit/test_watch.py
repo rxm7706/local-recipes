@@ -1078,7 +1078,7 @@ def test_default_ports_list_runs_and_run_status_go_through_bmad_loop(tmp_path: P
     assert ports.list_runs("acme") == {"runs": [{"id": "r1", "status": "running"}]}
     assert ports.run_status("acme", "r1") == {"run_id": "r1", "finished": False}
     argv, cwd, timeout_s = process.calls[0]
-    assert argv == ["pixi", "run", "-e", "local-recipes", "bmad-loop", "list", "--json"]
+    assert argv == ["pixi", "run", "-e", "pyforge-guild", "bmad-loop", "list", "--json"]
     assert cwd == home / ".bmad-loops" / "acme"
     assert timeout_s == watch_mod._WATCH_TIMEOUT_S
     assert process.calls[1][0][-3:] == ["status", "r1", "--json"]

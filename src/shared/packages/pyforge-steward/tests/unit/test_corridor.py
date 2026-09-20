@@ -227,6 +227,141 @@ def test_load_extract_repeat_with_declared_off_transport_is_still_idempotent():
     assert CorridorLoad.objects.filter(direction="inbound", batch_sha=sha, waybill=waybill).count() == 1
 
 
+# -- load_extract -- Story 61.4: the outbound signed-slice gate --
+
+
+def test_load_extract_outbound_without_slice_name_raises():
+    """The I/O Matrix's one required scenario: no signer/slice -> refused.
+    Exercised here as the `slice_name` half. The dashboard-extra import and
+    the idempotency probe both run (and succeed) before this gate fires --
+    only the transport-declared check runs after it."""
+    with pytest.raises(CorridorLoadError, match="named slice"):
+        load_extract(
+            direction="outbound",
+            batch_sha="m" * 64,
+            waybill="w-outbound-no-slice",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="",
+            signer="operator",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-no-slice").count() == 0
+
+
+def test_load_extract_outbound_with_whitespace_only_slice_name_raises():
+    """Symmetric with the blank-signer whitespace case below: a
+    regression dropping `.strip()` from the slice_name half of the gate
+    would let this through."""
+    with pytest.raises(CorridorLoadError, match="named slice"):
+        load_extract(
+            direction="outbound",
+            batch_sha="m2" + "a" * 62,
+            waybill="w-outbound-whitespace-slice",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="   ",
+            signer="operator",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-whitespace-slice").count() == 0
+
+
+def test_load_extract_outbound_without_signer_raises():
+    with pytest.raises(CorridorLoadError, match="signer"):
+        load_extract(
+            direction="outbound",
+            batch_sha="n" * 64,
+            waybill="w-outbound-no-signer",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="vendor-findings",
+            signer="   ",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-no-signer").count() == 0
+
+
+def test_load_extract_outbound_with_blank_signer_raises():
+    """Symmetric with the whitespace-only-slice_name case above: a
+    regression dropping the blank (empty-string) check from the signer
+    half of the gate would let this through."""
+    with pytest.raises(CorridorLoadError, match="signer"):
+        load_extract(
+            direction="outbound",
+            batch_sha="n2" + "a" * 62,
+            waybill="w-outbound-blank-signer",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="vendor-findings",
+            signer="",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-blank-signer").count() == 0
+
+
+def test_load_extract_outbound_with_slice_and_signer_records_them():
+    sha = "o" * 64
+    outcome = load_extract(
+        direction="outbound",
+        batch_sha=sha,
+        waybill="w-outbound-signed",
+        transport="app-upload",
+        config=_real_config(),
+        slice_name="vendor-findings",
+        signer="operator",
+    )
+    assert outcome.status == "loaded"
+    assert outcome.slice_name == "vendor-findings"
+    assert outcome.signer == "operator"
+    row = CorridorLoad.objects.get(direction="outbound", batch_sha=sha, waybill="w-outbound-signed")
+    assert row.slice_name == "vendor-findings"
+    assert row.signer == "operator"
+
+
+def test_load_extract_outbound_repeat_reports_originally_recorded_slice_and_signer():
+    """Mirrors the transport idempotency provenance rule: a repeat drop
+    reports the FIRST slice/signer, never a second call's own values, and
+    does not require them to be re-supplied."""
+    sha = "p" * 64
+    waybill = "w-outbound-repeat"
+    first = load_extract(
+        direction="outbound",
+        batch_sha=sha,
+        waybill=waybill,
+        transport="app-upload",
+        config=_real_config(),
+        slice_name="vendor-findings",
+        signer="operator",
+    )
+    assert first.status == "loaded"
+
+    second = load_extract(
+        direction="outbound",
+        batch_sha=sha,
+        waybill=waybill,
+        transport="app-upload",
+        config=_real_config(),
+        slice_name="",
+        signer="",
+    )
+    assert second.status == "idempotent"
+    assert second.slice_name == "vendor-findings"
+    assert second.signer == "operator"
+    assert CorridorLoad.objects.filter(direction="outbound", batch_sha=sha, waybill=waybill).count() == 1
+
+
+def test_load_extract_inbound_never_requires_slice_or_signer():
+    """The gate is outbound-only -- an inbound load with no slice/signer
+    given at all succeeds exactly as it did before Story 61.4."""
+    outcome = load_extract(
+        direction="inbound",
+        batch_sha="q" * 64,
+        waybill="w-inbound-no-signature-needed",
+        transport="app-upload",
+        config=_real_config(),
+    )
+    assert outcome.status == "loaded"
+    assert outcome.slice_name == ""
+    assert outcome.signer == ""
+
+
 def test_load_extract_refuses_when_dashboard_extra_not_importable(monkeypatch):
     """The spec's stated AC: `[dashboard]` not installed -> `status: refused`,
     exercised through `load_extract` itself (not `record_corridor_load`
@@ -262,16 +397,17 @@ def test_load_duty_first_load_then_repeat_is_idempotent(tmp_path, direction):
     extract = tmp_path / "extract.csv"
     extract.write_text("row,one\n", encoding="utf-8")
 
-    first_ns = build_parser().parse_args(
-        ["load", direction, "--file", str(extract), "--waybill", f"w-duty-{direction}"]
-    )
+    args = ["load", direction, "--file", str(extract), "--waybill", f"w-duty-{direction}"]
+    if direction == "outbound":
+        # Story 61.4: outbound alone requires a named slice + recorded signer.
+        args += ["--slice", "vendor-findings", "--signer", "operator"]
+
+    first_ns = build_parser().parse_args(args)
     first = LoadDuty().run(first_ns)
     assert first.ok is True
     assert first.details["status"] == "loaded"
 
-    second_ns = build_parser().parse_args(
-        ["load", direction, "--file", str(extract), "--waybill", f"w-duty-{direction}"]
-    )
+    second_ns = build_parser().parse_args(args)
     second = LoadDuty().run(second_ns)
     assert second.ok is True
     assert second.details["status"] == "idempotent"
@@ -336,6 +472,76 @@ def test_load_duty_repeat_with_declared_off_transport_is_still_idempotent(tmp_pa
     second = LoadDuty().run(second_ns)
     assert second.ok is True
     assert second.details["status"] == "idempotent"
+
+
+def test_load_duty_outbound_without_signer_fails(tmp_path):
+    """CLI-level twin of the I/O Matrix's "unsigned dump -> refused" row:
+    a named slice with no signer is refused, not a raised traceback."""
+    extract = tmp_path / "extract.csv"
+    extract.write_text("row,one\n", encoding="utf-8")
+    ns = build_parser().parse_args(
+        [
+            "load",
+            "outbound",
+            "--file",
+            str(extract),
+            "--waybill",
+            "w-cli-no-signer",
+            "--slice",
+            "vendor-findings",
+        ]
+    )
+    result = LoadDuty().run(ns)
+    assert result.ok is False
+    assert "signer" in result.summary
+    assert CorridorLoad.objects.filter(waybill="w-cli-no-signer").count() == 0
+
+
+def test_load_duty_outbound_without_slice_fails(tmp_path):
+    extract = tmp_path / "extract.csv"
+    extract.write_text("row,one\n", encoding="utf-8")
+    ns = build_parser().parse_args(
+        [
+            "load",
+            "outbound",
+            "--file",
+            str(extract),
+            "--waybill",
+            "w-cli-no-slice",
+            "--signer",
+            "operator",
+        ]
+    )
+    result = LoadDuty().run(ns)
+    assert result.ok is False
+    assert "slice" in result.summary
+    assert CorridorLoad.objects.filter(waybill="w-cli-no-slice").count() == 0
+
+
+def test_load_duty_outbound_with_slice_and_signer_succeeds(tmp_path):
+    extract = tmp_path / "extract.csv"
+    extract.write_text("row,one\n", encoding="utf-8")
+    ns = build_parser().parse_args(
+        [
+            "load",
+            "outbound",
+            "--file",
+            str(extract),
+            "--waybill",
+            "w-cli-signed",
+            "--slice",
+            "vendor-findings",
+            "--signer",
+            "operator",
+        ]
+    )
+    result = LoadDuty().run(ns)
+    assert result.ok is True
+    assert result.details["status"] == "loaded"
+    assert result.details["slice_name"] == "vendor-findings"
+    assert result.details["signer"] == "operator"
+    assert 'slice="vendor-findings"' in result.summary
+    assert 'signer="operator"' in result.summary
 
 
 def test_load_duty_waybill_over_length_cap_fails(tmp_path):
@@ -468,7 +674,7 @@ def test_record_corridor_load_idempotent_on_concurrent_create_race(monkeypatch):
 
     class _Hit:
         def first(self):
-            return types.SimpleNamespace(transport="app-upload")
+            return types.SimpleNamespace(transport="app-upload", slice_name="", signer="")
 
     calls = {"n": 0}
 
@@ -488,6 +694,51 @@ def test_record_corridor_load_idempotent_on_concurrent_create_race(monkeypatch):
     assert result["status"] == "idempotent"
     assert result["transport"] == "app-upload"
     assert calls["n"] == 2
+
+
+def test_record_corridor_load_persists_slice_name_and_signer():
+    """Story 61.4: this module itself does not validate slice_name/signer
+    (that is `load_extract`'s job) -- it simply persists and reports
+    whatever it is given."""
+    result = corridor_load_module.record_corridor_load(
+        direction="outbound",
+        batch_sha="r" * 64,
+        waybill="w-record-signed",
+        transport="app-upload",
+        slice_name="vendor-findings",
+        signer="operator",
+    )
+    assert result["status"] == "loaded"
+    assert result["slice_name"] == "vendor-findings"
+    assert result["signer"] == "operator"
+    row = CorridorLoad.objects.get(direction="outbound", batch_sha="r" * 64, waybill="w-record-signed")
+    assert row.slice_name == "vendor-findings"
+    assert row.signer == "operator"
+
+
+def test_record_corridor_load_idempotent_reports_originally_recorded_slice_and_signer():
+    direction, sha, waybill = "outbound", "s" * 64, "w-record-signed-repeat"
+    first = corridor_load_module.record_corridor_load(
+        direction=direction,
+        batch_sha=sha,
+        waybill=waybill,
+        transport="app-upload",
+        slice_name="vendor-findings",
+        signer="operator",
+    )
+    assert first["status"] == "loaded"
+
+    second = corridor_load_module.record_corridor_load(
+        direction=direction,
+        batch_sha=sha,
+        waybill=waybill,
+        transport="app-upload",
+        slice_name="a-different-slice",
+        signer="a-different-signer",
+    )
+    assert second["status"] == "idempotent"
+    assert second["slice_name"] == "vendor-findings"
+    assert second["signer"] == "operator"
 
 
 def test_record_corridor_load_idempotent_reports_originally_recorded_transport():
@@ -516,9 +767,17 @@ def test_corridor_load_admin_is_read_only_with_declared_list_config():
     assert admin.has_add_permission(None) is False
     assert admin.has_change_permission(None) is False
     assert admin.has_delete_permission(None) is False
-    assert admin.list_display == ("direction", "waybill", "batch_sha", "transport", "loaded_at")
+    assert admin.list_display == (
+        "direction",
+        "waybill",
+        "batch_sha",
+        "transport",
+        "slice_name",
+        "signer",
+        "loaded_at",
+    )
     assert admin.list_filter == ("direction", "transport")
-    assert admin.search_fields == ("batch_sha", "waybill")
+    assert admin.search_fields == ("batch_sha", "waybill", "slice_name", "signer")
     assert admin.ordering == ("-loaded_at",)
 
 
@@ -534,3 +793,32 @@ def test_cli_parses_load_inbound_with_expected_namespace():
     assert ns.transport == "app-upload"
     assert ns.corridor is None
     assert ns.json is False
+
+
+def test_cli_parses_load_outbound_with_slice_and_signer():
+    ns = build_parser().parse_args(
+        [
+            "load",
+            "outbound",
+            "--file",
+            "x",
+            "--waybill",
+            "w",
+            "--slice",
+            "vendor-findings",
+            "--signer",
+            "operator",
+        ]
+    )
+    assert ns.duty == "load"
+    assert ns.load_verb == "outbound"
+    assert ns.slice_name == "vendor-findings"
+    assert ns.signer == "operator"
+
+
+def test_cli_parses_load_outbound_slice_and_signer_default_to_blank():
+    """Default `""`, not argparse `required=True` -- a missing one is the
+    duty layer's normal "refused" outcome, not a hard usage error."""
+    ns = build_parser().parse_args(["load", "outbound", "--file", "x", "--waybill", "w"])
+    assert ns.slice_name == ""
+    assert ns.signer == ""

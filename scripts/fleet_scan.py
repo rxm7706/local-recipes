@@ -1673,8 +1673,15 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
 
 
 _ISO = re.compile(r"(\d{4}-\d{2}-\d{2})")
+# Every path a stage glob can resolve MUST sit under one of these, or _artifact_dates()
+# returns ("", "") for it and scan_fleet reads the stage as never reached even though
+# _resolve() found the file. Root AGENTS.md joined 2026-09-20: Story 30.2 (2026-09-06)
+# repointed the `context` stage at it without widening this tuple, and every station
+# except atlas (whose child AGENTS.md sits under src/shared/packages) carried a phantom
+# `context` gap — the CAP-3 layers checkpoint read `fail` beside "15/15 layers present".
+# The doctor's test_every_stage_glob_is_inside_the_git_date_index pins the invariant.
 _GIT_SCOPES = ("docs/dreams", "docs/governance", "_bmad-output", "presentations",
-               "src/shared/packages")
+               "src/shared/packages", "AGENTS.md")
 _GIT_FIRST: dict[str, str] = {}
 _GIT_LAST: dict[str, str] = {}
 

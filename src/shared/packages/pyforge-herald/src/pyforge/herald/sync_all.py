@@ -345,7 +345,7 @@ def _run_bounded(
 
 
 class PixiFactsRefresher:
-    """The real ``FactsRefresher``: ``pixi run -e local-recipes deck-facts
+    """The real ``FactsRefresher``: ``pixi run -e pyforge-guild deck-facts
     <slug> --refresh``, one bounded subprocess call. Never invoked by this
     package's own tests (every ``sync_all`` test injects a fake)."""
 
@@ -354,7 +354,7 @@ class PixiFactsRefresher:
 
     def refresh(self, *, slug: str, repo_root: Path) -> int:
         completed = _run_bounded(
-            ["pixi", "run", "-e", "local-recipes", "deck-facts", slug, "--refresh"],
+            ["pixi", "run", "-e", "pyforge-guild", "deck-facts", slug, "--refresh"],
             cwd=repo_root,
             timeout=self._timeout,
             what="deck-facts --refresh",
@@ -398,7 +398,7 @@ class PixiDeckDeriver:
         )
         if has_poster:
             completed = _run_bounded(
-                ["pixi", "run", "-e", "local-recipes", "deck-trio", slug,
+                ["pixi", "run", "-e", "pyforge-guild", "deck-trio", slug,
                  "--head", "--deck"],
                 cwd=repo_root,
                 timeout=self._timeout,

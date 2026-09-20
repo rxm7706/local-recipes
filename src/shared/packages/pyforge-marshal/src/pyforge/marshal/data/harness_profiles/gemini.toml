@@ -24,7 +24,7 @@ argv = [
   "{prompt}",
 ]
 model_args = ["-m", "{model}"]
-fallback_bin_dirs = [".pixi/envs/local-recipes/bin"]
+fallback_bin_dirs = [".pixi/envs/pyforge-guild/bin"]  # Story 46.12 (spec-pyforge-marshal CAP-263): only pyforge-guild exists at runtime (headroom-ai / the wire wrapper are Guild-feature deps)
 authcheck_note = "No cheap non-interactive auth probe in gemini 0.56.0; OAuth creds are ambient and a failure surfaces at session start in session.log."
 verified = true
 notes = "Verified 2026-08-27: authenticated; --skip-trust --yolo -p shape smoke-tested; haiku->gemini-3-flash-preview verified end-to-end (HARNESS-OK, exit 0)."

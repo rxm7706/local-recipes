@@ -8,15 +8,23 @@ import below — keep this line bare (`spec-pyforge-scribe` CAP-27).
 
 @AGENTS.md
 
-## Behavioral Guidelines
+## Interactive session path
 
-These five principles govern all work in this repo. The `conda-forge-expert` skill specializes them for recipe work; the BMAD skills apply them to planning/dev. Apply them globally.
+`marshal factory dispatch` / `spin` are the **measured** path (policy-rendered, journaled,
+benchmarked). An interactive Claude Code session on the shared checkout is the **documented
+convenience path** — the same instruments, wired by hand, from repo root:
 
-1. **Think Before Coding** — state assumptions explicitly; for ambiguous requests, present interpretations, don't pick silently.
-2. **Simplicity First** — minimum code that solves the problem; nothing speculative.
-3. **Surgical Changes** — touch only what the task requires; match existing style.
-4. **Goal-Driven Execution** — transform tasks into verifiable goals; loop until verified.
-5. **Dream to Code, always** — every effort enters through BMAD-METHOD: a **Dream seed** in `docs/dreams/<slug>.md` first, then `bmad-spec` derives the Spec, then the planning chain decomposes it, then the build. Gap-closure, realization work, and fixes to efforts whose stories already exist are **not** exempt — never propose "draft the story specs and dispatch" as the entry point (operator ruling 2026-09-12; see § Dream-first below).
+```bash
+caveman-install --only claude --with-hooks   # once per machine: output-compression skill + hooks
+headroom wrap claude --code-memory none      # launch this session behind the wire-compression proxy
+```
+
+Neither path gets a second kit, and the interactive path gets no separate benchmark (operator
+decision 2026-09-16; `spec-pyforge-marshal` CAP-195, folded from `spec-marshal-token-economy`
+CAP-22). Once the session is open, retrieve/recall discipline replaces wholesale `epics.md` /
+PRD loads — see AGENTS.md § *Scribe recall (session path)* and `marshal context retrieve`.
+
+**Behavioural guidelines** — the five principles every harness follows (Think before coding · Simplicity first · Surgical changes · Goal-driven execution · Dream to code, always) live in `AGENTS.md` § *Behavioural guidelines (every harness)*, imported above; the `conda-forge-expert` skill specialises them for recipe work and the BMAD skills for planning/dev. Not restated here (scribe CAP-27, point-don't-copy; CAP-29 collapsed the duplicate).
 
 ---
 
@@ -151,7 +159,7 @@ The `_bmad-output/projects/pyforge-marshal/` artifacts (PRD, architecture set, e
 |---|---|---|
 | `conda-forge-expert` | Full conda-forge recipe lifecycle (generate → validate → build → submit) | Creating/updating recipes, fixing build failures, any conda packaging |
 <!-- governance-currency:ignore-start (removed/renamed skills named BECAUSE they were removed) -->
-| `bmad-build` (6.11 name of `bmad-quick-dev`; `bmad-build-auto` = `bmad-dev-auto`) | Implement story / feature / fix from a spec — "the one official way BMad implements code" | Direct implementation requests when the story spec exists |
+| `bmad-build` (6.11 name of `bmad-quick-dev`; `bmad-build-auto` = `bmad-dev-auto`) | Implement story / feature / fix from a spec — "the one official way BMad implements code". Default front door is `marshal factory dispatch` (one story) / `marshal factory spin` (many): journaled, benchmarked, running the substrate/compression layers. Invoking `bmad-build-auto` bare is sanctioned but unmeasured — no journal entry, no per-harness savings rollup. | Direct implementation requests when the story spec exists |
 | `bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories` | BMAD planning chain (deprecated forwarders — `bmad-create-prd` / `bmad-create-architecture` / `bmad-create-story` / `bmad-dev-story` — removed in v7) | Starting a new product or feature in `_bmad-output/projects/<slug>/` |
 | `bmad-project-context` | Verified agent-instructions block in `AGENTS.md`, or a subtree-scoped "child" `AGENTS.md` (own Children rule, all five conditions: subtree-exclusive, substantial, materially reduces the parent block, loading verified for every harness in use, user-approved — e.g. `src/shared/packages/pyforge-atlas/AGENTS.md`) (6.11 replacement for `bmad-document-project` + `bmad-generate-project-context`; does NOT produce brownfield docs) | "Set up / refresh / audit agent instructions"; record observed agent mistakes |
 <!-- governance-currency:ignore-end -->

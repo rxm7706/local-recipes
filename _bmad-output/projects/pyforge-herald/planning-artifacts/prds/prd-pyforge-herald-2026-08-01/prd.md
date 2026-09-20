@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-17"   # one-chain herald fold; FR←CAP annotations; CAP-1..47
+updated: "2026-09-20"   # one-chain herald fold; FR←CAP annotations; CAP-1..47
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -1046,3 +1046,12 @@ check ran.
 ## Currency reconciliation — 2026-09-17
 
 One-chain fold reminted spec-pyforge-herald CAP-1..47. Kernel FR ids unchanged; each opening FR line cites a reminted CAP. FR delta: none.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `research/docs-site-bmad-method-pattern-2026-09-20.md` (an operator-asked
+seed, 09:55Z: the docs site matches BMAD-METHOD's Astro + Starlight + Pages pattern so upstream's
+skills and workflows apply unchanged) post-dated the brief and, through it, this PRD (`brief→prd` cascade). It is input for `bmad-spec`, not yet
+a capability: no requirement, decision or story changes here until that pass mints the CAP.
+`updated:` bumped to record that the check ran; the six decisions the research asks for are listed
+in its § 3 and on the Dream's 2026-09-20 entry.*

@@ -20,6 +20,20 @@ not installed.
 
 ``LoadDuty`` never calls ``sys.exit`` (AD-8) — it returns a ``DutyResult``
 and ``cli.main`` projects it.
+
+**Since Story 61.4** (spec-work-passports-dated-extracts CAP-4 /
+spec-pyforge-steward CAP-142 — the signed-outbound-slice gate): a dump of
+Jira or factory BMAD can leave unsigned today unless this gate closes it.
+Default deny — an ``outbound`` load additionally requires a named
+``slice_name`` and a recorded ``signer`` (the named ``outbound-signer`` role
+on the existing app) before ``load_extract`` will create a new row; both are
+validated only on the CREATE path (an idempotent repeat needs neither,
+matching the transport-declared-on check's own idempotency-first shape
+immediately below), and both are recorded on the same ``CorridorLoad`` row
+``corridor_load.py`` already writes — no second table, no second loader.
+"The vendor loads our file — we do not PAT into their org": this gate never
+adds a distinct outbound transport that pushes anywhere; it reuses the SAME
+declared transports (``corridor.yaml``) as inbound.
 """
 
 from __future__ import annotations
@@ -43,6 +57,13 @@ STATES: tuple[str, ...] = ("on", "off")
 STATE_ON, STATE_OFF = STATES
 
 DIRECTIONS: tuple[str, ...] = ("inbound", "outbound")
+
+# Story 61.4: the named role recorded on an outbound `CorridorLoad` row --
+# a label this module documents and records, not a live permission check
+# (Dream ruling: "a person or GitHub team on the existing app ... default:
+# the steward operator running Drop Night"; v1 records who signed, it does
+# not authenticate against a roster).
+SIGNER_ROLE = "outbound-signer"
 
 
 class CorridorConfigError(ValueError):
@@ -149,13 +170,21 @@ class CorridorLoadError(ValueError):
 
 @dataclass(frozen=True)
 class LoadOutcome:
-    """What ``load_extract`` returns."""
+    """What ``load_extract`` returns.
+
+    ``slice_name``/``signer`` (Story 61.4) are blank on every ``inbound``
+    outcome; on ``outbound`` they carry the named slice and recorded signer
+    that were validated (on create) or ORIGINALLY recorded (on an idempotent
+    repeat) -- never the values a repeat call happened to pass.
+    """
 
     status: str  # "loaded" | "idempotent" | "refused"
     direction: str
     batch_sha: str
     waybill: str
     transport: str
+    slice_name: str = ""
+    signer: str = ""
     message: str = ""
 
 
@@ -166,6 +195,8 @@ def _outcome_from_result(result: dict[str, Any]) -> LoadOutcome:
         batch_sha=result["batch_sha"],
         waybill=result["waybill"],
         transport=result["transport"],
+        slice_name=result.get("slice_name", ""),
+        signer=result.get("signer", ""),
         message=result.get("message", ""),
     )
 
@@ -177,6 +208,8 @@ def load_extract(
     waybill: str,
     transport: str,
     config: CorridorConfig,
+    slice_name: str = "",
+    signer: str = "",
 ) -> LoadOutcome:
     """Idempotent on ``(direction, batch_sha, waybill)`` ALONE — no transport
     qualifier. A repeat drop of an already-loaded file is a no-op regardless
@@ -185,16 +218,34 @@ def load_extract(
     path that would actually CREATE a new row needs a transport that is both
     declared and ``state: on``.
 
-    Raises :class:`CorridorLoadError` only on that create path, for an
-    unknown or declared-off transport (naming the declared transports so a
-    typo is diagnosable); otherwise reaches ``dashboard/corridor_load.py``
-    through the one sanctioned dynamic base→dashboard idiom, refusing (never
-    raising) when the ``[dashboard]`` extra is not installed.
+    ``slice_name``/``signer`` (Story 61.4) are ignored entirely for
+    ``direction="inbound"``. For ``direction="outbound"``, default deny: on
+    the CREATE path (no existing record — same "would create" branch the
+    transport check gates), both must be non-blank or this raises
+    :class:`CorridorLoadError` naming which is missing, before the transport
+    is even consulted. An idempotent repeat needs neither (nothing new is
+    being signed), matching the transport-declared-on check's own
+    idempotency-first shape one branch below.
+
+    Raises :class:`CorridorLoadError` on that create path — for an outbound
+    load missing a slice/signer, or for an unknown/declared-off transport
+    (naming the declared transports so a typo is diagnosable); otherwise
+    reaches ``dashboard/corridor_load.py`` through the one sanctioned dynamic
+    base→dashboard idiom, refusing (never raising) when the ``[dashboard]``
+    extra is not installed.
     """
     if direction not in DIRECTIONS:
         raise CorridorLoadError(
             f"unknown direction {direction!r}; must be one of {DIRECTIONS!r}"
         )
+
+    # The gate applies to `outbound` only -- normalize here, before either
+    # value is used anywhere below (a record call or the returned outcome),
+    # so an inbound caller passing stray slice/signer values never has them
+    # persisted or echoed back.
+    if direction != "outbound":
+        slice_name = ""
+        signer = ""
 
     import importlib
 
@@ -207,13 +258,17 @@ def load_extract(
             batch_sha=batch_sha,
             waybill=waybill,
             transport=transport,
+            slice_name=slice_name,
+            signer=signer,
             message="pyforge-steward[dashboard] extra not installed",
         )
 
     # Read-only probe: does a record already exist for this (direction,
     # batch_sha, waybill)? If so, it is idempotent no matter what transport
     # this call passed -- report it immediately without ever consulting
-    # `config` for this call's (possibly unknown / off) transport.
+    # `config` for this call's (possibly unknown / off) transport, and
+    # without re-validating slice/signer (Story 61.4) -- an idempotent
+    # repeat reports the ORIGINALLY recorded ones, never re-signs.
     probe = module.record_corridor_load(
         direction=direction,
         batch_sha=batch_sha,
@@ -224,7 +279,24 @@ def load_extract(
     if probe["status"] != "not_found":
         return _outcome_from_result(probe)
 
-    # No existing record -- this call WOULD create one, so only now does the
+    # No existing record -- this call WOULD create one. Story 61.4: default
+    # deny an outbound create with no named slice or no recorded signer,
+    # BEFORE the transport is even checked.
+    if direction == "outbound":
+        slice_name = (slice_name or "").strip()
+        signer = (signer or "").strip()
+        if not slice_name:
+            raise CorridorLoadError(
+                "an outbound load requires a named slice -- default deny "
+                "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
+            )
+        if not signer:
+            raise CorridorLoadError(
+                f"an outbound load requires a recorded {SIGNER_ROLE} -- default deny "
+                "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
+            )
+
+    # Only now (past the slice/signer gate, when it applies) does the
     # transport need to be declared and on.
     decl = config.transport(transport)
     declared = ", ".join(t.name for t in config.transports) or "(none declared)"
@@ -239,7 +311,12 @@ def load_extract(
         )
 
     result = module.record_corridor_load(
-        direction=direction, batch_sha=batch_sha, waybill=waybill, transport=transport
+        direction=direction,
+        batch_sha=batch_sha,
+        waybill=waybill,
+        transport=transport,
+        slice_name=slice_name,
+        signer=signer,
     )
     return _outcome_from_result(result)
 
@@ -251,6 +328,8 @@ def _outcome_payload(outcome: LoadOutcome) -> dict[str, object]:
         "batch_sha": outcome.batch_sha,
         "waybill": outcome.waybill,
         "transport": outcome.transport,
+        "slice_name": outcome.slice_name,
+        "signer": outcome.signer,
         "message": outcome.message,
     }
 
@@ -277,11 +356,14 @@ def _load_result(
 
 
 class LoadDuty:
-    """``steward load [inbound|outbound]`` — Story 61.1.
+    """``steward load [inbound|outbound]`` — Story 61.1; the ``outbound``
+    verb's default-deny slice+signer gate is Story 61.4.
 
     Bare ``steward load`` (no verb) reports the declared transports and their
     states, read-only — no Django/DB touch at all. ``inbound``/``outbound``
-    load a file, idempotent on batch sha + waybill.
+    load a file, idempotent on batch sha + waybill. ``outbound`` additionally
+    requires ``--slice``/``--signer`` (default deny — a blank one refuses,
+    never a raised traceback).
     """
 
     name = "load"
@@ -319,6 +401,8 @@ class LoadDuty:
             data = Path(ns.file).read_bytes()
             batch_sha = compute_batch_sha(data)
             transport = getattr(ns, "transport", "app-upload")
+            slice_name = getattr(ns, "slice_name", "") or ""
+            signer = getattr(ns, "signer", "") or ""
             try:
                 outcome = load_extract(
                     direction=verb,
@@ -326,6 +410,8 @@ class LoadDuty:
                     waybill=waybill,
                     transport=transport,
                     config=config,
+                    slice_name=slice_name,
+                    signer=signer,
                 )
             except CorridorLoadError as exc:
                 text = f"load {verb}: {exc}"
@@ -337,6 +423,8 @@ class LoadDuty:
                     f"{outcome.status}: {verb} waybill={outcome.waybill} "
                     f"sha={outcome.batch_sha[:12]} via {outcome.transport}"
                 )
+                if verb == "outbound":
+                    text += f' slice="{outcome.slice_name}" signer="{outcome.signer}"'
                 return _load_result(True, text, payload, as_json=as_json)
             if outcome.status == "error":
                 text = f"load {verb}: data error: {outcome.message}"

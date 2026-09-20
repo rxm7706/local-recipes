@@ -15,6 +15,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, build_parser, main
 from pyforge.steward.sprint_ledger_query import (
     FLAG_DOSSIER_EXPORT,
@@ -31,17 +32,38 @@ from pyforge.steward.sprint_ledger_query import (
     LedgerQueryHook,
     LedgerSourcePlugin,
     QueryFormatterPlugin,
+    RunningFact,
     SprintLedgerQueryEngine,
     StationLedger,
     SummaryFormatter,
     canonical_story_key,
     default_formatter_names,
     eval_flag,
+    fetch_running_stations,
     get_runnable_backlog,
     parse_deps_text,
     parse_flag_overrides,
     sync_to_postgres,
 )
+
+
+class _FakeProcess:
+    """A `ProcessPort` stand-in (Story 65.2): fixed `run()` outcome, or one
+    that raises `ProcessError` when `error` is given -- never a real subprocess."""
+
+    def __init__(self, *, returncode: int = 0, stdout: str = '{"data": {"projects": []}}', stderr: str = "", error: Exception | None = None) -> None:
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+        self.error = error
+        self.calls: list[tuple] = []
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        self.calls.append((tuple(argv), cwd, timeout_s))
+        if self.error is not None:
+            raise self.error
+        return ProcessResult(returncode=self.returncode, stdout=self.stdout, stderr=self.stderr)
+
 
 _EPICS_MD = """# Epics
 
@@ -121,24 +143,34 @@ def engine(fixture_root: Path) -> SprintLedgerQueryEngine:
 
 def _ns(**overrides):
     base = dict(
-        duty="ledger-query", unimplemented=False, unlinked=False, station=None, status=None,
-        search=None, epic=None, format="summary", output=None, sync_postgres=False, flag=None,
+        duty="ledger-query", unimplemented=False, unlinked=False, ready=False, running=False,
+        station=None, status=None, search=None, epic=None, format="summary", output=None,
+        sync_postgres=False, flag=None,
     )
     base.update(overrides)
     return SimpleNamespace(**base)
 
 
-@pytest.fixture
-def duty_engine(fixture_root: Path, monkeypatch: pytest.MonkeyPatch):
-    """`LedgerQueryDuty` builds its own engine; point it at the fixture tree."""
+def _duty_engine_with_process(fixture_root: Path, monkeypatch: pytest.MonkeyPatch, process) -> None:
+    """`LedgerQueryDuty` builds its own bare `SprintLedgerQueryEngine()`; point
+    it at the fixture tree AND a given fake process (never a real `marshal`
+    subprocess in a unit test)."""
     import pyforge.steward.sprint_ledger_query as mod
 
     real = mod.SprintLedgerQueryEngine
 
-    def _factory(root_dir=None, flags_file_path=None):
-        return real(root_dir=fixture_root, flags_file_path=fixture_root / "no-flags.json")
+    def _factory(root_dir=None, flags_file_path=None, process=process):
+        return real(root_dir=fixture_root, flags_file_path=fixture_root / "no-flags.json", process=process)
 
     monkeypatch.setattr(mod, "SprintLedgerQueryEngine", _factory)
+
+
+@pytest.fixture
+def duty_engine(fixture_root: Path, monkeypatch: pytest.MonkeyPatch):
+    """`LedgerQueryDuty` builds its own engine; point it at the fixture tree
+    with a fake process reporting no station running (never a real `marshal`
+    subprocess in a unit test)."""
+    _duty_engine_with_process(fixture_root, monkeypatch, _FakeProcess())
     return fixture_root
 
 
@@ -667,13 +699,24 @@ def test_atlas_dataset_claims_no_atlas_catalog_name(engine: SprintLedgerQueryEng
 
 
 def _structural_check(payload: dict, schema: dict) -> None:
+    """`required` may be a PROPER subset of what the current producer always
+    emits (e.g. `next`/`next_ready`/`next_running`, Story 65.2 -- kept
+    additively-evolvable per the schema's own static `$id` contract), so this
+    checks the emitted keys against the full declared `properties` set, and
+    only checks `required` as a subset of what is actually present."""
     assert set(payload) == set(schema["required"])
     assert payload["$schema"] == schema["properties"]["$schema"]["const"]
-    assert set(payload["summary"]) == set(schema["$defs"]["estate_summary"]["required"])
+    summary_def = schema["$defs"]["estate_summary"]
+    assert set(payload["summary"]) == set(summary_def["properties"])
+    assert set(summary_def["required"]) <= set(payload["summary"])
+    station_def = schema["$defs"]["station_progress"]
     for station in payload["summary"]["stations"].values():
-        assert set(station) == set(schema["$defs"]["station_progress"]["required"])
+        assert set(station) == set(station_def["properties"])
+        assert set(station_def["required"]) <= set(station)
+    story_def = schema["$defs"]["story"]
     for story in payload["stories"]:
-        assert set(story) == set(schema["$defs"]["story"]["required"])
+        assert set(story) == set(story_def["properties"])
+        assert set(story_def["required"]) <= set(story)
     for epic in payload["epics"]:
         assert set(epic) == set(schema["$defs"]["epic"]["required"])
 
@@ -728,6 +771,320 @@ class _Custom(QueryFormatterPlugin):
 def test_registered_plugin_formatter_is_exercised_without_editing_the_engine(engine: SprintLedgerQueryEngine) -> None:
     engine.formatters.register(_Custom())
     assert engine.export(engine.query(station="test-station"), "custom") == "custom:8"
+
+
+# --- B1-B7: Story 65.2 (CAP-150) -- the `next` field, `--ready`/`--running`, the running fact ---
+
+def test_next_covers_done_blocked_ready_waits_and_offline_in_progress(engine: SprintLedgerQueryEngine) -> None:
+    """No `resolve_running` -- purely offline; in-progress is optimistic `running`."""
+    res = engine.query(station="test-station")
+    by_id = {s.story_id: s.next for s in res.stories}
+    assert by_id["1.1"] == "done"
+    assert by_id["1.2"] == "ready"  # backlog, dep 1.1 done
+    assert by_id["1.3"] == "waits on 1.2"  # backlog, deps 1.1 (done) + 1.2 (not done)
+    assert by_id["1.4"] == "ready"  # backlog, no deps
+    assert by_id["1.5"] == "waits on 9.9"  # backlog, dep does not exist
+    assert by_id["2.1"] == "running"  # in-progress, no running-fact call made
+    assert by_id["2.2"] == "in-review"  # passthrough for a status outside the enum
+    assert by_id["2.3"] == "something-new"  # passthrough for an arbitrary status
+
+
+def test_blocked_never_reports_ready_even_with_no_deps(tmp_path: Path) -> None:
+    _make_station(
+        tmp_path, "s",
+        "## Epic 1: E\n\n### Story 1.1: Blocked\n**Deps:** —\n",
+        "development_status:\n  1-1-blocked: blocked\n",
+    )
+    res = SprintLedgerQueryEngine(root_dir=tmp_path).query()
+    assert res.stories[0].next == "blocked"
+
+
+def test_ready_only_filter_equals_get_runnable_backlog(engine: SprintLedgerQueryEngine) -> None:
+    ready_ids = {s.story_id for s in engine.query(station="test-station", ready_only=True).stories}
+    runnable_ids = {s.story_id for s in get_runnable_backlog(engine, station="test-station")}
+    assert ready_ids == runnable_ids == {"1.2", "1.4"}
+
+
+def test_literal_ready_status_never_collides_with_computed_ready(tmp_path: Path) -> None:
+    """A story whose LITERAL ledger status is the distinct known status
+    `ready` (never `backlog`) must never be admitted by `--ready` /
+    `get_runnable_backlog()` / `next_ready`, even though its passthrough
+    `next` text-collides with the computed `"ready"` value."""
+    _make_station(
+        tmp_path, "s",
+        "## Epic 1: E\n\n### Story 1.1: Blocker\n**Deps:** —\n\n"
+        "### Story 1.2: Literally Ready\n**Deps:** 1.1\n",
+        "development_status:\n  1-1-blocker: backlog\n  1-2-literally-ready: ready\n",
+    )
+    engine = SprintLedgerQueryEngine(root_dir=tmp_path)
+    res = engine.query()
+    by_id = {s.story_id: s.next for s in res.stories}
+    assert by_id["1.2"] == "ready"  # the passthrough text -- looks identical
+    assert by_id["1.1"] == "ready"  # the COMPUTED value -- backlog, no deps
+
+    ready_ids = {s.story_id for s in engine.query(ready_only=True).stories}
+    assert ready_ids == {"1.1"}  # 1.2 (literal status, unmet dep 1.1) excluded
+    assert {s.story_id for s in get_runnable_backlog(engine)} == {"1.1"}
+    assert res.summary.stations["s"].next_ready == 1
+
+
+def test_running_only_filter_is_empty_without_resolve_running_confirmation(engine: SprintLedgerQueryEngine) -> None:
+    # 2.1 is in-progress and defaults to "running" (offline optimism), so the
+    # bare filter (no resolve_running) still selects it -- confirming the
+    # filter reads the SAME `next` field the offline default computed.
+    assert {s.story_id for s in engine.query(station="test-station", running_only=True).stories} == {"2.1"}
+
+
+def test_resolve_running_corroborates_the_reachable_station_only(tmp_path: Path) -> None:
+    _make_station(
+        tmp_path, "here",
+        "## Epic 1: E\n\n### Story 1.1: Active\n**Deps:** —\n",
+        "development_status:\n  1-1-active: in-progress\n",
+    )
+    _make_station(
+        tmp_path, "elsewhere",
+        "## Epic 1: E\n\n### Story 1.1: Stale\n**Deps:** —\n",
+        "development_status:\n  1-1-stale: in-progress\n",
+    )
+    payload = json.dumps({"data": {"projects": [
+        {"slug": "here", "pattern": "bmad-build-auto", "status": "running"},
+        {"slug": "elsewhere", "pattern": None, "status": "idle"},
+    ]}})
+    process = _FakeProcess(stdout=payload)
+    engine = SprintLedgerQueryEngine(root_dir=tmp_path, process=process)
+    res = engine.query(resolve_running=True)
+    by_station = {s.station: s.next for s in res.stories}
+    assert by_station == {"here": "running", "elsewhere": "in-progress"}
+    assert process.calls == [(("marshal", "watch", "--fleet", "--format", "json"), tmp_path, 120.0)]
+    assert res.warnings == []
+    assert res.summary.stations["here"].next_running == 1
+    assert res.summary.stations["elsewhere"].next_running == 0
+    assert res.summary.total_next_running == 1
+
+
+@pytest.mark.parametrize(
+    "process",
+    [
+        _FakeProcess(error=ProcessError("marshal: command not found")),
+        _FakeProcess(returncode=1, stderr="boom"),
+        _FakeProcess(stdout="not json"),
+        _FakeProcess(stdout="[1, 2, 3]"),
+    ],
+    ids=["not-on-path", "non-zero-exit", "non-json", "json-not-an-object"],
+)
+def test_unreachable_marshal_fails_open_to_question_mark_with_one_warning(tmp_path: Path, process, capsys) -> None:
+    _make_station(
+        tmp_path, "s",
+        "## Epic 1: E\n\n### Story 1.1: Active\n**Deps:** —\n\n### Story 1.2: Also Ready\n**Deps:** —\n",
+        "development_status:\n  1-1-active: in-progress\n  1-2-also-ready: backlog\n",
+    )
+    engine = SprintLedgerQueryEngine(root_dir=tmp_path, process=process)
+    res = engine.query(resolve_running=True)
+    by_id = {s.story_id: s.next for s in res.stories}
+    assert by_id["1.1"] == "?"
+    assert by_id["1.2"] == "ready"  # every OTHER column/exit-relevant field is unaffected
+    assert len(res.warnings) == 1
+    assert capsys.readouterr().err.strip() != ""
+
+
+def test_fetch_running_stations_reads_pattern_and_status(tmp_path: Path) -> None:
+    payload = json.dumps({"data": {"projects": [
+        {"slug": "a", "pattern": "bmad-loop", "status": "in-progress"},
+        {"slug": "b", "pattern": "bmad-build-auto", "status": "finished"},
+        {"slug": "c", "pattern": None, "status": "idle"},
+        {"slug": "d", "pattern": "bmad-loop"},  # missing status -- never active
+        {"slug": "e", "pattern": "bmad-loop", "status": ""},  # empty status -- never active
+        {"slug": "f", "pattern": "bmad-build-auto", "status": "paused"},  # an explicit active word
+    ]}})
+    fact = fetch_running_stations(_FakeProcess(stdout=payload), tmp_path)
+    assert fact.ok is True
+    assert fact.stations == frozenset({"a", "f"})
+
+
+def test_fetch_running_stations_process_error_reports_not_ok(tmp_path: Path) -> None:
+    fact = fetch_running_stations(_FakeProcess(error=ProcessError("nope")), tmp_path)
+    assert fact.ok is False
+    assert fact.stations == frozenset()
+    assert "unreachable" in fact.warning
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        '{"no_data_key": true}',
+        '{"data": "not-a-dict"}',
+        '{"data": {"no_projects_key": true}}',
+        '{"data": {"projects": "not-a-list"}}',
+    ],
+    ids=["missing-data", "data-not-a-dict", "missing-projects", "projects-not-a-list"],
+)
+def test_fetch_running_stations_malformed_shape_fails_open(tmp_path: Path, stdout: str) -> None:
+    """A dict payload with a missing/malformed `data`/`data.projects` shape
+    must fail open (`ok=False`), never silently report `stations=frozenset()`
+    as if every station had been confirmed idle."""
+    fact = fetch_running_stations(_FakeProcess(stdout=stdout), tmp_path)
+    assert fact.ok is False
+    assert fact.stations == frozenset()
+    assert fact.warning
+
+
+def test_cli_ready_and_running_flags_are_front_doors() -> None:
+    parser = build_parser()
+    ns = parser.parse_args(["ledger-query", "--ready", "--running"])
+    assert ns.ready is True and ns.running is True
+    ns2 = parser.parse_args(["ledger-query"])
+    assert ns2.ready is False and ns2.running is False
+
+
+def test_duty_ready_and_running_flags_filter_through(duty_engine: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The `duty_engine` fixture's `_FakeProcess()` default reports NO running
+    # stations, so `--running` narrows to nothing and `--ready` narrows to the
+    # fixture's two runnable backlog stories.
+    ready_result = LedgerQueryDuty().run(_ns(ready=True, format="json"))
+    assert ready_result.ok is True
+    assert {s["story_id"] for s in json.loads(ready_result.summary)["stories"]} == {"1.2", "1.4"}
+
+    running_result = LedgerQueryDuty().run(_ns(running=True, format="json"))
+    assert running_result.ok is True
+    assert json.loads(running_result.summary)["stories"] == []
+
+
+def test_duty_refuses_ready_and_running_together(duty_engine: Path) -> None:
+    result = LedgerQueryDuty().run(_ns(ready=True, running=True))
+    assert result.ok is False
+    assert "mutually exclusive" in result.summary
+
+
+def test_duty_running_with_unreachable_marshal_matches_nothing(fixture_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`--running` combined with an unreachable/failing marshal: every
+    in-progress candidate's `next` becomes `?`, never `running`, so the
+    filter matches nothing -- the duty itself still succeeds (fail-open)."""
+    _duty_engine_with_process(fixture_root, monkeypatch, _FakeProcess(error=ProcessError("marshal: not found")))
+    result = LedgerQueryDuty().run(_ns(running=True, format="json"))
+    assert result.ok is True
+    payload = json.loads(result.summary)
+    assert payload["stories"] == []
+    assert any("unreachable" in w for w in payload["warnings"])
+
+
+def test_duty_resolves_running_fact_and_reports_running_when_confirmed(fixture_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = json.dumps({"data": {"projects": [
+        {"slug": "test-station", "pattern": "bmad-build-auto", "status": "running"},
+    ]}})
+    _duty_engine_with_process(fixture_root, monkeypatch, _FakeProcess(stdout=payload))
+    result = LedgerQueryDuty().run(_ns(running=True, format="json"))
+    assert result.ok is True
+    stories = json.loads(result.summary)["stories"]
+    assert {s["story_id"] for s in stories} == {"2.1"}
+    assert stories[0]["next"] == "running"
+
+
+def test_next_column_appears_in_table_and_markdown(engine: SprintLedgerQueryEngine) -> None:
+    res = engine.query(station="test-station")
+    table = engine.export(res, "table")
+    assert "| Next" in table and "READY" not in table  # column exists; values are lowercase, not upper()'d
+    assert "ready" in table and "waits on" in table
+    markdown = engine.export(res, "markdown")
+    assert "- Next: ready" in markdown and "- Next: waits on 1.2" in markdown
+
+
+def test_summary_carries_per_station_ready_and_running_counts(engine: SprintLedgerQueryEngine) -> None:
+    summary = engine.export(engine.query(station="test-station"), "summary")
+    assert "ready 2, running 1" in summary  # 1.2 + 1.4 ready; 2.1 optimistically running
+
+
+def _fleet_scenario_station(root: Path, station: str, rows: "list[tuple[str, str, str]]") -> None:
+    """`rows`: `(story_id, deps_text, ledger_status)`. One flat epic -- the
+    numbering narrative this reproduces doesn't depend on epic grouping."""
+    md = ["## Epic 1: Batch\n"]
+    yaml_lines = ["development_status:"]
+    for story_id, deps_text, status in rows:
+        md.append(f"### Story {story_id}: Story {story_id}\n**Deps:** {deps_text}\n")
+        yaml_lines.append(f"  {story_id.replace('.', '-')}-x: {status}")
+    _make_station(root, station, "\n".join(md), "\n".join(yaml_lines) + "\n")
+
+
+def test_next_reproduces_the_0800z_fleet_scenario(tmp_path: Path) -> None:
+    """The spec's own I/O matrix row 1: three stations, one running story
+    each, everything else `ready` or naming exactly what it waits on."""
+    _fleet_scenario_station(tmp_path, "pyforge-doctor", [
+        ("29.1", "—", "in-progress"),
+        ("24.1", "—", "backlog"),
+        ("24.2", "24.1", "backlog"),
+        ("24.3", "24.1", "backlog"),
+        ("30.2", "—", "backlog"),
+        ("30.3", "30.2", "backlog"),
+    ])
+    _fleet_scenario_station(tmp_path, "pyforge-marshal", [
+        ("46.7", "—", "in-progress"),
+        ("46.1", "—", "backlog"),
+        ("46.2", "—", "backlog"),
+        ("46.6", "—", "backlog"),
+        ("46.9", "—", "backlog"),
+        ("46.10", "—", "backlog"),
+        ("47.1", "—", "backlog"),
+        ("46.3", "46.7", "backlog"),
+        ("46.8", "46.7", "backlog"),
+    ])
+    _fleet_scenario_station(tmp_path, "pyforge-steward", [
+        ("61.4", "—", "in-progress"),
+        ("61.5", "—", "backlog"),
+        ("59.3", "—", "backlog"),
+        ("59.4", "—", "backlog"),
+        ("59.5", "—", "backlog"),
+        ("59.6", "—", "backlog"),
+        ("59.7", "—", "backlog"),
+        ("60.2", "—", "backlog"),
+        ("60.3", "—", "backlog"),
+        ("60.4", "—", "backlog"),
+        ("62.2", "—", "backlog"),
+        ("62.3", "—", "backlog"),
+        ("63.3", "—", "backlog"),
+        ("63.4", "63.3", "backlog"),
+    ])
+    # A recorded `marshal watch --fleet --format json` payload: exactly the
+    # three stations with a live run "on it".
+    payload = json.dumps({"data": {"projects": [
+        {"slug": "pyforge-doctor", "pattern": "bmad-loop", "status": "in-progress"},
+        {"slug": "pyforge-marshal", "pattern": "bmad-build-auto", "status": "running"},
+        {"slug": "pyforge-steward", "pattern": "bmad-build-auto", "status": "running"},
+    ]}})
+    engine = SprintLedgerQueryEngine(root_dir=tmp_path, process=_FakeProcess(stdout=payload))
+    res = engine.query(resolve_running=True)
+    by_key = {(s.station, s.story_id): s.next for s in res.stories}
+
+    assert by_key[("pyforge-doctor", "29.1")] == "running"
+    assert by_key[("pyforge-doctor", "24.1")] == "ready"
+    assert by_key[("pyforge-doctor", "24.2")] == "waits on 24.1"
+    assert by_key[("pyforge-doctor", "24.3")] == "waits on 24.1"
+    assert by_key[("pyforge-doctor", "30.2")] == "ready"
+    assert by_key[("pyforge-doctor", "30.3")] == "waits on 30.2"
+
+    assert by_key[("pyforge-marshal", "46.7")] == "running"
+    for sid in ("46.1", "46.2", "46.6", "46.9", "46.10", "47.1"):
+        assert by_key[("pyforge-marshal", sid)] == "ready"
+    assert by_key[("pyforge-marshal", "46.3")] == "waits on 46.7"
+    assert by_key[("pyforge-marshal", "46.8")] == "waits on 46.7"
+
+    assert by_key[("pyforge-steward", "61.4")] == "running"
+    for sid in ("61.5", "59.3", "59.4", "59.5", "59.6", "59.7", "60.2", "60.3", "60.4", "62.2", "62.3", "63.3"):
+        assert by_key[("pyforge-steward", sid)] == "ready"
+    assert by_key[("pyforge-steward", "63.4")] == "waits on 63.3"
+
+    assert res.warnings == []
+
+    ready_ids = {s.story_id for s in engine.query(ready_only=True, resolve_running=True).stories}
+    assert ready_ids == {
+        "24.1", "30.2", "46.1", "46.2", "46.6", "46.9", "46.10", "47.1",
+        "61.5", "59.3", "59.4", "59.5", "59.6", "59.7", "60.2", "60.3", "60.4",
+        "62.2", "62.3", "63.3",
+    }
+    assert ready_ids == {s.story_id for s in get_runnable_backlog(engine)}
+
+    running_rows = {(s.station, s.story_id) for s in engine.query(running_only=True, resolve_running=True).stories}
+    assert running_rows == {
+        ("pyforge-doctor", "29.1"), ("pyforge-marshal", "46.7"), ("pyforge-steward", "61.4"),
+    }
 
 
 # --- CAP-1 success: agreement with fleet_scan.parse_sprint_status over the live tree ---

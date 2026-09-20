@@ -1819,7 +1819,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   severity: low
   status: closed — Story 29.1 landed 2026-09-20: `sibling_dreams.py` honours a per-Dream `sibling-acknowledged: <hash>` frontmatter line (silent while it equals the sibling's current `content_hash`, re-fires naming both hashes the moment it does not) and `_SIBLING_OWNER` now points at `openteams-ai`. All six Dreams carry `sibling-acknowledged:` at their 2026-09-20 sibling hashes. Live re-verification: `GH_TOKEN="$(gh auth token)" pixi run --frozen -e pyforge-guild python -m pyforge.doctor.sources sibling-dreams-drift` → zero findings, exit 0.
-  raised: 2026-09-19 — Owner: doctor (CAP-71); the fold decision is mason's/steward's (the six Dreams' new owners). Operator-only for the sibling-side edit.
+  raised: 2026-09-19 — Owner: doctor (CAP-71); the fold decision belongs to the six Dreams' owners — mason (4: django-accelerator-framework, miniforge-installer, pixi-container-image, reusable-cicd-workflows), atlas (enterprise-data-models-and-apis) and warden (package-inventory-eligibility); corrected 2026-09-20 per DW-FU-29-1 (the clause used to read "mason's/steward's"; steward owns none). Operator-only for the sibling-side edit.
   update: 2026-09-19 (evening) — decision: ACKNOWLEDGE, not push. Live read: the sibling repo has moved (`OpenTeams-WFT-CDO/…` 301 → `openteams-ai/mgmt-wf-python-modernization`, private), last pushed 2026-08-24; all six Dreams there are `status: dreamt`, untouched since 2026-08-13 — a pre-fold snapshot nobody evolved. CAP-71's constraints (read-only, never a sync engine, unlicensed prose, per-Dream human reconciliation) rule out a sibling-side edit. Mechanism to record the acknowledgement + the corrected owner: Story 29.1 (CAP-82). This row closes when 29.1 lands with a live zero.
 
 ### DW-FU-23-5: No automated, repeatable check encodes "no live doc cites the old _bmad-output/ root path for the five archived files" as a re-checkable command anywhere in the repo.
@@ -1898,3 +1898,15 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-29-1: `DW-OPS-2026-09-19-6`'s pre-existing `raised:` clause says "the fold decision is mason's/steward's" but the six Dreams' actual owners are mason (4), atlas (1), and warden (1) -- steward owns none of them.
+
+- source_spec: `planning-artifacts/specs/spec-29-1-a-per-dream-acknowledgement-silences-exactly-one-sibling-hash-and-the-sibling-coordinates-are-current.md`
+  summary: `DW-OPS-2026-09-19-6`'s pre-existing `raised:` clause says "the fold decision is mason's/steward's" but the six Dreams' actual owners are mason (4), atlas (1), and warden (1) -- steward owns none of them.
+  evidence: Review pass 2026-09-20 (Blind Hunter): verified against the six Dreams' own `owner:` frontmatter. The inaccurate clause predates this story (authored 2026-09-19 when the DW entry was first raised) and this diff never touches that line, so it is a pre-existing inaccuracy, not one this change introduced.
+  location: _bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md (DW-OPS-2026-09-19-6, `raised:` line)
+  origin: spec-deferred 4030d94e19ad — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done
+  verified: 2026-09-20 — resolved: the `raised:` clause of DW-OPS-2026-09-19-6 now names the real owners (mason ×4, atlas ×1, warden ×1, from each Dream's `owner:` frontmatter); one-line factual fix in the same PR that ingested this entry.

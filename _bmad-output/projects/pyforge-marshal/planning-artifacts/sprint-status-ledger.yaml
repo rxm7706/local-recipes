@@ -263,11 +263,13 @@ development_status:
   46-2-the-canonical-context-bundle-is-digest-pinned: backlog
   46-3-scribe-capture-is-the-blessed-session-close-ritual: backlog
   46-4-wire-auto-resolves-against-the-declared-wrapper: done
-  46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency: backlog
+  46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency: done
   46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory: backlog
-  46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: backlog
-  46-8-the-interactive-claude-session-path-is-one-documented-invocation: backlog
+  46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
+  46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
+  46-11-the-dispatched-claude-session-is-launched-with-the-instruction-file-mode-pinned: done
+  46-12-marshal-s-shell-outs-name-the-guild-env: done
   47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: backlog
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: backlog
   47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: backlog
@@ -292,6 +294,8 @@ development_status:
   51-13-the-watch-reads-the-dispatch-verdict-in-the-supervisor-s-own-vocabulary: done
   52-1-the-six-accumulated-violations-are-cleared: done
   52-2-the-conformance-suite-is-a-pr-gate: done
+  53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: done
+  53-2-the-landing-reconciles-from-git-facts-and-runs-intake: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -419,6 +423,8 @@ development_status:
   epic-51-retrospective: optional
   epic-52: done
   epic-52-retrospective: optional
+  epic-53: backlog
+  epic-53-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
   epic-6: done

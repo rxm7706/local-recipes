@@ -8,7 +8,7 @@ skill into a `[modules.labs]` roster in `_bmad/custom/config.toml` --
 never wiping a previously-installed sibling skill.
 
 Mirrors `test_provision_module_installers.py`'s own fixture-staging
-conventions (a fresh-clone `.pixi/envs/local-recipes/share/<package>/...`
+conventions (a fresh-clone `.pixi/envs/pyforge-guild/share/<package>/...`
 tree), but the mechanism under test is a plain `shutil` copy
 (`_copy_setup_skill_dirs`, reused verbatim) rather than a subprocess
 installer -- there is nothing to monkeypatch `subprocess.run` for.
@@ -52,11 +52,11 @@ def _full_namespace(**overrides):
 
 
 def _stage_labs_share(root: Path, skill_names: tuple[str, ...]) -> Path:
-    """Stage `.pixi/envs/local-recipes/share/bmad-labs-skills/skills/<name>/`
+    """Stage `.pixi/envs/pyforge-guild/share/bmad-labs-skills/skills/<name>/`
     for each of `skill_names`, mirroring
     `test_provision_module_installers.py::_stage_share_skills`'s own
     fresh-clone convention."""
-    share = root / ".pixi/envs/local-recipes/share" / LABS_PACKAGE / "skills"
+    share = root / ".pixi/envs/pyforge-guild/share" / LABS_PACKAGE / "skills"
     for name in skill_names:
         (share / name).mkdir(parents=True)
         (share / name / "SKILL.md").write_text(f"# {name}\n", encoding="utf-8")
@@ -257,7 +257,7 @@ def test_marketplace_json_sibling_is_never_touched(labs_fixture):
     named subdirectory under `skills/` is."""
     marketplace = (
         labs_fixture
-        / ".pixi/envs/local-recipes/share"
+        / ".pixi/envs/pyforge-guild/share"
         / LABS_PACKAGE
         / ".claude-plugin"
         / "marketplace.json"

@@ -270,7 +270,7 @@ def _write_manifest(repo: Path, version: str) -> None:
 
 
 def _write_conda_meta(repo: Path, version: str) -> None:
-    meta_dir = repo / ".pixi" / "envs" / "local-recipes" / "conda-meta"
+    meta_dir = repo / ".pixi" / "envs" / "pyforge-guild" / "conda-meta"
     meta_dir.mkdir(parents=True, exist_ok=True)
     (meta_dir / f"bmad-method-{version}-h98f672e_0.json").write_text("{}", encoding="utf-8")
 
