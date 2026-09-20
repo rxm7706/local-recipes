@@ -53,6 +53,33 @@ Type / Effort / Deps: docs / S / —.
 
 Contract recovered from `epics.md` Story 46.7 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
 
+## Code Map
+
+- `.claude/skills/bmad-build-auto/SKILL.md` -- the skill note agents load on bare invocation; needed the default-vs-unmeasured contrast added directly after its render-command instructions.
+- `CLAUDE.md` -- § Skill Reference, the `bmad-build`/`bmad-build-auto` table row, inside the existing `governance-currency:ignore-start`/`ignore-end` block (lines 153–157) — edited in place, block markers preserved verbatim.
+- `AGENTS.md` -- § Dream-first workflow, numbered item 3 ("Autonomy") — amended in place rather than inserting a new list item, since item 5 ("Spec → Story before code") is cross-referenced by number from `docs/dreams/library-catalog-manifest-sync.md` and `docs/dreams/pyforge-marshal.md`; renumbering would have broken those citations.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/{main.py,spin.py,dispatch.py}` -- read-only: confirmed the real `marshal factory dispatch` / `spin` / `drain` grammar (Stories 22.1/22.7) to cite accurately; not modified.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `.claude/skills/bmad-build-auto/SKILL.md` -- append a "Default execution path" note -- names `marshal factory dispatch`/`spin` as default and bare invocation as sanctioned-but-unmeasured, at the point an agent following this skill would read it.
+- `CLAUDE.md` -- amend the `bmad-build`/`bmad-build-auto` row -- same contrast at the doc every Claude Code session loads by default.
+- `AGENTS.md` -- amend Dream-first item 3 -- same contrast in the cross-tool contract every harness reads.
+
+**Acceptance Criteria:**
+- Given an agent reads `AGENTS.md`, `CLAUDE.md`, or the `bmad-build-auto` skill note, when it chooses how to run a story, then all three name `marshal factory dispatch` (single story) / `marshal factory spin` (multi-story) as the default execution path and state what bare `bmad-build-auto` invocation forgoes (the substrate/compression layers, the journal entry, the per-harness savings benchmark).
+- Given this is a docs-only change to three already-tracked files, when the two named verification commands run, then neither turns red because of this story.
+
+## Design Notes
+
+The Approach line names an optional advisory doctor detector ("may flag a bare dispatch") in
+addition to the docs edits. Left out of scope for this story: no AC requires it, `pyforge-doctor`
+has no existing "bare bmad-build-auto invocation" signal to extend (verified by grep across
+`sources/`), and detecting a bare skill invocation from outside that session's own transcript is
+a separate, non-trivial design problem — not a same-sized docs edit. If wanted, it belongs to a
+follow-on story with its own CAP, not folded into this S-effort docs story.
+
 ## Verification
 
 **Commands:**
