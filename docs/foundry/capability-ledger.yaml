@@ -802,6 +802,12 @@ capabilities:
     heading: "scribe capture and recall run from the session default environment"
     mode: rebuild
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-29
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "the instruction surface is version-aware, not version-dependent (Claude Code's built-in agents-md mod, 2.1.277+)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward
@@ -3102,6 +3108,12 @@ capabilities:
     spec: pyforge-marshal
     station: pyforge-marshal
     heading: "the dispatch landing pays its own surface tax"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-262
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the dispatched Claude session is launched with the instruction-file mode pinned"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)

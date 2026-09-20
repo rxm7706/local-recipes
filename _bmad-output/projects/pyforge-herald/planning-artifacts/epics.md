@@ -10,7 +10,7 @@ project_name: pyforge-herald
 epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
 storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-18"   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
+updated: "2026-09-20"   # chain-currency cascade (arch→epics) after the 2026-09-20 docs-site research seed; no story minted. Prior 2026-09-18   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
 ---
 
 # pyforge-herald — Epic Breakdown

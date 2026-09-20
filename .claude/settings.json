@@ -39,7 +39,7 @@
     "pyright-lsp@claude-plugins-official": true
   },
   "customInstructions": [
-    "Always follow the behavioral guidelines outlined in CLAUDE.md: Think Before Coding, Simplicity First, Surgical Changes, and Goal-Driven Execution."
+    "Always follow the behavioural guidelines in AGENTS.md \u00a7 Behavioural guidelines (every harness): Think before coding, Simplicity first, Surgical changes, Goal-driven execution, Dream to code always."
   ],
   "hooks": {
     "SessionStart": [

@@ -6143,6 +6143,20 @@ layer — or the profile carries a dated finding and `auto` skips honestly
 **And** Devin stays the deliberate unverified stub (loud absence)
 **Status:** backlog
 
+### Story 46.11: The dispatched Claude session is launched with the instruction-file mode pinned
+
+As a fleet operator dispatching a story to Claude Code,
+I want the launch to pass `--settings` pinning the `agents-md` mod to `claude-md-and-agents-md`,
+So that nested `AGENTS.md` files (the atlas child) load in every dispatched session regardless of whose machine launched it.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-262 • the dispatch-launch half of scribe Story 19.3 (`spec-pyforge-scribe:CAP-29`); hand-driven 2026-09-20
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml` (`argv` gains `"--settings"` + the inline JSON token — substitution is literal `str.replace`, so the braces are safe), `tests/unit/test_harness_profile.py` (the rendered argv carries the option; `{prompt}` exactly once; wire-wrapped launch unchanged).
+**Given** Claude Code 2.1.277's built-in `agents-md` mod reads its `instructionFiles` option from user settings or `--settings`, never the project, and stays out of any project with a `CLAUDE.md` in the default mode
+**When** the claude profile's launch argv carries the option inline
+**Then** `render_dispatch_argv` yields `--settings` followed by JSON whose `pluginConfigs.agents-md@builtin.options.instructionFiles` is `claude-md-and-agents-md`; `{prompt}` appears exactly once; the wire-wrapped launch keeps the same tokens
+**And** an older Claude Code ignores the unknown plugin option and still reads `AGENTS.md` through the import — the pin is harmless below 2.1.277
+**Outcome (2026-09-20):** done, hand-driven — see the tracked spec's Auto Run Result.
+
 ## Epic 47: The review bot remembers the correction you gave two weeks ago (spec-marshal-recall-in-the-loop CAP-1..4)
 
 Minted 2026-09-18 from `spec-marshal-recall-in-the-loop` (`fold-exemption: cross-station-seam` —

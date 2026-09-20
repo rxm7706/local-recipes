@@ -6,6 +6,7 @@ surface:
   - scripts/deferred_work_check.py
   - scripts/deferred_work_intake.py
   - docs/MAP.md
+  - docs/_STYLE_GUIDE.md
   - docs/how-to/**
   - docs/tutorials/**
   - docs/explanation/**

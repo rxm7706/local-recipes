@@ -24,15 +24,7 @@ decision 2026-09-16; `spec-pyforge-marshal` CAP-195, folded from `spec-marshal-t
 CAP-22). Once the session is open, retrieve/recall discipline replaces wholesale `epics.md` /
 PRD loads — see AGENTS.md § *Scribe recall (session path)* and `marshal context retrieve`.
 
-## Behavioral Guidelines
-
-These five principles govern all work in this repo. The `conda-forge-expert` skill specializes them for recipe work; the BMAD skills apply them to planning/dev. Apply them globally.
-
-1. **Think Before Coding** — state assumptions explicitly; for ambiguous requests, present interpretations, don't pick silently.
-2. **Simplicity First** — minimum code that solves the problem; nothing speculative.
-3. **Surgical Changes** — touch only what the task requires; match existing style.
-4. **Goal-Driven Execution** — transform tasks into verifiable goals; loop until verified.
-5. **Dream to Code, always** — every effort enters through BMAD-METHOD: a **Dream seed** in `docs/dreams/<slug>.md` first, then `bmad-spec` derives the Spec, then the planning chain decomposes it, then the build. Gap-closure, realization work, and fixes to efforts whose stories already exist are **not** exempt — never propose "draft the story specs and dispatch" as the entry point (operator ruling 2026-09-12; see § Dream-first below).
+**Behavioural guidelines** — the five principles every harness follows (Think before coding · Simplicity first · Surgical changes · Goal-driven execution · Dream to code, always) live in `AGENTS.md` § *Behavioural guidelines (every harness)*, imported above; the `conda-forge-expert` skill specialises them for recipe work and the BMAD skills for planning/dev. Not restated here (scribe CAP-27, point-don't-copy; CAP-29 collapsed the duplicate).
 
 ---
 
