@@ -849,23 +849,31 @@ bare ``--write-baseline``), committed the reconcile onto the dispatch
 branch, and pushed again before merging. It classifies ``Verdict.WARN``,
 the same tier as ``MRS-DISP-046``: the reconcile succeeded and the merge
 proceeds, so this is visibility only (surfaced in ``marshal watch`` and
-``fleet-picture``'s ATTENTION rows), never a refusal. ``MRS-DISP-048``
+``fleet-picture``'s ATTENTION rows), never a refusal. The same code also
+names a landing that could not even EVALUATE drift (the doctor source
+tree unreachable from the worktree, or the verdict crashing -- both
+should be unreachable from a real dispatch worktree, always a full
+checkout, but blocking every landing on an environment gap this story is
+not scoped to fix would be a worse outage than the ritual it closes), and
+a post-merge ``dispatch_land_finalize`` run of
+``scripts/deferred_work_intake.py --fix`` refusing a deferral (e.g. no
+resolvable ``location:``) -- three triggering shapes, one non-blocking
+tier (AD-31's "same code, several triggering shapes, same tier"
+precedent, e.g. ``MRS-DEPLOY-003``/``MRS-DEPLOY-024``). ``MRS-DISP-048``
 names a Spec whose drift includes AT LEAST ONE path this branch did NOT
 change -- foreign drift a scoped stamp would silently launder alongside
 the branch's own, since a stamp accepts that Spec's ENTIRE current
-file-hash snapshot. It also covers the surrounding reconcile machinery's
-own failure shapes (the doctor source tree unreachable from the worktree,
-``VcsPort.changed_files`` failing, a memlog append erroring on a
-locked/missing-frontmatter file, the scoped-stamp subprocess exiting
-non-zero, or the post-reconcile push failing) -- AD-31's own "same code,
-several triggering shapes, same tier" precedent, e.g. ``MRS-DEPLOY-003``/
-``MRS-DEPLOY-024``. ``MRS-DISP-048`` classifies ``Verdict.ERROR``, the
-same tier as ``MRS-DISP-044``: both fire immediately before
-``forge.merge_pr`` and both stop the land attempt cold, naming every
-foreign path (or the failure) rather than absorbing it. Neither code
-changes what a self-reconciled session does: a branch whose own memlog
-already names every changed path produces no entry, no stamp, and
-neither finding.
+file-hash snapshot. It also covers the surrounding reconcile machinery
+failing to safely APPLY a reconcile once drift is already known
+(``VcsPort.changed_files`` failing to tell own from foreign, a memlog
+append erroring on a locked/missing-frontmatter file, the scoped-stamp
+subprocess exiting non-zero, or the post-reconcile push failing).
+``MRS-DISP-048`` classifies ``Verdict.ERROR``, the same tier as
+``MRS-DISP-044``: both fire immediately before ``forge.merge_pr`` and both
+stop the land attempt cold, naming every foreign path (or the failure)
+rather than absorbing it. Neither code changes what a self-reconciled
+session does: a branch whose own memlog already names every changed path
+produces no entry, no stamp, and neither finding.
 
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is

@@ -335,6 +335,20 @@ def test_registered_codes_contains_the_real_codes():
             # Story 51.11 (CAP-258): worktree spec reads status: blocked but
             # its baseline_revision predates this run -- advisory only.
             "MRS-DISP-046",
+            # Story 53.2 (spec-pyforge-marshal CAP-261b): 047 the landing
+            # reconciled spec-surface drift found on the branch's own
+            # changed files before merging (or could not even evaluate
+            # drift, e.g. the doctor source tree unreachable), or
+            # `dispatch_land_finalize` ran `deferred_work_intake.py --fix`
+            # and it refused a deferral -- always WARN, non-blocking,
+            # visible in `marshal watch`/`fleet-picture` ATTENTION rows.
+            # 048 the branch's own spec-surface drift named a path this
+            # branch did not change (foreign drift) or the reconcile
+            # machinery itself failed to safely APPLY a known reconcile
+            # (`VcsPort.changed_files`, memlog append, the scoped stamp, or
+            # the reconcile commit/push) -- refuses the landing.
+            "MRS-DISP-047",
+            "MRS-DISP-048",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",
