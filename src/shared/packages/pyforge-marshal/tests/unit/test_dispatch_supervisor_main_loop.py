@@ -1264,9 +1264,7 @@ class _BranchResolveFailingVcs(FakeVcs):
         raise VcsCommandError("git show-ref failed (test double)")
 
 
-def test_dispatch_push_reports_a_branch_resolution_failure(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_dispatch_push_reports_a_branch_resolution_failure(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     repo_root = _repo(tmp_path)
 
     assert _push(FakeFs(), _BranchResolveFailingVcs(), repo_root, _worktree(repo_root)) == 0
@@ -1416,9 +1414,7 @@ def _land(fs: FakeFs, repo_root: Path, worktree: Path) -> int:
     )
 
 
-def test_landing_journals_the_land_verdict_and_its_findings(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_landing_journals_the_land_verdict_and_its_findings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repo_root = _repo(tmp_path)
     findings = (Finding(code="MRS-DISP-037", severity=Severity.WARN, message="an advisory"),)
     calls = _patch_landing(monkeypatch, findings=findings)
@@ -1940,9 +1936,7 @@ def test_supervisor_heartbeats_a_marshal_initiated_stop_with_no_verification_yet
     assert publisher.heartbeats and set(publisher.heartbeats) == {"handle-1"}
 
 
-def test_supervisor_commits_and_promotes_a_blocked_halt(
-    tmp_path: Path, clock: _FakeClock
-) -> None:
+def test_supervisor_commits_and_promotes_a_blocked_halt(tmp_path: Path, clock: _FakeClock) -> None:
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -1975,9 +1969,7 @@ def test_supervisor_commits_and_promotes_a_blocked_halt(
     assert publisher.completions and publisher.completions[0][1] == DispatchSessionVerdict.BLOCKED.value
 
 
-def test_supervisor_records_a_stale_blocked_spec_as_an_advisory_only(
-    tmp_path: Path, clock: _FakeClock
-) -> None:
+def test_supervisor_records_a_stale_blocked_spec_as_an_advisory_only(tmp_path: Path, clock: _FakeClock) -> None:
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -2109,9 +2101,7 @@ def test_supervisor_exits_completed_once_the_story_is_merged_on_main(tmp_path: P
 # ==========================================================================
 
 
-def test_main_threads_every_positional_into_the_supervisor(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_main_threads_every_positional_into_the_supervisor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict = {}
 
     def _fake_run(**kwargs) -> int:
