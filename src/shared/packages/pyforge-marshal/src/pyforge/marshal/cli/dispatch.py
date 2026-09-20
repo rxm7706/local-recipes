@@ -831,11 +831,16 @@ def gather_dispatch_journal_facts(
             if isinstance(stop_val, str):
                 completion_stop_reason = stop_val
     landing_verdict: str | None = None
+    landing_findings: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
-        if entry.phase == Phase.OUTCOME and entry.payload.get("ok"):
-            verdict_val = entry.payload.get("verdict")
-            if isinstance(verdict_val, str):
-                landing_verdict = verdict_val
+        if entry.phase == Phase.OUTCOME:
+            if entry.payload.get("ok"):
+                verdict_val = entry.payload.get("verdict")
+                if isinstance(verdict_val, str):
+                    landing_verdict = verdict_val
+            # Story 53.2 review (I1): read regardless of `ok` -- a refused
+            # landing (MRS-DISP-048) is exactly the case this must surface.
+            landing_findings = resolve_land_findings_from_payload(entry.payload)
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
         if entry.phase == Phase.OUTCOME:
             vval = entry.payload.get("verdict")
@@ -893,6 +898,7 @@ def gather_dispatch_journal_facts(
         verification_failed_gate=verification_failed_gate,
         verification_scope_advisories=verification_scope_advisories,
         landing_verdict=landing_verdict,
+        landing_findings=landing_findings,
         story_started_at=story_started_at,
         story_ended_at=story_ended_at,
         baseline_revision=baseline_revision,
