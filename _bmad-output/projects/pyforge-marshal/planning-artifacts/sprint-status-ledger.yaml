@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 421
+# stories: 422
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -307,6 +307,7 @@ development_status:
   52-2-the-conformance-suite-is-a-pr-gate: done
   53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: done
   53-2-the-landing-reconciles-from-git-facts-and-runs-intake: backlog
+  53-3-the-supervisor-entrypoint-reaches-the-floor: backlog
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done

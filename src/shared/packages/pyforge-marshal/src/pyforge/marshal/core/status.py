@@ -997,6 +997,10 @@ class FleetHomeFacts:
     # advisories from its latest dispatch verification -- visible here (not
     # journal-only), matching AC4.
     dispatch_verification_scope_advisories: tuple[dict[str, object], ...] = ()
+    # Story 53.2 review (I1): `execute_dispatch_land`'s envelope findings
+    # (MRS-DISP-047/048) -- visible here too, matching the scope-advisories
+    # precedent immediately above.
+    dispatch_landing_findings: tuple[dict[str, object], ...] = ()
     # Story 22.6 (dispatch operator survival, FR-193 CAP-6): supervision and
     # per-story timing / preserve refs from the dispatch journal alone.
     dispatch_supervisor_alive: bool = False
@@ -1201,6 +1205,8 @@ def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) ->
         patched["dispatch_verification_failed_gate"] = facts.dispatch_verification_failed_gate
     if facts.dispatch_verification_scope_advisories:
         patched["dispatch_verification_scope_advisories"] = list(facts.dispatch_verification_scope_advisories)
+    if facts.dispatch_landing_findings:
+        patched["dispatch_landing_findings"] = list(facts.dispatch_landing_findings)
     patched["dispatch_supervisor_alive"] = facts.dispatch_supervisor_alive
     if facts.dispatch_story_started_at is not None:
         patched["dispatch_story_started_at"] = facts.dispatch_story_started_at

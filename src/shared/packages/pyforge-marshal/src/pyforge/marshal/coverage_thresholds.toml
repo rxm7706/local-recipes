@@ -12,3 +12,13 @@ integration = 70.0
 # [stations.scribe]
 # unit = 80.0
 # integration = 70.0
+
+# Per-MODULE exceptions (marshal Story 53.2 landing, 2026-09-20): a deliberate, dated,
+# story-bound floor for one module that a Story retires. It can only LOWER the station floor
+# for that module; `until` and `story` are mandatory so the debt is never anonymous. Same
+# shape as the per-module mypy baseline (steward Story 66.1). The gate's OK line names every
+# module held under an exception.
+[modules."pyforge.marshal.dispatch_supervisor.__main__"]
+unit = 35.0     # 36% on main before 53.2 (53.2 changed 15 lines of 1,895); 623 statements, 388 uncovered
+until = "marshal Story 53.3"
+story = "53-3-the-supervisor-entrypoint-reaches-the-floor"

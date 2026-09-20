@@ -1134,6 +1134,22 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # Story 51.11 (CAP-258): stale blocked-spec baseline mismatch --
     # advisory only, never blocks the exit classification.
     "MRS-DISP-046": Verdict.WARN,
+    # Story 53.2 (spec-pyforge-marshal CAP-261b): the landing reconciled
+    # spec-surface drift on the branch's own changed governed paths --
+    # memlog entries appended, exactly those Specs scoped-stamped, a
+    # commit pushed before merge. The reconcile succeeded and the merge
+    # proceeds; this is visibility only (surfaced in `marshal watch` and
+    # `fleet-picture`'s ATTENTION rows), never a refusal -- the SAME WARN
+    # tier as MRS-DISP-046 above.
+    "MRS-DISP-047": Verdict.WARN,
+    # Story 53.2 (spec-pyforge-marshal CAP-261b): a Spec the branch's own
+    # changed paths co-govern also carries drift on a path this branch did
+    # NOT change (foreign drift) -- scoping the stamp to that Spec would
+    # silently launder the unrelated drift too, so the landing is refused
+    # before `forge.merge_pr`. The SAME ERROR tier as MRS-DISP-044 above
+    # (both fire immediately before the merge and both stop the land
+    # attempt cold).
+    "MRS-DISP-048": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

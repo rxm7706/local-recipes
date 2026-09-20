@@ -8,6 +8,7 @@ FR-187 subject, Story 4.1 spec promotion, Epic 15 ledger). Lives outside
 
 from __future__ import annotations
 
+import re
 import shutil
 import sys
 import tempfile
@@ -217,6 +218,350 @@ def _refuse_via_merge_tree_preview(
     )
 
 
+#: The trailing `--write-baseline --spec {name}` remedy suffix every
+#: `drift`/`drift-presumed` finding message ends with (verbatim from
+#: `pyforge.doctor.sources.chain._drift_findings`) -- the one place the
+#: spec name is recoverable from, since the Finding's own `evidence` carries
+#: only `{"path": ...}`. `\S+` is safe: a spec name is `<project>/<spec-dir>`
+#: and neither segment contains whitespace.
+_SPEC_SURFACE_NAME_RE = re.compile(r"--write-baseline --spec (\S+)\s*$")
+
+
+@dataclass(frozen=True)
+class _SpecSurfaceReconcileOutcome:
+    """Result of ``_reconcile_spec_surface_drift``. ``finding`` is ``None``
+    when there was nothing to reconcile (no drift at all, or the session
+    already reconciled itself); otherwise it is exactly one aggregate
+    finding -- ``MRS-DISP-047`` (WARN, non-blocking) on success, or
+    ``MRS-DISP-048`` (ERROR) when ``refuse`` is also ``True``."""
+
+    finding: Finding | None
+    refuse: bool
+
+
+def _reconcile_spec_surface_drift(
+    *,
+    git_repo_root: Path,
+    worktree: Path,
+    head_branch: str,
+    key: StoryKey,
+    run_id: str | None,
+    vcs: VcsPort,
+    process: ProcessPort,
+) -> _SpecSurfaceReconcileOutcome:
+    """Story 53.2 (spec-pyforge-marshal CAP-261b): before ``forge.merge_pr``,
+    run the spec-surface verdict over the branch's own tree and reconcile
+    any drift that consists ONLY of this branch's own changed files --
+    appending one memlog event per drifted spec (naming the story key, the
+    run id, and every path) and scoped-stamping exactly those specs -- so a
+    session that lands with drift on its own governed files no longer goes
+    green while leaving ``main`` red until a human runs the "Story X landed:
+    <paths>" ritual by hand (the four fallout PRs of 2026-09-20 this story
+    closes). A spec whose drift ALSO names a path this branch did not touch
+    is foreign drift: refused (``MRS-DISP-048``) rather than silently
+    absorbed into a scoped stamp -- scoping the stamp would accept that
+    unrelated drift as reconciled too.
+
+    Reads ``pyforge.doctor.sources.chain.gather_spec_surface`` install-free
+    (this checkout's own files on ``sys.path``, never modified -- Boundaries:
+    doctor's verdict is read-only here, and stays doctor's alone), mirroring
+    ``scripts/spec_surface_reconcile.py``'s own established pattern.
+
+    Two families of failure, two tiers (AD-31's established reuse pattern;
+    c.f. ``MRS-DEPLOY-003``/``MRS-DEPLOY-024``): failing to even EVALUATE
+    drift (the doctor source tree unreachable, or the verdict crashing --
+    both should be unreachable in a real dispatch worktree, which is always
+    a full checkout, but are defended against here regardless) reports
+    through the same non-blocking ``MRS-DISP-047`` tier a successful
+    reconcile does, since blocking every landing on an environment gap this
+    story is not scoped to fix would be a worse outage than the ritual it
+    closes. Failing to safely APPLY a reconcile once drift is already known
+    (``VcsPort.changed_files`` failing to tell own from foreign, a memlog
+    append erroring on a locked/missing-frontmatter file, the scoped stamp
+    subprocess failing, or the reconcile commit failing to push) reports
+    through ``MRS-DISP-048`` and refuses: none of THESE may reach
+    ``forge.merge_pr`` with known, un-reconciled drift left behind."""
+    try:
+        doctor_src = worktree / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
+        if str(doctor_src) not in sys.path:
+            sys.path.insert(0, str(doctor_src))
+        from pyforge.doctor.sources.chain import gather_spec_surface
+    except ImportError as exc:
+        # Unlike the failures below, this fires before we know whether the
+        # branch left ANY drift behind at all -- a real dispatch worktree is
+        # always a full checkout with the doctor source tree in place, so
+        # this is an environmental/wiring gap, not a git fact about this
+        # landing. Blocking every landing on it would be a worse outage than
+        # the ritual this story closes, so it degrades to the same
+        # non-blocking MRS-DISP-047 tier as a successful reconcile (AD-31
+        # reuse) rather than refusing via MRS-DISP-048 -- visible, never
+        # silent, but never gating on an environment problem this story was
+        # not scoped to fix.
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
+                message=(
+                    f"cannot reach the spec-surface verdict from {worktree}: "
+                    f"{exc} — landing {key} without a drift reconcile"
+                ),
+            ),
+            refuse=False,
+        )
+
+    try:
+        surface_findings = gather_spec_surface(worktree)
+    except Exception as exc:  # noqa: BLE001 -- a read-only judge's own crash
+        # `gather_spec_surface` already wraps its own body in
+        # `degrade_on_exception` (converts an internal crash to a WARN
+        # finding rather than raising), so this is defense-in-depth for an
+        # exception escaping that boundary itself -- same "can't evaluate,
+        # don't know if there's drift" category as the ImportError above,
+        # so the same non-blocking MRS-DISP-047 tier applies.
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
+                message=(
+                    f"spec-surface verdict crashed for {worktree}: "
+                    f"{exc.__class__.__name__}: {exc} — landing {key} "
+                    "without a drift reconcile"
+                ),
+            ),
+            refuse=False,
+        )
+
+    by_spec: dict[str, set[str]] = {}
+    no_baseline: set[str] = set()
+    for finding in surface_findings:
+        if finding.check == "no-baseline":
+            # Story 53.2 review (B2/E1): a spec with no stamped baseline
+            # entry has no per-file drift breakdown to diff against
+            # `changed` at all -- collected separately so it can be
+            # failed closed below rather than silently skipped.
+            match = _SPEC_SURFACE_NAME_RE.search(finding.message)
+            if match:
+                no_baseline.add(match.group(1))
+            continue
+        if finding.check not in ("drift", "drift-presumed"):
+            continue
+        match = _SPEC_SURFACE_NAME_RE.search(finding.message)
+        path = finding.evidence.get("path") if finding.evidence else None
+        if not match or not path:
+            continue
+        by_spec.setdefault(match.group(1), set()).add(path)
+
+    if not by_spec and not no_baseline:
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    try:
+        changed = set(vcs.changed_files(git_repo_root, worktree, base=_ORIGIN_MAIN))
+    except VcsCommandError as exc:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot determine {head_branch!r}'s own changed files to "
+                    f"reconcile spec-surface drift: {exc} — refusing to land"
+                ),
+            ),
+            refuse=True,
+        )
+
+    foreign: dict[str, set[str]] = {}
+    own: dict[str, set[str]] = {}
+    for name in no_baseline:
+        # Story 53.2 review (B2/E1): fail closed rather than silently
+        # skip. A never-baselined spec cannot be split into own/foreign
+        # paths (no per-file drift to diff), so only refuse when this
+        # branch actually touched that spec's own tracked folder --
+        # an unrelated repo-wide never-baselined spec stays none of this
+        # landing's business, same as zero-overlap drift below.
+        project, _, spec_dir = name.partition("/")
+        spec_prefix = f"_bmad-output/projects/{project}/planning-artifacts/specs/{spec_dir}/"
+        touched = {p for p in changed if p.startswith(spec_prefix)}
+        if touched:
+            foreign[name] = touched
+    for name, paths in by_spec.items():
+        overlap = paths & changed
+        if not overlap:
+            # Drift with zero overlap against this branch's own changed
+            # files is pre-existing and unrelated -- not this landing's to
+            # reconcile or refuse on (only a path THIS branch touched makes
+            # a spec's drift ours or foreign).
+            continue
+        not_ours = paths - changed
+        if not_ours:
+            foreign[name] = not_ours
+        else:
+            own[name] = paths
+
+    if foreign:
+        detail = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(foreign.items()))
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"spec-surface drift on {head_branch!r} cannot be safely "
+                    f"reconciled — foreign drift, or a spec with no stamped "
+                    f"baseline to diff against — refusing to land rather than "
+                    f"absorb it into a scoped stamp: {detail}"
+                ),
+            ),
+            refuse=True,
+        )
+
+    if not own:
+        # Every drifted spec had zero overlap with this branch's own
+        # changed files (all skipped above) -- nothing of this branch's to
+        # reconcile. Returning here (rather than falling through) also
+        # guards against building a bare `--write-baseline` with no
+        # `--spec` flags below, which Boundaries forbid outright.
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    memlog_script = worktree / "_bmad" / "scripts" / "memlog.py"
+    stamp_script = worktree / "scripts" / "spec_surface_check.py"
+    run_note = f" (run {run_id})" if run_id else ""
+    for name, paths in sorted(own.items()):
+        project, _, spec_dir = name.partition("/")
+        memlog_path = (
+            worktree / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / spec_dir / ".memlog.md"
+        )
+        text = f"Story {key} landed{run_note}: {', '.join(sorted(paths))}"
+        try:
+            result = process.run(
+                [
+                    sys.executable,
+                    str(memlog_script),
+                    "append",
+                    "--path",
+                    str(memlog_path),
+                    "--type",
+                    "event",
+                    "--text",
+                    text,
+                    "--by",
+                    "marshal",
+                ],
+                cwd=worktree,
+            )
+        except ProcessError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"memlog append failed for {name} while reconciling "
+                        f"spec-surface drift on {head_branch!r}: {exc} — "
+                        "refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+        if result.returncode != 0:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"memlog append refused for {name} while reconciling "
+                        f"spec-surface drift on {head_branch!r} "
+                        f"(exit {result.returncode}): {result.stderr.strip()} "
+                        "— refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+        # Story 53.2 review (B4/E2): commit each spec's memlog append as
+        # soon as it succeeds, rather than batching every spec's commit
+        # until the end -- a later spec's failure then refuses the
+        # landing without leaving an earlier spec's already-successful
+        # append as an uncommitted working-tree edit a retry could
+        # silently under-commit (doctor reads on-disk text regardless of
+        # commit state, so a retry would see the earlier spec as already
+        # clean and never re-touch, and therefore never re-commit, it).
+        try:
+            vcs.commit_paths(
+                worktree,
+                (memlog_path.relative_to(worktree),),
+                f"marshal: reconcile spec-surface drift for {key} ({name})",
+            )
+        except VcsCommandError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot commit the spec-surface reconcile memlog "
+                        f"for {name} on {head_branch!r}: {exc} — refusing "
+                        "to land"
+                    ),
+                ),
+                refuse=True,
+            )
+
+    stamp_argv = [sys.executable, str(stamp_script), "--write-baseline"]
+    for name in sorted(own):
+        stamp_argv.extend(["--spec", name])
+    try:
+        stamp_result = process.run(stamp_argv, cwd=worktree)
+    except ProcessError as exc:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(f"scoped spec-surface baseline stamp failed on {head_branch!r}: {exc} — refusing to land"),
+            ),
+            refuse=True,
+        )
+    if stamp_result.returncode != 0:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"scoped spec-surface baseline stamp refused on "
+                    f"{head_branch!r} (exit {stamp_result.returncode}): "
+                    f"{stamp_result.stderr.strip()} — refusing to land"
+                ),
+            ),
+            refuse=True,
+        )
+    try:
+        vcs.commit_paths(
+            worktree,
+            (Path("scripts") / ".spec-surface-baseline.json",),
+            f"marshal: reconcile spec-surface drift for {key}",
+        )
+        vcs.push(git_repo_root, head_branch)
+    except VcsCommandError as exc:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot commit/push the spec-surface reconcile for {head_branch!r}: {exc} — refusing to land"
+                ),
+            ),
+            refuse=True,
+        )
+
+    reconciled = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(own.items()))
+    return _SpecSurfaceReconcileOutcome(
+        finding=Finding(
+            code="MRS-DISP-047",
+            severity=Severity.WARN,
+            message=(
+                f"reconciled spec-surface drift on {head_branch!r} before "
+                f"landing {key} — the session left this unreconciled: {reconciled}"
+            ),
+        ),
+        refuse=False,
+    )
+
+
 def execute_dispatch_land(
     *,
     project_slug: str,
@@ -224,6 +569,7 @@ def execute_dispatch_land(
     worktree: Path,
     repo_root: Path,
     verification_verdict: DispatchVerificationVerdict,
+    run_id: str | None = None,
     effective: EffectivePolicy | None = None,
     fs: FsPort | None = None,
     vcs: VcsPort | None = None,
@@ -535,6 +881,70 @@ def execute_dispatch_land(
             ),
             envelope,
         )
+
+    reconcile_outcome = _reconcile_spec_surface_drift(
+        git_repo_root=git_repo_root,
+        worktree=worktree,
+        head_branch=head_branch,
+        key=key,
+        run_id=run_id,
+        vcs=vcs,
+        process=process,
+    )
+    if reconcile_outcome.finding is not None:
+        findings.append(reconcile_outcome.finding)
+    if reconcile_outcome.refuse:
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
+
+    if reconcile_outcome.finding is not None:
+        # A non-refusing finding here is MRS-DISP-047: the reconcile
+        # actually committed and pushed onto `head_branch`, so the sha
+        # captured before this step is stale -- `forge.merge_pr`'s
+        # `expected_head_sha` (and the reported `data["head_sha"]`) must
+        # reflect the pushed reconcile commit, not the pre-reconcile tip.
+        try:
+            head_sha = vcs.resolve_ref(git_repo_root, head_branch)
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot resolve {head_branch!r} tip after reconciling "
+                        f"spec-surface drift: {exc} — refusing to land"
+                    ),
+                )
+            )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        data["head_sha"] = head_sha
 
     try:
         forge.merge_pr(
