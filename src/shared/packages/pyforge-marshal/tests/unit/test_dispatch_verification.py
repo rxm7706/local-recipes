@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.core.process import ProcessResult
+from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.dispatch_verify import (
     compose_dispatch_policy,
     evaluate_dispatch_verification,
