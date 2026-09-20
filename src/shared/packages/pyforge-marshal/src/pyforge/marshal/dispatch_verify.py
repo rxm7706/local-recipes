@@ -112,7 +112,10 @@ def _verify_commands_with_surface_guard(
     adapters. De-duplicated first so an operator who already declared the
     guard in a station's ``marshal-policy.toml`` (never the intended path --
     see that constant's own docstring, "derive, don't declare") still runs
-    it exactly once.
+    it exactly once. The membership test collapses whitespace
+    (``" ".join(command.split())``) the same way ``gate.check_spec_binding``
+    does, so a station-declared guard that differs only in spacing still
+    de-duplicates instead of running twice.
 
     Unlike the loop adapter, this is not a rendered file an operator can
     read before a run starts -- it is folded in at USE time, right before
@@ -120,7 +123,10 @@ def _verify_commands_with_surface_guard(
     them, so a dispatch session is gated on the guard exactly like a loop
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
-    verify = [c for c in effective.verify_commands.value if c != _SURFACE_RECONCILE_COMMAND]
+    normalized_guard = " ".join(_SURFACE_RECONCILE_COMMAND.split())
+    verify = [
+        c for c in effective.verify_commands.value if " ".join(c.split()) != normalized_guard
+    ]
     verify.append(_SURFACE_RECONCILE_COMMAND)
     return tuple(verify)
 
@@ -135,13 +141,23 @@ def run_verify_commands_only(
     aware) and do not transfer to a merge-tree preview worktree (see spec
     Design Notes). Used by ``dispatch_land.py`` to re-run verification
     against the tree ``git merge-tree --write-tree`` would actually produce
-    before landing, when the branch's baseline is behind ``origin/main``.
-    An empty ``verify_commands`` returns two empty tuples -- no
-    ``no_commands_configured_finding`` here; that policy-level warning
-    belongs to the branch's own verification pass, not this preview re-run."""
+    before landing, when the branch's baseline is behind ``origin/main``. No
+    ``no_commands_configured_finding`` here regardless of ``verify_commands``;
+    that policy-level warning belongs to the branch's own verification pass,
+    not this preview re-run.
+
+    Story 53.1 (spec-53-1): routed through ``_verify_commands_with_surface_guard``
+    like every other verify-command consumer, not the raw policy value --
+    unlike the scope/spec-binding/cross-surface layers, the S-13.7 guard is
+    filesystem-state-based (it reads whatever tree it runs in and compares
+    to a stored baseline), not a ``base...HEAD`` git diff, so the rationale
+    that excludes those layers from a merge-tree preview does not extend to
+    it: a merge-tree preview worktree is exactly the tree the guard needs to
+    check before landing. As a result this can no longer return two empty
+    tuples -- the guard is always present."""
     command_reports: list[dict[str, object]] = []
     findings: list[Finding] = []
-    for command in effective.verify_commands.value:
+    for command in _verify_commands_with_surface_guard(effective):
         report, finding = _run_verify_command(command, process=process, worktree=worktree)
         command_reports.append(report)
         if finding is not None:
