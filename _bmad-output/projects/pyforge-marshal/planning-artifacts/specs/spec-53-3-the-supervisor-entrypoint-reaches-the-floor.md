@@ -2,7 +2,7 @@
 title: '53.3: The supervisor entrypoint reaches the floor'
 type: 'chore'
 created: '2026-09-20'
-status: 'done'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'd50aedbd22c5b8a531f25d90fca1532a3cae6ace'
