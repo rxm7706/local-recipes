@@ -310,6 +310,87 @@ def test_reconcile_spec_surface_drift_skips_unrelated_pre_existing_drift(
     assert vcs.committed == []
 
 
+def test_reconcile_spec_surface_drift_refuses_no_baseline_spec_this_branch_touched(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 53.2 review (B2/E1): a spec with no stamped baseline has no
+    per-file drift breakdown to diff against ``changed`` at all -- fail
+    closed rather than silently skip it, but only when this branch actually
+    touched that spec's own tracked folder (an unrelated repo-wide
+    never-baselined spec stays none of this landing's business, same as
+    zero-overlap drift)."""
+    _install_fake_spec_surface(
+        monkeypatch,
+        (
+            _SurfaceFinding(
+                "no-baseline",
+                "pyforge-marshal/spec-gamma: run --write-baseline "
+                "--spec pyforge-marshal/spec-gamma",
+                "",
+            ),
+        ),
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    touched = (
+        "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/"
+        "spec-gamma/spec-gamma.md"
+    )
+    vcs = _ReconcileVcs(changed=(touched,))
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.refuse is True
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-048"
+    assert "pyforge-marshal/spec-gamma" in outcome.finding.message
+    assert process.calls == []
+    assert vcs.committed == []
+
+
+def test_reconcile_spec_surface_drift_skips_no_baseline_spec_this_branch_did_not_touch(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 53.2 review (B2/E1): a never-baselined spec this branch did
+    not touch at all is not this landing's business -- no-op, same as
+    zero-overlap drift on an already-baselined spec."""
+    _install_fake_spec_surface(
+        monkeypatch,
+        (
+            _SurfaceFinding(
+                "no-baseline",
+                "pyforge-marshal/spec-gamma: run --write-baseline "
+                "--spec pyforge-marshal/spec-gamma",
+                "",
+            ),
+        ),
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("src/unrelated.py",))
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.finding is None
+    assert outcome.refuse is False
+    assert process.calls == []
+    assert vcs.committed == []
+
+
 def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(
     tmp_path: Path, monkeypatch
 ) -> None:
