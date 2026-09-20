@@ -432,7 +432,7 @@ def test_sibling_acknowledged_hash_mismatch_refires_naming_both_hashes(
 ):
     dreams = tmp_path / "docs" / "dreams"
     sibling_fp = _fingerprint(title="Miniforge", status="dreamt", owner="mason")
-    stale_hash = "0" * 64
+    stale_hash = "deadbeef" * 8  # a hex-looking (non-numeric) stale hash
     _write_local_dream_with_ack(
         dreams,
         "miniforge-installer",
