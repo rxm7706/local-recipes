@@ -179,6 +179,428 @@ class BrokenForge(FakeForge):
         raise ForgeCommandError("merge blocked")
 
 
+# Story 53.2 (spec-pyforge-marshal CAP-261b): fixtures for
+# `_reconcile_spec_surface_drift` -- the landing reconciles spec-surface
+# drift on its own governed files before merging.
+
+
+class _SurfaceFinding:
+    """Duck-typed stand-in for ``pyforge.doctor.models.Finding`` -- only
+    ``.check``/``.message``/``.evidence`` are read by
+    ``_reconcile_spec_surface_drift``."""
+
+    def __init__(self, check: str, message: str, path: str) -> None:
+        self.check = check
+        self.message = message
+        self.evidence = {"path": path}
+
+
+def _install_fake_spec_surface(monkeypatch, findings: tuple) -> None:
+    """Install a fake ``pyforge.doctor.sources.chain`` module into
+    ``sys.modules`` so ``_reconcile_spec_surface_drift``'s own
+    ``from pyforge.doctor.sources.chain import gather_spec_surface``
+    (re-resolved fresh on every call) finds a controllable stand-in.
+    ``pyforge.doctor`` is not on this package's own pixi env (confirmed
+    live: a real dispatch worktree reaches it only via the ``sys.path``
+    insert onto its OWN checked-out doctor source tree), so patching the
+    real module by dotted path isn't an option here."""
+    fake_chain = types.ModuleType("pyforge.doctor.sources.chain")
+    fake_chain.gather_spec_surface = lambda target: findings  # noqa: ARG005
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.chain", fake_chain)
+
+
+class _ReconcileVcs(FakeVcs):
+    """``FakeVcs`` plus the ``changed_files``/``commit_paths`` surface
+    ``_reconcile_spec_surface_drift`` needs, and a ``resolve_ref`` that
+    returns a different sha on its second call -- proving the post-reconcile
+    refresh in ``execute_dispatch_land`` actually re-resolves the tip rather
+    than reusing the pre-reconcile sha."""
+
+    def __init__(self, *, changed: tuple[str, ...], **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.changed = changed
+        self.committed: list[tuple[Path, tuple[Path, ...], str]] = []
+        self._resolve_calls = 0
+
+    def changed_files(self, repo_root: Path, worktree: Path, *, base: str) -> tuple[str, ...]:
+        return self.changed
+
+    def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: str) -> str:
+        self.committed.append((worktree, paths, message))
+        return "reconcile-commit-sha"
+
+    def resolve_ref(self, repo_root: Path, ref: str) -> str:
+        self._resolve_calls += 1
+        return "pre-reconcile-sha" if self._resolve_calls == 1 else "post-reconcile-sha"
+
+
+class _RaisingReconcileProcess:
+    """A ``ProcessPort`` whose ``.run()`` always raises -- simulates the
+    memlog-append subprocess failing to even launch."""
+
+    def run(self, tokens, *, cwd: Path):
+        raise ProcessError("memlog subprocess failed to launch")
+
+
+class _RecordingForge(FakeForge):
+    def __init__(self) -> None:
+        self.merge_calls: list[str] = []
+
+    def merge_pr(self, repo, number, strategy, *, expected_head_sha, delete_branch, subject):
+        self.merge_calls.append(expected_head_sha.value)
+        return None
+
+
+def test_reconcile_spec_surface_drift_noop_when_no_drift_findings(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """No 'drift'/'drift-presumed' findings at all -- nothing to reconcile,
+    no side effects."""
+    _install_fake_spec_surface(monkeypatch, ())
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=())
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id="run-1",
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.finding is None
+    assert outcome.refuse is False
+    assert process.calls == []
+    assert vcs.committed == []
+
+
+def test_reconcile_spec_surface_drift_skips_unrelated_pre_existing_drift(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A spec's drift with ZERO overlap against this branch's own changed
+    files is pre-existing and unrelated -- not this landing's to reconcile
+    or refuse on."""
+    findings = (
+        _SurfaceFinding(
+            "drift",
+            "path drifted — reconcile the spec, then --write-baseline "
+            "--spec pyforge-marshal/spec-unrelated",
+            "some/unrelated/file.py",
+        ),
+    )
+    _install_fake_spec_surface(monkeypatch, findings)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("this/branch/file.py",))
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.finding is None
+    assert outcome.refuse is False
+    assert process.calls == []
+    assert vcs.committed == []
+
+
+def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The 2026-09-20 fixture shape: own drift spans more than one
+    co-governing spec -- each gets its own memlog append, one scoped stamp
+    names every drifted spec, the reconcile is committed and pushed, and a
+    single aggregate MRS-DISP-047 names every path."""
+    findings = (
+        _SurfaceFinding(
+            "drift",
+            "path drifted — reconcile the spec, then --write-baseline "
+            "--spec pyforge-marshal/spec-alpha",
+            "src/a.py",
+        ),
+        _SurfaceFinding(
+            "drift-presumed",
+            "path presumed drifted — confirm it was reconciled, then "
+            "--write-baseline --spec pyforge-marshal/spec-beta",
+            "src/b.py",
+        ),
+    )
+    _install_fake_spec_surface(monkeypatch, findings)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("src/a.py", "src/b.py"))
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id="run-7",
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.refuse is False
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-047"
+    assert outcome.finding.severity == Severity.WARN
+    assert "spec-alpha" in outcome.finding.message
+    assert "spec-beta" in outcome.finding.message
+    assert "src/a.py" in outcome.finding.message
+    assert "src/b.py" in outcome.finding.message
+
+    memlog_calls = [c for c in process.calls if "memlog.py" in c[0][1]]
+    stamp_calls = [c for c in process.calls if "spec_surface_check.py" in c[0][1]]
+    assert len(memlog_calls) == 2
+    assert len(stamp_calls) == 1
+    stamp_argv = stamp_calls[0][0]
+    assert stamp_argv.count("--spec") == 2
+    assert "pyforge-marshal/spec-alpha" in stamp_argv
+    assert "pyforge-marshal/spec-beta" in stamp_argv
+    assert "--write-baseline" in stamp_argv
+
+    assert len(vcs.committed) == 1
+    _committed_worktree, _committed_paths, commit_message = vcs.committed[0]
+    assert "53.2" in commit_message
+    assert vcs.pushed == ["dispatch/pyforge-marshal/53.2"]
+
+
+def test_reconcile_spec_surface_drift_refuses_foreign_drift(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A spec's drift names a path this branch did NOT change -- foreign
+    drift is refused (MRS-DISP-048) naming the foreign path, never absorbed
+    into a scoped stamp, and nothing is committed or pushed."""
+    findings = (
+        _SurfaceFinding(
+            "drift",
+            "--write-baseline --spec pyforge-marshal/spec-shared",
+            "src/mine.py",
+        ),
+        _SurfaceFinding(
+            "drift",
+            "--write-baseline --spec pyforge-marshal/spec-shared",
+            "src/not-mine.py",
+        ),
+    )
+    _install_fake_spec_surface(monkeypatch, findings)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("src/mine.py",))
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.refuse is True
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-048"
+    assert "src/not-mine.py" in outcome.finding.message
+    assert process.calls == []
+    assert vcs.committed == []
+
+
+def test_reconcile_spec_surface_drift_refuses_when_memlog_append_exits_nonzero(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The memlog append subprocess runs but refuses (locked file, missing
+    frontmatter, ...) -- refused (MRS-DISP-048), never silently skipped,
+    nothing stamped or committed."""
+    findings = (
+        _SurfaceFinding(
+            "drift",
+            "--write-baseline --spec pyforge-marshal/spec-alpha",
+            "src/a.py",
+        ),
+    )
+    _install_fake_spec_surface(monkeypatch, findings)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    class _RefusingProcess:
+        def __init__(self) -> None:
+            self.calls: list[tuple[list[str], Path]] = []
+
+        def run(self, tokens, *, cwd: Path):
+            self.calls.append((list(tokens), cwd))
+            return ProcessResult(returncode=1, stdout="", stderr="memlog locked")
+
+    process = _RefusingProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.refuse is True
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-048"
+    assert "spec-alpha" in outcome.finding.message
+    assert vcs.committed == []
+
+
+def test_reconcile_spec_surface_drift_refuses_when_memlog_process_errors(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The memlog append subprocess fails to even launch -- refused
+    (MRS-DISP-048), same as a non-zero exit."""
+    findings = (
+        _SurfaceFinding(
+            "drift",
+            "--write-baseline --spec pyforge-marshal/spec-alpha",
+            "src/a.py",
+        ),
+    )
+    _install_fake_spec_surface(monkeypatch, findings)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=vcs,
+        process=_RaisingReconcileProcess(),
+    )
+    assert outcome.refuse is True
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-048"
+    assert vcs.committed == []
+
+
+def test_reconcile_spec_surface_drift_degrades_when_doctor_unreachable(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """`pyforge.doctor` is not importable at all here (no fake module
+    installed, and this package's own pixi env doesn't ship it) -- this is
+    the exact path a real dispatch worktree never hits (always a full
+    checkout with doctor's own source tree in place), but must degrade to
+    a non-blocking MRS-DISP-047 rather than refuse the landing on an
+    environment gap this story is not scoped to fix."""
+    for mod in (
+        "pyforge.doctor.sources.chain",
+        "pyforge.doctor.sources",
+        "pyforge.doctor",
+    ):
+        monkeypatch.delitem(sys.modules, mod, raising=False)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=_ReconcileVcs(changed=()),
+        process=FakeProcess(),
+    )
+    assert outcome.refuse is False
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-047"
+
+
+def test_execute_dispatch_land_reconciles_own_drift_before_merging(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """End-to-end: a landing whose branch left drift on its OWN governed
+    files reconciles it before ``forge.merge_pr`` -- and the sha handed to
+    ``forge.merge_pr`` (and reported in the envelope) is the POST-reconcile
+    tip, not the sha resolved before the reconcile commit was pushed onto
+    the branch."""
+    _install_fake_spec_surface(
+        monkeypatch,
+        (
+            _SurfaceFinding(
+                "drift",
+                "--write-baseline --spec pyforge-marshal/spec-alpha",
+                "src/a.py",
+            ),
+        ),
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(merged=False, changed=("src/a.py",))
+    process = FakeProcess()
+    forge = _RecordingForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge,
+        process=process,
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    findings_047 = [f for f in envelope.findings if f.code == "MRS-DISP-047"]
+    assert len(findings_047) == 1
+    assert "spec-alpha" in findings_047[0].message
+    assert forge.merge_calls == ["post-reconcile-sha"]
+    assert envelope.data["head_sha"] == "post-reconcile-sha"
+    assert len(vcs.committed) == 1
+    assert vcs.pushed.count("dispatch/pyforge-marshal/22.4") == 2
+
+
+def test_execute_dispatch_land_refuses_on_foreign_spec_surface_drift(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """End-to-end: foreign drift on a shared spec refuses the landing
+    (MRS-DISP-048) and never reaches ``forge.merge_pr``."""
+    _install_fake_spec_surface(
+        monkeypatch,
+        (
+            _SurfaceFinding(
+                "drift",
+                "--write-baseline --spec pyforge-marshal/spec-shared",
+                "src/mine.py",
+            ),
+            _SurfaceFinding(
+                "drift",
+                "--write-baseline --spec pyforge-marshal/spec-shared",
+                "src/not-mine.py",
+            ),
+        ),
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(merged=False, changed=("src/mine.py",))
+    process = FakeProcess()
+    forge = _RecordingForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge,
+        process=process,
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    findings_048 = [f for f in envelope.findings if f.code == "MRS-DISP-048"]
+    assert len(findings_048) == 1
+    assert "src/not-mine.py" in findings_048[0].message
+    assert forge.merge_calls == []
+    assert vcs.committed == []
+
+
 def test_execute_dispatch_land_refuses_unverified(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
