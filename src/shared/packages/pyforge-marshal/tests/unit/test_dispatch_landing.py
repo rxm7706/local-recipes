@@ -364,9 +364,13 @@ def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(
     assert "pyforge-marshal/spec-beta" in stamp_argv
     assert "--write-baseline" in stamp_argv
 
-    assert len(vcs.committed) == 1
-    _committed_worktree, _committed_paths, commit_message = vcs.committed[0]
-    assert "53.2" in commit_message
+    # Story 53.2 review (B4/E2): each spec's memlog append is committed
+    # immediately inside the loop -- so this fixture (two specs) produces
+    # three commits: one per-spec memlog commit plus the final baseline
+    # -stamp commit, not one batched commit.
+    assert len(vcs.committed) == 3
+    for _committed_worktree, _committed_paths, commit_message in vcs.committed:
+        assert "53.2" in commit_message
     assert vcs.pushed == ["dispatch/pyforge-marshal/53.2"]
 
 
@@ -554,7 +558,10 @@ def test_execute_dispatch_land_reconciles_own_drift_before_merging(
     assert "spec-alpha" in findings_047[0].message
     assert forge.merge_calls == ["post-reconcile-sha"]
     assert envelope.data["head_sha"] == "post-reconcile-sha"
-    assert len(vcs.committed) == 1
+    # Story 53.2 review (B4/E2): one per-spec memlog commit plus the
+    # final baseline-stamp commit -- two commits for this single-spec
+    # fixture, not one batched commit.
+    assert len(vcs.committed) == 2
     assert vcs.pushed.count("dispatch/pyforge-marshal/22.4") == 2
 
 
