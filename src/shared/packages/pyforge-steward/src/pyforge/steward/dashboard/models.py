@@ -123,12 +123,25 @@ class CorridorDirection(models.TextChoices):
 class CorridorLoad(models.Model):
     """CAP-139 (spec-work-passports-dated-extracts CAP-1 / spec-pyforge-steward
     CAP-139): one durable record of a corridor drop. Idempotent on
-    (direction, batch_sha, waybill) -- see dashboard/corridor_load.py."""
+    (direction, batch_sha, waybill) -- see dashboard/corridor_load.py.
+
+    ``slice_name``/``signer`` (Story 61.4, spec-work-passports-dated-extracts
+    CAP-4 / spec-pyforge-steward CAP-142 -- the signed-outbound-slice gate)
+    are the durable record of what was named and who signed it. Both are
+    blank (``""``) on every ``inbound`` row: the gate applies to
+    ``direction="outbound"`` only. Like ``transport``, they are set ONCE at
+    create time and never overwritten by a later idempotent repeat of the
+    same ``(direction, batch_sha, waybill)`` -- see
+    ``corridor.py``/``corridor_load.py`` for the gate and the idempotency
+    rule.
+    """
 
     direction = models.CharField(max_length=8, choices=CorridorDirection.choices, db_index=True)
     batch_sha = models.CharField(max_length=64, db_index=True)
     waybill = models.CharField(max_length=128, db_index=True)
     transport = models.CharField(max_length=32)
+    slice_name = models.CharField(max_length=128, blank=True, default="")
+    signer = models.CharField(max_length=255, blank=True, default="")
     loaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
