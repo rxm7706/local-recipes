@@ -169,7 +169,7 @@ def resolve_story_spec_path(repo_root: Path, slug: str, story: str) -> Path | No
 
 
 def spec_text_at_ref(
-    vcs: "VcsPort",
+    vcs: VcsPort,
     repo_root: Path,
     slug: str,
     story: str,
