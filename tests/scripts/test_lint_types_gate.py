@@ -112,3 +112,35 @@ def test_pre_push_hook_script_exists_and_names_the_opt_out() -> None:
     # git exports GIT_DIR & co. to hooks; a preflight that inherits them breaks every test that
     # `git init`s a temp repo (seen live 2026-09-20) -- the hook must scrub them first.
     assert "unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE" in text
+    assert "branch delete -- nothing to preflight" in text  # `git push --delete` carries no commits
+    # Under pre-commit a pre-push hook gets no stdin; the refs arrive as PRE_COMMIT_* env vars.
+    assert "PRE_COMMIT_REMOTE_BRANCH" in text and "PRE_COMMIT_TO_REF" in text
+
+
+@pytest.mark.parametrize(
+    ("env", "stdin", "expect"),
+    [
+        ({"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/dispatch/pyforge-marshal/53.2", "PRE_COMMIT_TO_REF": "abc"}, "", "dispatch/* branch"),
+        ({"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/x", "PRE_COMMIT_TO_REF": "0" * 40}, "", "branch delete"),
+        ({}, "HEAD\tabc\trefs/heads/dispatch/pyforge-doctor/1.1\tdef\n", "dispatch/* branch"),
+        ({}, "(delete)\t" + "0" * 40 + "\trefs/heads/x\tabc\n", "branch delete"),
+    ],
+    ids=["env-dispatch", "env-delete", "stdin-dispatch", "stdin-delete"],
+)
+def test_pre_push_hook_skips_dispatch_branches_and_deletes(tmp_path: Path, env: dict, stdin: str, expect: str) -> None:
+    """Both skips must fire in BOTH invocation forms; run inside a throwaway git repo so the
+    hook's own `git rev-parse` calls and its journal never touch the real checkout."""
+    import os
+    import shutil
+    import subprocess
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "x"], check=True, env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x"})
+    hook = repo / "hook.sh"
+    shutil.copy(SCRIPTS / "pre_push_preflight.sh", hook)
+    clean_env = {k: v for k, v in os.environ.items() if not k.startswith(("PRE_COMMIT_", "GIT_", "PYFORGE_PREFLIGHT"))}
+    proc = subprocess.run(["bash", str(hook)], cwd=repo, input=stdin, capture_output=True, text=True, env={**clean_env, **env})
+    assert proc.returncode == 0, proc.stderr
+    assert expect in proc.stderr
