@@ -11,6 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.cli.config import repo_root
@@ -25,6 +26,7 @@ from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import promotion
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.core.model import Finding, Severity
 
 # Story 51.9 (re-mint of 51.3): distinct journal-kind namespace for this
 # module's own resync observation -- never conflated with `cli/land.py`'s
