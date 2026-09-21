@@ -1288,7 +1288,8 @@ class RecallInjectionResult:
 def inject_recall_feedback(
     *,
     fs: FsPort,
-    project: Path,
+    loop_home: Path,
+    repo_root: Path,
     station_slug: str | None,
     scribe: ScribeCli | None = None,
 ) -> RecallInjectionResult:
@@ -1298,6 +1299,15 @@ def inject_recall_feedback(
     block CAP-1 requires to ``{implementation_artifacts}/recall-feedback.md``
     so the shared ``bmad-build-auto`` skill's context load can fold it in.
     Read-only against scribe's own capture store; never raises.
+
+    ``loop_home``/``repo_root`` mirror ``attempt_spin_wire_layer``'s own
+    split (the SAME two paths ``cli/spin.py`` already resolves for that
+    layer): the artifact is written into ``loop_home``'s backlinked
+    ``implementation-artifacts/`` -- the tree the dev-pass session
+    launching FROM ``loop_home`` actually reads -- while the ``scribe``
+    subprocess itself runs against ``repo_root`` (the invoking process's
+    own checkout), since a loop-home worktree does not carry its own pixi
+    envs for ``ScribeCli.resolve_binary`` to find the binary in.
 
     ``station_slug`` is the dispatch's own resolved slug (``args.slug`` in
     ``cli/spin.py``) -- the same ``--scope`` mechanism
@@ -1311,10 +1321,10 @@ def inject_recall_feedback(
     left holding a previous dispatch's stale hit."""
     if not station_slug:
         return RecallInjectionResult(attempted=False)
-    target = project / recall_feedback.recall_feedback_output_relpath(station_slug)
+    target = loop_home / recall_feedback.recall_feedback_output_relpath(station_slug)
     client = scribe if scribe is not None else ScribeCli()
     outcome = client.recall(
-        repo_root=project,
+        repo_root=repo_root,
         query=recall_feedback.build_recall_query(station_slug),
         scope=station_slug,
     )

@@ -270,11 +270,13 @@ from ..adapters.harness_bmadloop import (
     HarnessError,
     HarnessPolicyWriteError,
     attempt_spin_wire_layer,
+    inject_recall_feedback,
     render_policy_toml,
     resolve_loop_runner,
     write_policy_document,
     write_policy_toml,
 )
+from ..adapters.scribe_cli import ScribeCli
 from ..adapters.vcs_git import GitVcs
 from ..core import harness_profile, policy
 from ..core.identity import (
@@ -1339,6 +1341,7 @@ def run_spin(
     harness: HarnessPort | None = None,
     process: ProcessPort | None = None,
     context: MarshalContext | None = None,
+    scribe: ScribeCli | None = None,
 ) -> int:
     # Story 5.6 (FR-65/AD-50): `context`, if `cli/main.py`'s dispatch
     # resolved one, is accepted but deliberately UNUSED here -- proving the
@@ -1401,6 +1404,33 @@ def run_spin(
             )
         )
         return _emit(args, data, findings)
+
+    # --- recall: fold relevant scribe feedback into the dev pass, --------------
+    # best-effort (Story 47.1, SPEC-marshal-recall-in-the-loop CAP-1). Runs
+    # exactly once per dispatch, before EITHER launch path below, so a
+    # detached spin and a --foreground run get identical treatment. Never
+    # blocking (this story's own "never treat a recall failure as
+    # dispatch-blocking") -- a degraded attempt only ever adds a WARN
+    # finding; the loop-home write happens (or doesn't) either way.
+    recall_result = inject_recall_feedback(
+        fs=fs,
+        loop_home=home,
+        repo_root=Path.cwd(),
+        station_slug=slug,
+        scribe=scribe,
+    )
+    if recall_result.attempted and not recall_result.ok:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-018",
+                severity=Severity.WARN,
+                message=(
+                    f"scribe recall for station {slug!r} did not run "
+                    f"({recall_result.reason}) -- this dev pass starts with "
+                    "no auto-recalled feedback"
+                ),
+            )
+        )
 
     # --- --foreground: a wholly separate, synchronous path -------------------
     # Skips the story-feed/journal machinery entirely -- there is no minted
