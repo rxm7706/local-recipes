@@ -1,6 +1,6 @@
 # `pyforge-foundry-full` as the PyForge SBOM
 
-**Status:** Phase 1 in this PR (env compose). Phases 2–4 are follow-on.
+**Status:** Phase 1 in this PR (env compose). Phases 2–4 are follow-on. **Phase 5 (`pnpm`) is optional.**
 **Env:** `pixi install -e pyforge-foundry-full` (never the default session env).
 **Not in scope:** the fat `local-recipes` feature (~200 library pins).
 
@@ -9,7 +9,7 @@ checkable closure for stations + CFE/Mason recipe generation + local build.
 
 ---
 
-## Four-phase plan
+## Plan (Phases 1–4 + optional Phase 5)
 
 ### Phase 1 — Env = BoM (this PR)
 
@@ -36,8 +36,6 @@ Compose existing features onto `pyforge-foundry-full`:
 
 **Already present:** `conda-build` (via `pyforge-warden`), `rattler-build` / CFE floor via `pyforge-mason`, `nodejs` via `python`.
 
-**Optional later (not in this PR):** `pnpm` for `generate-npm` only.
-
 **Do not** also paste those package pins next to the feature list — the features *are* the adds.
 
 **Known solve risk:** `crm` historically isolated an exact `click` pin; refresh the lock on a pixi-capable machine and fix if the union fails. This PR does **not** refresh `pixi.lock`.
@@ -58,7 +56,7 @@ These tickets close the **channel** gaps for names already (or deliberately) in 
 Already declared on `pyforge-foundry-full` via guild/atlas (SEM channel). Need CF feedstocks, then drop SEM for these names.
 
 | ID | Package | Declared in | Notes |
-|---|---|---|
+|---|---|---|---|
 | CF-SEM-01 | `bmad-builder` | `feature.pyforge-guild` | BMAD suite |
 | CF-SEM-02 | `bmad-creative-intelligence-suite` | `pyforge-guild` | |
 | CF-SEM-03 | `bmad-dashboard` | `pyforge-guild` | |
@@ -76,18 +74,18 @@ Already declared on `pyforge-foundry-full` via guild/atlas (SEM channel). Need C
 #### B. Pip → conda-forge
 
 | ID | Package | Declared in | Notes |
-|---|---|---|
+|---|---|---|---|
 | CF-PIP-01 | `sqlite-vec` | `feature.pyforge-guild` `[pypi-dependencies]` | headroom-ai proxy extra; new CF feedstock; move to conda deps; remove pip pin |
 
-#### C. npm layer (herald / atlas) — policy, not pixi compose
+#### C. npm layer (herald / atlas) — policy / feedstocks, **not** `pnpm`
+
+These are **runtime/dev JS deps** in station manifests. Closing them means either keep an npm SBOM layer (lockfiles) **or** publish conda-forge packages later. **`pnpm` does not replace this list** (see Phase 5).
 
 | ID | Package(s) | Manifest | Decision |
-|---|---|---|
+|---|---|---|---|
 | NPM-01 | `@duckdb/duckdb-wasm`, `esbuild` | `src/shared/packages/pyforge-atlas/wasm/package.json` | Keep npm SBOM layer (lockfile) **or** later CF; `esbuild` exists on CF but wasm stack is npm today |
 | NPM-02 | `react`, `react-dom` | `src/shared/packages/pyforge-herald/web/package.json` | Same — npm layer vs CF packaging |
 | NPM-03 | `vite`, `vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/*` | herald `devDependencies` | Dev/tooling; usually stay npm |
-
-`pnpm` alone does **not** put these on conda-forge; it only helps the optional `generate-npm` recipe path.
 
 #### D. Explicitly out of foundry SBOM (unless later promoted)
 
@@ -98,6 +96,33 @@ Already declared on `pyforge-foundry-full` via guild/atlas (SEM channel). Need C
 1. CFE skill / AGENTS / mason docs: recipe gen + local build → **`pyforge-foundry-full`**, not fat `local-recipes`.
 2. Governance: no new station/tool dep lands unless it is in a feature foundry-full composes (or allowlisted with a Phase 3 ticket id).
 
+### Phase 5 — Optional: `pnpm` for npm **recipe tooling** (not Phase 3C feedstocks)
+
+**Purpose:** enable npm-oriented recipe generation / factory workflows (`generate-npm`, scaffold from registry.npmjs.org) inside the SBOM env without pulling the fat `local-recipes` feature.
+
+**This is not Phase 3C.** Phase 3C is “should herald/atlas JS deps become conda-forge packages?” Phase 5 is “do we need the `pnpm` CLI on the SBOM solve?”
+
+#### What to add (concrete)
+
+| Item | Where | Pin / note |
+|---|---|---|
+| `pnpm` | New tiny feature e.g. `feature.pnpm` (or `feature.npm-recipes`) **composed onto** `pyforge-foundry-full` | `pnpm = ">=12.4.1"` — same pin as today’s `feature.local-recipes.dependencies`; already on **conda-forge** (no new feedstock) |
+| `nodejs` | **Already in** `feature.python` → already on foundry-full | `nodejs = ">=24.19.0,<27.0,!=25.*"` — do **not** re-pin |
+
+**Do not** pull `feature.local-recipes` just to get `pnpm`.
+
+#### What Phase 5 does **not** add
+
+- No new feedstocks for `react`, `@duckdb/duckdb-wasm`, `vite`, etc. (still Phase 3C).
+- No requirement to vendor herald/atlas `node_modules` into the conda solve.
+- Optional task wiring only if desired: expose `generate-npm` (or equivalent) on an env that includes `pnpm` + foundry-full — generator script itself is Python; `pnpm` is for npm ecosystem install/build steps around that path.
+
+#### Done when
+
+- [ ] `pnpm` is on `pyforge-foundry-full` via a **thin** feature (not fat local-recipes).
+- [ ] Channel audit shows `pnpm` + `nodejs` as `conda-forge`.
+- [ ] Phase 3C npm feedstock/policy list remains a **separate** checklist (unchanged by Phase 5).
+
 ---
 
 ## Success criteria
@@ -106,6 +131,7 @@ Already declared on `pyforge-foundry-full` via guild/atlas (SEM channel). Need C
 - [ ] Channel audit lists only known Phase 3 gaps (or empty).
 - [ ] CFE/Mason docs name this env.
 - [ ] SelfExplainML / `sqlite-vec` / npm policy tickets closed or explicitly deferred.
+- [ ] (Optional Phase 5) `pnpm` on foundry-full via thin feature; Phase 3C list not conflated with it.
 
 ## Mental model
 
@@ -114,6 +140,8 @@ pyforge-foundry-full  =  SBOM env (what must solve together)
          │
          ├─ Phase 1: + build/grayskull/crm/conda-smithy
          ├─ Already: guild/stations (includes SEM + pip sqlite-vec)
-         └─ Phase 3: feedstock work → same names, conda-forge channel
-                    + npm policy → lockfiles / optional CF pkgs
+         ├─ Phase 3: feedstock work → same names, conda-forge channel
+         │            + npm *policy* (herald/atlas pkgs) → lockfiles / optional CF
+         └─ Phase 5 (optional): + thin `pnpm` feature for npm *recipe tooling*
+                                (does not close Phase 3C feedstock list)
 ```
