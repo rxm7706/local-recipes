@@ -215,5 +215,98 @@
     "Story 59.2), the same kind of addition as spec_statuses_terminal/_ended_acts/",
     "_grandfathered above -- not a Charter Section 5 act (that clause guards",
     "`stations`/`guild_dreams` specifically, per this file's own top comment)."
+  ],
+
+  "$comment_session_denials": [
+    "The CLOSED list of what `.claude/hooks/pre-shell.py` denies -- the Guild",
+    "session guardrails, enforced rather than merely asserted in AGENTS.md/",
+    "CLAUDE.md prose (steward Story 63.3, spec-pyforge-steward CAP-5). ONE",
+    "script serves both harnesses (Claude Code's `PreToolUse` on `Bash` and on",
+    "`Edit`/`Write`; Cursor's `beforeShellExecution` deny and `afterFileEdit`",
+    "warn -- Cursor has no before-edit deny). Gemini CLI, GitHub Copilot CLI",
+    "and Devin have no verified deny surface for this hook; the ten rules stay",
+    "instruction-only there, as written in AGENTS.md.",
+    "",
+    "Each entry's `id` MUST have exactly one matching callable in the script's",
+    "own `MATCHERS` dict, in both directions -- `load_denial_rules()` raises",
+    "(fail loud, never a silent skip) on any drift between the two, at every",
+    "invocation. `reason` is the one-line message shown to the agent, naming",
+    "the sanctioned form; for the two rules with more than one trigger shape",
+    "(`git-commit-guardrail`, `direct-write-governed-path`) it is an object",
+    "keyed by sub-case rather than a single string.",
+    "",
+    "CHANGING THIS LIST IS A GOVERNANCE ACT, same as `stations`/`guild_dreams`",
+    "above: adding, removing or reshaping a denial is a deliberate decision,",
+    "never a drive-by code edit to pre-shell.py alone. The hook never denies",
+    "anything not named here."
+  ],
+  "session_denials": [
+    {
+      "id": "guild-task-via-local-recipes",
+      "applies_to": "bash",
+      "trigger": "pixi run -e local-recipes <task>, where <task> is in the guild-tasks set read live from pixi.toml's [feature.guild-tasks.tasks] -- never a copy",
+      "reason": "'{task}' is a Guild task -- rerun as `pixi run -e pyforge-guild {task}`; -e local-recipes only carries it for back-compat."
+    },
+    {
+      "id": "adhoc-package-install",
+      "applies_to": "bash",
+      "trigger": "pip install / uv pip install / conda install / npx <x> other than npx skills add",
+      "reason": "Dependencies are pinned in pixi.toml + pixi.lock, not installed ad hoc -- add it to pixi.toml in a PR, or use `npx skills add` for a skill install."
+    },
+    {
+      "id": "pixi-add-or-update",
+      "applies_to": "bash",
+      "trigger": "pixi add / pixi update",
+      "reason": "a dependency is a pixi.toml change in a PR, not a live `pixi add`/`pixi update` -- edit pixi.toml, run `pixi lock`, and open a PR (regenerate environment.yaml too)."
+    },
+    {
+      "id": "bmad-switch-unsafe",
+      "applies_to": "bash",
+      "trigger": "scripts/bmad-switch run from a worktree, or with BMAD_ACTIVE_PROJECT already set",
+      "reason": "Never run scripts/bmad-switch from a worktree or parallel agent -- it mutates shared per-working-tree state; set BMAD_ACTIVE_PROJECT=<slug> and address _bmad-output/projects/<slug>/ by its physical path instead."
+    },
+    {
+      "id": "git-commit-guardrail",
+      "applies_to": "bash",
+      "trigger": "git commit on main, in the primary checkout, or with a Co-Authored-By / AI-attribution line",
+      "reason": {
+        "checkout": "Never commit on main or in the primary checkout -- branch from origin/main into a worktree (`pyforge steward workspace start <slug>`) and commit there.",
+        "attribution": "Commit messages carry no Co-Authored-By line and no AI attribution -- the commit-msg hook already refuses these (AGENTS.md Policy); drop the line."
+      }
+    },
+    {
+      "id": "gh-pr-merge-squash",
+      "applies_to": "bash",
+      "trigger": "gh pr merge --squash",
+      "reason": "Merge with `gh pr merge --merge`, never `--squash` -- squash is disabled in repository settings and a squash subject orphans landing-evidence detection."
+    },
+    {
+      "id": "gh-pr-create-missing-repo",
+      "applies_to": "bash",
+      "trigger": "gh pr create without --repo rxm7706/local-recipes",
+      "reason": "Create with `gh pr create --repo rxm7706/local-recipes` -- omitting --repo can target the wrong repository."
+    },
+    {
+      "id": "uv-run-outside-repo-root",
+      "applies_to": "bash",
+      "trigger": "uv run with cwd != the repo (or worktree) root",
+      "reason": "Run `uv run` from the repo root -- from a subdirectory it creates a stray .venv there; cd to the repo/worktree root first."
+    },
+    {
+      "id": "spec-surface-bare-write-baseline",
+      "applies_to": "bash",
+      "trigger": "spec_surface_check.py --write-baseline without --spec",
+      "reason": "Stamp scoped: `python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>` -- a bare --write-baseline accepts every other Spec's pending drift as correct."
+    },
+    {
+      "id": "direct-write-governed-path",
+      "applies_to": "edit_write",
+      "trigger": "a direct write to SPEC.md, sprint-status-ledger.yaml, or a tracked path under implementation-artifacts/",
+      "reason": {
+        "spec_md": "Never hand-edit a SPEC.md -- append to its .memlog.md with `uv run _bmad/scripts/memlog.py` and re-derive with bmad-spec.",
+        "ledger": "Never hand-edit sprint-status-ledger.yaml (generated) -- write the Tier-3 feed, then `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>`.",
+        "implementation_artifacts": "Never track anything under implementation-artifacts/ -- it is Tier 3 and gitignored; this path is already tracked, which is the bug to fix, not to perpetuate by editing it further."
+      }
+    }
   ]
 }

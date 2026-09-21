@@ -4706,3 +4706,69 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
   verified: 2026-09-20 — resolved at landing: PR #1532 carried the `maintenance` label, applied by `dispatch_land.py` (`_MAINTENANCE_LABEL`) as every dispatch landing does; no code or spec defect (merged 03112ba2d7).
+
+### DW-FU-63-3: `match_bmad_switch_unsafe` denies `scripts/bmad-switch` in every worktree unconditionally, but this repo's own recorded convention says running `bmad-switch` inside a bmad-loop run worktree is the sanctioned exception (to backlink Tier-3), distinct from the "never from a parallel agent" rule the hook is meant to enforce.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `match_bmad_switch_unsafe` denies `scripts/bmad-switch` in every worktree unconditionally, but this repo's own recorded convention says running `bmad-switch` inside a bmad-loop run worktree is the sanctioned exception (to backlink Tier-3), distinct from the "never from a parallel agent" rule the hook is meant to enforce.
+  evidence: The intent-contract's literal trigger text ("a worktree ... is present") is unconditional and does not carve out the bmad-loop-run case. AGENTS.md's own governing rule is actually narrower ("never ... from a parallel agent"), and a separate team-memory entry documents the bmad-loop-run-worktree exception explicitly. The hook cannot currently distinguish a solo bmad-loop run worktree from any other worktree, so it would deny a documented-safe action. Resolving this needs an operator decision: either teach the hook a reliable signal for "this is a bmad-loop run's own worktree," or update the team memory/AGENTS.md to say the new hook supersedes the old exception.
+  location: .claude/hooks/pre-shell.py:404-413 (match_bmad_switch_unsafe)
+  origin: spec-deferred 7684351f25e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-2: `direct-write-governed-path` only fires for Claude's `Edit`/`Write` tool_input; a write to a governed path via a `Bash` heredoc or redirect (`cat > SPEC.md <<EOF ... EOF`) is invisible to the hook entirely, even though this repo's own documented workaround for a restricted path is exactly that Bash/heredoc technique.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `direct-write-governed-path` only fires for Claude's `Edit`/`Write` tool_input; a write to a governed path via a `Bash` heredoc or redirect (`cat > SPEC.md <<EOF ... EOF`) is invisible to the hook entirely, even though this repo's own documented workaround for a restricted path is exactly that Bash/heredoc technique.
+  evidence: `session_denials`' `direct-write-governed-path` rule declares `"applies_to": "edit_write"`, so `main()` never evaluates it for a `kind == "bash"` tool call, regardless of tokenizer quality. Closing this fully needs Bash-side write/redirect detection (heredocs, `sed -i`, `python -c "...write(...)"`, `>`/`>>`), which is materially more engineering than this story's ten matchers and is consistent with the hook's own stated "a guardrail, not a sandbox" design philosophy rather than a defect in the current ten rules.
+  location: .claude/hooks/pre-shell.py:487-498 (match_direct_write_governed_path); docs/governance/guild-roster.json (direct-write-governed-path applies_to: edit_write)
+  origin: spec-deferred 98df9df4abe1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-3: `.cursor/hooks.json` invokes the script with a bare relative path (`python3 .claude/hooks/pre-shell.py`) while `.claude/settings.json` deliberately uses the cwd-independent `$CLAUDE_PROJECT_DIR` env var; if Cursor ever runs a hook with a process cwd other than the workspace root, the relative path would fail to resolve and the Cursor half of the guardrail would silently not run at all.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `.cursor/hooks.json` invokes the script with a bare relative path (`python3 .claude/hooks/pre-shell.py`) while `.claude/settings.json` deliberately uses the cwd-independent `$CLAUDE_PROJECT_DIR` env var; if Cursor ever runs a hook with a process cwd other than the workspace root, the relative path would fail to resolve and the Cursor half of the guardrail would silently not run at all.
+  evidence: Not independently confirmed against Cursor's actual hook-invocation cwd contract (whether `beforeShellExecution`/`afterFileEdit` always run with cwd at the workspace root, or can vary by multi-root workspace / a different worktree). If it can vary, the consequence is a full silent bypass of the Cursor-side enforcement, which would be high severity; settling this needs checking Cursor's hooks documentation/behavior directly for the cwd guarantee, or adding a self-check the script logs on load.
+  location: .cursor/hooks.json:5,11 (command: "python3 .claude/hooks/pre-shell.py")
+  origin: spec-deferred 56aa57d39a84 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high (unverified)
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-4: `git commit` opened with no `-m`/`-F`/`--message`/`--file` flag (a plain `git commit` or `git commit --amend` that opens `$EDITOR`) carries no message text on the command line at all, so `match_git_commit_guardrail`'s attribution check cannot see it — an AI-attribution or Co-Authored-By line typed into the editor is never caught by this pre-emptive hook.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `git commit` opened with no `-m`/`-F`/`--message`/`--file` flag (a plain `git commit` or `git commit --amend` that opens `$EDITOR`) carries no message text on the command line at all, so `match_git_commit_guardrail`'s attribution check cannot see it — an AI-attribution or Co-Authored-By line typed into the editor is never caught by this pre-emptive hook.
+  evidence: `_extract_commit_message` only reads argv tokens; an editor-composed message never appears there. This is a real, non-adversarial gap (a completely ordinary git workflow), not just a deliberate-evasion path. The only pre-shell-hook-level mitigations are either a behavior change (deny any `git commit` that doesn't supply a message via a recognized flag, forcing all commits through the flag-based, inspectable path) or an AGENTS.md/CLAUDE.md policy addition mandating explicit `-m` in agent sessions — the second is an agent-context-file edit, not a code fix, so it is recorded here for an operator decision rather than patched blind. The separate authoritative `commit-msg` git hook still catches this case after the fact (per the rule's own reason text), so this is a gap in the pre-emptive layer specifically, not a total gap.
+  location: .claude/hooks/pre-shell.py:291-316 (_extract_commit_message), 416-431 (match_git_commit_guardrail)
+  origin: spec-deferred 8b063dc17d11 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-5: `match_gh_pr_merge_squash` only denies `--squash`; AGENTS.md's own policy line ("never `--squash`... never `--rebase`... a rebase merge leaves no merge subject for landing evidence either") names `--rebase` as the case that actually lands undetected, since squash is already disabled server-side and therefore unreachable regardless of hook coverage.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `match_gh_pr_merge_squash` only denies `--squash`; AGENTS.md's own policy line ("never `--squash`... never `--rebase`... a rebase merge leaves no merge subject for landing evidence either") names `--rebase` as the case that actually lands undetected, since squash is already disabled server-side and therefore unreachable regardless of hook coverage.
+  evidence: Confirmed: AGENTS.md's Trunk/worktrees/PRs section states squash is disabled in repository settings (so this hook's --squash coverage guards an already-unreachable case) while --rebase is not server-side-blocked and is called out by the same sentence as the one that breaks landing-evidence detection. The story's own literal Given/When/Then names only `gh pr merge --squash` as the trigger, and the intent-contract explicitly frames the closed list as "adding to it is a governance act" -- so extending coverage to `--rebase` is a deliberate, separate governance act on guild-roster.json, not a defect in this story's faithful implementation of its own named trigger.
+  location: docs/governance/guild-roster.json (session_denials: gh-pr-merge-squash); .claude/hooks/pre-shell.py:434-440 (match_gh_pr_merge_squash)
+  origin: spec-deferred b5cfd1fb2eaf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-6: The Problem statement names four deployment modes by name ("Claude Code local or web, Cursor IDE or Cloud"), but the hook and its docs only distinguish two harness families (claude vs cursor) by JSON shape; nothing confirms or documents whether Claude Code web and Cursor Cloud (background agents) actually load and enforce the same settings.json/hooks.json the way the IDE/local surfaces do.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: The Problem statement names four deployment modes by name ("Claude Code local or web, Cursor IDE or Cloud"), but the hook and its docs only distinguish two harness families (claude vs cursor) by JSON shape; nothing confirms or documents whether Claude Code web and Cursor Cloud (background agents) actually load and enforce the same settings.json/hooks.json the way the IDE/local surfaces do.
+  evidence: `detect()` and every comment in pre-shell.py, `.cursor/hooks.json`, and AGENTS.md's new section treat "claude"/"cursor" as monolithic. The one live-verification citation in the diff is scoped to Cursor's IDE hooks schema; there is no equivalent citation for Cursor Cloud or Claude Code web. If either of those two surfaces does not load the same config the same way, the Problem statement's own named coverage would be silently incomplete rather than named as an exception the way Gemini/Copilot/Devin are. Settling this needs confirming, per-surface, that project-level `.claude/settings.json` and `.cursor/hooks.json` are honored identically in Claude Code web and Cursor Cloud.
+  location: .claude/hooks/pre-shell.py:12-23 (module docstring, detect()); AGENTS.md Session guardrails section
+  origin: spec-deferred 60d67e31d137 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
