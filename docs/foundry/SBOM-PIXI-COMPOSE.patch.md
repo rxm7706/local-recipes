@@ -21,7 +21,6 @@ pyforge-foundry-full = { features = [
   "grayskull",
   "crm",
   "platform-dev",
-  "platform-dev",
   "platform-object-storage",
 ], no-default-feature = true }
 ```
@@ -30,7 +29,7 @@ pyforge-foundry-full = { features = [
 
 **Landed now:** as above — `conda-smithy` and `python-agent-platform` omitted until union solves (see `pyforge-foundry-full-sbom.md` gaps).
 
-**Also landed:** `pnpm = ">=12.4.1"` on `feature.python.dependencies`; `postgresql = ">=18.3,<19"` on `platform-dev` / `python-agent-platform` (libpq 18 / psycopg).
+**Also landed:** `pnpm = ">=12.4.1"` on `feature.python.dependencies`; PostgreSQL stays on 17 with `postgresql = ">=17.11,<18"`, `psycopg = ">=3.2.9,<3.2.10"`, and `pgvector = ">=0.8.0,<0.8.2"` where libpq 17 compatibility matters.
 
 **Never:** fat `local-recipes` feature, `desktop-lab`, or side PRs — edit #1564 only.
 

@@ -54,7 +54,7 @@ No separate `desktop-lab` feature.
 - **Full platform local stack:** `platform-dev` + `python-agent-platform` + `platform-object-storage`
 - **Also:** `pnpm` on an existing feature (`python` / `pyforge-guild`)
 
-**Landed in this PR (solvable union):** `build` + `grayskull` + `crm` + `platform-dev` + `platform-object-storage` + `pnpm`, with `postgresql` bumped to `>=18.3,<19` so `platform-dev` aligns with `psycopg`/`libpq` 18.
+**Landed in this PR (solvable union):** `build` + `grayskull` + `crm` + `platform-dev` + `platform-object-storage` + `pnpm`, while keeping PostgreSQL 17 by capping `psycopg` to `<3.2.10` and `pgvector` to `<0.8.2` for libpq 17 compatibility.
 
 **Phase 1 residual solve gaps (do not compose fat `local-recipes` to paper over them):**
 

@@ -1,6 +1,0 @@
-#                             VVVVVV  minimum `pixi` version
-"$schema" = "https://pixi.sh/v0.80.0/schema/manifest/schema.json"
-
-[workspace]
-name = "staged-recipes"
-# size probe 5k fragment - DELETE ME

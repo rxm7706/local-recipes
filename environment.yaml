@@ -10,6 +10,7 @@ dependencies:
 - gh >=2.100.0
 - gitpython >=3.1.62
 - nodejs >=24.19.0,<27.0,!=25.*
+- pnpm >=12.4.1
 - bmad-method >=6.12.0
 - spec-kit >=1.0.5
 - truststore >=0.10.4
