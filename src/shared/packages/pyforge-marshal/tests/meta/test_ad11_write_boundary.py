@@ -59,7 +59,6 @@ import argparse
 from pathlib import Path
 
 import pyforge.marshal.cli.spin as spin_module
-from pyforge.marshal.adapters.scribe_cli import ScribeRecallOutcome
 from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.cli.spin import run_spin
 from pyforge.marshal.core.verdict import EXIT_OK
@@ -409,28 +408,6 @@ class _RecordingProcess:
         return 5150
 
 
-class _StubScribe:
-    """A ``ScribeCli`` double for Story 47.1's pre-launch recall attempt
-    (``inject_recall_feedback``, called unconditionally inside
-    ``run_spin``). This guard's own concern is write CONTAINMENT, not
-    recall's own grounded/degraded behavior (``test_harness_bmadloop_recall.py``
-    owns that) -- a fixed grounded-miss outcome exercises the SAME two
-    ``FsPort`` writes (``ensure_dir`` on the target's parent,
-    ``write_text_atomic`` of an empty string) every row of the story's I/O
-    matrix produces once ``attempted=True``, without shelling out to a real
-    ``scribe`` binary from a meta test."""
-
-    def recall(
-        self,
-        *,
-        repo_root: Path,
-        query: str,
-        scope: str | None = None,
-        binary_path: Path | None = None,
-    ) -> ScribeRecallOutcome:
-        return ScribeRecallOutcome(ok=True, grounded=False)
-
-
 def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(tmp_path, monkeypatch):
     """Story 1.7: ``marshal preflight`` is NOT read-only like ``marshal
     homes`` -- it copies seed files into the home and records first-run
@@ -552,22 +529,7 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     lookup for ``headroom`` and -- when it resolves -- write a fifth,
     unaccounted-for ``FsPort`` write, ``compression-ladder.json``, breaking
     this guard's own fixed count) -- incidental to this test's own intent,
-    which is purely about write containment, not wire disposition.
-
-    Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1) adds a THIRD non-
-    ``FsPort``-shaped concern: ``run_spin`` now also calls
-    ``inject_recall_feedback`` -- placed AFTER the Tier-3 backlink check
-    succeeds (the same "LAST precondition before the first write" the check's
-    own comment already claims for the run-directory writes below it), never
-    on the ``--foreground`` path, which returns before that check runs at
-    all -- which, absent an injected ``scribe=``, would construct a REAL
-    ``ScribeCli()`` and shell out to a live ``scribe`` binary from this meta
-    test (exactly the omission class this file's own docstring already
-    describes for ``ProcessPort`` one story earlier). ``_StubScribe`` closes
-    it the same way ``_RecordingProcess`` does, and its two guaranteed
-    ``FsPort`` writes (``ensure_dir`` on ``implementation-artifacts/`` itself,
-    ``write_text_atomic`` of ``recall-feedback.md`` beneath it) raise the
-    fixed write count from four to six."""
+    which is purely about write containment, not wire disposition."""
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
@@ -580,18 +542,15 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     fs = _RecordingFs({home}, symlinks={tier3_local: tier3_canonical})
     harness = _RecordingHarness()
     process = _RecordingProcess()
-    scribe = _StubScribe()
 
     args = argparse.Namespace(slug=slug, epic=None, story=None, max_count=None, foreground=False, format="text")
-    exit_code = run_spin(args, fs=fs, harness=harness, process=process, scribe=scribe)
+    exit_code = run_spin(args, fs=fs, harness=harness, process=process)
 
     assert exit_code == EXIT_OK
-    # Non-vacuous: the recall target's parent (ensure_dir) and the
-    # recall-feedback file itself (write_text_atomic) -- Story 47.1 -- plus
-    # the run directory's parent (ensure_dir), the run directory itself
-    # (create_dir_exclusive), and the two journal appends (intent + outcome,
-    # both to the same journal.jsonl) -- six recorded writes.
-    assert len(fs.write_paths) == 6, f"unexpected write set: {fs.write_paths}"
+    # Non-vacuous: the run directory's parent (ensure_dir), the run directory
+    # itself (create_dir_exclusive), and the two journal appends (intent +
+    # outcome, both to the same journal.jsonl) -- four recorded writes.
+    assert len(fs.write_paths) == 4, f"unexpected write set: {fs.write_paths}"
     assert harness.spin_log_paths, "no spin log path was observed -- the guard would be vacuous"
     # Story 3.4: the supervisor's own log is the SECOND non-FsPort write
     # target this command hands out, and it must be guarded exactly like the
@@ -608,23 +567,9 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
         resolved = Path(path).resolve()
         assert home_resolved in resolved.parents, f"write to {path} does not resolve under the provisioned home {home}"
 
-    # Every one of those paths sits AT or under the local Tier-3 path. Most
-    # (the run directory, the two journal appends, the recall-feedback file
-    # itself) are strict descendants; Story 47.1's `ensure_dir(target.parent)`
-    # call is the one exception, landing directly ON `tier3_local` itself --
-    # the recall target's parent IS `implementation-artifacts/`, not a
-    # subdirectory of it. That is still a write reaching the canonical store,
-    # never a second fabricated local copy of it: this call runs AFTER the
-    # Tier-3 backlink check (verified immediately above via `fs.symlink_reads`
-    # below), so by the time it fires `tier3_local` is already confirmed a
-    # real, healthy symlink to the canonical store, and `ensure_dir` on it is
-    # a verified no-op -- not the `mkdir(parents=True)` fabrication the
-    # Story 3.3 defect this test's own docstring describes.
+    # Every one of those paths sits under the local Tier-3 path...
     for path in guarded_paths:
-        resolved_path = Path(path)
-        assert resolved_path == tier3_local or tier3_local in resolved_path.parents, (
-            f"write to {path} does not pass through the Tier-3 path {tier3_local}"
-        )
+        assert tier3_local in Path(path).parents, f"write to {path} does not pass through the Tier-3 path {tier3_local}"
     # ...and that path was VERIFIED to be a backlink before anything was
     # written, which is the part that makes the line above mean "reaches the
     # canonical store" rather than merely "is inside the home".

@@ -403,9 +403,8 @@ def _wired_resolution(
 def _await_file(path: Path, *, tries: int = 200) -> str:
     for _ in range(tries):
         if path.is_file():
-            content = path.read_text(encoding="utf-8")
-            if content:
-                return content
+            time.sleep(0.05)
+            return path.read_text(encoding="utf-8")
         time.sleep(0.05)
     raise AssertionError(f"{path} never appeared")
 

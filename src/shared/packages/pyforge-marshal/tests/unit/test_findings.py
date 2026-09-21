@@ -417,10 +417,6 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-WATCH-002",
             "MRS-WATCH-003",
             "MRS-WATCH-004",
-            # Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): a
-            # pre-launch `scribe recall` attempt that degraded (CLI
-            # unresolved/non-zero/timeout, or the artifact write failed).
-            "MRS-SPIN-018",
         }
     )
 

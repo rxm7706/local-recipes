@@ -875,18 +875,6 @@ rather than absorbing it. Neither code changes what a self-reconciled
 session does: a branch whose own memlog already names every changed path
 produces no entry, no stamp, and neither finding.
 
-Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1) adds ``MRS-SPIN-018``:
-``cli/spin.py::run_spin`` shells ``scribe recall --scope <station-slug>``
-once per detached dispatch -- right after the Tier-3 backlink check
-succeeds, the same "last precondition before the first write" gate the
-run-directory writes below it share -- and folds a grounded hit into the
-loop home's ``implementation-artifacts/recall-feedback.md``. ``--foreground``
-returns before that check runs at all (it performs no ``FsPort`` writes),
-so it never attempts this and never emits this finding. WARN, fail-open --
-the scribe CLI did not resolve, exited non-zero, timed out, or the artifact
-write itself failed; the dev pass still launches with no auto-recalled
-feedback rather than being blocked.
-
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -1903,17 +1891,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-WATCH-002",
         "MRS-WATCH-003",
         "MRS-WATCH-004",
-        # Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): `cli/spin.py`
-        # shells `scribe recall --scope <station-slug>` once per detached
-        # dispatch, right after the Tier-3 backlink check succeeds, and
-        # folds a grounded hit into the loop home's
-        # `implementation-artifacts/recall-feedback.md`. `--foreground`
-        # returns before that check runs (it writes nothing) and never
-        # emits this finding. `MRS-SPIN-018` is WARN, fail-open -- the
-        # scribe CLI did not resolve, exited non-zero, timed out, or the
-        # artifact write itself failed; the dev pass still launches with
-        # no auto-recalled feedback rather than being blocked.
-        "MRS-SPIN-018",
     }
 )
 
