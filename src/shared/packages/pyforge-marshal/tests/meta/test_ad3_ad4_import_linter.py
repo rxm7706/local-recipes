@@ -18,6 +18,7 @@ pass the live check.
 
 from __future__ import annotations
 
+import importlib
 import re
 import shutil
 import subprocess
@@ -72,7 +73,9 @@ def test_ad3_harness_seam_contract_shape():
     assert set(contract["source_modules"]) == {
         "pyforge.marshal.cli",
         "pyforge.marshal.core",
-        "pyforge.marshal.coverage_gate",  # Story 19.3 / FR-131
+        # pyforge.marshal.coverage_gate (Story 19.3 / FR-131) removed
+        # 2026-09-20 (doctor Story 24.1, spec-coverage-gate-independence
+        # CAP-1): the evaluator moved to scripts/coverage_gate.py.
         "pyforge.marshal.dispatch_supervisor",
         "pyforge.marshal.dispatch_verify",  # Story 22.3 / FR-193 CAP-3
         "pyforge.marshal.dispatch_land",  # Story 22.4 / FR-193 CAP-4
@@ -205,6 +208,18 @@ def test_engine_liveness_never_reads_engine_pid():
     for node in ast.walk(ast.Module(body=body, type_ignores=[])):
         if isinstance(node, ast.Constant) and node.value == "engine.pid":
             raise AssertionError(f"engine_liveness reads engine.pid at line {node.lineno}")
+
+
+def test_old_coverage_gate_module_path_resolves_nowhere():
+    """Doctor Story 24.1 (spec-coverage-gate-independence CAP-1/CAP-2): the
+    evaluator and its thresholds moved to scripts/coverage_gate.py and
+    docs/governance/coverage-thresholds.toml, outside every
+    pyforge.<station> package. The old in-package import path must not
+    resolve -- a stale installed wheel silently re-exposing it would let a
+    station's own package quietly resume evaluating its own CI gate, the
+    exact defect this story exists to close."""
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("pyforge.marshal.coverage_gate")
 
 
 def test_lint_imports_passes_against_the_installed_package():

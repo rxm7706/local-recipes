@@ -1,10 +1,34 @@
 """Steward Story 66.1 (2026-09-20): the touched-module coverage floor measures
 code changes, not the formatter. ``ast_fingerprint`` is invariant under what a
-lint/format landing changes and moves on any statement-level change."""
+lint/format landing changes and moves on any statement-level change.
+
+Moved from pyforge-marshal's own test suite the same day (doctor Story 24.1,
+spec-coverage-gate-independence CAP-1): the module under test moved to
+scripts/coverage_gate.py, outside every pyforge.<station> package.
+"""
 
 from __future__ import annotations
 
-from pyforge.marshal.coverage_gate import ast_fingerprint, format_only_paths
+import importlib.util
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+COVERAGE_GATE_PATH = REPO_ROOT / "scripts" / "coverage_gate.py"
+
+
+def _load_coverage_gate():
+    spec = importlib.util.spec_from_file_location("coverage_gate_ast_fingerprint_test", COVERAGE_GATE_PATH)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_coverage_gate = _load_coverage_gate()
+ast_fingerprint = _coverage_gate.ast_fingerprint
+format_only_paths = _coverage_gate.format_only_paths
 
 ORIGINAL = (
     '''"""Module docstring with   trailing spaces'''

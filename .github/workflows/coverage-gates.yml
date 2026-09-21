@@ -32,6 +32,8 @@ on:
       - 'src/shared/packages/pyforge-*/**'
       - 'scripts/coverage_gates_ci.py'
       - 'scripts/run_station_coverage_gate.py'
+      - 'scripts/coverage_gate.py'
+      - 'docs/governance/coverage-thresholds.toml'
       - '.github/workflows/coverage-gates.yml'
   push:
     branches: [main]
@@ -39,6 +41,8 @@ on:
       - 'src/shared/packages/pyforge-*/**'
       - 'scripts/coverage_gates_ci.py'
       - 'scripts/run_station_coverage_gate.py'
+      - 'scripts/coverage_gate.py'
+      - 'docs/governance/coverage-thresholds.toml'
       - '.github/workflows/coverage-gates.yml'
   workflow_dispatch:
 
@@ -75,7 +79,11 @@ jobs:
           # pyforge-core, pyforge-testing-kit, pixi.toml/lock and this workflow are
           # shared surface: all eight stations depend on core and pixi.lock pins
           # every env at once, so a change to any of them gates the whole fleet.
-          # Same rule as pyforge-station-tests.yml, deliberately.
+          # Same rule as pyforge-station-tests.yml, deliberately. scripts/coverage_gate.py
+          # and docs/governance/coverage-thresholds.toml (the evaluator + its thresholds,
+          # moved outside every pyforge.<station> package 2026-09-20, doctor Story 24.1)
+          # are shared surface for the same reason as the two drivers below: every
+          # station's gate reads them.
           SHARED=false
           if ! git diff --quiet "$BASE"...HEAD -- \
               src/shared/packages/pyforge-core \
@@ -83,6 +91,8 @@ jobs:
               pixi.toml pixi.lock \
               scripts/coverage_gates_ci.py \
               scripts/run_station_coverage_gate.py \
+              scripts/coverage_gate.py \
+              docs/governance/coverage-thresholds.toml \
               .github/workflows/coverage-gates.yml 2>/dev/null; then
             SHARED=true
           fi
@@ -154,13 +164,16 @@ jobs:
       # reason; the coverage lane collects tests/meta too, so it needs it as well.
       - uses: astral-sh/setup-uv@v5
 
-      # The gate's own fixture proof lives in marshal (it owns coverage_gate.py),
-      # so it runs only on marshal's job rather than eight times.
+      # The gate's own fixture proof lives at scripts/coverage_gate.py -- guild-owned
+      # (docs/governance/spec-coverage-gate-independence/ CAP-1), outside every
+      # pyforge.<station> package since 2026-09-20 (doctor Story 24.1) -- so it runs
+      # once, on doctor's job (the mechanism owner under Charter §5's outcome/
+      # mechanism rule), rather than eight times.
       - name: Named-module fixture proof
-        if: matrix.station == 'marshal'
+        if: matrix.station == 'doctor'
         run: >
-          pixi run --frozen -e pyforge-marshal pytest
-          src/shared/packages/pyforge-marshal/tests/meta/test_coverage_gate_names_module.py
+          pixi run --frozen -e pyforge-doctor pytest
+          tests/scripts/test_coverage_gate_names_module.py
           -q --tb=short
 
       - name: Coverage gate for ${{ matrix.station }}

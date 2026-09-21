@@ -5,8 +5,10 @@ For each touched ``pyforge-<station>`` package:
 
 1. Run the station's unit (and, when present, integration) tests under
    ``pytest --cov`` producing a coverage.py JSON report.
-2. Evaluate the report with ``pyforge.marshal.coverage_gate``, gating only
-   the *touched source modules* so the failure names those modules.
+2. Evaluate the report with ``coverage_gate`` (a scripts/ sibling, outside
+   every pyforge.<station> package -- spec-coverage-gate-independence CAP-1),
+   gating only the *touched source modules* so the failure names those
+   modules.
 3. Exit non-zero when any suite fails.
 
 Full package-wide evaluate (every module) remains available via the pixi
@@ -26,13 +28,17 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 
-# Ensure the worktree package is importable even when the env's installed
-# wheel lags the branch tip.
-_PKG = REPO / "src" / "shared" / "packages" / "pyforge-marshal" / "src"
-if str(_PKG) not in sys.path:
-    sys.path.insert(0, str(_PKG))
+# coverage_gate.py is a scripts/ sibling (spec-coverage-gate-independence
+# CAP-1, doctor Story 24.1: the evaluator moved out of pyforge.marshal so no
+# station governs its own CI gate). Insert this file's own directory
+# explicitly so the import resolves whether this driver is executed directly
+# (`python scripts/coverage_gates_ci.py`, which Python already prepends) or
+# loaded via importlib (test harnesses, which do not).
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from pyforge.marshal.coverage_gate import (
+from coverage_gate import (
     format_only_paths,
     STATIONS,
     evaluate_coverage_payload,
@@ -163,7 +169,7 @@ def _run_pytest_cov(
     env = os.environ.copy()
     station_src = root / "src"
     env["PYTHONPATH"] = os.pathsep.join(
-        [str(station_src), str(_PKG), env.get("PYTHONPATH", "")]
+        [str(station_src), str(_SCRIPTS_DIR), env.get("PYTHONPATH", "")]
     )
     return "ran", subprocess.run(cmd, cwd=REPO, env=env, check=False).returncode
 

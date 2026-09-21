@@ -5,24 +5,43 @@ station floor, is never anonymous, and is named on the gate's OK line.
 The mechanism stays; the one exception it was built for does not. Story 53.3
 covered ``dispatch_supervisor.__main__`` to the fleet floor and deleted its
 entry, so the live file now holds none and the test that pinned that entry's
-presence is retired with it -- what is pinned here instead is the absence."""
+presence is retired with it -- what is pinned here instead is the absence.
+
+Moved from pyforge-marshal's own test suite 2026-09-20 (doctor Story 24.1,
+spec-coverage-gate-independence CAP-1): the module under test moved to
+scripts/coverage_gate.py, outside every pyforge.<station> package, and its
+thresholds file moved to docs/governance/coverage-thresholds.toml (CAP-2)."""
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.coverage_gate import (
-    ModuleFloor,
-    default_thresholds_path,
-    evaluate_coverage_payload,
-    evaluate_suite,
-    floor_for_module,
-    load_module_floors,
-    modules_below_threshold,
-    thresholds_for,
-)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+COVERAGE_GATE_PATH = REPO_ROOT / "scripts" / "coverage_gate.py"
+
+
+def _load_coverage_gate():
+    spec = importlib.util.spec_from_file_location("coverage_gate_module_floors_test", COVERAGE_GATE_PATH)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_coverage_gate = _load_coverage_gate()
+ModuleFloor = _coverage_gate.ModuleFloor
+default_thresholds_path = _coverage_gate.default_thresholds_path
+evaluate_coverage_payload = _coverage_gate.evaluate_coverage_payload
+evaluate_suite = _coverage_gate.evaluate_suite
+floor_for_module = _coverage_gate.floor_for_module
+load_module_floors = _coverage_gate.load_module_floors
+modules_below_threshold = _coverage_gate.modules_below_threshold
+thresholds_for = _coverage_gate.thresholds_for
 
 TOML = """[defaults]
 unit = 80.0

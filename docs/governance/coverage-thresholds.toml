@@ -1,3 +1,17 @@
+# CHANGING THIS FILE IS A GOVERNANCE ACT (guild-roster.json's own convention,
+# restated here since TOML has no `$comment` key idiom -- a `#` comment
+# carries it instead). This file binds all eight pyforge-<station> packages'
+# CI coverage gates (Charter §5/§6; docs/governance/spec-coverage-gate-
+# independence/SPEC.md CAP-2). No station may lower the floor that reds its
+# own pull requests: editing [stations.<slug>] or a [modules."..."] exception
+# for a given station is a decision reviewed by someone other than that
+# station, never a config tweak the station makes to itself. Moved here from
+# pyforge.marshal.coverage_thresholds 2026-09-20 (doctor Story 24.1) together
+# with its evaluator, scripts/coverage_gate.py (CAP-1) -- splitting only the
+# data would have protected the floor from being LOWERED but not from being
+# WEAKENED or DISABLED by the station it binds (Charter §6's other two
+# verbs), so the two moved together, never one alone.
+#
 # Per-station coverage floors for Story 19.3 / FR-131.
 #
 # Fleet defaults (CAP-4): unit >80%, integration >70%.
@@ -24,5 +38,5 @@ integration = 70.0
 # module is ports-driven unit-covered above the fleet floor
 # (`tests/unit/test_dispatch_supervisor_main_loop.py`), so marshal carries no named coverage
 # debt and the touched-module gate is whole again. That emptiness is pinned by
-# `tests/unit/test_coverage_gate_module_floors.py::test_the_live_file_holds_no_module_exception`
+# `tests/scripts/test_coverage_gate_module_floors.py::test_the_live_file_holds_no_module_exception`
 # — adding an entry here reds it, so a new exception is always a reviewed act.

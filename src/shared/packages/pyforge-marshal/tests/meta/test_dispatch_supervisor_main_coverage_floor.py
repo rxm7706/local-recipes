@@ -18,13 +18,35 @@ future PR that happens to edit the entrypoint.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
-from pyforge.marshal.coverage_gate import load_module_floors, thresholds_for
+# coverage_gate.py moved outside every pyforge.<station> package 2026-09-20
+# (doctor Story 24.1, spec-coverage-gate-independence CAP-1), so this
+# marshal-owned test loads its sibling scripts/coverage_gate.py the same way
+# other package tests reach a top-level scripts/ module (e.g.
+# tests/meta/test_fleet_picture_attention_dispatch_refused.py), rather than
+# importing a package that no longer ships it.
+_REPO_ROOT = Path(__file__).resolve().parents[6]
+_COVERAGE_GATE_PATH = _REPO_ROOT / "scripts" / "coverage_gate.py"
+
+
+def _load_coverage_gate():
+    spec = importlib.util.spec_from_file_location("coverage_gate_under_test", _COVERAGE_GATE_PATH)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_coverage_gate = _load_coverage_gate()
+load_module_floors = _coverage_gate.load_module_floors
+thresholds_for = _coverage_gate.thresholds_for
 
 _MODULE = "pyforge.marshal.dispatch_supervisor.__main__"
 _STATION = "marshal"
