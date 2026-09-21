@@ -25,7 +25,7 @@ from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.marshal.adapters.fs_local import FsError
-from pyforge.marshal.adapters.harness_bmadloop import HarnessError, render_policy_toml
+from pyforge.marshal.adapters.harness_bmadloop import HarnessError, RecallInjectionResult, render_policy_toml
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
@@ -346,6 +346,24 @@ def _default_supervisor_spawn_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
     ``run_spin`` only ever constructs ``PosixProcess()`` when ``process``
     is ``None``."""
     monkeypatch.setattr(spin_module, "PosixProcess", lambda: _StubProcess())
+
+
+@pytest.fixture(autouse=True)
+def _default_recall_injection_is_a_no_op(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pins ``run_spin``'s Story 47.1 pre-launch recall attempt
+    (``inject_recall_feedback``, called unconditionally before either launch
+    path) to a no-op for every test in this file that does not itself
+    exercise recall behavior -- this dev environment resolves a REAL
+    ``scribe`` binary on ``PATH``, so leaving the real call live would shell
+    out for real, once per test, across this file's entire pre-existing
+    suite. Tests that DO exercise recall override this with their own
+    ``monkeypatch.setattr(spin_module, "inject_recall_feedback", ...)``,
+    applied after this fixture runs, so the later patch wins."""
+    monkeypatch.setattr(
+        spin_module,
+        "inject_recall_feedback",
+        lambda **_kwargs: RecallInjectionResult(attempted=False),
+    )
 
 
 @pytest.fixture(autouse=True)
