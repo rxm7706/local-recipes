@@ -260,7 +260,7 @@ development_status:
   62-3-consumers-cite-on-rows-only: backlog
   63-1-the-pyforge-guild-feature-and-environment-exist-and-the-guild-tasks-live-in-it: done
   63-2-every-agent-surface-names-pyforge-guild-as-the-session-default: done
-  63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted: backlog
+  63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted: done
   63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point: backlog
   63-5-pyforge-foundry-full-the-fleet-s-whole-dependency-closure-is-one-locked-artifact: done
   63-6-no-station-code-assumes-the-local-recipes-environment-at-runtime: done
