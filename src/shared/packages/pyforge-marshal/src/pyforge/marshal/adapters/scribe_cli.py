@@ -53,7 +53,7 @@ from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
-from ..core.derived_context import parse_refresh_report, render_scribe_refresh_argv
+from ..core.derived_context import SCRIBE_REFRESH_ARGV, parse_refresh_report, render_scribe_refresh_argv
 from ..core.planning_graph import parse_recall_output, render_scribe_recall_argv
 
 __all__ = (
@@ -216,6 +216,73 @@ class ScribeCli:
                 ),
             )
         refreshed, skipped = parsed
+        return ScribeRefreshOutcome(ok=True, refreshed=refreshed, skipped=skipped, argv=argv)
+
+    def rebuild_index(
+        self,
+        *,
+        repo_root: Path,
+        binary_path: str | None = None,
+    ) -> ScribeRefreshOutcome:
+        """Run the BARE ``scribe index refresh`` (no ``--declare``) -- Story
+        6.1's own two built-in artifacts (``graphify-ingest``/``graph.json``
+        and ``move-list``), a full rebuild every time when the
+        ``compile_surface`` cocoindex extra is off (this repo's default:
+        ``SCRIBE_COCOINDEX_EXTRA`` unset). This is the substrate bootstrap's
+        local-rebuild fallback for the derived-context/planning-graph layer
+        (Story 46.1) -- a different grammar shape than ``refresh()`` above,
+        which always threads a caller ``--declare <manifest>`` and is
+        epic-scoped. Never raises.
+
+        Unlike ``refresh()``, ``ok`` here does NOT require the
+        ``refreshed: ...; skipped (unchanged): ...`` report line to parse:
+        the cocoindex-off default line scribe actually prints
+        (``refreshed: graphify-ingest (N node(s)), move-list (M
+        finding(s)) -- cocoindex extra off, full rebuild``) has no
+        ``skipped (unchanged):`` clause at all, so
+        ``core/derived_context.py::parse_refresh_report`` -- written for the
+        declared-grammar report shape -- returns ``None`` for it by design,
+        not by bug. A rebuild that exits 0 did rebuild both artifacts
+        (that is the whole point of the cocoindex-off code path); the
+        report line is parsed on a best-effort basis only, to populate
+        ``refreshed``/``skipped`` when scribe happens to be running with the
+        cocoindex extra on and prints the parseable shape."""
+        resolved = binary_path if binary_path is not None else self.resolve_binary(repo_root)
+        if resolved is None:
+            return ScribeRefreshOutcome(
+                ok=False,
+                reason=(
+                    f"the {SCRIBE_BINARY!r} CLI did not resolve on PATH or in "
+                    f"{list(SCRIBE_FALLBACK_BIN_DIRS)!r} -- the substrate "
+                    "cannot be rebuilt locally"
+                ),
+            )
+        argv = (resolved, *SCRIBE_REFRESH_ARGV)
+        try:
+            result = self._process.run(argv, cwd=Path(repo_root), timeout_s=_REFRESH_TIMEOUT_S)
+        except ProcessError as exc:
+            return ScribeRefreshOutcome(
+                ok=False,
+                argv=argv,
+                reason=(
+                    f"the scribe rebuild grammar {list(argv)!r} could not run "
+                    f"({exc}) -- the substrate cannot be rebuilt locally"
+                ),
+            )
+        output = (result.stdout or "") + (result.stderr or "")
+        if result.returncode != 0:
+            tail = output.strip().splitlines()[-1] if output.strip() else "<no output>"
+            return ScribeRefreshOutcome(
+                ok=False,
+                argv=argv,
+                reason=(
+                    f"the scribe rebuild grammar {list(argv)!r} exited "
+                    f"{result.returncode} ({tail}) -- the substrate cannot be "
+                    "rebuilt locally"
+                ),
+            )
+        parsed = parse_refresh_report(output)
+        refreshed, skipped = parsed if parsed is not None else ((), ())
         return ScribeRefreshOutcome(ok=True, refreshed=refreshed, skipped=skipped, argv=argv)
 
     def recall(
