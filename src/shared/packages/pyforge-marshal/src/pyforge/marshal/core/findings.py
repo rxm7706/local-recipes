@@ -1891,6 +1891,28 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-WATCH-002",
         "MRS-WATCH-003",
         "MRS-WATCH-004",
+        # Story 46.1 (a bare clone bootstraps the substrate,
+        # spec-pyforge-marshal CAP-192, folded from spec-marshal-token-economy
+        # CAP-22): `marshal context bootstrap` fetches the published
+        # structure-graph/derived-context substrate or rebuilds it locally --
+        # an unavailable/failed fetch or a failed rebuild is always a named,
+        # loud WARN, never a silent fallback. `MRS-BOOT-001` (no published
+        # release resolves -- `gh` unauthenticated/unresolved, no release
+        # tag, or the download itself failed -- falling back to a local
+        # rebuild). `MRS-BOOT-002` (a fetched artifact's sha256 digest did
+        # not match its manifest entry -- discarding the fetched artifact,
+        # falling back to a local rebuild). `MRS-BOOT-003` (the local rebuild
+        # of the structure-graph artifact, `marshal seed kit`'s codegraph
+        # item, also degraded or failed). `MRS-BOOT-004` (the local rebuild
+        # of the derived-context artifact, `scribe index refresh`'s bare
+        # rebuild, also degraded or failed). All four classify WARN: a
+        # bootstrap that ends with neither a verified fetch nor a successful
+        # rebuild leaves the substrate absent for that iteration -- exactly
+        # today's no-substrate behavior -- never a blocked run.
+        "MRS-BOOT-001",
+        "MRS-BOOT-002",
+        "MRS-BOOT-003",
+        "MRS-BOOT-004",
     }
 )
 
