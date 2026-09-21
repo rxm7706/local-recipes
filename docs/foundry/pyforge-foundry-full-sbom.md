@@ -27,23 +27,39 @@ Compose onto `pyforge-foundry-full`: `build` + `grayskull` + `crm` + `conda-smit
 
 1. CI: `pixi install -e pyforge-foundry-full` on lock changes.
 2. Export: `pixi list -e pyforge-foundry-full` (+ CycloneDX/SPDX optional).
-3. Channel audit: tag every name `conda-forge` | `SelfExplainML` | `pypi` | `npm` | `path`; fail new non-CF without allowlist + **Phase 5** ticket id.
+3. Channel audit: tag every name `conda-forge` | `SelfExplainML` | `pypi` | `npm` | `path`; fail new non-CF without allowlist + **OpenTeams / Phase 5** ticket id.
 
-### Phase 3 — Triage only (no feedstocks yet)
+### Phase 3 — OpenTeams triage issue list (tickets for everything)
 
-Turn Phase 2 audit output into tickets. **Do not** treat this phase as “gaps closed.”
-Closing work is **Phase 5** only — one backlog for SelfExplainML + pip + Node/`pnpm`/npm.
+**Done when every gap has an OpenTeams issue** — not when feedstocks land (that is Phase 5).
 
-Also confirm what is **out of SBOM** unless later promoted (`local-recipes`-only: `codegraph`, `marp-cli`, `pptxgenjs`*, `vizro*`, `fastmcp*`, `kedro-mcp`, `bmad-suite`*, etc.).
+Phase 3 is the **issue board / tracking list**: one OpenTeams issue (or equivalent tracked ticket) for each row that Phase 2 surfaces or that Phase 5 already inventories. No silent gaps.
+
+**Must have OpenTeams coverage for:**
+
+| Bucket | Ticket IDs (from Phase 5 tables) |
+|---|---|
+| SelfExplainML → CF | CF-SEM-01 … CF-SEM-13 |
+| Pip → CF | CF-PIP-01 (`sqlite-vec`) |
+| Node tooling | CF-NODE-01 (`nodejs` — usually “already CF / keep”), CF-NODE-02 (`pnpm`) |
+| npm → CF | CF-NPM-01 … CF-NPM-11 (atlas + herald) |
+| Out-of-SBOM decisions | Explicit issues for anything left on fat `local-recipes` only (`codegraph`, `marp-cli`, `pptxgenjs`*, `vizro*`, `fastmcp*`, `kedro-mcp`, `bmad-suite`*, …) — either “promote later” or “never in foundry-full” |
+
+**Phase 3 rules**
+
+- One issue per package (or tightly coupled package set), linked from the channel audit.
+- Issue states the current channel (`SelfExplainML` / `pypi` / `npm`), desired end state (`conda-forge`), and owner.
+- Deferrals are still tickets (won’t-do / later) — not missing rows.
+- **Closing** those issues by shipping CF packages = **Phase 5**, not Phase 3.
 
 ### Phase 4 — Point the estate at it
 
 1. CFE / AGENTS / mason → **`pyforge-foundry-full`**, not fat `local-recipes`.
-2. New deps must land in a feature foundry-full composes (or allowlist + **Phase 5** ticket).
+2. New deps must land in a feature foundry-full composes (or allowlist + **OpenTeams Phase 5** ticket).
 
 ### Phase 5 — Close all conda-forge gaps
 
-**This is the former “Phase 3 backlog.”** One phase, no split ambiguity: everything the SBOM needs that is not yet on conda-forge gets a feedstock (or confirmed CF package) and is wired off SelfExplainML / pip / npm-only installs.
+**Execute the OpenTeams list from Phase 3.** One phase: everything the SBOM needs that is not yet on conda-forge gets a feedstock (or confirmed CF package) and is wired off SelfExplainML / pip / npm-only installs.
 
 #### 5A. SelfExplainML → conda-forge
 
@@ -103,7 +119,7 @@ Already declared on foundry-full via guild/atlas (SEM channel). Need CF feedstoc
 | CF-NPM-10 | `@testing-library/jest-dom` | CF feedstock |
 | CF-NPM-11 | `@testing-library/user-event` | CF feedstock |
 
-**Phase 5 done when:** SEM pins move to CF; `sqlite-vec` is conda; `nodejs`/`pnpm` + CF-NPM-01..11 resolve from conda-forge (or each has an explicit deferral ticket — not silent npm-only).
+**Phase 5 done when:** every Phase 3 OpenTeams issue is closed by shipping CF (or an explicit won’t-do), and the channel audit no longer shows those names as SEM/pip/npm-only for the SBOM surface.
 
 ---
 
@@ -111,14 +127,15 @@ Already declared on foundry-full via guild/atlas (SEM channel). Need CF feedstoc
 
 - [ ] Phase 1 env solves; lock is the BoM artifact.
 - [ ] Phase 2 CI + channel audit green.
+- [ ] **Phase 3:** OpenTeams has a ticket for every CF-SEM / CF-PIP / CF-NODE / CF-NPM row (+ out-of-SBOM decisions).
 - [ ] Phase 4 docs point at foundry-full.
-- [ ] **Phase 5** SelfExplainML / pip / Node-npm gaps closed or explicitly deferred one-by-one.
+- [ ] **Phase 5** closes those OpenTeams issues via conda-forge (or explicit deferral).
 
 ## Mental model
 
 ```
 Phase 1–2  = make the SBOM env real and checkable
-Phase 3    = triage gaps (tickets only)
+Phase 3    = OpenTeams issue list for EVERY gap (triage complete)
 Phase 4    = point the estate at the env
-Phase 5    = close ALL CF gaps (SEM + pip + nodejs/pnpm/npm)
+Phase 5    = close those issues on conda-forge (SEM + pip + nodejs/pnpm/npm)
 ```
