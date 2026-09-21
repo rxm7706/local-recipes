@@ -2,7 +2,8 @@
 title: '24.1: The evaluator and the thresholds move out of marshal''s package, together'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '2f98ede57d5ebb7df285bbd1383782cf6a7c86af'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
