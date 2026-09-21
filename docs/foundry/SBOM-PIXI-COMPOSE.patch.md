@@ -1,6 +1,6 @@
 # SBOM pixi compose — PR #1564 only (`sbom/pyforge-foundry-full-compose`)
 
-## `pyforge-foundry-full` (Phase 1 + 1b full platform stack)
+## `pyforge-foundry-full` (Phase 1 — BoM core + full platform stack)
 
 ```toml
 pyforge-foundry-full = { features = [
@@ -27,11 +27,15 @@ pyforge-foundry-full = { features = [
 ], no-default-feature = true }
 ```
 
-- **Phase 1:** `build`, `grayskull`, `crm`, `conda-smithy`
-- **Phase 1b:** `platform-dev` + `python-agent-platform` + `platform-object-storage` — Redis, Postgres+pgvector, Silo, **and** Langflow/dashboard local bring-up
+**Phase 1 combines:**
+
+- **BoM core:** `build`, `grayskull`, `crm`, `conda-smithy`
+- **Full platform local stack:** `platform-dev` + `python-agent-platform` + `platform-object-storage` — Redis, Postgres+pgvector, Silo, **and** Langflow/dashboard local bring-up
 - **Also:** `pnpm = ">=12.4.1"` on `feature.python.dependencies` (or `pyforge-guild`) — not a new feature
-- **Inclusion:** packages used by PyForge code/operators (e.g. atlas `vizro`/`dagster`) come via their station/platform features — do **not** compose fat `local-recipes` for that
-- **Never:** fat `local-recipes` feature, `desktop-lab`, or side PRs — edit #1564 only
+
+**Inclusion:** packages used by PyForge code/operators (e.g. atlas `vizro`/`dagster`) come via their station/platform features — do **not** compose fat `local-recipes` for that
+
+**Never:** fat `local-recipes` feature, `desktop-lab`, or side PRs — edit #1564 only
 
 ## Guard
 
