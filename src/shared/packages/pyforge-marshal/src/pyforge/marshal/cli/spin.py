@@ -1405,33 +1405,6 @@ def run_spin(
         )
         return _emit(args, data, findings)
 
-    # --- recall: fold relevant scribe feedback into the dev pass, --------------
-    # best-effort (Story 47.1, SPEC-marshal-recall-in-the-loop CAP-1). Runs
-    # exactly once per dispatch, before EITHER launch path below, so a
-    # detached spin and a --foreground run get identical treatment. Never
-    # blocking (this story's own "never treat a recall failure as
-    # dispatch-blocking") -- a degraded attempt only ever adds a WARN
-    # finding; the loop-home write happens (or doesn't) either way.
-    recall_result = inject_recall_feedback(
-        fs=fs,
-        loop_home=home,
-        repo_root=Path.cwd(),
-        station_slug=slug,
-        scribe=scribe,
-    )
-    if recall_result.attempted and not recall_result.ok:
-        findings.append(
-            Finding(
-                code="MRS-SPIN-018",
-                severity=Severity.WARN,
-                message=(
-                    f"scribe recall for station {slug!r} did not run "
-                    f"({recall_result.reason}) -- this dev pass starts with "
-                    "no auto-recalled feedback"
-                ),
-            )
-        )
-
     # --- --foreground: a wholly separate, synchronous path -------------------
     # Skips the story-feed/journal machinery entirely -- there is no minted
     # run id and nothing to journal for a launch that never calls spin() (see
@@ -1657,6 +1630,47 @@ def run_spin(
             )
         )
         return _emit(args, data, findings)
+
+    # --- recall: fold relevant scribe feedback into the dev pass, --------------
+    # best-effort (Story 47.1, SPEC-marshal-recall-in-the-loop CAP-1). Placed
+    # AFTER the Tier-3 backlink check above, for the same reason that check is
+    # itself "the LAST precondition before the first write" (its own comment,
+    # above): this call's own write (`recall-feedback.md`, a sibling of
+    # `epic-<N>-context.md` inside the same backlinked `implementation-
+    # artifacts/` directory) is exactly the write the backlink check exists to
+    # gate. Running it any earlier would repeat, for this write, the same
+    # fabricated-local-directory defect (NFR-8) that check's own docstring
+    # already documents fixing once for the run-directory case.
+    #
+    # `--foreground` (above) returns before ever reaching the backlink check,
+    # because it is documented to perform NO `FsPort` writes at all -- an
+    # existing, separately-tested invariant (`test_spin_foreground_relays_
+    # the_exit_code_and_skips_the_journal`). This call site does not disturb
+    # that: `--foreground` launches with no auto-recalled feedback, the same
+    # way it launches with no journal and no minted run id.
+    #
+    # Never blocking (this story's own "never treat a recall failure as
+    # dispatch-blocking") -- a degraded attempt only ever adds a WARN finding;
+    # the loop-home write happens (or doesn't) either way.
+    recall_result = inject_recall_feedback(
+        fs=fs,
+        loop_home=home,
+        repo_root=Path.cwd(),
+        station_slug=slug,
+        scribe=scribe,
+    )
+    if recall_result.attempted and not recall_result.ok:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-018",
+                severity=Severity.WARN,
+                message=(
+                    f"scribe recall for station {slug!r} did not run "
+                    f"({recall_result.reason}) -- this dev pass starts with "
+                    "no auto-recalled feedback"
+                ),
+            )
+        )
 
     # --- Story 6.1 FR-48/FR-51/AD-19: profile-driven model-tier resolution --
     # The governing difficulty among the SELECTED (`preview`, never the
