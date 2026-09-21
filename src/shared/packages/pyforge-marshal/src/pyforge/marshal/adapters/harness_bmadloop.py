@@ -204,6 +204,7 @@ import shutil
 import subprocess
 import time
 from collections.abc import Mapping, MutableMapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -213,7 +214,7 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.hooks import HookSpec, PluginRegistry
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
-from ..core import policy
+from ..core import policy, recall_feedback
 from ..core.egress import to_redacted
 from ..core.harness_profile import (
     PROFILE_BY_BMADLOOP_ADAPTER,
@@ -236,6 +237,7 @@ from ..core.model_cost import (
     weighted_total,
 )
 from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
+from ..ports.fs import FsPort
 from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
@@ -249,6 +251,7 @@ from ..ports.harness import (
     TaskPhaseSnapshot,
     UsageSnapshot,
 )
+from .scribe_cli import ScribeCli
 
 LOOP_RUNNER_HOOK_SPEC = HookSpec(name="pyforge.marshal.loop_runner", owner="marshal")
 DEFAULT_LOOP_RUNNER_PLUGIN_ID = "bmad-loop"
@@ -1256,6 +1259,83 @@ def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> ProcessRe
         return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s)
     except ProcessError:
         return None
+
+
+@dataclass(frozen=True)
+class RecallInjectionResult:
+    """What one pre-launch ``inject_recall_feedback`` attempt did (Story
+    47.1, SPEC-marshal-recall-in-the-loop CAP-1).
+
+    ``attempted=False`` is the "no resolvable station slug" row of the
+    story's own I/O matrix -- the recall query was skipped entirely, no
+    subprocess call, target left untouched. Every other row always
+    attempts exactly one ``scribe recall`` call and always writes
+    ``target`` exactly once (the labeled block on a grounded hit, an empty
+    string otherwise) -- ``FsPort`` has no delete-a-file primitive, and
+    ``implementation-artifacts/`` is backlinked across a project's
+    worktrees, so a stale hit from a previous dispatch must never survive
+    unnoticed. ``ok=False`` is the "scribe CLI unavailable/non-zero/timeout"
+    row -- fail-open, never dispatch-blocking; callers report it as a WARN
+    finding and continue."""
+
+    attempted: bool
+    ok: bool = True
+    injected: bool = False
+    reason: str | None = None
+    target: Path | None = None
+
+
+def inject_recall_feedback(
+    *,
+    fs: FsPort,
+    project: Path,
+    station_slug: str | None,
+    scribe: ScribeCli | None = None,
+) -> RecallInjectionResult:
+    """Before a ``bmad-loop`` dev pass launches: shell ``scribe recall
+    --scope <station_slug>`` (CLI subprocess, never ``import
+    pyforge.scribe``) and, on a grounded hit, write the clearly-labeled
+    block CAP-1 requires to ``{implementation_artifacts}/recall-feedback.md``
+    so the shared ``bmad-build-auto`` skill's context load can fold it in.
+    Read-only against scribe's own capture store; never raises.
+
+    ``station_slug`` is the dispatch's own resolved slug (``args.slug`` in
+    ``cli/spin.py``) -- the same ``--scope`` mechanism
+    ``scribe-marshal-fact-visibility`` CAP-1 already proves, never a
+    per-file-glob scope. ``None`` means the dispatch has no resolvable
+    station scope -- the query is skipped entirely (the matrix's fourth
+    row), not just degraded.
+
+    On every other row the target is always (re)written exactly once, with
+    real content on a grounded hit or an empty string otherwise -- never
+    left holding a previous dispatch's stale hit."""
+    if not station_slug:
+        return RecallInjectionResult(attempted=False)
+    target = project / recall_feedback.recall_feedback_output_relpath(station_slug)
+    client = scribe if scribe is not None else ScribeCli()
+    outcome = client.recall(
+        repo_root=project,
+        query=recall_feedback.build_recall_query(station_slug),
+        scope=station_slug,
+    )
+    content = ""
+    injected = False
+    if outcome.ok and outcome.grounded:
+        content = recall_feedback.render_recall_feedback_block(text=outcome.text, citation=outcome.citation)
+        injected = True
+    try:
+        fs.ensure_dir(target.parent)
+        fs.write_text_atomic(target, content)
+    except (OSError, PyforgeError) as exc:
+        return RecallInjectionResult(
+            attempted=True,
+            ok=False,
+            reason=f"could not write {target} ({exc})",
+            target=target,
+        )
+    if not outcome.ok:
+        return RecallInjectionResult(attempted=True, ok=False, reason=outcome.reason, target=target)
+    return RecallInjectionResult(attempted=True, ok=True, injected=injected, target=target)
 
 
 class BmadLoopHarness:
