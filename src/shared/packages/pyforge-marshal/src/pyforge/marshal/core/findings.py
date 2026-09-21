@@ -1891,6 +1891,15 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-WATCH-002",
         "MRS-WATCH-003",
         "MRS-WATCH-004",
+        # Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): `cli/spin.py`
+        # shells `scribe recall --scope <station-slug>` once per dispatch,
+        # before either launch path, and folds a grounded hit into the
+        # loop home's `implementation-artifacts/recall-feedback.md`.
+        # `MRS-SPIN-018` is WARN, fail-open -- the scribe CLI did not
+        # resolve, exited non-zero, timed out, or the artifact write
+        # itself failed; the dev pass still launches with no auto-recalled
+        # feedback rather than being blocked.
+        "MRS-SPIN-018",
     }
 )
 
