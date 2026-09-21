@@ -2395,6 +2395,112 @@ def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(home, monke
     assert payload["wire"] == {"enabled": True, "aggressiveness": "low"}
 
 
+# --- recall: Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1) -------------------
+#
+# ``inject_recall_feedback`` itself is exercised against fake ``FsPort``/
+# ``ScribeCli`` doubles in ``test_harness_bmadloop_recall.py``; these tests
+# cover only ``run_spin``'s OWN wiring -- the exact arguments it hands the
+# call, and that a degraded outcome becomes exactly one WARN finding without
+# blocking the dispatch -- via ``monkeypatch.setattr(spin_module,
+# "inject_recall_feedback", ...)``, overriding this file's own autouse
+# ``_default_recall_injection_is_a_no_op`` fixture (the later patch wins).
+
+
+def test_spin_invokes_recall_injection_with_the_dispatch_s_own_paths(home, monkeypatch):
+    """``run_spin`` hands ``inject_recall_feedback`` THIS dispatch's own loop
+    home, the invoking process's real checkout (``Path.cwd()``, mirroring
+    ``attempt_spin_wire_layer``'s identical ``repo_root`` convention), and
+    the resolved station slug -- never a hardcoded or mismatched path."""
+    recorded: dict[str, object] = {}
+
+    def _fake_inject_recall_feedback(**kwargs: object) -> RecallInjectionResult:
+        recorded.update(kwargs)
+        return RecallInjectionResult(attempted=False)
+
+    monkeypatch.setattr(spin_module, "inject_recall_feedback", _fake_inject_recall_feedback)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert recorded == {
+        "fs": fs,
+        "loop_home": home,
+        "repo_root": Path.cwd(),
+        "station_slug": "acme",
+        "scribe": None,
+    }
+
+
+def test_spin_invokes_recall_injection_exactly_once_on_the_foreground_path_too(home, monkeypatch):
+    """Placed before EITHER launch path inside ``run_spin`` so a detached
+    spin and a ``--foreground`` run get identical treatment -- a regression
+    that moved the call inside just one branch would silently starve the
+    other of auto-recalled feedback."""
+    calls: list[dict[str, object]] = []
+
+    def _fake_inject_recall_feedback(**kwargs: object) -> RecallInjectionResult:
+        calls.append(kwargs)
+        return RecallInjectionResult(attempted=False)
+
+    monkeypatch.setattr(spin_module, "inject_recall_feedback", _fake_inject_recall_feedback)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+
+    run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+
+    assert len(calls) == 1
+    assert calls[0]["station_slug"] == "acme"
+
+
+def test_spin_reports_a_degraded_recall_attempt_as_a_warn_finding_without_blocking(home, capsys, monkeypatch):
+    """The story's own "never treat a recall failure as dispatch-blocking":
+    a degraded ``inject_recall_feedback`` outcome (scribe CLI unavailable,
+    non-zero exit, timeout, or the artifact write itself failing) becomes
+    exactly one ``MRS-SPIN-018`` WARN finding, and the dispatch's exit code
+    and launch are otherwise unaffected."""
+    monkeypatch.setattr(
+        spin_module,
+        "inject_recall_feedback",
+        lambda **_kwargs: RecallInjectionResult(attempted=True, ok=False, reason="scribe binary not found on PATH"),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    [finding] = [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-018"]
+    assert finding["severity"] == "warn"
+    assert "acme" in finding["message"]
+    assert "scribe binary not found on PATH" in finding["message"]
+    assert len(harness.spin_calls) == 1
+
+
+def test_spin_emits_no_recall_finding_when_the_attempt_was_never_made_or_succeeded(home, capsys, monkeypatch):
+    """Both the "no resolvable station slug" row (``attempted=False``) and a
+    genuinely successful/no-op attempt (``attempted=True, ok=True``) are
+    silent -- ``MRS-SPIN-018`` exists solely to name a degradation, mirroring
+    ``MRS-SPIN-017``'s own "silent unless the layer degrades" convention."""
+    monkeypatch.setattr(
+        spin_module,
+        "inject_recall_feedback",
+        lambda **_kwargs: RecallInjectionResult(attempted=True, ok=True, injected=True),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-018"] == []
+
+
 def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     """``run_resume`` shares ``_spawn_supervisor_sidecar`` with ``run_spin``
     (Story 3.7's extraction), so a resumed run states the same disposition
