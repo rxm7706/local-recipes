@@ -82,9 +82,18 @@ class TestRenderRecallFeedbackBlock:
         """CAP-4's honesty guarantee: this function cannot render a
         synthesized "no relevant corrections found" line, because it has no
         parameter or code path that produces one -- only ``text``/``citation``
-        of an ALREADY-grounded hit ever reach it."""
+        of an ALREADY-grounded hit ever reach it. Inspect the executable
+        body only (``inspect.getsource`` minus its own docstring, which
+        legitimately discusses the miss case in prose) so this assertion
+        checks the code, not the comment describing the code."""
+        import ast
         import inspect
+        import textwrap
 
         source = inspect.getsource(recall_feedback.render_recall_feedback_block)
-        assert "no grounded" not in source.lower()
-        assert "no relevant" not in source.lower()
+        tree = ast.parse(textwrap.dedent(source))
+        (func_def,) = tree.body
+        body_without_docstring = func_def.body[1:] if ast.get_docstring(func_def) else func_def.body
+        body_source = "\n".join(ast.unparse(node) for node in body_without_docstring)
+        assert "no grounded" not in body_source.lower()
+        assert "no relevant" not in body_source.lower()

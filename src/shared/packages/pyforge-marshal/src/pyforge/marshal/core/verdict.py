@@ -1216,6 +1216,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-WATCH-002": Verdict.ERROR,
     "MRS-WATCH-003": Verdict.WARN,
     "MRS-WATCH-004": Verdict.WARN,
+    # Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): a pre-launch
+    # `scribe recall` attempt that degraded (CLI unresolved/non-zero/
+    # timeout, or the artifact write failed). The SAME WARN tier and the
+    # SAME reason as MRS-DISP-033/MRS-SPIN-017/MRS-PREFLIGHT-015 above: a
+    # token-economy-adjacent layer that did not engage over a dispatch that
+    # is otherwise entirely viable -- the dev pass still launches with no
+    # auto-recalled feedback rather than being blocked.
+    "MRS-SPIN-018": Verdict.WARN,
 }
 
 
