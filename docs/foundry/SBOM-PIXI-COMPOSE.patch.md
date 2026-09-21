@@ -1,6 +1,6 @@
 # SBOM pixi compose — PR #1564 only (`sbom/pyforge-foundry-full-compose`)
 
-## `pyforge-foundry-full` (Phase 1 — BoM core + full platform stack)
+## `pyforge-foundry-full` (Phase 1 — BoM + platform; landed solvable set)
 
 ```toml
 pyforge-foundry-full = { features = [
@@ -20,23 +20,19 @@ pyforge-foundry-full = { features = [
   "build",
   "grayskull",
   "crm",
-  "conda-smithy",
   "platform-dev",
-  "python-agent-platform",
   "platform-object-storage",
 ], no-default-feature = true }
 ```
 
-**Phase 1 combines:**
+**Phase 1 target:** BoM (`build`/`grayskull`/`crm`/`conda-smithy`) + platform (`platform-dev`/`python-agent-platform`/`platform-object-storage`) + `pnpm`.
 
-- **BoM core:** `build`, `grayskull`, `crm`, `conda-smithy`
-- **Full platform local stack:** `platform-dev` + `python-agent-platform` + `platform-object-storage` — Redis, Postgres+pgvector, Silo, **and** Langflow/dashboard local bring-up
-- **Also:** `pnpm = ">=12.4.1"` on `feature.python.dependencies` (or `pyforge-guild`) — not a new feature
+**Landed now:** as above — `conda-smithy` and `python-agent-platform` omitted until union solves (see `pyforge-foundry-full-sbom.md` gaps).
 
-**Inclusion:** packages used by PyForge code/operators (e.g. atlas `vizro`/`dagster`) come via their station/platform features — do **not** compose fat `local-recipes` for that
+**Also landed:** `pnpm = ">=12.4.1"` on `feature.python.dependencies`; `postgresql = ">=18.3,<19"` on `platform-dev` / `python-agent-platform` (libpq 18 / psycopg).
 
-**Never:** fat `local-recipes` feature, `desktop-lab`, or side PRs — edit #1564 only
+**Never:** fat `local-recipes` feature, `desktop-lab`, or side PRs — edit #1564 only.
 
 ## Guard
 
-Do not replace `pixi.toml` with a path stub. Restore from `main` if corrupted; edit the env line / pnpm pin only.
+Do not replace `pixi.toml` with a path stub. Restore from `main` if corrupted; edit the env line / pins only.

@@ -33,7 +33,7 @@ Examples of applying the rule (audit, don’t assume):
 | Package | Evidence | SBOM stance |
 |---|---|---|
 | `vizro`, `dagster` | Declared + imported in `pyforge-atlas` package (`pixi.toml` / tests / dashboard) | **In** — via atlas (already composed); not “banned because Vizro” |
-| `wagtail` | Pinned on `python-agent-platform` (steward CMS lane) | **In** with Phase 1 platform stack |
+| `wagtail` | Pinned on `python-agent-platform` (steward CMS lane) | **In** once `python-agent-platform` solves into the union (see gaps) |
 | `vizro-ai` / `vizro-mcp` / `dagster-webserver` pile, `dbt-*`, `minio`, `ollama`, `coderedcms` (as fat-only extras) | Fat `local-recipes` pins; not station/platform feature deps unless proven | **Out** until code/operator need is shown |
 | Fat `local-recipes` feature as a whole | Kitchen sink | **Never compose** the fat feature |
 
@@ -45,16 +45,20 @@ No separate `desktop-lab` feature.
 
 ### Phase 1 — BoM core + full platform local stack (this PR)
 
-One compose onto `pyforge-foundry-full`:
+**Target compose** onto `pyforge-foundry-full`:
 
-**BoM core:** `build` + `grayskull` + `crm` + `conda-smithy`
+- **BoM core:** `build` + `grayskull` + `crm` + `conda-smithy`
+- **Full platform local stack:** `platform-dev` + `python-agent-platform` + `platform-object-storage`
+- **Also:** `pnpm` on an existing feature (`python` / `pyforge-guild`)
 
-**Full platform local stack:** `platform-dev` + `python-agent-platform` + `platform-object-storage`  
-→ Postgres+pgvector, redis-server, Silo, Langflow/dashboard bring-up
+**Landed in this PR (solvable union):** `build` + `grayskull` + `crm` + `platform-dev` + `platform-object-storage` + `pnpm`, with `postgresql` bumped to `>=18.3,<19` so `platform-dev` aligns with `psycopg`/`libpq` 18.
 
-**Also:** `pnpm` on an existing feature (`python` or `pyforge-guild`) — not a new feature.
+**Phase 1 residual solve gaps (do not compose fat `local-recipes` to paper over them):**
 
-Station-owned runtime deps (e.g. atlas `vizro`/`dagster`) stay with their station features — already in the foundry-full union when the package declares them.
+| Gap | Blocker | Interim |
+|---|---|---|
+| `conda-smithy` in foundry-full | 3.x wants `py-rattler <0.23` or `conda <26.3`; union has `py-rattler >=0.25` and `conda >=26.5` from `build` | Keep using `pixi exec conda-smithy…` (already how the feature’s lint task works); ticket a CalVer/`conda` co-solve or drop from union |
+| `python-agent-platform` in foundry-full | `langflow` → `pandas >=2,<3` / `onnxruntime` clash with the station union | Ticket; until then dashboard/Langflow via `-e python-agent-platform` / `-e platform-dev` |
 
 **Do not** compose fat `local-recipes`. **Do not** invent `desktop-lab`.
 
@@ -64,7 +68,7 @@ CI install + `pixi list` + channel audit + **laptop gate** (lint/tests/local CI 
 
 ### Phase 3 — OpenTeams triage
 
-Ticket every CF gap (SEM / pip / node / npm) **and** every “fat-only pin”: either promote into a composed feature (usage proven) or explicit won’t-do.
+Ticket every CF gap (SEM / pip / node / npm) **and** every “fat-only pin”: either promote into a composed feature (usage proven) or explicit won’t-do. **Also** the Phase 1 residual solve gaps above.
 
 ### Phase 4 — Point estate at foundry-full
 
@@ -78,9 +82,10 @@ Execute OpenTeams list (CF-SEM-*, CF-PIP-01, CF-NODE-*, CF-NPM-*).
 
 ## Success criteria
 
-- [ ] **Phase 1:** BoM core + platform stack composed (`build`/`grayskull`/`crm`/`conda-smithy` + `platform-dev`/`python-agent-platform`/`platform-object-storage` + `pnpm`); usage-based deps available without fat `local-recipes`; `pixi.lock` in sync / CI green.
+- [x] **Phase 1 (partial):** BoM `build`/`grayskull`/`crm` + `platform-dev`/`platform-object-storage` + `pnpm` composed; `pixi.lock` refreshed; usage-based deps without fat `local-recipes`.
+- [ ] **Phase 1 (complete):** `conda-smithy` + `python-agent-platform` also in the foundry-full union (solve gaps closed).
 - [ ] Phase 2 laptop gate green from foundry-full alone.
-- [ ] Phase 3 tickets for CF gaps + fat-only promote/won’t-do decisions.
+- [ ] Phase 3 tickets for CF gaps + fat-only promote/won’t-do + Phase 1 residual gaps.
 - [ ] Phase 4 docs point at foundry-full.
 - [ ] Phase 5 CF gaps closed or deferred.
 
@@ -89,6 +94,6 @@ Execute OpenTeams list (CF-SEM-*, CF-PIP-01, CF-NODE-*, CF-NPM-*).
 ```
 include  = used by PyForge code OR needed by PyForge developer/operator
 exclude  = unused kitchen-sink pins; never compose fat local-recipes feature
-Phase 1  = BoM core + platform-dev + python-agent-platform + platform-object-storage (+ pnpm)
+Phase 1  = BoM core + platform stack (land what solves; ticket the rest)
 edit PR #1564 only — no side PRs, no desktop-lab
 ```
