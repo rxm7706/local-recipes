@@ -5,7 +5,7 @@
 
 WHAT THIS IS. A repo-level `PreToolUse` guard for the ten AGENTS.md/CLAUDE.md
 session rules that were previously prose only. Registered on `Bash` and on
-`Edit`/`Write` in `.claude/settings.json` (Claude Code) and on
+`Edit`/`Write`/`NotebookEdit` in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` / `afterFileEdit` in `.cursor/hooks.json` (Cursor) --
 THE SAME FILE serves both harnesses; each hook config just points its own
 harness's event(s) at this one script, and this script tells the two apart by
@@ -29,8 +29,8 @@ in its current schema (checked live against https://cursor.com/docs/agent/hooks,
 2026-09-20), and Cursor has no "before write" event for file edits at all --
 so the file rule there is necessarily a post-hoc WARN: a clear message on
 stderr plus a non-zero exit (visible in Cursor's own hook log), not a block.
-On Claude Code, by contrast, `Edit`/`Write` are `PreToolUse`-gated, so this
-script denies the edit outright before it lands.
+On Claude Code, by contrast, `Edit`/`Write`/`NotebookEdit` are `PreToolUse`-gated,
+so this script denies the edit outright before it lands.
 
 FAIL LOUD, NEVER SILENT SKIP. A governance-file integrity problem (a missing
 `session_denials` list, a rule id with no matcher or a matcher with no rule
@@ -91,7 +91,7 @@ def detect(payload: dict[str, Any]) -> tuple[str, str]:
         tool_name = payload.get("tool_name")
         if tool_name == "Bash":
             return "claude", "bash"
-        if tool_name in ("Edit", "Write"):
+        if tool_name in ("Edit", "Write", "NotebookEdit"):
             return "claude", "edit_write"
         return "claude", "other"
     if event == "beforeShellExecution":
@@ -111,7 +111,8 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
         if kind == "bash":
             command = tool_input.get("command")
         else:
-            file_path = tool_input.get("file_path")
+            # Edit/Write carry `file_path`; NotebookEdit carries `notebook_path`.
+            file_path = tool_input.get("file_path") or tool_input.get("notebook_path")
     else:  # cursor
         roots = payload.get("workspace_roots") or []
         cwd = payload.get("cwd") or (roots[0] if roots else os.getcwd())
@@ -138,8 +139,6 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
 # the ten named forms; not a sandbox and not trying to be one.
 # --------------------------------------------------------------------------
 
-_SEPARATOR_RE = re.compile(r"&&|\|\||;|\n|(?<!\|)\|(?!\|)")
-
 
 def _tokenize(chunk: str) -> list[str]:
     try:
@@ -148,14 +147,79 @@ def _tokenize(chunk: str) -> list[str]:
         return chunk.split()
 
 
+def _split_respecting_quotes(command: str) -> list[str]:
+    """Split on `&&`, `||`, `;`, `|` and newlines -- but never inside a
+    single- or double-quoted span. A regex-only split (matching on the raw
+    characters) shatters a quoted multi-line argument -- e.g. a heredoc
+    embedded in `-m "$(cat <<'EOF' ... EOF)"` -- into unrelated fragments,
+    which drops the rest of the argument (including an attribution line)
+    from the chunk `match_git_commit_guardrail` ever sees.
+    """
+    parts: list[str] = []
+    buf: list[str] = []
+    in_single = False
+    in_double = False
+    i = 0
+    n = len(command)
+    while i < n:
+        ch = command[i]
+        if in_single:
+            buf.append(ch)
+            in_single = ch != "'"
+            i += 1
+            continue
+        if in_double:
+            if ch == "\\" and i + 1 < n:
+                buf.append(ch)
+                buf.append(command[i + 1])
+                i += 2
+                continue
+            buf.append(ch)
+            if ch == '"':
+                in_double = False
+            i += 1
+            continue
+        if ch == "'":
+            in_single = True
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == '"':
+            in_double = True
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == "\\" and i + 1 < n:
+            buf.append(ch)
+            buf.append(command[i + 1])
+            i += 2
+            continue
+        two = command[i : i + 2]
+        if two in ("&&", "||"):
+            parts.append("".join(buf))
+            buf = []
+            i += 2
+            continue
+        if ch in (";", "\n", "|"):
+            parts.append("".join(buf))
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    parts.append("".join(buf))
+    return [p.strip() for p in parts if p.strip()]
+
+
 def split_subcommands(command: str) -> list[list[str]]:
     """Split a shell command into per-subcommand token lists.
 
-    Splits on `&&`, `||`, `;`, `|` and newlines, then also recurses into
-    `bash -c "..."` / `sh -c "..."` / `zsh -c "..."` payloads so a wrapped
-    inner command is still visible to the rule matchers.
+    Splits on `&&`, `||`, `;`, `|` and newlines (quote-aware -- see
+    `_split_respecting_quotes`), then also recurses into `bash -c "..."` /
+    `sh -c "..."` / `zsh -c "..."` payloads so a wrapped inner command is
+    still visible to the rule matchers.
     """
-    chunks = [c.strip() for c in _SEPARATOR_RE.split(command) if c.strip()]
+    chunks = _split_respecting_quotes(command)
     result: list[list[str]] = []
     for chunk in chunks:
         tokens = _tokenize(chunk)
@@ -282,12 +346,17 @@ def _commit_msg_hook(repo_root: Path):
     return module
 
 
+_BUNDLED_SHORT_M_RE = re.compile(r"^-[a-zA-Z]*m$")
+
+
 def _extract_commit_message(tokens: list[str], cwd: str) -> Optional[str]:
     parts: list[str] = []
     i = 0
     while i < len(tokens):
         tok = tokens[i]
-        if tok in ("-m", "--message"):
+        # `-m`/`--message`, and a bundled short-option cluster ending in `m`
+        # (e.g. `-am`) -- git accepts either, and `-am` is the common form.
+        if tok in ("-m", "--message") or _BUNDLED_SHORT_M_RE.fullmatch(tok):
             if i + 1 < len(tokens):
                 parts.append(tokens[i + 1])
             i += 2
@@ -361,23 +430,49 @@ def match_guild_task_via_local_recipes(ctx: Context, rule: dict[str, Any]) -> Op
         env, rest = _pixi_run_env(tokens)
         if env != "local-recipes":
             continue
+        # Only the task-name position (the first non-flag positional token)
+        # is checked -- anything after it is an argument TO that task, which
+        # can coincidentally equal a Guild task's name (e.g. `resolve-name
+        # mypy`) without meaning "run mypy".
+        task = next((tok for tok in rest if not tok.startswith("-")), None)
+        if task is None:
+            continue
         guild_tasks = get_guild_tasks(ctx.repo_root)
-        for tok in rest:
-            if tok in guild_tasks:
-                return str(rule["reason"]).format(task=tok)
+        if task in guild_tasks:
+            return str(rule["reason"]).format(task=task)
     return None
+
+
+_PY_INTERPRETER_RE = re.compile(r"python3?(\.\d+)?")
+
+
+def _has_python_pip_install(tokens: list[str]) -> bool:
+    """`python`/`python3`/`python3.14`/... `-m pip install` -- version-tolerant
+    so a Python invoked by its exact pinned minor version is still caught."""
+    for i in range(len(tokens) - 3):
+        if (
+            _PY_INTERPRETER_RE.fullmatch(tokens[i])
+            and tokens[i + 1] == "-m"
+            and tokens[i + 2] == "pip"
+            and tokens[i + 3] == "install"
+        ):
+            return True
+    return False
 
 
 def match_adhoc_package_install(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     for tokens in ctx.subcommands:
-        low = [t.lower() for t in tokens]
+        # Basename-lowered: `npx` invoked as `/usr/bin/npx` or
+        # `./node_modules/.bin/npx` must be recognized the same as bare `npx`.
+        low = [Path(t).name.lower() for t in tokens]
         if (
             _contains(low, ["pip", "install"])
             or _contains(low, ["pip3", "install"])
-            or _contains(low, ["python", "-m", "pip", "install"])
-            or _contains(low, ["python3", "-m", "pip", "install"])
             or _contains(low, ["uv", "pip", "install"])
             or _contains(low, ["conda", "install"])
+            or _contains(low, ["mamba", "install"])
+            or _contains(low, ["micromamba", "install"])
+            or _has_python_pip_install(low)
         ):
             return str(rule["reason"])
         if "npx" in low:
@@ -402,7 +497,7 @@ def match_bmad_switch_unsafe(ctx: Context, rule: dict[str, Any]) -> Optional[str
         )
         if not hit:
             continue
-        if os.environ.get("BMAD_ACTIVE_PROJECT") or is_worktree(ctx.cwd):
+        if "BMAD_ACTIVE_PROJECT" in os.environ or is_worktree(ctx.cwd):
             return str(rule["reason"])
     return None
 
@@ -457,9 +552,9 @@ def match_uv_run_outside_repo_root(ctx: Context, rule: dict[str, Any]) -> Option
             toplevel = _git(["rev-parse", "--show-toplevel"], ctx.cwd)
             if toplevel is None:
                 continue
-            if os.path.normpath(os.path.abspath(ctx.cwd)) != os.path.normpath(
-                os.path.abspath(toplevel)
-            ):
+            # realpath (not abspath): two paths to the same directory reached
+            # through different symlinks must compare equal.
+            if os.path.realpath(ctx.cwd) != os.path.realpath(toplevel):
                 return str(rule["reason"])
     return None
 
@@ -468,7 +563,11 @@ def match_spec_surface_bare_write_baseline(
     ctx: Context, rule: dict[str, Any]
 ) -> Optional[str]:
     for tokens in ctx.subcommands:
-        if not any(tok.endswith("spec_surface_check.py") for tok in tokens):
+        if not any(
+            tok.endswith("spec_surface_check.py")
+            or tok in ("spec_surface_check", "scripts.spec_surface_check")
+            for tok in tokens
+        ):
             continue
         if "--write-baseline" not in tokens:
             continue
@@ -478,16 +577,38 @@ def match_spec_surface_bare_write_baseline(
     return None
 
 
+def _under_bmad_planning_artifacts(p: Path) -> bool:
+    """True if `p` has a `_bmad-output/projects/<slug>/planning-artifacts/...`
+    segment anywhere in it -- the shape every governed SPEC.md /
+    sprint-status-ledger.yaml lives under. Guards against an unrelated file
+    elsewhere in the repo that merely happens to share one of those exact
+    basenames."""
+    parts = p.parts
+    for i in range(len(parts) - 3):
+        if (
+            parts[i] == "_bmad-output"
+            and parts[i + 1] == "projects"
+            and parts[i + 3] == "planning-artifacts"
+        ):
+            return True
+    return False
+
+
+def _resolve_against_cwd(cwd: str, path_str: str) -> Path:
+    p = Path(path_str)
+    return p if p.is_absolute() else Path(cwd) / p
+
+
 def match_direct_write_governed_path(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     if ctx.file_path is None:
         return None
     reasons = rule["reason"]
-    p = Path(ctx.file_path)
-    if p.name == "SPEC.md":
+    resolved = _resolve_against_cwd(ctx.cwd, ctx.file_path)
+    if resolved.name == "SPEC.md" and _under_bmad_planning_artifacts(resolved):
         return str(reasons["spec_md"])
-    if p.name == "sprint-status-ledger.yaml":
+    if resolved.name == "sprint-status-ledger.yaml" and _under_bmad_planning_artifacts(resolved):
         return str(reasons["ledger"])
-    if "implementation-artifacts" in p.parts and is_tracked(ctx.repo_root, ctx.file_path):
+    if "implementation-artifacts" in resolved.parts and is_tracked(ctx.repo_root, str(resolved)):
         return str(reasons["implementation_artifacts"])
     return None
 
@@ -623,4 +744,7 @@ if __name__ == "__main__":
         sys.exit(main())
     except Exception:
         traceback.print_exc(file=sys.stderr)
-        sys.exit(1)
+        # Claude Code's PreToolUse contract only blocks the tool call on exit
+        # code 2 (any other non-zero exit is non-blocking) -- a governance-file
+        # integrity failure must fail loud, not proceed as if nothing happened.
+        sys.exit(2)

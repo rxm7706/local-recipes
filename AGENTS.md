@@ -100,6 +100,30 @@ Never commit on the shared checkout. Never `scripts/bmad-switch` from a
 parallel agent — `BMAD_ACTIVE_PROJECT` and physical `_bmad-output/projects/<slug>/` paths. Create with
 `gh pr create --repo rxm7706/local-recipes`; merge `--merge`. Cursor loads the same contract from `.cursor/rules/trunk-worktree-pr.mdc`.
 
+## Session guardrails (enforced, not asserted)
+
+Ten of this file's own rules — the guild-task/local-recipes mix-up, an ad hoc `pip`/`conda`/`npx`
+install, a live `pixi add`/`pixi update`, `scripts/bmad-switch` from a worktree or with
+`BMAD_ACTIVE_PROJECT` set, a `git commit` on `main`/the primary checkout or carrying
+`Co-Authored-By`/AI attribution, `gh pr merge --squash`, a `gh pr create` missing `--repo
+rxm7706/local-recipes`, `uv run` off the repo root, a bare `spec_surface_check.py
+--write-baseline`, and a direct write to `SPEC.md` / `sprint-status-ledger.yaml` / a tracked
+`implementation-artifacts/` path — are additionally enforced by a repo-level `PreToolUse` hook,
+`.claude/hooks/pre-shell.py`. It is registered on `Bash` and on `Edit`/`Write` in
+`.claude/settings.json` (Claude Code) and on `beforeShellExecution` (deny) / `afterFileEdit`
+(warn — Cursor has no before-edit deny) in `.cursor/hooks.json` (Cursor). **One script serves both
+harnesses.**
+
+The closed list of what it denies, and the one-line reason it gives for each — naming the
+sanctioned form — lives in `docs/governance/guild-roster.json`'s `session_denials` array, the ONE
+declared source; adding to it is a governance act, never a bare code change to the hook alone. The
+script asserts its matchers are exactly that list at every run (a drift between the two is a loud
+failure, not a silent gap) and never denies anything not on the list.
+
+**Gemini CLI, GitHub Copilot CLI, and Devin have no verified deny surface for this hook.** For
+them these ten rules remain instruction-only, exactly as written elsewhere in this file — do not
+assume they are enforced there.
+
 ## Behavioural guidelines (every harness)
 
 1. **Think before coding** — state assumptions; for an ambiguous ask, present the interpretations,

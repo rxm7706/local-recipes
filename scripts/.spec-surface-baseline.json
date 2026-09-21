@@ -5099,7 +5099,7 @@
    ".cursor/rules/scribe-recall.mdc": "1e4a5b170a908e09cfa0fab8bde2bcc33cc5f023",
    ".gemini/settings.json": "0e37d00cae3c091c91cd7a53792762eb300fa527",
    ".github/copilot-instructions.md": "179e96c790f8a5ad6d9bea477bf2a787a12628c8",
-   "AGENTS.md": "e4f3b286033703142186ec5bfa6b6c32e47e9c16",
+   "AGENTS.md": "29fad075c6c309786fe35b314a1a4590ba2ff10f",
    "GEMINI.md": "8e3e7554295eb49b88070b9d9e9f3fa54bafd860",
    "scripts/claude_instruction_mode_check.py": "aee2622cf3462c89aef671fb1363079f608051b4",
    "scripts/scribe_graph_freshness_check.py": "992380215b7243a111a4e968a6fd50ea7f8b5dae",
@@ -5158,7 +5158,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "c8fa5c7f0bca33482f1000cb9c46518449a0dfb4"
+  "memlog": "db3c2dd2081c0d17d38bc03471903b2967edc18b"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
