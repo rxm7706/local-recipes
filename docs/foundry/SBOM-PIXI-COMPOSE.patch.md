@@ -21,6 +21,7 @@ pyforge-foundry-full = { features = [
   "grayskull",
   "crm",
   "platform-dev",
+  "platform-dev",
   "platform-object-storage",
 ], no-default-feature = true }
 ```

@@ -41,6 +41,9 @@ No separate `desktop-lab` feature.
 
 ---
 
+
+**libpq-17 caps (keep Postgres 17):** `psycopg = ">=3.2.9,<3.2.10"` (3.2.10+/3.3.x `psycopg-c` need libpq 18) and `pgvector = ">=0.8.0,<0.8.2"` (0.8.2+ need libpq 18). Do **not** bump `postgresql` to 18 to paper over those.
+
 ## Plan
 
 ### Phase 1 — BoM core + full platform local stack (this PR)
