@@ -2,7 +2,8 @@
 title: '63.3: One deny list, one hook — the Guild session guardrails are enforced, not asserted'
 type: 'feature'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '2f98ede57d5ebb7df285bbd1383782cf6a7c86af'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
