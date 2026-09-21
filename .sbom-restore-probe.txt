@@ -1,1 +1,1 @@
-file:///workspace/pixi.toml.RESTORE
+@/workspace/pixi.toml.RESTORE
