@@ -1,6 +1,6 @@
 # `pyforge-foundry-full` as the PyForge SBOM
 
-**Status:** Phases 1 + 1b in [PR #1564](https://github.com/rxm7706/local-recipes/pull/1564) only (no side PRs).
+**Status:** Phase 1 in [PR #1564](https://github.com/rxm7706/local-recipes/pull/1564) only (no side PRs).
 **Env:** `pixi install -e pyforge-foundry-full` (never the default session env).
 **Not the SBOM:** the fat `local-recipes` *feature blob* (~200+ pins / ~10 GB) as a kitchen sink.
 
@@ -22,8 +22,6 @@
    - **Playwright + Chromium** — already on atlas / herald
    - **`pnpm`** — pin on existing `python` or `pyforge-guild` when herald/atlas web/wasm need it
 
-**Decided (2026-09-21):** Phase 1b = **full platform local stack** = `platform-dev` + `python-agent-platform` (+ `platform-object-storage` tasks).
-
 ### Inclusion rule (not a name blacklist)
 
 **Keep out of foundry-full** anything that is **not** in PyForge code and **not** required by a PyForge developer/operator workflow — even if it currently sits in fat `local-recipes`.
@@ -35,7 +33,7 @@ Examples of applying the rule (audit, don’t assume):
 | Package | Evidence | SBOM stance |
 |---|---|---|
 | `vizro`, `dagster` | Declared + imported in `pyforge-atlas` package (`pixi.toml` / tests / dashboard) | **In** — via atlas (already composed); not “banned because Vizro” |
-| `wagtail` | Pinned on `python-agent-platform` (steward CMS lane) | **In** with Phase 1b platform stack |
+| `wagtail` | Pinned on `python-agent-platform` (steward CMS lane) | **In** with Phase 1 platform stack |
 | `vizro-ai` / `vizro-mcp` / `dagster-webserver` pile, `dbt-*`, `minio`, `ollama`, `coderedcms` (as fat-only extras) | Fat `local-recipes` pins; not station/platform feature deps unless proven | **Out** until code/operator need is shown |
 | Fat `local-recipes` feature as a whole | Kitchen sink | **Never compose** the fat feature |
 
@@ -45,19 +43,20 @@ No separate `desktop-lab` feature.
 
 ## Plan
 
-### Phase 1 — Env = BoM core (this PR)
+### Phase 1 — BoM core + full platform local stack (this PR)
 
-Compose: `build` + `grayskull` + `crm` + `conda-smithy` onto `pyforge-foundry-full`.
+One compose onto `pyforge-foundry-full`:
 
-**Do not** compose fat `local-recipes`. **Do not** invent `desktop-lab`.
+**BoM core:** `build` + `grayskull` + `crm` + `conda-smithy`
 
-### Phase 1b — Full platform local stack (same PR #1564)
+**Full platform local stack:** `platform-dev` + `python-agent-platform` + `platform-object-storage`  
+→ Postgres+pgvector, redis-server, Silo, Langflow/dashboard bring-up
 
-Compose existing features: **`platform-dev` + `python-agent-platform` + `platform-object-storage`**, plus `pnpm` on an existing feature.
-
-Brings: Postgres+pgvector, redis-server, Silo, Langflow/dashboard clients, object-storage tasks.
+**Also:** `pnpm` on an existing feature (`python` or `pyforge-guild`) — not a new feature.
 
 Station-owned runtime deps (e.g. atlas `vizro`/`dagster`) stay with their station features — already in the foundry-full union when the package declares them.
+
+**Do not** compose fat `local-recipes`. **Do not** invent `desktop-lab`.
 
 ### Phase 2 — Checkable SBOM + laptop gate
 
@@ -79,8 +78,7 @@ Execute OpenTeams list (CF-SEM-*, CF-PIP-01, CF-NODE-*, CF-NPM-*).
 
 ## Success criteria
 
-- [ ] Phase 1 core compose solves.
-- [ ] **Phase 1b:** `platform-dev` + `python-agent-platform` + `platform-object-storage` on foundry-full; usage-based deps (e.g. atlas vizro/dagster) available without composing fat `local-recipes`.
+- [ ] **Phase 1:** BoM core + platform stack composed (`build`/`grayskull`/`crm`/`conda-smithy` + `platform-dev`/`python-agent-platform`/`platform-object-storage` + `pnpm`); usage-based deps available without fat `local-recipes`; `pixi.lock` in sync / CI green.
 - [ ] Phase 2 laptop gate green from foundry-full alone.
 - [ ] Phase 3 tickets for CF gaps + fat-only promote/won’t-do decisions.
 - [ ] Phase 4 docs point at foundry-full.
@@ -91,6 +89,6 @@ Execute OpenTeams list (CF-SEM-*, CF-PIP-01, CF-NODE-*, CF-NPM-*).
 ```
 include  = used by PyForge code OR needed by PyForge developer/operator
 exclude  = unused kitchen-sink pins; never compose fat local-recipes feature
-Phase 1b = platform-dev + python-agent-platform (+ object-storage tasks)
+Phase 1  = BoM core + platform-dev + python-agent-platform + platform-object-storage (+ pnpm)
 edit PR #1564 only — no side PRs, no desktop-lab
 ```
