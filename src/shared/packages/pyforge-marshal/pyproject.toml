@@ -54,11 +54,13 @@ bmad-loop = "pyforge.marshal.adapters.harness_bmadloop:BmadLoopHarness"
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
 
-# Story 19.3: ship per-station coverage floors beside the gate module.
 # Story 22.8: ship the packaged session-harness CLI profiles (FR-193 CAP-8)
-# the same way -- data files inside the package tree.
+# as data files inside the package tree. Story 19.3's own coverage-floors
+# force-include (coverage_thresholds.toml) left this block 2026-09-20 (doctor
+# Story 24.1, spec-coverage-gate-independence CAP-1/CAP-2): the gate module
+# and its thresholds file both moved outside every pyforge.<station>
+# package -- scripts/coverage_gate.py and docs/governance/coverage-thresholds.toml.
 [tool.hatch.build.targets.wheel.force-include]
-"src/pyforge/marshal/coverage_thresholds.toml" = "pyforge/marshal/coverage_thresholds.toml"
 "src/pyforge/marshal/data/harness_profiles" = "pyforge/marshal/data/harness_profiles"
 
 [tool.pytest.ini_options]
@@ -91,10 +93,15 @@ type = "forbidden"
 # itself, the one module this contract must let import bmad_loop. A future
 # adapter module that wrongly imports bmad_loop is NOT caught by this
 # contract until that module's own story adds it to source_modules.
+# pyforge.marshal.coverage_gate (Story 19.3 / FR-131) is REMOVED from this
+# list 2026-09-20 (doctor Story 24.1, spec-coverage-gate-independence CAP-1):
+# the evaluator moved to scripts/coverage_gate.py, outside every
+# pyforge.<station> package, so this contract has nothing left to say about
+# it -- a station's own AD-3 seam cannot forbid a module the station no
+# longer ships.
 source_modules = [
     "pyforge.marshal.cli",
     "pyforge.marshal.core",
-    "pyforge.marshal.coverage_gate",  # Story 19.3 / FR-131 named-module coverage gates
     "pyforge.marshal.dispatch_supervisor",
     "pyforge.marshal.dispatch_verify",  # Story 22.3 / FR-193 CAP-3 dispatch gate runner
     "pyforge.marshal.dispatch_land",  # Story 22.4 / FR-193 CAP-4

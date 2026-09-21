@@ -3,10 +3,16 @@
 Fixtures prove a below-threshold run fails naming modules, not only an
 aggregate percentage. Live threshold defaults and touched-station discovery
 are locked here too.
+
+Moved from pyforge-marshal's own test suite 2026-09-20 (doctor Story 24.1,
+spec-coverage-gate-independence CAP-1): the module under test moved to
+scripts/coverage_gate.py, outside every pyforge.<station> package, so this
+suite moved with it rather than importing a package that no longer ships it.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import json
 import sys
@@ -14,25 +20,37 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.coverage_gate import (
-    DEFAULT_INTEGRATION_THRESHOLD,
-    DEFAULT_UNIT_THRESHOLD,
-    STATIONS,
-    ModuleFailure,
-    evaluate_coverage_payload,
-    evaluate_suite,
-    filter_percents,
-    format_failure_message,
-    load_thresholds,
-    main,
-    module_percents_from_coverage_json,
-    modules_below_threshold,
-    package_root,
-    package_src,
-    thresholds_for,
-    touched_source_modules,
-    touched_stations,
-)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+COVERAGE_GATE_PATH = REPO_ROOT / "scripts" / "coverage_gate.py"
+
+
+def _load_coverage_gate():
+    spec = importlib.util.spec_from_file_location("coverage_gate_names_module_test", COVERAGE_GATE_PATH)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_coverage_gate = _load_coverage_gate()
+DEFAULT_INTEGRATION_THRESHOLD = _coverage_gate.DEFAULT_INTEGRATION_THRESHOLD
+DEFAULT_UNIT_THRESHOLD = _coverage_gate.DEFAULT_UNIT_THRESHOLD
+STATIONS = _coverage_gate.STATIONS
+ModuleFailure = _coverage_gate.ModuleFailure
+evaluate_coverage_payload = _coverage_gate.evaluate_coverage_payload
+evaluate_suite = _coverage_gate.evaluate_suite
+filter_percents = _coverage_gate.filter_percents
+format_failure_message = _coverage_gate.format_failure_message
+load_thresholds = _coverage_gate.load_thresholds
+main = _coverage_gate.main
+module_percents_from_coverage_json = _coverage_gate.module_percents_from_coverage_json
+modules_below_threshold = _coverage_gate.modules_below_threshold
+package_root = _coverage_gate.package_root
+package_src = _coverage_gate.package_src
+thresholds_for = _coverage_gate.thresholds_for
+touched_source_modules = _coverage_gate.touched_source_modules
+touched_stations = _coverage_gate.touched_stations
 
 
 def test_fleet_defaults_are_unit_80_integration_70():

@@ -1,4 +1,9 @@
-"""Driver-level contracts for scripts/coverage_gates_ci.py (Story 19.3)."""
+"""Driver-level contracts for scripts/coverage_gates_ci.py (Story 19.3).
+
+Moved from pyforge-marshal's own test suite 2026-09-20 (doctor Story 24.1,
+spec-coverage-gate-independence CAP-1): the driver's own coverage_gate.py
+import moved to a scripts/ sibling, outside every pyforge.<station> package.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[6]
+REPO = Path(__file__).resolve().parents[2]
 DRIVER = REPO / "scripts" / "coverage_gates_ci.py"
 
 
@@ -78,12 +83,12 @@ def test_skipped_suite_does_not_evaluate(driver, tmp_path: Path, monkeypatch, ca
 def test_pytest_failure_sets_nonzero_rc(driver, tmp_path: Path, monkeypatch):
     paths_file = tmp_path / "paths.txt"
     paths_file.write_text(
-        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_gate.py\n",
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py\n",
         encoding="utf-8",
     )
     report_payload = {
         "files": {
-            "src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_gate.py": {
+            "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": {
                 "summary": {"percent_covered": 99.0}
             }
         }

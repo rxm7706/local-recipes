@@ -99,8 +99,13 @@ class ModuleFailure:
 
 
 def default_thresholds_path() -> Path:
-    """Packaged thresholds file beside this module."""
-    return Path(__file__).resolve().parent / "coverage_thresholds.toml"
+    """Governance-owned thresholds file (spec-coverage-gate-independence CAP-2).
+
+    ``docs/governance/coverage-thresholds.toml``, beside ``guild-roster.json``
+    -- outside every ``pyforge.<station>`` package, so a station cannot lower
+    the floor that reds its own CI by editing a file it owns.
+    """
+    return Path(__file__).resolve().parents[1] / "docs" / "governance" / "coverage-thresholds.toml"
 
 
 @dataclass(frozen=True)
@@ -571,7 +576,7 @@ def _cmd_show_thresholds(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python -m pyforge.marshal.coverage_gate",
+        prog="python scripts/coverage_gate.py",
         description=("Coverage gates that name uncovered modules (Story 19.3 / FR-131)."),
     )
     sub = parser.add_subparsers(dest="command", required=True)
@@ -595,7 +600,7 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument(
         "--thresholds",
         default=None,
-        help="Optional thresholds TOML (defaults to packaged coverage_thresholds.toml)",
+        help="Optional thresholds TOML (defaults to docs/governance/coverage-thresholds.toml)",
     )
     evaluate.add_argument(
         "--only-modules-file",
