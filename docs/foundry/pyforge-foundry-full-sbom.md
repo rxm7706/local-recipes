@@ -51,13 +51,14 @@ No separate `desktop-lab` feature.
 - **Full platform local stack:** `platform-dev` + `python-agent-platform` + `platform-object-storage`
 - **Also:** `pnpm` on an existing feature (`python` / `pyforge-guild`)
 
-**Landed in this PR (solvable union):** `build` + `grayskull` + `crm` + `platform-dev` + `platform-object-storage` + `pnpm`, with `postgresql` bumped to `>=18.3,<19` so `platform-dev` aligns with `psycopg`/`libpq` 18.
+**Landed in this PR (solvable union):** `build` + `grayskull` + `crm` + `platform-object-storage` + `pnpm`.  `platform-dev` is intentionally omitted: the estate pin for PostgreSQL is major 17 (`>=17.11,<18`) and composing `platform-dev` into the foundry-full union pulls `libpq 18` via `psycopg`, breaking the solve.  Do not bump the PostgreSQL major version to force the compose — use `-e platform-dev` directly when a local database server is needed.
 
 **Phase 1 residual solve gaps (do not compose fat `local-recipes` to paper over them):**
 
 | Gap | Blocker | Interim |
 |---|---|---|
 | `conda-smithy` in foundry-full | 3.x wants `py-rattler <0.23` or `conda <26.3`; union has `py-rattler >=0.25` and `conda >=26.5` from `build` | Keep using `pixi exec conda-smithy…` (already how the feature’s lint task works); ticket a CalVer/`conda` co-solve or drop from union |
+| `platform-dev` in foundry-full | Estate pin is `postgresql >=17.11,<18`; composing `platform-dev` pulls `libpq 18` via `psycopg`, breaking the union solve.  Do not bump PG major — use `-e platform-dev` directly. | Run database-dependent workflows with `-e platform-dev` / `-e python-agent-platform` |
 | `python-agent-platform` in foundry-full | `langflow` → `pandas >=2,<3` / `onnxruntime` clash with the station union | Ticket; until then dashboard/Langflow via `-e python-agent-platform` / `-e platform-dev` |
 
 **Do not** compose fat `local-recipes`. **Do not** invent `desktop-lab`.
@@ -82,7 +83,7 @@ Execute OpenTeams list (CF-SEM-*, CF-PIP-01, CF-NODE-*, CF-NPM-*).
 
 ## Success criteria
 
-- [x] **Phase 1 (partial):** BoM `build`/`grayskull`/`crm` + `platform-dev`/`platform-object-storage` + `pnpm` composed; `pixi.lock` refreshed; usage-based deps without fat `local-recipes`.
+- [x] **Phase 1 (partial):** BoM `build`/`grayskull`/`crm` + `platform-object-storage` + `pnpm` composed; `pixi.lock` refreshed; usage-based deps without fat `local-recipes`.  `platform-dev` omitted — estate PG pin is major 17; composing it pulls libpq 18 and breaks the union solve.
 - [ ] **Phase 1 (complete):** `conda-smithy` + `python-agent-platform` also in the foundry-full union (solve gaps closed).
 - [ ] Phase 2 laptop gate green from foundry-full alone.
 - [ ] Phase 3 tickets for CF gaps + fat-only promote/won’t-do + Phase 1 residual gaps.

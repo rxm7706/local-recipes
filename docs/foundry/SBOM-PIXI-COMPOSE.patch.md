@@ -20,16 +20,15 @@ pyforge-foundry-full = { features = [
   "build",
   "grayskull",
   "crm",
-  "platform-dev",
   "platform-object-storage",
 ], no-default-feature = true }
 ```
 
 **Phase 1 target:** BoM (`build`/`grayskull`/`crm`/`conda-smithy`) + platform (`platform-dev`/`python-agent-platform`/`platform-object-storage`) + `pnpm`.
 
-**Landed now:** as above — `conda-smithy` and `python-agent-platform` omitted until union solves (see `pyforge-foundry-full-sbom.md` gaps).
+**Landed now:** as above — `conda-smithy`, `platform-dev`, and `python-agent-platform` omitted.  `platform-dev` is omitted because the estate PostgreSQL pin is major 17 (`>=17.11,<18`) and composing it pulls `libpq 18` via `psycopg`, breaking the union solve; do not bump the PostgreSQL major to force the compose.  See `pyforge-foundry-full-sbom.md` for remaining gaps.
 
-**Also landed:** `pnpm = ">=12.4.1"` on `feature.python.dependencies`; `postgresql = ">=18.3,<19"` on `platform-dev` / `python-agent-platform` (libpq 18 / psycopg).
+**Also landed:** `pnpm = ">=12.4.1"` on `feature.python.dependencies`; `postgresql` pins restored to `>=17.11,<18` on `platform-dev` / `python-agent-platform`.
 
 **Never:** fat `local-recipes` feature, `desktop-lab`, or side PRs — edit #1564 only.
 

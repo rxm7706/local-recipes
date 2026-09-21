@@ -194,7 +194,7 @@ dbgpt-serve = ">=0.8.2"           # agentic engine 3/3 (db-gpt feedstock)
 django = ">=5.2.17,<6"            # the host web framework the engines mount into (Epic 11)
 fastapi = ">=0.141.1"             # Story 10.1's ASGI/FastAPI-integration seam; also arrives transitively via langflow-base's fastapi >=0.135.0,<1.0.0 -- explicit pin documents intent
 django-health-check = ">=4.5.1"   # Story 10.1's K8s liveness/readiness requirement (CAP-1); needs django>=5.2, matching this env's floor -- a DIFFERENT install from Story 10.1's pip-pinned django-health-check==3.24.0
-postgresql = ">=18.3,<19"        # pg_basebackup/pg_dump for Story 41.1 backup CronJob (client + server binaries)
+postgresql = ">=17.11,<18"        # pg_basebackup/pg_dump for Story 41.1 backup CronJob (client + server binaries)
 psycopg2 = ">=2.9.10"             # Django sync driver; 2.9.10 added PostgreSQL 17 errorcodes (NEWS). Server is postgresql >=17 in platform-dev.
 redis-py = ">=8.1.0"              # Redis client driver -- imports as `redis` (name gotcha); DO NOT relax this floor
 # Story 11.1: `langflow.main.create_app()` hard-imports these four at module load
@@ -301,7 +301,7 @@ uvicorn-worker = ">=0.4.0"        #
 platforms = ["linux-64", "osx-arm64-min"]
 
 [feature.platform-dev.dependencies]
-postgresql = ">=18.3,<19"        # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
+postgresql = ">=17.11,<18"        # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
 pgvector = ">=0.8.1"              # PostgreSQL extension, same instance -- no separate vector-store service (AD-1)
 redis-server = ">=8.10.1"         # per-user local Redis server process -- cache + Celery broker (AD-1)
 silo = ">=20260903131801.0.0"     # per-user local S3-compatible object-storage server process -- consumed via config/object_storage.py's OBJECT_STORAGE_* settings (Story 50.3, pap:AD-1's 2026-09-10 dated exception)
@@ -1021,7 +1021,7 @@ pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge
 # locked, checkable artifact -- every station-only extra (playwright, django, rattler-build,
 # kedro-viz, cocoindex, conda-build, ...) resolves together or the lock refuses. Several GB; install
 # it deliberately (`pixi install -e pyforge-foundry-full`), never by default.
-pyforge-foundry-full = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "crm", "platform-dev", "platform-object-storage"], no-default-feature = true }
+pyforge-foundry-full = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "crm", "platform-object-storage"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
