@@ -1,141 +1,96 @@
 # `pyforge-foundry-full` as the PyForge SBOM
 
-**Status:** Phase 1 in this PR (env compose). Phases 2–4 are process/governance. **Phase 5 closes all conda-forge gaps** (SelfExplainML + pip + Node/`pnpm`/npm).
+**Status:** Phases 1 + 1b in [PR #1564](https://github.com/rxm7706/local-recipes/pull/1564) only (no side PRs).
 **Env:** `pixi install -e pyforge-foundry-full` (never the default session env).
-**Not in scope:** the fat `local-recipes` feature (~200 library pins).
+**Not the SBOM:** the fat `local-recipes` *feature blob* (~200+ pins / ~10 GB) as a kitchen sink.
 
-This environment is the estate **software bill of materials**: one solved, locked,
-checkable closure for stations + CFE/Mason recipe generation + local build.
+---
+
+## What “full SBOM” means
+
+`pyforge-foundry-full` is complete only when a **developer laptop** can, from that env alone:
+
+1. `pixi install -e pyforge-foundry-full`
+2. **Launch** the apps (stations / guild / **Langflow + dashboard** local bring-up)
+3. **Run tests**
+4. **Lint**
+5. **Run local CI** mirrors
+6. Use **platform plugins** by composing **existing** features (no new “desktop-lab”):
+   - **`platform-dev`** — PostgreSQL + pgvector, redis-server, Silo
+   - **`python-agent-platform`** — Langflow / Django / Celery clients for dashboard bring-up
+   - **`platform-object-storage`** — Silo/Garage up/down/status tasks
+   - **Playwright + Chromium** — already on atlas / herald
+   - **`pnpm`** — pin on existing `python` or `pyforge-guild` when herald/atlas web/wasm need it
+
+**Decided (2026-09-21):** Phase 1b = **full platform local stack** = `platform-dev` + `python-agent-platform` (+ `platform-object-storage` tasks).
+
+### Inclusion rule (not a name blacklist)
+
+**Keep out of foundry-full** anything that is **not** in PyForge code and **not** required by a PyForge developer/operator workflow — even if it currently sits in fat `local-recipes`.
+
+**Pull into foundry-full** (via the feature that owns it) anything that **is** used by PyForge code or needed to develop/operate PyForge — even if the pin historically lived only under fat `local-recipes`.
+
+Examples of applying the rule (audit, don’t assume):
+
+| Package | Evidence | SBOM stance |
+|---|---|---|
+| `vizro`, `dagster` | Declared + imported in `pyforge-atlas` package (`pixi.toml` / tests / dashboard) | **In** — via atlas (already composed); not “banned because Vizro” |
+| `wagtail` | Pinned on `python-agent-platform` (steward CMS lane) | **In** with Phase 1b platform stack |
+| `vizro-ai` / `vizro-mcp` / `dagster-webserver` pile, `dbt-*`, `minio`, `ollama`, `coderedcms` (as fat-only extras) | Fat `local-recipes` pins; not station/platform feature deps unless proven | **Out** until code/operator need is shown |
+| Fat `local-recipes` feature as a whole | Kitchen sink | **Never compose** the fat feature |
+
+No separate `desktop-lab` feature.
 
 ---
 
 ## Plan
 
-### Phase 1 — Env = BoM (this PR)
+### Phase 1 — Env = BoM core (this PR)
 
-Compose onto `pyforge-foundry-full`: `build` + `grayskull` + `crm` + `conda-smithy`
+Compose: `build` + `grayskull` + `crm` + `conda-smithy` onto `pyforge-foundry-full`.
 
-**Newly pulled:** `grayskull`, `conda-recipe-manager`, `feedrattler`, `conda-smithy`, plus build stack (`conda`, `conda-libmamba-solver`, `conda-index`, `conda-forge-pinning`, `conda-forge-ci-setup`, `networkx`, `frozendict`, `rattler-build-conda-compat`).
+**Do not** compose fat `local-recipes`. **Do not** invent `desktop-lab`.
 
-**Already present:** `conda-build` (warden), `rattler-build` / CFE floor (mason), **`nodejs`** (`feature.python`).
+### Phase 1b — Full platform local stack (same PR #1564)
 
-**Do not** duplicate those pins next to the feature list.
+Compose existing features: **`platform-dev` + `python-agent-platform` + `platform-object-storage`**, plus `pnpm` on an existing feature.
 
-**Solve risk:** `crm`/`click` — refresh `pixi.lock` on a pixi machine (not in this PR).
+Brings: Postgres+pgvector, redis-server, Silo, Langflow/dashboard clients, object-storage tasks.
 
-### Phase 2 — Checkable SBOM
+Station-owned runtime deps (e.g. atlas `vizro`/`dagster`) stay with their station features — already in the foundry-full union when the package declares them.
 
-1. CI: `pixi install -e pyforge-foundry-full` on lock changes.
-2. Export: `pixi list -e pyforge-foundry-full` (+ CycloneDX/SPDX optional).
-3. Channel audit: tag every name `conda-forge` | `SelfExplainML` | `pypi` | `npm` | `path`; fail new non-CF without allowlist + **OpenTeams / Phase 5** ticket id.
+### Phase 2 — Checkable SBOM + laptop gate
 
-### Phase 3 — OpenTeams triage issue list (tickets for everything)
+CI install + `pixi list` + channel audit + **laptop gate** (lint/tests/local CI + platform bring-up smokes). Failure ⇒ SBOM incomplete, not “use fat local-recipes.”
 
-**Done when every gap has an OpenTeams issue** — not when feedstocks land (that is Phase 5).
+### Phase 3 — OpenTeams triage
 
-Phase 3 is the **issue board / tracking list**: one OpenTeams issue (or equivalent tracked ticket) for each row that Phase 2 surfaces or that Phase 5 already inventories. No silent gaps.
+Ticket every CF gap (SEM / pip / node / npm) **and** every “fat-only pin”: either promote into a composed feature (usage proven) or explicit won’t-do.
 
-**Must have OpenTeams coverage for:**
+### Phase 4 — Point estate at foundry-full
 
-| Bucket | Ticket IDs (from Phase 5 tables) |
-|---|---|
-| SelfExplainML → CF | CF-SEM-01 … CF-SEM-13 |
-| Pip → CF | CF-PIP-01 (`sqlite-vec`) |
-| Node tooling | CF-NODE-01 (`nodejs` — usually “already CF / keep”), CF-NODE-02 (`pnpm`) |
-| npm → CF | CF-NPM-01 … CF-NPM-11 (atlas + herald) |
-| Out-of-SBOM decisions | Explicit issues for anything left on fat `local-recipes` only (`codegraph`, `marp-cli`, `pptxgenjs`*, `vizro*`, `fastmcp*`, `kedro-mcp`, `bmad-suite`*, …) — either “promote later” or “never in foundry-full” |
+CFE / AGENTS / mason → `pyforge-foundry-full`.
 
-**Phase 3 rules**
+### Phase 5 — Close conda-forge gaps
 
-- One issue per package (or tightly coupled package set), linked from the channel audit.
-- Issue states the current channel (`SelfExplainML` / `pypi` / `npm`), desired end state (`conda-forge`), and owner.
-- Deferrals are still tickets (won’t-do / later) — not missing rows.
-- **Closing** those issues by shipping CF packages = **Phase 5**, not Phase 3.
-
-### Phase 4 — Point the estate at it
-
-1. CFE / AGENTS / mason → **`pyforge-foundry-full`**, not fat `local-recipes`.
-2. New deps must land in a feature foundry-full composes (or allowlist + **OpenTeams Phase 5** ticket).
-
-### Phase 5 — Close all conda-forge gaps
-
-**Execute the OpenTeams list from Phase 3.** One phase: everything the SBOM needs that is not yet on conda-forge gets a feedstock (or confirmed CF package) and is wired off SelfExplainML / pip / npm-only installs.
-
-#### 5A. SelfExplainML → conda-forge
-
-Already declared on foundry-full via guild/atlas (SEM channel). Need CF feedstocks, then drop SEM for these names.
-
-| ID | Package | Declared in | Notes |
-|---|---|---|---|
-| CF-SEM-01 | `bmad-builder` | `feature.pyforge-guild` | BMAD suite |
-| CF-SEM-02 | `bmad-creative-intelligence-suite` | `pyforge-guild` | |
-| CF-SEM-03 | `bmad-dashboard` | `pyforge-guild` | |
-| CF-SEM-04 | `bmad-eval-quality` | `pyforge-guild` (+ steward) | |
-| CF-SEM-05 | `bmad-labs-skills` | `pyforge-guild` | |
-| CF-SEM-06 | `bmad-manticore` | `pyforge-guild` | |
-| CF-SEM-07 | `bmad-method-test-architecture-enterprise` | `pyforge-guild` | |
-| CF-SEM-08 | `bmad-module-template` | `pyforge-guild` | |
-| CF-SEM-09 | `bmad-utility-skills` | `pyforge-guild` | |
-| CF-SEM-10 | `bmad-module-skill-forge` | `pyforge-guild` `target.linux-64` | |
-| CF-SEM-11 | `caveman` | `pyforge-guild` `target.linux-64` | token-compression skill |
-| CF-SEM-12 | `kedro-skills` | `feature.pyforge-atlas` | |
-| CF-SEM-13 | `boring-semantic-layer` | `pyforge-atlas` | verify channel; include if non-CF |
-
-#### 5B. Pip → conda-forge
-
-| ID | Package | Declared in | Notes |
-|---|---|---|---|
-| CF-PIP-01 | `sqlite-vec` | `feature.pyforge-guild` `[pypi-dependencies]` | new CF feedstock; move to conda deps; drop pip pin |
-
-#### 5C. Node / `pnpm` / npm → conda-forge
-
-**Goal:** every Node tool and npm package the SBOM needs is **on conda-forge** (then consumed from the solve), not only via registry.npmjs.org.
-
-**Tooling**
-
-| ID | Package | Today | Action |
-|---|---|---|---|
-| CF-NODE-01 | `nodejs` | Already on foundry-full via `feature.python` (CF) | Keep |
-| CF-NODE-02 | `pnpm` | On CF; pinned only under fat `local-recipes` (`>=12.4.1`) | Thin feature on foundry-full (no new feedstock if CF pin suffices) |
-
-**Atlas wasm** — `src/shared/packages/pyforge-atlas/wasm/package.json`
-
-| ID | npm name | Action |
-|---|---|---|
-| CF-NPM-01 | `@duckdb/duckdb-wasm` | CF feedstock (or equivalent conda name) |
-| CF-NPM-02 | `esbuild` | Verify CF; feedstock if missing/too old |
-
-**Herald web** — `src/shared/packages/pyforge-herald/web/package.json`
-
-| ID | npm name | Action |
-|---|---|---|
-| CF-NPM-03 | `react` | CF feedstock or confirm existing |
-| CF-NPM-04 | `react-dom` | CF feedstock or confirm existing |
-| CF-NPM-05 | `vite` | CF feedstock or confirm existing |
-| CF-NPM-06 | `vitest` | CF feedstock or confirm existing |
-| CF-NPM-07 | `@vitejs/plugin-react` | CF feedstock |
-| CF-NPM-08 | `jsdom` | CF feedstock or confirm existing |
-| CF-NPM-09 | `@testing-library/react` | CF feedstock |
-| CF-NPM-10 | `@testing-library/jest-dom` | CF feedstock |
-| CF-NPM-11 | `@testing-library/user-event` | CF feedstock |
-
-**Phase 5 done when:** every Phase 3 OpenTeams issue is closed by shipping CF (or an explicit won’t-do), and the channel audit no longer shows those names as SEM/pip/npm-only for the SBOM surface.
+Execute OpenTeams list (CF-SEM-*, CF-PIP-01, CF-NODE-*, CF-NPM-*).
 
 ---
 
 ## Success criteria
 
-- [ ] Phase 1 env solves; lock is the BoM artifact.
-- [ ] Phase 2 CI + channel audit green.
-- [ ] **Phase 3:** OpenTeams has a ticket for every CF-SEM / CF-PIP / CF-NODE / CF-NPM row (+ out-of-SBOM decisions).
+- [ ] Phase 1 core compose solves.
+- [ ] **Phase 1b:** `platform-dev` + `python-agent-platform` + `platform-object-storage` on foundry-full; usage-based deps (e.g. atlas vizro/dagster) available without composing fat `local-recipes`.
+- [ ] Phase 2 laptop gate green from foundry-full alone.
+- [ ] Phase 3 tickets for CF gaps + fat-only promote/won’t-do decisions.
 - [ ] Phase 4 docs point at foundry-full.
-- [ ] **Phase 5** closes those OpenTeams issues via conda-forge (or explicit deferral).
+- [ ] Phase 5 CF gaps closed or deferred.
 
 ## Mental model
 
 ```
-Phase 1–2  = make the SBOM env real and checkable
-Phase 3    = OpenTeams issue list for EVERY gap (triage complete)
-Phase 4    = point the estate at the env
-Phase 5    = close those issues on conda-forge (SEM + pip + nodejs/pnpm/npm)
+include  = used by PyForge code OR needed by PyForge developer/operator
+exclude  = unused kitchen-sink pins; never compose fat local-recipes feature
+Phase 1b = platform-dev + python-agent-platform (+ object-storage tasks)
+edit PR #1564 only — no side PRs, no desktop-lab
 ```
