@@ -1,1 +1,1 @@
-file:///workspace/pixi.toml.new
+$(cat /workspace/pixi.toml.new)
