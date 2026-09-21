@@ -1,1 +1,1 @@
-@/workspace/pixi.toml.RESTORE
+@/home/box/.cursor/projects/workspace/agent-tools/pixi-toml-restore-content.txt
