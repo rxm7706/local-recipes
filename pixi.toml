@@ -1020,7 +1020,7 @@ pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge
 # locked, checkable artifact -- every station-only extra (playwright, django, rattler-build,
 # kedro-viz, cocoindex, conda-build, ...) resolves together or the lock refuses. Several GB; install
 # it deliberately (`pixi install -e pyforge-foundry-full`), never by default.
-pyforge-foundry-full = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "crm", "conda-smithy"], no-default-feature = true }
+pyforge-foundry-full = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "crm", "conda-smithy", "platform-object-storage", "desktop-lab"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
@@ -2995,3 +2995,19 @@ cwd = "src/shared/packages/pyforge-testing-kit"
 [feature.pyforge-testing-kit.tasks.pyforge-testing-kit-build]
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-testing-kit-build-conda", "pyforge-testing-kit-build-dist"]
+
+[feature.desktop-lab]
+# --- desktop-lab: thin laptop-plugin layer for pyforge-foundry-full (Phase 1b, 2026-09-21) ---
+# Provides pnpm and Playwright Chromium for laptop SBOM / bill-of-materials work.
+# Deliberately thin: no vizro/dagster/cms/ocr/ollama/minio.
+
+[feature.desktop-lab.dependencies]
+pnpm = ">=12.4.1"                 # Fast disk-efficient Node package manager
+
+[feature.desktop-lab.tasks.desktop-lab-playwright-install]
+description = "Provision Chromium browser for laptop SBOM Playwright tasks"
+cmd = "playwright install chromium"
+
+[feature.desktop-lab.tasks.desktop-lab-smoke]
+description = "Smoke-test that pnpm and Playwright are reachable"
+cmd = "pnpm --version && playwright --version"
