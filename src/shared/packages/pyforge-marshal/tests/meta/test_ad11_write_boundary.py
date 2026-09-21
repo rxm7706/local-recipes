@@ -556,15 +556,18 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
 
     Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1) adds a THIRD non-
     ``FsPort``-shaped concern: ``run_spin`` now also calls
-    ``inject_recall_feedback`` unconditionally before either launch path,
-    which -- absent an injected ``scribe=`` -- would construct a REAL
+    ``inject_recall_feedback`` -- placed AFTER the Tier-3 backlink check
+    succeeds (the same "LAST precondition before the first write" the check's
+    own comment already claims for the run-directory writes below it), never
+    on the ``--foreground`` path, which returns before that check runs at
+    all -- which, absent an injected ``scribe=``, would construct a REAL
     ``ScribeCli()`` and shell out to a live ``scribe`` binary from this meta
     test (exactly the omission class this file's own docstring already
     describes for ``ProcessPort`` one story earlier). ``_StubScribe`` closes
     it the same way ``_RecordingProcess`` does, and its two guaranteed
-    ``FsPort`` writes (``ensure_dir`` on ``implementation-artifacts/``,
-    ``write_text_atomic`` of ``recall-feedback.md``) raise the fixed write
-    count from four to six."""
+    ``FsPort`` writes (``ensure_dir`` on ``implementation-artifacts/`` itself,
+    ``write_text_atomic`` of ``recall-feedback.md`` beneath it) raise the
+    fixed write count from four to six."""
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
