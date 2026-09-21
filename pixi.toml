@@ -38,6 +38,7 @@ pixi = ">=0.80.0"                 # Pixi package & environment manager
 gh = ">=2.100.0"                  # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.1.62"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.19.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
+pnpm = ">=12.4.1"                 # Fast disk-efficient Node package manager
 bmad-method = ">=6.12.0"          # BMAD agent-driven dev framework (planning + dev skills)
 spec-kit = ">=1.0.5"              # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
@@ -1020,7 +1021,7 @@ pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge
 # locked, checkable artifact -- every station-only extra (playwright, django, rattler-build,
 # kedro-viz, cocoindex, conda-build, ...) resolves together or the lock refuses. Several GB; install
 # it deliberately (`pixi install -e pyforge-foundry-full`), never by default.
-pyforge-foundry-full = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "crm", "conda-smithy"], no-default-feature = true }
+pyforge-foundry-full = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "crm", "conda-smithy", "platform-dev", "python-agent-platform", "platform-object-storage"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
