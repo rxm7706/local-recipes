@@ -2400,10 +2400,15 @@ def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(home, monke
 # ``inject_recall_feedback`` itself is exercised against fake ``FsPort``/
 # ``ScribeCli`` doubles in ``test_harness_bmadloop_recall.py``; these tests
 # cover only ``run_spin``'s OWN wiring -- the exact arguments it hands the
-# call, and that a degraded outcome becomes exactly one WARN finding without
-# blocking the dispatch -- via ``monkeypatch.setattr(spin_module,
-# "inject_recall_feedback", ...)``, overriding this file's own autouse
-# ``_default_recall_injection_is_a_no_op`` fixture (the later patch wins).
+# call, that the call site sits AFTER the Tier-3 backlink check (mirroring
+# that check's own "the LAST precondition before the first write" framing),
+# that ``--foreground`` -- which returns before ever reaching that check,
+# since it is documented to perform no ``FsPort`` writes at all -- never
+# invokes it either, and that a degraded outcome becomes exactly one WARN
+# finding without blocking the dispatch -- via ``monkeypatch.setattr(
+# spin_module, "inject_recall_feedback", ...)``, overriding this file's own
+# autouse ``_default_recall_injection_is_a_no_op`` fixture (the later patch
+# wins).
 
 
 def test_spin_invokes_recall_injection_with_the_dispatch_s_own_paths(home, monkeypatch):
@@ -2433,11 +2438,18 @@ def test_spin_invokes_recall_injection_with_the_dispatch_s_own_paths(home, monke
     }
 
 
-def test_spin_invokes_recall_injection_exactly_once_on_the_foreground_path_too(home, monkeypatch):
-    """Placed before EITHER launch path inside ``run_spin`` so a detached
-    spin and a ``--foreground`` run get identical treatment -- a regression
-    that moved the call inside just one branch would silently starve the
-    other of auto-recalled feedback."""
+def test_spin_foreground_never_invokes_recall_injection(home, monkeypatch):
+    """``--foreground`` returns from ``run_spin`` before ever reaching the
+    Tier-3 backlink check (see that check's own comment: "the LAST
+    precondition before the first write ... which is why --foreground, which
+    writes nothing, returns above without it") -- and this call site sits
+    AFTER that check, alongside the other writes it gates. So a
+    ``--foreground`` run gets no auto-recalled feedback, the same way it gets
+    no journal and no minted run id; a regression that moved the call earlier
+    (ahead of the backlink check, as an initial draft of this story did) would
+    make ``--foreground`` perform a write with no backlink verification at
+    all -- exactly the fabricated-local-directory defect (NFR-8) the backlink
+    check itself exists to prevent."""
     calls: list[dict[str, object]] = []
 
     def _fake_inject_recall_feedback(**kwargs: object) -> RecallInjectionResult:
@@ -2450,8 +2462,7 @@ def test_spin_invokes_recall_injection_exactly_once_on_the_foreground_path_too(h
 
     run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
 
-    assert len(calls) == 1
-    assert calls[0]["station_slug"] == "acme"
+    assert calls == []
 
 
 def test_spin_reports_a_degraded_recall_attempt_as_a_warn_finding_without_blocking(home, capsys, monkeypatch):

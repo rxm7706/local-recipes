@@ -605,9 +605,23 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
         resolved = Path(path).resolve()
         assert home_resolved in resolved.parents, f"write to {path} does not resolve under the provisioned home {home}"
 
-    # Every one of those paths sits under the local Tier-3 path...
+    # Every one of those paths sits AT or under the local Tier-3 path. Most
+    # (the run directory, the two journal appends, the recall-feedback file
+    # itself) are strict descendants; Story 47.1's `ensure_dir(target.parent)`
+    # call is the one exception, landing directly ON `tier3_local` itself --
+    # the recall target's parent IS `implementation-artifacts/`, not a
+    # subdirectory of it. That is still a write reaching the canonical store,
+    # never a second fabricated local copy of it: this call runs AFTER the
+    # Tier-3 backlink check (verified immediately above via `fs.symlink_reads`
+    # below), so by the time it fires `tier3_local` is already confirmed a
+    # real, healthy symlink to the canonical store, and `ensure_dir` on it is
+    # a verified no-op -- not the `mkdir(parents=True)` fabrication the
+    # Story 3.3 defect this test's own docstring describes.
     for path in guarded_paths:
-        assert tier3_local in Path(path).parents, f"write to {path} does not pass through the Tier-3 path {tier3_local}"
+        resolved_path = Path(path)
+        assert resolved_path == tier3_local or tier3_local in resolved_path.parents, (
+            f"write to {path} does not pass through the Tier-3 path {tier3_local}"
+        )
     # ...and that path was VERIFIED to be a backlink before anything was
     # written, which is the part that makes the line above mean "reaches the
     # canonical store" rather than merely "is inside the home".
