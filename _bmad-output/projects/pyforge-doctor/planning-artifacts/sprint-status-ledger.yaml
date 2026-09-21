@@ -80,7 +80,7 @@ development_status:
   23-5-archive-citations-for-the-five-already-moved-_bmad-output-files: done
   23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree: done
   23-7-a-new-doctor-source-flags-leftover-shelf-occupancy: done
-  24-1-the-evaluator-and-the-thresholds-move-out-of-marshal-s-package-together: backlog
+  24-1-the-evaluator-and-the-thresholds-move-out-of-marshal-s-package-together: done
   24-2-an-import-linter-contract-catches-the-class-structurally: backlog
   24-3-the-surfaces-are-reconciled-so-no-file-is-governed-twice-or-not-at-all: backlog
   25-1-a-new-dream-or-spec-folder-without-a-declared-exemption-is-a-finding: done
@@ -164,7 +164,7 @@ development_status:
   epic-22-retrospective: optional
   epic-23: done
   epic-23-retrospective: optional
-  epic-24: backlog
+  epic-24: in-progress
   epic-24-retrospective: optional
   epic-25: done
   epic-25-retrospective: optional
