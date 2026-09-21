@@ -2,8 +2,8 @@
 title: '47.1: A bmad-loop dev pass automatically receives relevant scribe feedback before it starts'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '2026-09-18'
-status: 'ready-for-dev' # draft | ready-for-dev | in-progress | in-review | done | blocked
-baseline_revision: ''
+status: 'in-progress' # draft | ready-for-dev | in-progress | in-review | done | blocked
+baseline_revision: '2f98ede57d5ebb7df285bbd1383782cf6a7c86af'
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 followup_review_recommended: false # set by step-04 on status: done; step-01 READS this — false HALTs, true allows one follow-up then forces false
 context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md']
