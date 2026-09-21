@@ -2075,7 +2075,9 @@ the effective thresholds before and after)
 **And** `docs/governance/coverage-thresholds.toml` carries the governance-act `$comment` and
 `spec-coverage-gate-independence/SPEC.md`'s `surface:` names both new paths
 **And** `import-linter` passes with the amended contract; the old module path resolves nowhere
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-09-21).** Landed as PR #1559 (`78f5b33c56`, `Merge pyforge-doctor/24-1 into main`), autonomous end-to-end dispatch/land — no hand intervention needed. `coverage_gate.py` and `coverage_thresholds.toml` moved out of `pyforge.marshal` into guild-owned homes beside `guild-roster.json`; every caller (the eight `pyforge-<station>-coverage-gate` tasks, `coverage-gates.yml`, `scripts/coverage_gates_ci.py`) re-pointed. Ledger row promoted by hand afterward (Tier-3 feed + `sprint-ledger-sync`): `dispatch_land_finalize` didn't auto-promote it, same shape as marshal 53.2/53.3's own landings.
 
 ### Story 24.2: An import-linter contract catches the class structurally
 
