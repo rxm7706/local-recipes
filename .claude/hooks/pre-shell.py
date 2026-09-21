@@ -212,6 +212,16 @@ def get_branch(cwd: str) -> Optional[str]:
     return _git(["rev-parse", "--abbrev-ref", "HEAD"], cwd)
 
 
+def git_checkout_state(cwd: str) -> Optional[tuple[str, bool]]:
+    """Return (branch, is_worktree), or None when `cwd` is not a git repo at
+    all -- callers must treat None as "unknown", never as "primary
+    checkout"."""
+    branch = get_branch(cwd)
+    if branch is None:
+        return None
+    return branch, is_worktree(cwd)
+
+
 def is_tracked(repo_root: Path, path: str) -> bool:
     try:
         out = subprocess.run(
@@ -402,8 +412,11 @@ def match_git_commit_guardrail(ctx: Context, rule: dict[str, Any]) -> Optional[s
     for tokens in ctx.subcommands:
         if len(tokens) < 2 or tokens[0] != "git" or tokens[1] != "commit":
             continue
-        if get_branch(ctx.cwd) == "main" or not is_worktree(ctx.cwd):
-            return str(reasons["checkout"])
+        state = git_checkout_state(ctx.cwd)
+        if state is not None:
+            branch, in_worktree = state
+            if branch == "main" or not in_worktree:
+                return str(reasons["checkout"])
         message = _extract_commit_message(tokens, ctx.cwd)
         if message:
             hook = _commit_msg_hook(ctx.repo_root)
