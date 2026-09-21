@@ -351,12 +351,13 @@ def _default_supervisor_spawn_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(autouse=True)
 def _default_recall_injection_is_a_no_op(monkeypatch: pytest.MonkeyPatch) -> None:
     """Pins ``run_spin``'s Story 47.1 pre-launch recall attempt
-    (``inject_recall_feedback``, called unconditionally before either launch
-    path) to a no-op for every test in this file that does not itself
-    exercise recall behavior -- this dev environment resolves a REAL
-    ``scribe`` binary on ``PATH``, so leaving the real call live would shell
-    out for real, once per test, across this file's entire pre-existing
-    suite. Tests that DO exercise recall override this with their own
+    (``inject_recall_feedback``, called once the Tier-3 backlink check
+    succeeds -- the detached/spin path only; ``--foreground`` never reaches
+    it) to a no-op for every test in this file that does not itself exercise
+    recall behavior -- this dev environment resolves a REAL ``scribe`` binary
+    on ``PATH``, so leaving the real call live would shell out for real, once
+    per applicable test, across this file's entire pre-existing suite. Tests
+    that DO exercise recall override this with their own
     ``monkeypatch.setattr(spin_module, "inject_recall_feedback", ...)``,
     applied after this fixture runs, so the later patch wins."""
     monkeypatch.setattr(
