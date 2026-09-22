@@ -996,7 +996,10 @@ sections:
   kind: section
   blocks:
   - type: lede
-    md: Investigating all eight stations in one pass surfaces things no single-station read would — patterns
+    md: >-
+      Cross-fleet patterns below are **A-side evidence** for the strangler toward
+      `python-foundry` (B). Prefer rebuild status and ledger modes over rhyme alone.
+      Investigating all eight stations in one pass surfaces things no single-station read would — patterns
       that only show up as repetition, or as a system quietly checking itself.
   - type: h3
     num: '09.1'
