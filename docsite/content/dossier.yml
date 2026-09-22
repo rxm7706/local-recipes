@@ -5,11 +5,12 @@
 # A stat carrying `check:` is machine-verified against the source tree.
 
 title: The PyForge Dossier
-eyebrow: INTERNAL DOSSIER — FULL FLEET — ESTATE WHITEPAPER 2026-09-21
+eyebrow: INTERNAL CONTROL PLANE — A→B CUTOVER — 2026-09-21
 heading: PyForge
-summary: 'A full-source investigation of every station in this repository''s own factory: the shared foundation
-  they all build on, and what each of the eight — Atlas, Doctor, Herald, Marshal, Mason, Scribe, Steward,
-  Warden — actually does, verified directly from code.'
+summary: 'Guild control plane for the PyForge strangler: **B** (`python-foundry`) is the lasting
+  estate root; **A** (`local-recipes`) remains control and oracle until `pyforge.cutover_root`
+  flips. Eight stations + Foundry Platform mount; regenerate, never fold. Station pages below
+  are A evidence. Long form: `docs/dreams/pyforge-estate-whitepaper.md`.'
 stats:
 - value: '8'
   label: Stations
@@ -27,7 +28,7 @@ toc:
   accent: --amber
   group_start: false
 - id: estate
-  label: The estate thesis
+  label: A→B cutover
   accent: --ink
   group_start: false
 - id: atlas
@@ -77,11 +78,7 @@ sections:
   kind: section
   blocks:
   - type: lede
-    md: 'Every station sits on one package that depends on none of them: `pyforge-core`, a deliberately
-      pure-stdlib leaf. It doesn''t do any station''s job — it owns the mechanisms every station kept
-      reinventing separately, until seven of them were consolidated into one place each. The leaf rule
-      still holds exactly: `dependencies = []`, with an AST meta-test scanning every module for a non-stdlib
-      import and proving itself against synthetic violations.'
+    md: 'Every station sits on one package that depends on none of them: `pyforge-core`, a deliberately pure-stdlib leaf. It doesn''t do any station''s job — it owns the mechanisms every station kept reinventing separately, until seven of them were consolidated into one place each. The leaf rule still holds exactly: `dependencies = []`, with an AST meta-test scanning every module for a non-stdlib import and proving itself against synthetic violations. On **B** (`python-foundry`) this leaf is a `rebuild` target under `src/packages/` — A remains the oracle until `verified-in-foundry` (see §01).'
   - type: h3
     num: '00.1'
     text: One CLI, discovered at runtime
@@ -188,67 +185,106 @@ sections:
 
 - id: estate
   num: '01'
-  title: The estate thesis
+  title: A→B cutover control plane
   kind: section
   blocks:
   - type: lede
-    md: 'PyForge is an **owned agentic foundry**: eight Smiths on one stdlib leaf (`pyforge-core`),
-      mounted on Foundry Platform (`src/platform/`), planned Dream→Spec→Story, and closed for a
-      laptop as the composed SBOM `pyforge-foundry-full` — never as the fat `local-recipes` feature.
-      Long form: [`docs/dreams/pyforge-estate-whitepaper.md`](https://github.com/rxm7706/local-recipes/blob/main/docs/dreams/pyforge-estate-whitepaper.md).'
+    md: '**B** ([`python-foundry`](https://github.com/rxm7706/python-foundry)) is the lasting
+      PyForge root. **A** (`local-recipes`) is control and oracle. `pyforge.cutover_root` stays
+      on A until the regenerated kernel clears the shared case list and an operator flips it.
+      Eight stations + one Foundry Platform mount; packages are **rebuilt** from Frame+Spec —
+      never folded. Long form: [`docs/dreams/pyforge-estate-whitepaper.md`](https://github.com/rxm7706/local-recipes/blob/docs/pyforge-estate-whitepaper/docs/dreams/pyforge-estate-whitepaper.md).'
   - type: h3
     num: '01.1'
-    text: Mission
-  - type: prose
-    body:
-    - 'Charter Dream (`docs/dreams/pyforge-charter.md`): prove the whole SDLC — not just coding —
-      can run under autonomous agents a human can trust. Mission line (2026-07-25): *Humans Dream.
-      Agents Deliver. Governed. Auditable. Production-ready.*'
-    - 'Eight stations (Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward). The
-      host is not a ninth station — Steward owns the platform through-line (`docs/dreams/pyforge-unifying-strategy.md`
-      Grounding).'
+    text: Who is who
+  - type: table
+    headers:
+    - Axis
+    - A — local-recipes
+    - B — python-foundry
+    rows:
+    - cells:
+      - Role
+      - Control + legacy oracle
+      - Lasting estate root (opened 2026-09-13 / steward 44.3)
+      mono:
+      - false
+      - false
+      - false
+    - cells:
+      - Packages
+      - '`src/shared/packages/pyforge-*` (oracle)'
+      - '`src/packages/` rebuild from Frame+Spec'
+      mono:
+      - false
+      - true
+      - true
+    - cells:
+      - Platform host
+      - '`src/platform/` live ASGI mount'
+      - Regenerated when Launch rows say so
+      mono:
+      - false
+      - true
+      - false
+    - cells:
+      - cutover_root
+      - Current value
+      - Flip target after case list + operator
+      mono:
+      - false
+      - false
+      - false
   - type: h3
     num: '01.2'
-    text: Topology
+    text: Campaign — four verbs
   - type: prose
     body:
-    - '`pyforge-core` is the pure-stdlib leaf (dossier §00). Station engines live under
-      `src/shared/packages/pyforge-*`; Django portals under `django-*`; host at `src/platform/`.'
-    - 'Daily CLI session env is `pyforge-guild`. Lean per-station envs set `no-default-feature` so
-      worktrees do not materialise the fat factory by accident (`AGENTS.md`, `pixi.toml`).'
-  - type: h3
-    num: '01.3'
-    text: Laptop SBOM
-  - type: prose
-    body:
-    - '`pyforge-foundry-full` is the checkable SBOM compose (`pixi.toml` + `docs/dreams/pyforge-foundry-full-sbom.md`).
-      Include what PyForge code or operators need; exclude unused kitchen-sink; **never compose** fat
-      `local-recipes`; no `desktop-lab`.'
-    - 'Operator pins (PR #1564 campaign): PostgreSQL major **17**; keep `platform-dev`; cap `psycopg`
-      and `pgvector` for libpq 17 rather than bumping Postgres 18; keep `pixi.toml` ~290KB (no
-      PLACEHOLDER stubs).'
+    - 'From B''s README (Unifying Strategy cutover spine): **Launch the Foundry** · **Adopt Frames** ·
+      **Build the Intelligence Hub** · **Wire the BMAD-suite**. Launch means B exists *and* a regenerated
+      kernel runs — not "A''s tree arrived." Hub objects are invented on A first; B adopts verified rebuilds.'
   - type: callout
     tone: amber
-    label: SBOM phases
+    label: Modes (never move)
     body:
-    - 'Phases — (1) BoM+platform stack (2) laptop gate (3) OpenTeams tickets (4) point estate docs
-      at foundry-full (5) close conda-forge gaps. Residual unions (`conda-smithy`,
-      `python-agent-platform`) are tickets, not reasons to compose the fat feature.'
+    - '`rebuild` — B re-derives from Frame/Spec; A oracle until `verified-in-foundry`.'
+    - '`retire` — must not appear on B; A may keep history.'
+    - '`A-only` — allowed on A with expiry (story id or date).'
+    - '`B-only` — named on a Spec before done.'
   - type: h3
-    num: '01.4'
-    text: Accountability
+    num: '01.3'
+    text: Target topology
   - type: prose
     body:
-    - 'Dream-first minting and one-chain-per-station (`docs/governance/`). Warden is the merge-blocking
-      compliance gate; Doctor stays advisory. Foundry cutover regenerates from Frames/contracts — it
-      does not fold the brownfield tree (`docs/foundry/`).'
+    - 'One ASGI Foundry Platform mounts eight Smiths (Herald, Marshal, Atlas, Warden, Mason, Doctor,
+      Scribe, Steward). Host is not a ninth station — Steward owns the through-line
+      (`docs/dreams/pyforge-unifying-strategy.md` Grounding).'
+    - 'Planning: `_bmad-output/projects/pyforge-<station>/`. Foundry + platform Specs sit under
+      **steward** (no separate foundry/platform project folders).'
+  - type: h3
+    num: '01.4'
+    text: Laptop SBOM (A-honest)
+  - type: prose
+    body:
+    - '`pyforge-foundry-full` is the checkable laptop compose **on A** (PR #1564 / SBOM Dream). Do not
+      read it as proof B already has the same closure.'
+    - 'A pins until ledger/Frames absorb them: PostgreSQL **17**; keep `platform-dev`; libpq-17 caps on
+      `psycopg` / `pgvector`; never compose fat `local-recipes`; no `desktop-lab`.'
+  - type: callout
+    tone: amber
+    label: Operator watch
+    body:
+    - 'Epic 44 / `spec-python-foundry-cutover` is the steward sequence. 44.1 move-list blocked on
+      solutioning is a control-plane fact — dossier must not imply cutover already flipped.'
+    - 'Realization gate: shipped on A ≠ in effect on B. Done means live under the intended root/flag.'
   - type: finding
-    label: Source of truth
+    label: Dossier job this pass
     accent: --ink
     alarm: false
     body:
-    - 'This section is the dossier face of `docs/dreams/pyforge-estate-whitepaper.md`. When the
-      thesis changes, edit the Dream first, then this YAML, then rebuild the site.'
+    - 'Estate states the A→B contract. Foundation/synthesis ledes point at rebuild destiny. Station
+      sections remain A forensics until a follow-up adds per-Smith rebuild-vine callouts (mode + Frame
+      + verified-in-foundry).'
 
 - id: atlas
   kind: station
