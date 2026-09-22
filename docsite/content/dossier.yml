@@ -5,7 +5,7 @@
 # A stat carrying `check:` is machine-verified against the source tree.
 
 title: The PyForge Dossier
-eyebrow: INTERNAL DOSSIER — FULL FLEET — REVERIFIED 2026-09-13
+eyebrow: INTERNAL DOSSIER — FULL FLEET — ESTATE WHITEPAPER 2026-09-21
 heading: PyForge
 summary: 'A full-source investigation of every station in this repository''s own factory: the shared foundation
   they all build on, and what each of the eight — Atlas, Doctor, Herald, Marshal, Mason, Scribe, Steward,
@@ -25,6 +25,10 @@ toc:
 - id: foundation
   label: The shared spine
   accent: --amber
+  group_start: false
+- id: estate
+  label: The estate thesis
+  accent: --ink
   group_start: false
 - id: atlas
   label: Atlas
@@ -181,6 +185,71 @@ sections:
       box of shared mechanisms. It is also the client surface stations use to reach each other''s HTTP
       APIs. That is a larger role than "owns the mechanisms everyone kept reinventing," and it deserves
       the same scrutiny the seven consolidations got.'
+
+- id: estate
+  num: '01'
+  title: The estate thesis
+  kind: section
+  blocks:
+  - type: lede
+    md: 'PyForge is an **owned agentic foundry**: eight Smiths on one stdlib leaf (`pyforge-core`),
+      mounted on Foundry Platform (`src/platform/`), planned Dream→Spec→Story, and closed for a
+      laptop as the composed SBOM `pyforge-foundry-full` — never as the fat `local-recipes` feature.
+      Long form: [`docs/dreams/pyforge-estate-whitepaper.md`](https://github.com/rxm7706/local-recipes/blob/main/docs/dreams/pyforge-estate-whitepaper.md).'
+  - type: h3
+    num: '01.1'
+    text: Mission
+  - type: prose
+    body:
+    - 'Charter Dream (`docs/dreams/pyforge-charter.md`): prove the whole SDLC — not just coding —
+      can run under autonomous agents a human can trust. Mission line (2026-07-25): *Humans Dream.
+      Agents Deliver. Governed. Auditable. Production-ready.*'
+    - 'Eight stations (Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward). The
+      host is not a ninth station — Steward owns the platform through-line (`docs/dreams/pyforge-unifying-strategy.md`
+      Grounding).'
+  - type: h3
+    num: '01.2'
+    text: Topology
+  - type: prose
+    body:
+    - '`pyforge-core` is the pure-stdlib leaf (dossier §00). Station engines live under
+      `src/shared/packages/pyforge-*`; Django portals under `django-*`; host at `src/platform/`.'
+    - 'Daily CLI session env is `pyforge-guild`. Lean per-station envs set `no-default-feature` so
+      worktrees do not materialise the fat factory by accident (`AGENTS.md`, `pixi.toml`).'
+  - type: h3
+    num: '01.3'
+    text: Laptop SBOM
+  - type: prose
+    body:
+    - '`pyforge-foundry-full` is the checkable SBOM compose (`pixi.toml` + `docs/dreams/pyforge-foundry-full-sbom.md`).
+      Include what PyForge code or operators need; exclude unused kitchen-sink; **never compose** fat
+      `local-recipes`; no `desktop-lab`.'
+    - 'Operator pins (PR #1564 campaign): PostgreSQL major **17**; keep `platform-dev`; cap `psycopg`
+      and `pgvector` for libpq 17 rather than bumping Postgres 18; keep `pixi.toml` ~290KB (no
+      PLACEHOLDER stubs).'
+  - type: callout
+    tone: amber
+    label: SBOM phases
+    body:
+    - 'Phases — (1) BoM+platform stack (2) laptop gate (3) OpenTeams tickets (4) point estate docs
+      at foundry-full (5) close conda-forge gaps. Residual unions (`conda-smithy`,
+      `python-agent-platform`) are tickets, not reasons to compose the fat feature.'
+  - type: h3
+    num: '01.4'
+    text: Accountability
+  - type: prose
+    body:
+    - 'Dream-first minting and one-chain-per-station (`docs/governance/`). Warden is the merge-blocking
+      compliance gate; Doctor stays advisory. Foundry cutover regenerates from Frames/contracts — it
+      does not fold the brownfield tree (`docs/foundry/`).'
+  - type: finding
+    label: Source of truth
+    accent: --ink
+    alarm: false
+    body:
+    - 'This section is the dossier face of `docs/dreams/pyforge-estate-whitepaper.md`. When the
+      thesis changes, edit the Dream first, then this YAML, then rebuild the site.'
+
 - id: atlas
   kind: station
   mark: A
