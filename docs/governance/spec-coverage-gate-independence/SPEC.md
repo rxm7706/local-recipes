@@ -7,24 +7,28 @@ status: ready   # 2026-09-14 — seeded `draft` in the morning; ruled and flippe
                 # docs/governance/ beside spec-pyforge-charter because its Dream is guild-owned
                 # (chain.py `_expected_spec_dir`: guild -> docs/governance/spec-<slug>/).
 created: "2026-09-14"
-updated: "2026-09-20"
+updated: "2026-09-24"
 owner-dream: docs/dreams/coverage-gate-independence.md
 surface:        # Declared 2026-09-20 by doctor Story 24.1 (CAP-1/CAP-2): the evaluator and
-                # its thresholds moved outside every pyforge.<station> package. Both are
-                # outside spec_surface_check.py's own SPEC_GLOB (it only discovers
-                # `_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md`, not
-                # docs/governance/), so neither is tracked by that detector under THIS
-                # Spec -- scripts/coverage_gate.py is allowlisted instead
+                # its thresholds moved outside every pyforge.<station> package. All four
+                # paths below are outside spec_surface_check.py's own SPEC_GLOB (it only
+                # discovers `_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md`,
+                # not docs/governance/), so none is tracked by that detector under THIS
+                # Spec -- scripts/coverage_gate.py, scripts/coverage_gates_ci.py and
+                # scripts/run_station_coverage_gate.py are allowlisted instead
                 # (scripts/spec_surface_allowlist.txt, the same guild-owned-Spec-cannot-
                 # declare-a-surface-here shape as scripts/chain_sprawl_baseline.py) and
                 # docs/governance/coverage-thresholds.toml sits under the existing
                 # `docs/governance/**` allowlist entry. This list is the documentation
-                # contract, not a live detector input. The two scripts/ drivers
-                # (coverage_gates_ci.py, run_station_coverage_gate.py) stay named in
-                # spec-pyforge-testing-charter's surface for now -- Story 24.3 hands their
-                # governance to this Spec.
+                # contract, not a live detector input. Story 24.3 (2026-09-24) handed the
+                # two scripts/ drivers' governance here FROM spec-pyforge-testing-charter,
+                # which dropped them from its own `surface:` in the same change (its
+                # memlog records the hand-over) -- the two surfaces are now disjoint, so
+                # neither driver is governed twice or left ungoverned.
   - scripts/coverage_gate.py
   - docs/governance/coverage-thresholds.toml
+  - scripts/coverage_gates_ci.py
+  - scripts/run_station_coverage_gate.py
 companions: []
 sources:
   - ../../../docs/dreams/coverage-gate-independence.md
