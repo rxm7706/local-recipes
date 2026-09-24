@@ -9,8 +9,13 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-09-20'   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-17
-currency_review: 'Reviewed 2026-09-17 (prd→arch cascade after the one-chain doctor
+updated: '2026-09-24'   # RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
+  the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
+  memlog move). No AD added or changed — the five reference-page generators are
+  facade/pipes-and-filters instruments over existing tree sources, exactly this
+  spine''s existing paradigm; no new component crosses a station boundary. Reviewed
+  2026-09-17 (prd→arch cascade after the one-chain doctor
   fold). No AD added or changed. Reviewed 2026-09-14 — chain-currency sweep cascade
   (the PRD re-dated 2026-09-14 after reconciling against spec-pyforge-doctor''s 2026-09-12
   SPEC.md + 2026-09-14 memlog). Appended § Currency reconciliation — 2026-09-14: the

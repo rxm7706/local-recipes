@@ -879,3 +879,18 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+*Chain-currency sweep (CHAIN-CURRENCY-RUNBOOK.md): `specs/spec-pyforge-doctor/.memlog.md` moved
+to 2026-09-24T06:55 (Story 30.3 landing: the five reference-page generators —
+`docs-pixi-tasks`, `docs-environments`, `docs-detectors`, `docs-skills-catalog`,
+`docs-station-cli` — plus `docs_currency.py`'s `generated-page-stale` check) while this PRD sat
+at 2026-09-20, tripping a `feeds` finding (`spec` dated after `prd` past the 2-day grace
+window). Story 30.2 (`docs/map.yaml` and the three `docs-currency` checks) had already landed
+2026-09-20 (hand-landed merge `Merge pyforge-doctor/30-2 into main`, e2105fec02d) without a PRD
+bump of its own; both stories are folded into this one pass. FR-17's two capabilities — CAP-83
+(map-scope enforcement) and CAP-84 (repeatable regeneration) — are now both fully delivered;
+Epic 30 is 30.1/30.2/30.3 all `done`. No new requirement, decision, or AD; the "Decomposed as
+Epic 30" line above is updated to match. `updated:`/`currency_review:` bumped to record that
+this sweep ran.*
