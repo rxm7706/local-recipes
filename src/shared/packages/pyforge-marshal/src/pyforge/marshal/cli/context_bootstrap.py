@@ -159,7 +159,7 @@ def run_context_bootstrap(
     elif args.offline:
         source["kind"] = "offline"
         not_served = {name: "--offline was given, so no fetch was attempted" for name in missing}
-    elif args.from_dir:
+    elif args.from_dir is not None:
         pack_dir = Path(args.from_dir).resolve()
         source.update(kind="local", dir=str(pack_dir))
         not_served = _serve_from(root, pack_dir, missing, findings, states, source)
@@ -281,13 +281,14 @@ def run_context_pack(args: argparse.Namespace, *, process: ProcessPort | None = 
             findings.append(substrate.gap_finding(member, reason=reason or "not packable"))
     data: dict[str, object] = {"root": str(root), "out": str(out_dir)}
     if not packable:
-        findings = [substrate.nothing_packable_finding()]
+        findings.append(substrate.nothing_packable_finding())
         return _emit("context pack", args, findings, data)
     source_commit = args.source_commit or _source_commit(root, runner)
     try:
         result = store.write_pack(root, out_dir, source_commit=source_commit, members=packable)
     except (OSError, ValueError) as exc:
-        return _emit("context pack", args, [substrate.nothing_packable_finding(write_error=str(exc))], data)
+        findings.append(substrate.nothing_packable_finding(write_error=str(exc)))
+        return _emit("context pack", args, findings, data)
     data.update(
         source_commit=source_commit,
         manifest=str(result.manifest_path),
