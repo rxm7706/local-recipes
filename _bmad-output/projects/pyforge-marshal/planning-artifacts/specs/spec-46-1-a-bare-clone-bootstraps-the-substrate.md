@@ -284,6 +284,7 @@ Before installing anything, bootstrap checks the archive digest and every file's
   - `spec-pyforge-marshal/.memlog.md`
   - `spec-pyforge-core/.memlog.md`
   - `spec-pyforge-unifying-strategy/.memlog.md` (co-governor of `dispatch.py`)
+  - `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`: tracked twins DW-FU-46-1 through DW-FU-46-1-6 for the six deferrals, written by `python scripts/deferred_work_intake.py --fix --project marshal`
 
 **Review findings.** The first pass produced 40 findings: high 0, medium 9, low 25, false 6, maybe-false 0.
 
@@ -360,6 +361,7 @@ Counts by verdict:
 | `python scripts/spec_surface_reconcile.py` | 0 | "every tracked file governed or allowlisted; no drift" |
 | `pixi run -e pyforge-guild spec-surface-check` | 0 | pass |
 | `pixi run -e pyforge-guild lint-types` | 0 | ruff, ruff format and mypy clean |
+| `pixi run -e pyforge-guild deferred-work-check` | 0 | every deferral has a tracked twin |
 | `python scripts/chain_currency_sweep_check.py` | 1 | pyforge-marshal staleness checkpoint (deferred; see residual risks) |
 
 **Baseline stamps reverted.** The implementation agent ran scoped `scripts/spec_surface_check.py --write-baseline` stamps that this dispatch forbids:

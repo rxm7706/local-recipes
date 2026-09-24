@@ -6646,3 +6646,69 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-46-1: The substrate-nightly publisher is inert: .github/workflows/substrate-nightly.yml is not in actions-policy.toml allow_when_enabled, so it stays off even once GitHub Actions are re-enabled, and no release assets exist yet.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: The substrate-nightly publisher is inert: .github/workflows/substrate-nightly.yml is not in actions-policy.toml allow_when_enabled, so it stays off even once GitHub Actions are re-enabled, and no release assets exist yet.
+  evidence: Review 2026-09-24 (Blind + Intent, grouped). .github/actions-policy.toml has enabled = false and allow_when_enabled lists only staged-recipes-linter.yml and detectors.yml. Enabling a billed workflow is an operator billing decision, and this dispatch was told not to edit that file. Until it is enabled, bootstrap's fetch fails with a named reason and every member rebuilds locally (MRS-CTX-003/004).
+  location: .github/actions-policy.toml
+  origin: spec-deferred 2d1c015357ff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-2: bootstrap reports no freshness: it never compares the manifest's source_commit with the clone's HEAD, so a stale pack or release installs silently as fetched, and a present member is never refreshed.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: bootstrap reports no freshness: it never compares the manifest's source_commit with the clone's HEAD, so a stale pack or release installs silently as fetched, and a present member is never refreshed.
+  evidence: Review 2026-09-24 (Blind + Intent, grouped). This is G4 of the substrate-primary reordering (spec-token-economy-claude-session-path/.memlog.md line 15), and scribe compile_surface owns it. Leaving present members untouched is this slice's spec rule. The manifest already records source_commit, so a later freshness check has the input it needs.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context_bootstrap.py
+  origin: spec-deferred 81c7dd00c9e1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-3: The rebuild fallback cannot complete in the session-default pyforge-guild env: codegraph is in no guild lock, and scribe graph compile needs the pyforge-scribe extras.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: The rebuild fallback cannot complete in the session-default pyforge-guild env: codegraph is in no guild lock, and scribe graph compile needs the pyforge-scribe extras.
+  evidence: Review 2026-09-24 (Blind + Intent, grouped). The failure is loud and named: PosixProcess turns a missing binary into ProcessError (pyforge-core process.py:179), and bootstrap reports that as MRS-CTX-004 with the reason. The env composition predates this story. Closing the gap needs a pixi.toml change (and an environment.yaml regeneration) that this dispatch may not make.
+  location: pixi.toml
+  origin: spec-deferred 5639f566297c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-4: No cloud-runner setup (the Copilot copilot-setup-steps.yml, Devin, Cursor background) calls marshal context bootstrap yet, so a bare cloud clone does not open already filled.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: No cloud-runner setup (the Copilot copilot-setup-steps.yml, Devin, Cursor background) calls marshal context bootstrap yet, so a bare cloud clone does not open already filled.
+  evidence: Review 2026-09-24 (Intent). The Surface of Story 46.1 (epics.md) names only the publisher and the CLI. Wiring runner setup while the publisher is disabled would make every cloud session fail the fetch and pay a full local rebuild. Wire it once the substrate-nightly assets exist.
+  location: .github/workflows/copilot-setup-steps.yml
+  origin: spec-deferred f1c96e369819 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-5: The new pyforge context noun alias and the context bootstrap / context pack verbs are not documented in the marshal SKILL.md, the grammar reference, or the pyforge dispatcher usage text.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: The new pyforge context noun alias and the context bootstrap / context pack verbs are not documented in the marshal SKILL.md, the grammar reference, or the pyforge dispatcher usage text.
+  evidence: Review 2026-09-24 (Blind). The fix edits an agent-context file (.claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md, SKF-generated) plus the pyforge-core dispatcher usage string. Routing a documentation refresh through the SKF skill update keeps the generated skill consistent. The CLI's own --help already lists both verbs.
+  location: .claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md
+  origin: spec-deferred f80850a51761 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-6: chain-currency-sweep-check reports a pyforge-marshal chain-audit-checkpoint-staleness fail, because this story's required memlog appends (dated 2026-09-24) are newer than the planning spine's last reconcile.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: chain-currency-sweep-check reports a pyforge-marshal chain-audit-checkpoint-staleness fail, because this story's required memlog appends (dated 2026-09-24) are newer than the planning spine's last reconcile.
+  evidence: python scripts/chain_currency_sweep_check.py exits 1 with "[chain-currency] pyforge-marshal: chain-audit-checkpoint-staleness: project pyforge-marshal: staleness checkpoint fail". At the baseline (12ec9822ff) the newest marshal memlog entry was 2026-09-20. The dispatch was required to name its governed paths on the memlogs, and clearing the checkpoint is the chain-currency reconciler's job per the runbook, not a dev-story edit.
+  location: _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md
+  origin: spec-deferred 19d46d5b1bba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
