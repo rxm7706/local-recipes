@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-doctor:docs-map-schema",
   "title": "DocsMap",
-  "description": "Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml's own schema -- the machine registry docs/MAP.md's generated Page registry section renders from. One entry per page under the four Diataxis quadrant directories docs/MAP.md governs. sources/stamp are reserved for kind: generated pages (Story 30.3); an authored page's staleness signal comes from that page's OWN frontmatter sources:/verified:, never duplicated here.",
+  "description": "Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml's own schema -- the machine registry docs/MAP.md's generated Page registry section renders from. One entry per page under the four Diataxis quadrant directories docs/MAP.md governs. sources/stamp/generator are for kind: generated pages (Story 30.3); an authored page's staleness signal comes from that page's OWN frontmatter sources:/verified:, never duplicated here.",
   "type": "object",
   "required": ["schema_version", "pages"],
   "properties": {
@@ -40,13 +40,18 @@
           "items": { "type": "string" },
           "description": "kind: generated only (Story 30.3) -- the inputs a generator derives the page from."
         },
+        "generator": {
+          "type": "string",
+          "description": "kind: generated only (Story 30.3) -- repo-relative path to the script that derives this page (e.g. scripts/docs_pixi_tasks.py). docs-currency's generated-page-stale check runs it with --check and reads its exit code; the matching pixi task under guild-tasks regenerates it for real."
+        },
         "stamp": {
           "type": "object",
           "properties": {
             "derived_at": { "type": "string" },
             "tree": { "type": "string" }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "kind: generated only (Story 30.3) -- derived_at/tree from the generator's last write (herald facts.yaml shape: tree is the HEAD sha, suffixed -dirty when uncommitted; derived_at is the HEAD commit date, not wall-clock time, so a re-run on an unchanged tree writes identical bytes)."
         }
       },
       "additionalProperties": false

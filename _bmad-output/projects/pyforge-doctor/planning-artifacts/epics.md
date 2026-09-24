@@ -8,8 +8,12 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-20'   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # Epic 30 appended (spec-pyforge-doctor CAP-83/CAP-84, PRD FR-17; Story 30.1 done via PR #1529). Prior 2026-09-18: Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
-currency_review: 'Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
+updated: '2026-09-24'   # RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
+  the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
+  epic, story or AD content changed — Story 30.3''s own text already matches its
+  as-implemented surface; only the story-status/ledger promotion (a separate,
+  post-review landing step) remains open. Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
   reminted CAP-1..76; epics stay 1..25 sequential; story slugs reminted through sprint_plan._slug.
   No blocked keys flipped. Reviewed 2026-09-14, later the same day (Epic 24 added
   — numbered after the docs-shelf Epic 23 that PR #1358 minted the same day: the coverage
@@ -2463,3 +2467,14 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+*`arch→epics` cascade (CHAIN-CURRENCY-RUNBOOK.md): the architecture spine re-dated to
+2026-09-24 (Story 30.3 landing — the five reference-page generators) past this epics'
+2026-09-20 stamp, past the 2-day feeds grace window. Story 30.3's own text above already
+describes the as-implemented surface (generator tasks, the five pages, `docs-currency`'s
+generated-page check) with no gap found on validation; no epic, story or AD content change
+required. Story 30.3's `**Status:**` line and the tracked `sprint-status-ledger.yaml` row stay
+`backlog` here on purpose — story-status/ledger promotion is a separate post-review landing
+step, not this currency cascade's job. `updated:` bumped to record the cascade.*

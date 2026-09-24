@@ -1910,3 +1910,14 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
   verified: 2026-09-20 — resolved: the `raised:` clause of DW-OPS-2026-09-19-6 now names the real owners (mason ×4, atlas ×1, warden ×1, from each Dream's `owner:` frontmatter); one-line factual fix in the same PR that ingested this entry.
+
+### DW-FU-30-3: spec-pyforge-doctor/SPEC.md's `surface:` list does not yet list the five new docs-* generator scripts + shared helper (Story 30.2 precedent: scripts/docs_map_render.py was added there directly). SPEC.md is hook-blocked from a hand-edit in this session (AGENTS.md: re-derive via `bmad-spec`, never hand-edit) and a station-Spec `bmad-spec` re-derivation is out of scope for this one story's dispatch.
+
+- source_spec: `planning-artifacts/specs/spec-30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped.md`
+  summary: spec-pyforge-doctor/SPEC.md's `surface:` list does not yet list the five new docs-* generator scripts + shared helper (Story 30.2 precedent: scripts/docs_map_render.py was added there directly). SPEC.md is hook-blocked from a hand-edit in this session (AGENTS.md: re-derive via `bmad-spec`, never hand-edit) and a station-Spec `bmad-spec` re-derivation is out of scope for this one story's dispatch.
+  evidence: spec-pyforge-doctor/.memlog.md's 2026-09-24 entry already names the six new script paths under "Surface gains (surface: list): ...". Interim fix: allowlisted in scripts/spec_surface_allowlist.txt with a reason citing this story and the pending SPEC.md re-derivation. `python scripts/spec_surface_reconcile.py` reports OK with the allowlist entries in place.
+  location: scripts/spec_surface_allowlist.txt
+  origin: spec-deferred b232e01e8a92 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

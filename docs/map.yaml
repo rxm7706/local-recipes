@@ -82,8 +82,14 @@ pages:
     kind: authored
   - path: how-to/pixi-tasks.md
     quadrant: how-to
-    owner: fleet
-    kind: authored
+    owner: steward
+    kind: generated
+    generator: scripts/docs_pixi_tasks.py
+    sources:
+      - pixi.toml
+    stamp:
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -140,10 +146,31 @@ pages:
     quadrant: reference
     owner: fleet
     kind: authored
+  - path: reference/detectors.md
+    quadrant: reference
+    owner: doctor
+    kind: generated
+    generator: scripts/docs_detectors.py
+    sources:
+      - scripts/detectors.py
+      - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
+    stamp:
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
     kind: authored
+  - path: reference/environments.md
+    quadrant: reference
+    owner: steward
+    kind: generated
+    generator: scripts/docs_environments.py
+    sources:
+      - pixi.toml
+    stamp:
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
@@ -164,10 +191,27 @@ pages:
     quadrant: reference
     owner: fleet
     kind: pointer
+  - path: reference/skills-catalog.md
+    quadrant: reference
+    owner: steward
+    kind: generated
+    generator: scripts/docs_skills_catalog.py
+    sources:
+      - .claude/skills
+    stamp:
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
-    kind: authored
+    kind: generated
+    generator: scripts/docs_station_cli.py
+    sources:
+      - pixi.toml
+      - src/shared/packages
+    stamp:
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet

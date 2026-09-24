@@ -31,6 +31,26 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   page that triggers either/both evidence kinds; a page with neither
   frontmatter nor a dead reference is silently fine (coverage grows
   incrementally, per the story's own Design Notes).
+* ``generated-page-stale`` (``docs-currency-generated-stale``, Story 30.3,
+  ``spec-pyforge-doctor`` CAP-84) -- for each ``kind: generated`` page that
+  declares a ``generator:`` (a repo-relative ``scripts/docs_*.py`` path),
+  runs that script's own ``--check`` mode and reads its exit code: 0 means
+  the page is current, anything else -- a source it derives from moved
+  past its stamp, a hand edit, a missing regeneration -- is one WARN naming
+  the page. This is the ONE mechanism for all four staleness classes the
+  story's I/O matrix names (a `pixi.toml` task added, a station CLI verb
+  added, a detector registration added, a `SKILL.md` frontmatter edited)
+  plus a hand edit inside the page itself: rather than duplicating five
+  pages' render logic inside Doctor (which AD-5 forbids for anything that
+  needs `scripts/` -- a generator's real source of truth, like
+  `scripts/detectors.py`'s registry, lives there, not in this installed
+  package), this check treats each generator as an opaque, already-decided
+  verdict and asks it directly via :func:`cli_bridge.run_check_script`.
+  A page with no ``generator:`` declared, or a declared generator that
+  does not exist, is ALSO one WARN (a registry gap, not silently skipped);
+  a missing PAGE (not yet ever generated) is skipped here -- that is
+  ``docs-map-hygiene``'s territory, same discretion the authored-page-stale
+  check above already uses.
 * ``skill-dir-hygiene`` (``docs-currency-skill-dir-hygiene``) -- a stray
   file inside a managed ``bmad-*``/``pyforge-*``/``skf-*`` skill
   directory.
@@ -72,7 +92,7 @@ from pathlib import Path
 import jsonschema
 import yaml
 
-from ..cli_bridge import CliBridgeError, run_git
+from ..cli_bridge import CliBridgeError, run_check_script, run_git
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
@@ -85,9 +105,12 @@ __all__ = (
 
 _CHECK_MAP_RENDER = "docs-currency-map-render"
 _CHECK_AUTHORED_STALE = "docs-currency-authored-stale"
+_CHECK_GENERATED_STALE = "docs-currency-generated-stale"
 _CHECK_SKILL_DIR_HYGIENE = "docs-currency-skill-dir-hygiene"
 _CHECK_MAP_UNREADABLE = "docs-currency-map-unreadable"
 _CHECK_OK = "docs-currency-ok"
+
+_GENERATOR_CHECK_TIMEOUT = 60.0
 
 _MAP_YAML_REL = "docs/map.yaml"
 _MAP_MD_REL = "docs/MAP.md"
@@ -411,6 +434,72 @@ def _check_authored_pages(target: Path, pages: list[dict]) -> list[Finding]:
     return findings
 
 
+def _check_generated_page(target: Path, page: dict) -> Finding | None:
+    rel = f"docs/{page['path']}"
+    page_path = target / rel
+    if not page_path.is_file():
+        return None  # never-yet-generated is docs-map-hygiene's territory
+
+    generator = page.get("generator")
+    if not generator:
+        return Finding(
+            source=Source.DOCS_CURRENCY,
+            check=_CHECK_GENERATED_STALE,
+            status=DoctorStatus.WARN,
+            message=(f"{rel}: kind: generated page declares no `generator:` in {_MAP_YAML_REL}"),
+            evidence={"page": rel},
+        )
+    generator_path = target / generator
+    if not generator_path.is_file():
+        return Finding(
+            source=Source.DOCS_CURRENCY,
+            check=_CHECK_GENERATED_STALE,
+            status=DoctorStatus.WARN,
+            message=(f"{rel}: declared generator {generator} does not exist"),
+            evidence={"page": rel, "generator": generator},
+        )
+
+    try:
+        returncode, output = run_check_script(
+            generator_path,
+            ["--check"],
+            cwd=target,
+            timeout=_GENERATOR_CHECK_TIMEOUT,
+        )
+    except CliBridgeError as exc:
+        return Finding(
+            source=Source.DOCS_CURRENCY,
+            check=_CHECK_GENERATED_STALE,
+            status=DoctorStatus.WARN,
+            message=(f"{rel}: could not run generator {generator} -- {exc}"),
+            evidence={"page": rel, "generator": generator},
+        )
+    if returncode == 0:
+        return None
+    return Finding(
+        source=Source.DOCS_CURRENCY,
+        check=_CHECK_GENERATED_STALE,
+        status=DoctorStatus.WARN,
+        message=(
+            f"{rel}: stale against its generator ({generator}) -- a hand "
+            "edit, or a source it derives from moved past its stamp; "
+            f"regenerate with the matching guild-tasks pixi task"
+        ),
+        evidence={"page": rel, "generator": generator, "output": output[-2000:]},
+    )
+
+
+def _check_generated_pages(target: Path, pages: list[dict]) -> list[Finding]:
+    findings: list[Finding] = []
+    for page in pages:
+        if page["kind"] != "generated":
+            continue
+        finding = _check_generated_page(target, page)
+        if finding is not None:
+            findings.append(finding)
+    return findings
+
+
 def _skill_dir_stray_paths(target: Path) -> list[str]:
     skills_dir = target / ".claude" / "skills"
     if not skills_dir.is_dir():
@@ -449,6 +538,7 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
         findings.append(render_finding)
 
     findings.extend(_check_authored_pages(target, pages))
+    findings.extend(_check_generated_pages(target, pages))
 
     hygiene_finding = _check_skill_dir_hygiene(target)
     if hygiene_finding is not None:

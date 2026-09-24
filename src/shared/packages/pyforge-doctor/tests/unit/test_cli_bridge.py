@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.doctor.cli_bridge import CliBridgeError, run_cli_json, run_git, run_pytest
+from pyforge.doctor.cli_bridge import CliBridgeError, run_check_script, run_cli_json, run_git, run_pytest
 
 
 def _write_script(tmp_path: Path, body: str) -> Path:
@@ -216,3 +216,83 @@ def test_run_pytest_launch_failure_raises_cli_bridge_error(tmp_path: Path) -> No
     missing = tmp_path / "no-such-python"
     with pytest.raises(CliBridgeError, match="failed to launch"):
         run_pytest(missing, tmp_path, ["-q"])
+
+
+# --- run_check_script (Story 30.3, spec-pyforge-doctor CAP-84) --------------
+
+
+def test_run_check_script_returns_zero_exit_and_stdout(tmp_path: Path) -> None:
+    script = _write_script(tmp_path, "print('current')\n")
+
+    returncode, output = run_check_script(script, ["--check"], cwd=tmp_path, timeout=10)
+
+    assert returncode == 0
+    assert "current" in output
+
+
+def test_run_check_script_tolerates_a_nonzero_exit_as_a_completed_result(tmp_path: Path) -> None:
+    script = _write_script(
+        tmp_path,
+        """
+        import sys
+        print("stale")
+        sys.exit(1)
+        """,
+    )
+
+    returncode, output = run_check_script(script, ["--check"], cwd=tmp_path, timeout=10)
+
+    assert returncode == 1
+    assert "stale" in output
+
+
+def test_run_check_script_combines_stdout_and_stderr(tmp_path: Path) -> None:
+    script = _write_script(
+        tmp_path,
+        """
+        import sys
+        print("out")
+        print("err", file=sys.stderr)
+        """,
+    )
+
+    _returncode, output = run_check_script(script, [], cwd=tmp_path, timeout=10)
+
+    assert "out" in output
+    assert "err" in output
+
+
+def test_run_check_script_missing_script_raises_cli_bridge_error(tmp_path: Path) -> None:
+    missing = tmp_path / "does-not-exist.py"
+    with pytest.raises(CliBridgeError, match="not found"):
+        run_check_script(missing, [], cwd=tmp_path, timeout=10)
+
+
+def test_run_check_script_timeout_raises_cli_bridge_error(tmp_path: Path) -> None:
+    script = _write_script(
+        tmp_path,
+        """
+        import time
+        time.sleep(30)
+        """,
+    )
+
+    with pytest.raises(CliBridgeError, match="timed out"):
+        run_check_script(script, [], cwd=tmp_path, timeout=0.2)
+
+
+def test_run_check_script_passes_args_and_runs_in_cwd(tmp_path: Path) -> None:
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+    script = _write_script(
+        tmp_path,
+        """
+        import json, os, sys
+        print(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd()}))
+        """,
+    )
+
+    _returncode, output = run_check_script(script, ["--check", "extra"], cwd=workdir, timeout=10)
+
+    assert '"argv": ["--check", "extra"]' in output
+    assert str(workdir) in output

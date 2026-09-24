@@ -205,7 +205,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`how-to/monitor-the-fleet.md`](how-to/monitor-the-fleet.md) | fleet | authored |
 | [`how-to/ocp-cluster-bringup.md`](how-to/ocp-cluster-bringup.md) | fleet | authored |
 | [`how-to/one-chain-station-ops.md`](how-to/one-chain-station-ops.md) | doctor | authored |
-| [`how-to/pixi-tasks.md`](how-to/pixi-tasks.md) | fleet | authored |
+| [`how-to/pixi-tasks.md`](how-to/pixi-tasks.md) | steward | generated |
 | [`how-to/presentation-deck.md`](how-to/presentation-deck.md) | fleet | authored |
 | [`how-to/recipe-testing-and-builds.md`](how-to/recipe-testing-and-builds.md) | fleet | authored |
 | [`how-to/reconcile-spec-surface.md`](how-to/reconcile-spec-surface.md) | doctor | authored |
@@ -225,13 +225,16 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`reference/conda-forge-packaging-inventory-operations_prompt.md`](reference/conda-forge-packaging-inventory-operations_prompt.md) | fleet | authored |
 | [`reference/conda-forge-packaging-inventory-operations_replay.md`](reference/conda-forge-packaging-inventory-operations_replay.md) | fleet | authored |
 | [`reference/container-base-layer-convention.md`](reference/container-base-layer-convention.md) | fleet | authored |
+| [`reference/detectors.md`](reference/detectors.md) | doctor | generated |
 | [`reference/developer-guide.md`](reference/developer-guide.md) | fleet | authored |
+| [`reference/environments.md`](reference/environments.md) | steward | generated |
 | [`reference/github-workflows.md`](reference/github-workflows.md) | fleet | authored |
 | [`reference/judgement-vocabulary.md`](reference/judgement-vocabulary.md) | doctor | authored |
 | [`reference/library-llms-full.md`](reference/library-llms-full.md) | fleet | authored |
 | [`reference/manticore-studio.md`](reference/manticore-studio.md) | fleet | pointer |
 | [`reference/mcp-server-architecture.md`](reference/mcp-server-architecture.md) | fleet | pointer |
-| [`reference/station-cheat-sheet.md`](reference/station-cheat-sheet.md) | fleet | authored |
+| [`reference/skills-catalog.md`](reference/skills-catalog.md) | steward | generated |
+| [`reference/station-cheat-sheet.md`](reference/station-cheat-sheet.md) | fleet | generated |
 | [`reference/station-verify-commands.md`](reference/station-verify-commands.md) | fleet | authored |
 | [`reference/sync-jira-github-workflow-templates/README.md`](reference/sync-jira-github-workflow-templates/README.md) | fleet | authored |
 | [`reference/test-charter.md`](reference/test-charter.md) | fleet | authored |
