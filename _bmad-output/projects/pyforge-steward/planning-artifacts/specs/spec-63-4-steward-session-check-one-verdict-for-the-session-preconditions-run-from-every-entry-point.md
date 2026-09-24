@@ -2,10 +2,12 @@
 title: '63.4: `steward session check` — one verdict for the session preconditions, run from every entry point'
 type: 'feature'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '95589f02336c7b76c89e0ce6a06b3cb0c6f25819'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
+warnings: ['oversized']
 deferred: []
 declared_low_risk: false
 ---
