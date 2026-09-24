@@ -57,6 +57,13 @@ The fetch shells out to `gh`. Marshal imports no network stack, and `--from` and
 start `gh`. A member already in the clone is never overwritten. A member that is neither fetched
 nor rebuilt is `MRS-CTX-004` (exit `1`).
 
+The published pair never carries the planning graph: `.github/workflows/substrate-nightly.yml`
+builds it only from operator-local surfaces (session transcripts, the gitignored graph store) a
+GitHub-hosted runner does not have, so it never runs that compiler (Epic 8's own HARD boundary,
+`pyforge-scribe/docs/cli-runbooks.md` § "why not a GitHub Actions workflow"). Every `bootstrap`,
+even the default networked form, rebuilds the planning graph locally as a named `MRS-CTX-003`
+finding.
+
 **What the digests prove.** `substrate-manifest.json` records a sha256 and a size for every file
 and for `substrate.tar.gz` itself. Bootstrap checks every one of them before it writes a byte. A
 mismatch, a malformed manifest or an unsafe archive entry installs nothing: it is reported as

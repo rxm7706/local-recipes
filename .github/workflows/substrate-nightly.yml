@@ -5,24 +5,34 @@ name: Substrate nightly
 # opens on it with `pyforge context bootstrap` instead of re-deriving it
 # privately at ACU/quota cost.
 #
-# The substrate is three members, each with one sentinel:
+# The substrate is three members, each with one sentinel, but this job only
+# ever BUILDS two of them:
 #   structure-graph  .codegraph/codegraph.db                     (codegraph)
-#   planning-graph   .claude/data/pyforge-scribe/graph.json      (scribe graph compile)
+#   planning-graph   .claude/data/pyforge-scribe/graph.json      (scribe's own nightly compiler)
 #   derived-context  .claude/data/pyforge-scribe/move-list.json  (scribe index refresh;
 #                    + cocoindex-index.json when present)
 #
-# This job builds all three from the tip of main, then `marshal context pack`
-# writes the deterministic pair -- `substrate.tar.gz` and
+# planning-graph is deliberately NEVER built here. Compiling it reads
+# operator-local surfaces a GitHub-hosted runner does not have --
+# checked-in `.claude/memory/`, that operator's own session transcripts
+# under `~/.claude/projects/`, and the gitignored graph store -- so running
+# it in Actions would silently publish an empty planning-graph, not a real
+# one. This is Epic 8's own HARD boundary (`pyforge-scribe/docs/cli-
+# runbooks.md` § "why not a GitHub Actions workflow"), and
+# `tests/scripts/test_scribe_nightly_trigger_docs.py` enforces it fleet-wide
+# by rejecting any workflow that invokes the compile. The published pair
+# always omits planning-graph; `marshal context bootstrap`'s own MRS-CTX-003
+# fallback rebuilds it locally on every consumer, which is the only place it
+# can be built correctly.
+#
+# This job builds the other two from the tip of main, then `marshal context
+# pack` writes the deterministic pair -- `substrate.tar.gz` and
 # `substrate-manifest.json` (per-file sha256 + size, source commit, archive
 # sha256) -- and uploads it to the `substrate-nightly` prerelease with
 # `--clobber`. The consumer (`marshal context bootstrap`) verifies every
 # digest before writing a byte, so a download racing this upload (a new
 # manifest beside an old archive) is refused and rebuilt locally, never
 # installed.
-#
-# Order matters: `scribe graph compile` runs BEFORE `scribe index refresh`,
-# because the refresh upserts into graph.json and a compile after it would
-# overwrite that.
 #
 # codegraph is not in any locked environment this job installs (its only
 # lock entry is the 10 GB local-recipes env, linux-64 via the SelfExplainML
@@ -58,8 +68,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Full history: `scribe graph compile`'s git surface reads the last
-          # 100 commits; the default depth of 1 would publish one.
+          # Full history: codegraph and scribe's derived-context indexer both
+          # read git history; the default depth of 1 would starve them.
           fetch-depth: 0
 
       - uses: prefix-dev/setup-pixi@v0.10.2
@@ -75,9 +85,6 @@ jobs:
         run: |
           pixi exec --channel conda-forge --channel SelfExplainML \
             --spec "codegraph>=1.6.0" -- codegraph init -y .
-
-      - name: Build the planning graph (scribe graph compile)
-        run: pixi run -e pyforge-scribe scribe graph compile --nightly
 
       - name: Build the derived-context distills (scribe index refresh)
         run: pixi run -e pyforge-scribe scribe index refresh
