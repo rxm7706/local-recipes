@@ -19,7 +19,13 @@ documented -- `openai`, `orjson`, `magika`, `zstandard`, `onnxruntime`, `watchdo
 `sqlite-vec`; `pyforge-guild`-only, added after the extra's absence crashed a `marshal
 factory dispatch` run; same pass also adds `caveman` to `pyforge-guild` -- its
 `caveman-install` presence-probe has no `fallback_bin_dirs` escape hatch, so it needs
-the SAME env dispatch runs in, not just `local-recipes`). Channels: conda-forge + SelfExplainML.
+the SAME env dispatch runs in, not just `local-recipes`) and 2026-09-24
+(`caveman` renamed to `caveman-installer` in both `pyforge-guild` and
+`local-recipes` -- conda-forge graduated the package under its correct
+upstream name; both envs stay channel-pinned to the local SelfExplainML
+build rather than conda-forge's own, since the latter's `nodejs >=26.10`
+requirement conflicts with `pyforge-foundry-full`'s libabseil pin as well
+as codegraph's). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -576,17 +582,26 @@ Knowledge & indexing for agents:
   so wire `"auto"` always resolves enabled, and without these the wrapper
   crashed the whole dispatch in under 2 seconds (`ModuleNotFoundError:
   openai`) before the harness session ever started.
-- **caveman** (>=2.6.0) — Claude Code output-token compression skill installer
-  (`caveman-install`; ~65% output-token cut). **linux-64 only** (SelfExplainML
-  patched build 2, host nodejs held at 24.* to coexist with codegraph — see
-  recipes/caveman). Also `pyforge-guild` (linux-64 target) since 2026-09-20:
-  `marshal seed kit`'s caveman-skill item and `marshal factory dispatch`'s
-  own `_seed_dispatch_output_layer` both probe `caveman-install` with a bare
-  `shutil.which` (no `fallback_bin_dirs`, unlike headroom's harness-binary
-  resolution), so it has to be on the SAME env's PATH the dispatch process
-  itself runs in -- previously absent from `pyforge-guild` on the theory
-  that the `output` layer's graceful skip made it safe to omit, but that
-  left every dispatch running unwrapped by default.
+- **caveman-installer** (>=2.7.0) — Claude Code output-token compression skill
+  installer (`caveman-install`; ~65% output-token cut). Renamed 2026-09-24 from
+  `caveman` (a local-only name that never actually existed upstream) to the
+  package's correct name now that conda-forge has graduated it under it — the
+  binary + skill payload are unchanged, so the rename is transparent to every
+  consumer (marshal resolves by binary path, not package name). **linux-64
+  only** in both envs, channel-pinned to the local SelfExplainML build (host
+  nodejs held at 24.* to coexist with codegraph — see
+  recipes/caveman-installer) rather than conda-forge's own build directly:
+  conda-forge's build needs nodejs >=26.10 -> libabseil 20260526.0, which
+  collides with `pyforge-foundry-full`'s dagster/protobuf chain (pinned to
+  libabseil >=20260107.1,<20260108.0a0) in addition to codegraph's own
+  nodejs pin — so `pyforge-guild` keeps the local build too, not just
+  `local-recipes`. `marshal seed kit`'s caveman-skill item and `marshal
+  factory dispatch`'s own `_seed_dispatch_output_layer` both probe
+  `caveman-install` with a bare `shutil.which` (no `fallback_bin_dirs`,
+  unlike headroom's harness-binary resolution), so it has to be on the SAME
+  env's PATH the dispatch process itself runs in -- previously absent from
+  `pyforge-guild` on the theory that the `output` layer's graceful skip made
+  it safe to omit, but that left every dispatch running unwrapped by default.
 
 ---
 

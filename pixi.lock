@@ -2045,7 +2045,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-installer-2.7.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -4456,7 +4456,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-installer-2.7.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/codegraph-1.6.0-ha6f54f0_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
@@ -4746,7 +4746,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nebi-cli-0.15-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nh3-0.3.7-py310h300b7de_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nlohmann_json-3.12.0-h54a6638_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-24.19.0-h50021de_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-24.21.0-h50021de_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nspr-4.40-h29cc59b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nss-3.118-h445c969_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.5.3-py314hd3a7d6b_0.conda
@@ -13606,7 +13606,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-installer-2.7.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -15571,7 +15571,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-installer-2.7.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -21439,15 +21439,15 @@ packages:
   license: MIT
   size: 3278028
   timestamp: 1787397940167
-- conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
-  sha256: a2cb83eafd2f0ebd87e5a12d8ef67d70457cc08d23e4b649ef91cc6fbfe28591
-  md5: 4627ce88b1f0db1e1540ee9e87140fcf
+- conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-installer-2.7.0-hfc2019e_0.conda
+  sha256: d26396e479f045821bae502b3f6be1bc67de17e57a019f46b291d7fd03ae6abe
+  md5: 90e5f595f6090ee2b69a70542a09e57c
   depends:
   - nodejs >=18
-  - nodejs >=24.19.0,<25.0a0
+  - nodejs >=24.21.0,<25.0a0
   license: MIT
-  size: 447551
-  timestamp: 1788788416586
+  size: 626118
+  timestamp: 1790288456242
 - conda: https://conda.anaconda.org/SelfExplainML/linux-64/codegraph-1.6.0-ha6f54f0_0.conda
   sha256: 3089e66b3ce3dba1d2c5e28676bbea88f679ae3b1f20d41e7fcfde23dd69746b
   md5: 0e9b60233fecd241ccef22c8b41be47c
