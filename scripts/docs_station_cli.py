@@ -110,9 +110,24 @@ def _guild_hosted_packages(root: Path) -> set[str]:
 
 def capture_help(console_script: str) -> str | None:
     """``<console_script> --help`` from whatever is on PATH in the CURRENT
-    process, or ``None`` when it does not resolve here. A thin, isolated
-    seam (never inlined into ``render``) so a test can monkeypatch it
-    without touching the real PATH or spawning a real subprocess."""
+    process, or ``None`` when it does not resolve here, exits non-zero
+    (e.g. a console script that crashes with an unmet import, like
+    ``marshal-mcp`` when ``fastmcp`` is absent), or its output cannot be
+    decoded as text -- ``None`` is exactly the "not resolvable on PATH"
+    outcome ``render()`` already handles, so a broken script degrades to
+    the same short note as a missing one rather than embedding a raw
+    traceback (with this worktree's own absolute filesystem paths in it)
+    into the committed page. A thin, isolated seam (never inlined into
+    ``render``) so a test can monkeypatch it without touching the real PATH
+    or spawning a real subprocess.
+
+    Note: when invoked through ``docs-currency``'s generated-page-stale
+    check (``cli_bridge.run_check_script``), this subprocess call inherits
+    whatever PATH is active in the CALLING process -- so which stations
+    resolve depends on the invoking environment. Bounded in practice:
+    ``detectors-ci`` and ``pyforge doctor check`` are always run as
+    ``-e pyforge-guild``, the same environment this script's own pixi task
+    is registered under."""
     resolved = shutil.which(console_script)
     if resolved is None:
         return None
@@ -128,7 +143,9 @@ def capture_help(console_script: str) -> str | None:
             env=env,
             check=False,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except (subprocess.TimeoutExpired, OSError, UnicodeDecodeError):
+        return None
+    if result.returncode != 0:
         return None
     return result.stdout or result.stderr
 

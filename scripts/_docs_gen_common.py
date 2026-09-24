@@ -42,6 +42,20 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 _DESCRIPTION_LINE_RE = re.compile(r"^description:[ \t]*(.+)$", re.MULTILINE)
 
 
+class _IndentedListDumper(yaml.Dumper):
+    """Standard PyYAML idiom: force block-sequence items to be indented
+    under their parent key (``  - path:``) rather than PyYAML's default
+    "indentless" style (``- path:`` flush with the key). docs/map.yaml's
+    own hand-authored convention is the indented style -- without this,
+    ``update_map_stamp``'s ``yaml.safe_dump`` would reformat every one of
+    the ~90 untouched page entries as a side effect of updating one page's
+    stamp (found live 2026-09-24: this module is the file's first-ever
+    programmatic writer)."""
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
+
 def git(root: Path, *args: str) -> str:
     return subprocess.run(
         ["git", *args], cwd=root, check=True, capture_output=True, text=True
@@ -110,6 +124,27 @@ def parse_frontmatter(text: str) -> dict:
     return {}
 
 
+def _strip_stamp_header(text: str) -> str:
+    """Drop the ``<!-- GENERATED ... -->`` stamp block :func:`render_header`
+    produces from the START of ``text``, if present -- everything from the
+    opening ``<!-- GENERATED`` line through the first line containing
+    ``-->``, inclusive.
+
+    Used only to compare two renders for a REAL content difference: the
+    stamp's ``derived_at``/``tree`` legitimately changes on every commit
+    (including one that touches nothing this page derives from), so
+    comparing full text would flag every generated page stale on every
+    unrelated commit. Never used when writing -- the written file always
+    keeps its stamp."""
+    lines = text.splitlines(keepends=True)
+    if not lines or not lines[0].startswith("<!-- GENERATED"):
+        return text
+    for index, line in enumerate(lines):
+        if "-->" in line:
+            return "".join(lines[index + 1 :])
+    return text
+
+
 def update_map_stamp(root: Path, page_rel: str, stamp: dict[str, str]) -> None:
     """Write ``stamp`` into ``docs/map.yaml``'s entry for ``page_rel`` (the
     ``docs/``-relative path, e.g. ``how-to/pixi-tasks.md``).
@@ -140,7 +175,13 @@ def update_map_stamp(root: Path, page_rel: str, stamp: dict[str, str]) -> None:
             break
     if changed:
         map_yaml.write_text(
-            yaml.safe_dump(data, sort_keys=False, default_flow_style=False, allow_unicode=True),
+            yaml.dump(
+                data,
+                Dumper=_IndentedListDumper,
+                sort_keys=False,
+                default_flow_style=False,
+                allow_unicode=True,
+            ),
             encoding="utf-8",
         )
 
@@ -155,12 +196,17 @@ def write_generated_page(
 ) -> int:
     """The write+``--check`` plumbing every generator's ``main()`` shares.
 
-    ``check=True``: compare ``content`` (a fresh in-memory render, stamp
-    included) against the page currently on disk; print + return 0 when
-    they match, 1 when they differ (stale -- a source moved past the
-    stamp, a hand edit, or the page was never generated). Never writes,
-    never touches ``docs/map.yaml`` -- this is the mode ``docs-currency``'s
-    generated-page-stale check invokes via ``cli_bridge.run_check_script``.
+    ``check=True``: compare ``content`` (a fresh in-memory render) against
+    the page currently on disk, WITH EACH SIDE'S STAMP HEADER STRIPPED
+    first (:func:`_strip_stamp_header`) -- the stamp's own ``derived_at``/
+    ``tree`` legitimately differs on every commit, including one that
+    touches nothing this page derives from, so comparing it would flag
+    every generated page stale on any unrelated commit. Print + return 0
+    when the stripped bodies match, 1 when they differ (stale -- a source
+    moved past the stamp, a hand edit, or the page was never generated).
+    Never writes, never touches ``docs/map.yaml`` -- this is the mode
+    ``docs-currency``'s generated-page-stale check invokes via
+    ``cli_bridge.run_check_script``.
 
     ``check=False``: write ``content`` (creating parent directories as
     needed), advance ``docs/map.yaml``'s stamp for this page to ``stamp``
@@ -175,7 +221,7 @@ def write_generated_page(
     current = page_path.read_text(encoding="utf-8") if page_path.is_file() else None
 
     if check:
-        if current == content:
+        if current is not None and _strip_stamp_header(current) == _strip_stamp_header(content):
             print(f"[{page_rel}] current")
             return 0
         print(
