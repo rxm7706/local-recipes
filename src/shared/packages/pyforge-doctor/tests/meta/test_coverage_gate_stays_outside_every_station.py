@@ -127,7 +127,9 @@ def _station_dirs(root: Path) -> list[Path]:
     roster, so a ninth station needs no edit here (mirrors ``pyforge-core``'s
     ``tests/meta/conftest.py::sibling_station_dirs``)."""
     return sorted(
-        p for p in root.iterdir() if p.is_dir() and p.name.startswith("pyforge-") and p.name not in _EXCLUDED_PACKAGE_NAMES
+        p
+        for p in root.iterdir()
+        if p.is_dir() and p.name.startswith("pyforge-") and p.name not in _EXCLUDED_PACKAGE_NAMES
     )
 
 
