@@ -199,6 +199,29 @@ def test_write_generated_page_writes_and_is_idempotent(tmp_path: Path):
     assert common.write_generated_page(tmp_path, "how-to/pixi-tasks.md", "content\n", check=True) == 0
 
 
+def test_write_generated_page_check_mode_ignores_stamp_drift_from_an_unrelated_commit(tmp_path: Path):
+    # Reproduces the live bug: this branch's own auto-checkpoint commits
+    # advance HEAD every few seconds with the page's real source untouched,
+    # which must NOT flip a generated page to stale on its own.
+    _init_repo(tmp_path)
+    (tmp_path / "source.txt").write_text("v1\n", encoding="utf-8")
+    _commit_all(tmp_path, "seed: source.txt")
+    stamp_1 = common.head_stamp(tmp_path)
+    content_1 = common.render_header("scripts/example.py", "example-task", stamp_1) + "\nbody\n"
+    common.write_generated_page(tmp_path, "how-to/example.md", content_1, check=False, stamp=None)
+    _commit_all(tmp_path, "add generated page")
+
+    # An unrelated commit that does not touch source.txt (or the page).
+    (tmp_path / "unrelated.txt").write_text("unrelated change\n", encoding="utf-8")
+    _commit_all(tmp_path, "unrelated commit -- advances HEAD, source.txt untouched")
+
+    stamp_2 = common.head_stamp(tmp_path)
+    assert stamp_2 != stamp_1  # HEAD really did move
+    content_2 = common.render_header("scripts/example.py", "example-task", stamp_2) + "\nbody\n"
+
+    assert common.write_generated_page(tmp_path, "how-to/example.md", content_2, check=True) == 0
+
+
 def test_write_generated_page_records_the_passed_in_stamp_without_recomputing(tmp_path: Path):
     docs = tmp_path / "docs"
     docs.mkdir()

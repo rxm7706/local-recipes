@@ -7,6 +7,8 @@ here), and whether pixi.toml's feature.pyforge-guild composes it.
 
 from __future__ import annotations
 
+import os
+import stat
 import sys
 from pathlib import Path
 
