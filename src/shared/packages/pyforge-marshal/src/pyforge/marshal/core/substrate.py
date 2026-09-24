@@ -43,6 +43,8 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from pyforge.core.errors import PyforgeError
+
 from .model import Finding, Severity
 
 __all__ = (
@@ -168,9 +170,10 @@ def member_by_name(name: str) -> SubstrateMember | None:
     return _MEMBERS_BY_NAME.get(name)
 
 
-class ManifestError(ValueError):
+class ManifestError(PyforgeError, ValueError):
     """A manifest that cannot be trusted to drive an install. The message is
-    the reason MRS-CTX-005 reports."""
+    the reason MRS-CTX-005 reports. A family root, so it carries
+    ``PyforgeError`` (SPEC-pyforge-core CAP-5)."""
 
 
 @dataclass(frozen=True)

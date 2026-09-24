@@ -8,6 +8,7 @@ import json
 
 import pytest
 
+from pyforge.core.errors import PyforgeError
 from pyforge.marshal.core import substrate
 from pyforge.marshal.core.model import Severity, Verdict
 from pyforge.marshal.core.verdict import compute_verdict
@@ -114,6 +115,11 @@ class TestManifestRoundTrip:
 
 
 class TestMalformedManifest:
+    def test_the_refusal_is_a_pyforge_family_root(self):
+        # SPEC-pyforge-core CAP-5: every family-root exception carries PyforgeError.
+        assert issubclass(substrate.ManifestError, PyforgeError)
+        assert issubclass(substrate.ManifestError, ValueError)
+
     @pytest.mark.parametrize(
         ("path", "needle"),
         [
