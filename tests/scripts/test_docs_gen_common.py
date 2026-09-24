@@ -147,6 +147,41 @@ def test_update_map_stamp_is_a_noop_when_map_yaml_is_missing(tmp_path: Path):
     common.update_map_stamp(tmp_path, "how-to/pixi-tasks.md", {"derived_at": "x", "tree": "y"})
 
 
+def test_update_map_stamp_preserves_the_2_space_indented_style_of_untouched_pages(tmp_path: Path):
+    # docs/map.yaml's own hand-authored convention indents block-sequence
+    # items 2 spaces under their key (`  - path:`); plain `yaml.safe_dump`
+    # instead produces PyYAML's default "indentless" style (`- path:` flush
+    # with the key), which would reformat every untouched page as a side
+    # effect of stamping just one.
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    hand_authored = (
+        "schema_version: 1\n"
+        "pages:\n"
+        "  - path: how-to/pixi-tasks.md\n"
+        "    quadrant: how-to\n"
+        "    owner: steward\n"
+        "    kind: generated\n"
+        "  - path: reference/other.md\n"
+        "    quadrant: reference\n"
+        "    owner: fleet\n"
+        "    kind: authored\n"
+    )
+    (docs / "map.yaml").write_text(hand_authored, encoding="utf-8")
+
+    common.update_map_stamp(tmp_path, "how-to/pixi-tasks.md", {"derived_at": "2026-01-01T00:00:00", "tree": "abc"})
+
+    written = (docs / "map.yaml").read_text(encoding="utf-8")
+    # The untouched page's own lines are byte-identical to the original.
+    assert "  - path: reference/other.md\n" in written
+    assert "    quadrant: reference\n" in written
+    assert "    owner: fleet\n" in written
+    assert "    kind: authored\n" in written
+    # The touched page gained its stamp, same indented style.
+    assert "  - path: how-to/pixi-tasks.md\n" in written
+    assert "    stamp:\n      derived_at: '2026-01-01T00:00:00'\n      tree: abc\n" in written
+
+
 def test_update_map_stamp_is_a_noop_when_page_is_not_in_the_registry(tmp_path: Path):
     docs = tmp_path / "docs"
     docs.mkdir()

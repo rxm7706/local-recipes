@@ -85,6 +85,38 @@ def test_render_is_deterministic_given_the_same_stamp(tmp_path: Path):
     assert m.render(tmp_path, _STAMP) == m.render(tmp_path, dict(_STAMP))
 
 
+def test_render_flags_a_task_whose_cmd_references_a_missing_script(tmp_path: Path):
+    # Reproduces the live gap: bmad-preflight shells to
+    # scripts/ensure-bmad-preflight.sh, which does not exist in the repo,
+    # with no forewarning to a reader of the generated page.
+    _write_pixi_toml(tmp_path)
+    (tmp_path / "pixi.toml").write_text(
+        _PIXI_TOML
+        + '\n[feature.alpha-feature.tasks.preflight]\ndescription = "verify"\ncmd = "bash scripts/ensure-preflight.sh"\n',
+        encoding="utf-8",
+    )
+
+    content = m.render(tmp_path, _STAMP)
+
+    assert "⚠ script not found: `scripts/ensure-preflight.sh`" in content
+
+
+def test_render_does_not_flag_a_task_whose_referenced_script_exists(tmp_path: Path):
+    _write_pixi_toml(tmp_path)
+    (tmp_path / "pixi.toml").write_text(
+        _PIXI_TOML
+        + '\n[feature.alpha-feature.tasks.present]\ndescription = "run it"\ncmd = "python scripts/present.py"\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "present.py").write_text("", encoding="utf-8")
+
+    content = m.render(tmp_path, _STAMP)
+
+    assert "⚠" not in content
+    assert "| `present` | run it |" in content
+
+
 def test_main_writes_then_check_agrees_then_a_pixi_toml_edit_reds_check(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):

@@ -78,6 +78,28 @@ def test_render_embeds_captured_help_text_verbatim(tmp_path: Path):
     assert "usage: doctor [-h] ..." in content
 
 
+# --- capture_help itself: the REAL subprocess path, not the injected seam --
+
+
+def test_capture_help_returns_none_when_the_script_exits_nonzero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    # Reproduces the live bug: marshal-mcp --help crashes (ModuleNotFoundError:
+    # No module named 'fastmcp') and exited non-zero, but the old code returned
+    # stderr's traceback anyway -- embedding it, absolute filesystem paths and
+    # all, straight into the committed page.
+    script = tmp_path / "broken-cli"
+    script.write_text(
+        "#!/bin/sh\n"
+        "echo 'Traceback (most recent call last):' >&2\n"
+        "echo \"ModuleNotFoundError: No module named 'fastmcp'\" >&2\n"
+        "exit 1\n",
+        encoding="utf-8",
+    )
+    script.chmod(script.stat().st_mode | stat.S_IEXEC)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+
+    assert m.capture_help("broken-cli") is None
+
+
 def test_render_notes_when_help_is_not_capturable(tmp_path: Path):
     _write_station(tmp_path, "mason", scripts={"mason": "pyforge.mason.cli:main"})
     _write_pixi_toml(tmp_path, guild_hosted=[])
