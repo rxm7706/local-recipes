@@ -2,7 +2,8 @@
 title: '24.3: The surfaces are reconciled so no file is governed twice or not at all'
 type: 'fix'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'e9d593f0cb79a73b623026f0008803cc54f58ec6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
