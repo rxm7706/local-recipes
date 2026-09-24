@@ -54,8 +54,8 @@ class TestAssembleBundle:
         assert derived["enabled"] is True
         assert derived["aggressiveness"] == "medium"
         assert derived["declarations"] == [
-            {"name": "marshal:slug:epic-7-continuity", "sources": [], "output": None},
             {"name": "marshal:slug:epic-7-context", "sources": ["a.md", "b.md"], "output": "epic-7-context.md"},
+            {"name": "marshal:slug:epic-7-continuity", "sources": [], "output": None},
         ]
 
     def test_planning_graph_carries_enabled_and_aggressiveness_only(self):
