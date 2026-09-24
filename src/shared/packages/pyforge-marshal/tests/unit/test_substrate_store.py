@@ -218,13 +218,20 @@ class TestRefusalsInstallNothing:
     def test_tampered_file_under_a_recomputed_archive_digest(self, tmp_path):
         clone = tmp_path / "clone"
         clone.mkdir()
-        honest = b'{"honest": true}\n'
+        honest, evil = b'{"ok": 1}\n', b'{"no": 1}\n'
+        assert len(honest) == len(evil)
+        _forge(tmp_path / "pack", [_reg(".claude/data/pyforge-scribe/graph.json", evil)], _planning_members(honest))
+        self._assert_nothing(clone, _install(clone, tmp_path / "pack"), "does not match the manifest")
+
+    def test_an_entry_whose_size_disagrees_with_the_manifest(self, tmp_path):
+        clone = tmp_path / "clone"
+        clone.mkdir()
         _forge(
             tmp_path / "pack",
-            [_reg(".claude/data/pyforge-scribe/graph.json", b'{"evil": true}\n')],
-            _planning_members(honest),
+            [_reg(".claude/data/pyforge-scribe/graph.json", b"{}\n")],
+            _planning_members(b'{"longer": 1}\n'),
         )
-        self._assert_nothing(clone, _install(clone, tmp_path / "pack"), "graph.json")
+        self._assert_nothing(clone, _install(clone, tmp_path / "pack"), "the manifest says")
 
     def test_an_entry_the_manifest_does_not_name(self, tmp_path):
         clone = tmp_path / "clone"
