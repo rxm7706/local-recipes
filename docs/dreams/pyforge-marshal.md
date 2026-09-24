@@ -476,6 +476,44 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   runtime; only `pyforge-guild` exists where marshal runs (operator ruling, steward Dream
   2026-09-20 later). bmad-loop is marshal's own run-dep. → CAP-263 / Story 46.12 (the steward
   side is 63.6).
+- **2026-09-24 — Proposed: the ledger promotion is a human's job, every single landing.**
+  Doctor's Epic 24 (24.1-24.3) landed three-for-three today, and 24.2 and 24.3 each needed the
+  identical manual repair: `marshal factory dispatch`'s automated finalize left the tracked
+  `sprint-status-ledger.yaml` key at `backlog` after a genuinely-merged, review-passed story
+  (24.2: PR #1577 merged, spec `status: done`; 24.3: PR #1579 merged, spec `status: done`).
+  `sprint-ledger-sync --project doctor` refused both times — correctly — because the Tier-3 feed
+  (`implementation-artifacts/sprint-status.yaml`) had drifted stale on 13-14 *unrelated* keys
+  (24.2's promotion: 13 keys; 24.3's, run afterward: 14, including `24-2` itself reading
+  `done → backlog` in the feed again despite having just been repaired). Both times the fix was
+  the identical three-step manual dance — `--repair-feed` to pull the tracked twin's `done` keys
+  back into the feed, hand-flip the one new key, re-sync — followed by a SEPARATE PR
+  (`doctor-24-2-ledger-repair` #1578, `doctor-24-3-ledger-promote` #1580) that exists for no
+  reason but to carry a two-line YAML diff. This is the same disease Epic 51/53 already named
+  (silent-success ledger state, `dispatch_land_finalize` not writing what it should) in a new
+  manifestation: it is not that finalize crashes or drops work — the dispatch completes cleanly,
+  the PR merges, the spec reads `done` — it is that nothing durable records the promotion at the
+  one place (the Tier-3 feed) `sprint-ledger-sync`'s regression guard trusts, so the very next
+  landing on the *same station* inherits the drift and refuses too. Confirmed as a repeat, not a
+  one-off, within a single session on the same station.
+  **What it looks like when real:** a dispatched story that lands (PR merged, spec `status:
+  done`) leaves the tracked ledger `done` with no further human action — no `--repair-feed`, no
+  hand-edit, no second PR — because `dispatch_land_finalize` itself keeps the Tier-3 feed current
+  as part of landing, the same way it already keeps the tracked spec current.
+  **The mechanism, sketched:** the regression guard's refusal is never wrong about the *fact* of
+  drift — the tracked twin genuinely is more current than the feed on those 13-14 keys — so the
+  refusal itself should never require a human. The twin is the authoritative record (`sprint-
+  status-ledger.yaml`'s own header calls it exactly that) and `--repair-feed` already does
+  nothing but pull the twin's `done` keys forward into the feed — a strictly safe, one-directional
+  operation with no judgment call in it. `dispatch_land_finalize`'s own promotion attempt should
+  retry with that repair automatically applied whenever the refusal names only keys *other than*
+  the one it is trying to promote, and land the two-line feed-catch-up as part of the SAME commit
+  that flips the just-landed story — never a separate PR. The regression guard still refuses (and
+  still needs a human) for the one case that is a genuine judgment call: the twin and the feed
+  disagreeing about the *story being promoted itself*. That is the whole fix: stop treating "the
+  feed is behind on unrelated stories" as a reason to block the story that IS ready, when the twin
+  already knows the truth and repairing toward it is provably safe.
+  Kinships: continues the `dispatch_land_finalize` reliability thread above (Epic 51
+  CAP-249/CAP-252, Epic 53 CAP-261); owner `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
