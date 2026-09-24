@@ -144,12 +144,19 @@ def release(home: Path, tmp_path: Path, capsys) -> Path:
     return out
 
 
-def _boot_args(root: Path, *, from_dir: Path | None = None, offline: bool = False, repo: str | None = None):
+def _boot_args(
+    root: Path,
+    *,
+    from_dir: Path | str | None = None,
+    offline: bool = False,
+    repo: str | None = None,
+    tag: str = substrate.DEFAULT_TAG,
+):
     return argparse.Namespace(
         root=str(root),
-        from_dir=str(from_dir) if from_dir else None,
+        from_dir=str(from_dir) if from_dir is not None else None,
         offline=offline,
-        tag=substrate.DEFAULT_TAG,
+        tag=tag,
         repo=repo,
         format="json",
     )
@@ -204,6 +211,12 @@ class TestFetchServesAll:
         assert gh[:4] == ("gh", "release", "download", substrate.DEFAULT_TAG)
         assert gh[4:6] == ("--repo", "rxm7706/local-recipes")
 
+    def test_a_non_default_tag_reaches_the_gh_argv(self, clone, release, capsys):
+        fake = _Fake(release=release)
+        _, envelope, _ = _boot(clone, fake, capsys, tag="substrate-2026-09-01")
+        assert fake.calls[0][3] == "substrate-2026-09-01"
+        assert envelope["data"]["source"]["tag"] == "substrate-2026-09-01"
+
 
 class TestFromDir:
     def test_same_install_with_no_network(self, clone, release, capsys):
@@ -229,6 +242,19 @@ class TestFromDir:
         assert _codes(envelope) == ["MRS-CTX-003"] * 3
         assert all("holds no" in m for m in _messages(envelope, "MRS-CTX-003"))
         assert "gh" not in fake.tools()
+
+    def test_an_empty_from_never_calls_gh(self, clone, tmp_path, capsys, monkeypatch):
+        # `--from "$UNSET"` is still --from: no network, never a fall-through to the fetch.
+        cwd = tmp_path / "cwd"
+        cwd.mkdir()
+        monkeypatch.chdir(cwd)
+        fake = _Fake()
+        code, envelope, err = _boot(clone, fake, capsys, from_dir="")
+        assert code == 0
+        assert "gh" not in fake.tools()
+        assert envelope["data"]["source"]["kind"] == "local"
+        assert envelope["data"]["source"]["network"] is False
+        assert "gh release download" not in err
 
 
 class TestOffline:
@@ -441,7 +467,10 @@ class TestPack:
         code, envelope = _pack(empty, out, capsys)
         assert code == 1
         assert envelope["verdict"] == "unevaluable"
-        assert _codes(envelope) == ["MRS-CTX-007"]
+        # Each member keeps its own reason (MRS-CTX-006); MRS-CTX-007 is added, not a replacement.
+        assert _codes(envelope) == ["MRS-CTX-006"] * 3 + ["MRS-CTX-007"]
+        [message] = _messages(envelope, "MRS-CTX-007")
+        assert "no substrate member is packable" in message
         assert not out.exists()
 
     def test_a_write_failure_is_unevaluable(self, home, tmp_path, capsys):
@@ -451,6 +480,20 @@ class TestPack:
         assert code == 1
         [message] = _messages(envelope, "MRS-CTX-007")
         assert "could not be written" in message
+
+    def test_text_output_names_files_and_archive_sha(self, home, tmp_path, capsys):
+        # The default format -- the one docs/air-gapped-deployment.md tells operators to use.
+        args = _pack_args(home, tmp_path / "out")
+        args.format = "text"
+        code = cli.run_context_pack(args, process=_Fake())
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "context pack verdict=" in out
+        for member in substrate.SUBSTRATE_MEMBERS:
+            count = sum(1 for rel in _HOME_FILES if rel in member.files)
+            assert f"{member.name}: {count} file(s)" in out
+        archive_sha = hashlib.sha256((tmp_path / "out" / substrate.ASSET_ARCHIVE).read_bytes()).hexdigest()
+        assert f"sha256={archive_sha}" in out
 
     def test_source_commit_defaults_to_git_head(self, home, tmp_path, capsys):
         fake = _Fake(head="abc123")

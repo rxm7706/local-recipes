@@ -57,6 +57,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history: `scribe graph compile`'s git surface reads the last
+          # 100 commits; the default depth of 1 would publish one.
+          fetch-depth: 0
 
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
@@ -78,11 +82,13 @@ jobs:
       - name: Build the derived-context distills (scribe index refresh)
         run: pixi run -e pyforge-scribe scribe index refresh
 
-      # Exit 1 (MRS-CTX-007, nothing packable) fails the job; a gap
-      # (MRS-CTX-006, one member absent) is a WARN that still exits 0 and
-      # publishes the members that did build -- the consumer rebuilds the
-      # gap with a named finding. No pipe after this command: the step's
-      # verdict is marshal's own exit code.
+      # A failing build step above fails the job: nothing is uploaded and the
+      # previous pair stays on the release. MRS-CTX-006 (a gap, WARN, exit 0,
+      # the pair written without that member) appears only when a build step
+      # exits 0 without writing its sentinel; the consumer then rebuilds the
+      # gap with a named finding. Exit 1 (MRS-CTX-007, nothing packable or the
+      # pair not written) fails the job. No pipe after this command: the
+      # step's verdict is marshal's own exit code.
       - name: Pack the deterministic pair
         run: |
           pixi run -e pyforge-guild marshal context pack \

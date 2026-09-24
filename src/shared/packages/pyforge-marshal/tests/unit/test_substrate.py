@@ -238,6 +238,7 @@ class TestGhArgv:
 
     def test_explicit_repo(self):
         argv = substrate.render_gh_download_argv(tag="t", repo="o/r", dest_dir="d")
+        assert argv[3] == "t"
         assert argv[4:6] == ("--repo", "o/r")
 
 
@@ -274,4 +275,7 @@ class TestFindings:
         nothing = substrate.nothing_packable_finding()
         assert nothing.code == "MRS-CTX-007"
         assert compute_verdict([nothing]) is Verdict.UNEVALUABLE
+        # Packable, not present: a sentinel may exist yet be a symlink or non-regular file.
+        assert "no substrate member is packable" in nothing.message
+        assert "absent" not in nothing.message
         assert "disk full" in substrate.nothing_packable_finding(write_error="disk full").message

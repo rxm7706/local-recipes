@@ -222,7 +222,8 @@ def fetch_pair(
     except ProcessError as exc:
         return f"`{' '.join(argv)}` could not run ({exc})"
     if result.returncode != 0:
-        output = ((result.stderr or "") + (result.stdout or "")).strip()
+        # stdout, then stderr, newline-separated: the tail is the last stderr line.
+        output = "\n".join(part for part in ((result.stdout or "").strip(), (result.stderr or "").strip()) if part)
         tail = output.splitlines()[-1] if output else "<no output>"
         return f"`{' '.join(argv)}` exited {result.returncode} ({tail})"
     for name in (ASSET_MANIFEST, ASSET_ARCHIVE):

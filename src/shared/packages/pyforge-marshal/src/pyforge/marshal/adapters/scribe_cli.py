@@ -319,7 +319,8 @@ class ScribeCli:
         except ProcessError as exc:
             return ScribeRebuildOutcome(ok=False, argv=argv, reason=f"{list(argv)!r} could not run ({exc})")
         if result.returncode != 0:
-            output = ((result.stdout or "") + (result.stderr or "")).strip()
+            # stdout, then stderr, newline-separated: the tail is the last stderr line.
+            output = "\n".join(part for part in ((result.stdout or "").strip(), (result.stderr or "").strip()) if part)
             tail = output.splitlines()[-1] if output else "<no output>"
             return ScribeRebuildOutcome(
                 ok=False,
