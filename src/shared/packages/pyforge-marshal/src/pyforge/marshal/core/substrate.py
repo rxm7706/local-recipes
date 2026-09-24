@@ -400,16 +400,14 @@ def refused_pack_finding(reason: str, *, path: str | None) -> Finding:
     )
 
 
-def gap_finding(member: SubstrateMember) -> Finding:
+def gap_finding(member: SubstrateMember, *, reason: str) -> Finding:
     """MRS-CTX-006 (WARN): ``context pack`` wrote the pair without a member
-    whose sentinel is absent from the producer."""
+    the producer could not supply (``reason`` says why -- its sentinel is
+    absent, or is not a regular file)."""
     return Finding(
         code="MRS-CTX-006",
         severity=Severity.WARN,
-        message=(
-            f"substrate member {member.name!r} is absent ({member.sentinel} does not exist) -- "
-            "the pack was written without it"
-        ),
+        message=f"substrate member {member.name!r} not packed ({reason}) -- the pair was written without it",
         path=member.sentinel,
     )
 
