@@ -31,6 +31,26 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   page that triggers either/both evidence kinds; a page with neither
   frontmatter nor a dead reference is silently fine (coverage grows
   incrementally, per the story's own Design Notes).
+* ``generated-page-stale`` (``docs-currency-generated-stale``, Story 30.3,
+  ``spec-pyforge-doctor`` CAP-84) -- for each ``kind: generated`` page that
+  declares a ``generator:`` (a repo-relative ``scripts/docs_*.py`` path),
+  runs that script's own ``--check`` mode and reads its exit code: 0 means
+  the page is current, anything else -- a source it derives from moved
+  past its stamp, a hand edit, a missing regeneration -- is one WARN naming
+  the page. This is the ONE mechanism for all four staleness classes the
+  story's I/O matrix names (a `pixi.toml` task added, a station CLI verb
+  added, a detector registration added, a `SKILL.md` frontmatter edited)
+  plus a hand edit inside the page itself: rather than duplicating five
+  pages' render logic inside Doctor (which AD-5 forbids for anything that
+  needs `scripts/` -- a generator's real source of truth, like
+  `scripts/detectors.py`'s registry, lives there, not in this installed
+  package), this check treats each generator as an opaque, already-decided
+  verdict and asks it directly via :func:`cli_bridge.run_check_script`.
+  A page with no ``generator:`` declared, or a declared generator that
+  does not exist, is ALSO one WARN (a registry gap, not silently skipped);
+  a missing PAGE (not yet ever generated) is skipped here -- that is
+  ``docs-map-hygiene``'s territory, same discretion the authored-page-stale
+  check above already uses.
 * ``skill-dir-hygiene`` (``docs-currency-skill-dir-hygiene``) -- a stray
   file inside a managed ``bmad-*``/``pyforge-*``/``skf-*`` skill
   directory.
