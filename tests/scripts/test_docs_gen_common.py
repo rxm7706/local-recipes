@@ -3,9 +3,12 @@ write/check plumbing behind every Story 30.3 doc generator
 (spec-pyforge-doctor CAP-84).
 
 ``pytest.importorskip("yaml")`` mirrors ``test_docs_map_render.py``'s own
-precedent: this module is exercised for real coverage from the
-``docs-gen-test`` guild-tasks task, not from ``pyforge-doctor-scripts-test``
-(``pyforge-ci``), which carries no PyYAML.
+precedent: PyYAML is not a DECLARED dependency of ``pyforge-ci`` (the
+deliberately dependency-free env ``pyforge-doctor-scripts-test`` also
+runs from) -- verified present there today only transitively, via another
+package's own sub-dependency. Real, guaranteed coverage runs from the
+``docs-gen-test`` guild-tasks task; this guard just keeps collection from
+crashing if that transitive availability ever goes away.
 """
 
 from __future__ import annotations

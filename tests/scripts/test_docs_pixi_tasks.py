@@ -3,8 +3,8 @@ spec-pyforge-doctor CAP-84): docs/how-to/pixi-tasks.md generated from
 pixi.toml's own task tables and [environments].
 
 ``pytest.importorskip("yaml")`` mirrors ``test_docs_map_render.py`` --
-real coverage runs from ``docs-gen-test`` (guild-tasks), not
-``pyforge-doctor-scripts-test`` (pyforge-ci, no PyYAML).
+see ``test_docs_gen_common.py``'s own docstring for why. Real coverage runs
+from ``docs-gen-test`` (guild-tasks).
 """
 
 from __future__ import annotations
