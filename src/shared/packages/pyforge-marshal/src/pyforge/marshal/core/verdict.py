@@ -387,6 +387,11 @@ freshness answer either way) and ``MRS-CTX-002`` at ``Verdict.WARN`` (an
 ENABLED ``derived-context`` layer degraded to today's compile-on-hunch
 behavior with a named reason -- the same graceful-degradation tier as
 ``MRS-DISP-033``/``MRS-PREFLIGHT-015``, never a blocked iteration).
+Story 46.1 (``spec-pyforge-marshal`` CAP-192) extends the area for
+``marshal context bootstrap`` / ``pack``: ``MRS-CTX-003`` (rebuilt locally),
+``-005`` (fetched pack refused) and ``-006`` (pack written with a gap) at
+``Verdict.WARN``; ``-004`` (member neither fetched nor rebuilt) and ``-007``
+(nothing packable) at ``Verdict.UNEVALUABLE``.
 
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
@@ -1192,6 +1197,16 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # blocks a run".
     "MRS-CTX-001": Verdict.UNEVALUABLE,
     "MRS-CTX-002": Verdict.WARN,
+    # Story 46.1 (a bare clone bootstraps the substrate, spec-pyforge-marshal
+    # CAP-192). A rebuild (003), a refused pack (005) and a pack with a gap
+    # (006) are WARN: the substrate still arrives, loudly and attributably.
+    # A member neither fetched nor rebuilt (004) and a pack with nothing to
+    # pack (007) are UNEVALUABLE: there is no substrate to answer with.
+    "MRS-CTX-003": Verdict.WARN,
+    "MRS-CTX-004": Verdict.UNEVALUABLE,
+    "MRS-CTX-005": Verdict.WARN,
+    "MRS-CTX-006": Verdict.WARN,
+    "MRS-CTX-007": Verdict.UNEVALUABLE,
     "MRS-PLAN-001": Verdict.WARN,
     # Story 28.7 (index freshness is an advisory finding,
     # SPEC-marshal-token-economy CAP-10): all four staleness codes are
