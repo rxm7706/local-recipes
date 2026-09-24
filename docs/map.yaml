@@ -1,266 +1,266 @@
 schema_version: 1
 pages:
-- path: tutorials/README.md
-  quadrant: tutorials
-  owner: fleet
-  kind: pointer
-- path: tutorials/getting-started.md
-  quadrant: tutorials
-  owner: fleet
-  kind: authored
-- path: tutorials/local-platform-development.md
-  quadrant: tutorials
-  owner: fleet
-  kind: authored
-- path: how-to/README.md
-  quadrant: how-to
-  owner: fleet
-  kind: pointer
-- path: how-to/ai-engine-operations.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/air-gapped-mirror-setup.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/antigravity-developer-startup.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/configure-your-coding-agent.md
-  quadrant: how-to
-  owner: scribe
-  kind: authored
-- path: how-to/detect-concurrent-agent-activity.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/disaster-recovery.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/driving-a-pyforge-station-backlog.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/feedstock-failure-remediation.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/feedstock-platform-expansion.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/github-actions-recipe-ci.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/manage-worktrees-with-bmad.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/manticore-studio.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/monitor-the-fleet.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/ocp-cluster-bringup.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/one-chain-station-ops.md
-  quadrant: how-to
-  owner: doctor
-  kind: authored
-- path: how-to/pixi-tasks.md
-  quadrant: how-to
-  owner: steward
-  kind: generated
-  generator: scripts/docs_pixi_tasks.py
-  sources:
-  - pixi.toml
-  stamp:
-    derived_at: '2026-09-24T07:04:28-05:00'
-    tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
-- path: how-to/presentation-deck.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/recipe-testing-and-builds.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/reconcile-spec-surface.md
-  quadrant: how-to
-  owner: doctor
-  kind: authored
-- path: how-to/restore-operations.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/run-and-understand-detectors.md
-  quadrant: how-to
-  owner: doctor
-  kind: authored
-- path: how-to/station-cli-operations.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/troubleshoot-bmad-agent-loops.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: how-to/troubleshooting-recipe-builds.md
-  quadrant: how-to
-  owner: fleet
-  kind: authored
-- path: reference/README.md
-  quadrant: reference
-  owner: fleet
-  kind: pointer
-- path: reference/agent-memory-lifecycle.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/antigravity-developer-startup.md
-  quadrant: reference
-  owner: fleet
-  kind: pointer
-- path: reference/conda-forge-packaging-inventory-operations_prompt.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/conda-forge-packaging-inventory-operations_replay.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/container-base-layer-convention.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/detectors.md
-  quadrant: reference
-  owner: doctor
-  kind: generated
-  generator: scripts/docs_detectors.py
-  sources:
-  - scripts/detectors.py
-  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
-  stamp:
-    derived_at: '2026-09-24T07:04:28-05:00'
-    tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
-- path: reference/developer-guide.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/environments.md
-  quadrant: reference
-  owner: steward
-  kind: generated
-  generator: scripts/docs_environments.py
-  sources:
-  - pixi.toml
-  stamp:
-    derived_at: '2026-09-24T07:04:28-05:00'
-    tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
-- path: reference/github-workflows.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/judgement-vocabulary.md
-  quadrant: reference
-  owner: doctor
-  kind: authored
-- path: reference/library-llms-full.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/manticore-studio.md
-  quadrant: reference
-  owner: fleet
-  kind: pointer
-- path: reference/mcp-server-architecture.md
-  quadrant: reference
-  owner: fleet
-  kind: pointer
-- path: reference/skills-catalog.md
-  quadrant: reference
-  owner: steward
-  kind: generated
-  generator: scripts/docs_skills_catalog.py
-  sources:
-  - .claude/skills
-  stamp:
-    derived_at: '2026-09-24T07:04:28-05:00'
-    tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
-- path: reference/station-cheat-sheet.md
-  quadrant: reference
-  owner: fleet
-  kind: generated
-  generator: scripts/docs_station_cli.py
-  sources:
-  - pixi.toml
-  - src/shared/packages
-  stamp:
-    derived_at: '2026-09-24T07:04:28-05:00'
-    tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
-- path: reference/station-verify-commands.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/sync-jira-github-workflow-templates/README.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: reference/test-charter.md
-  quadrant: reference
-  owner: fleet
-  kind: authored
-- path: explanation/README.md
-  quadrant: explanation
-  owner: fleet
-  kind: pointer
-- path: explanation/airgap-distribution-contract.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
-- path: explanation/enterprise-deployment.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
-- path: explanation/mcp-server-architecture.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
-- path: explanation/one-chain-lock-and-mop.md
-  quadrant: explanation
-  owner: doctor
-  kind: authored
-- path: explanation/platform-deployment-architecture.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
-- path: explanation/platform-requirements.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
-- path: explanation/pyforge-ecosystem-architecture.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
-- path: explanation/pyforge-estate-overview.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
-- path: explanation/the-detector-framework.md
-  quadrant: explanation
-  owner: doctor
-  kind: authored
-- path: explanation/the-tier-model-and-data-flow.md
-  quadrant: explanation
-  owner: fleet
-  kind: authored
+  - path: tutorials/README.md
+    quadrant: tutorials
+    owner: fleet
+    kind: pointer
+  - path: tutorials/getting-started.md
+    quadrant: tutorials
+    owner: fleet
+    kind: authored
+  - path: tutorials/local-platform-development.md
+    quadrant: tutorials
+    owner: fleet
+    kind: authored
+  - path: how-to/README.md
+    quadrant: how-to
+    owner: fleet
+    kind: pointer
+  - path: how-to/ai-engine-operations.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/air-gapped-mirror-setup.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/antigravity-developer-startup.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/configure-your-coding-agent.md
+    quadrant: how-to
+    owner: scribe
+    kind: authored
+  - path: how-to/detect-concurrent-agent-activity.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/disaster-recovery.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/driving-a-pyforge-station-backlog.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/feedstock-failure-remediation.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/feedstock-platform-expansion.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/github-actions-recipe-ci.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/manage-worktrees-with-bmad.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/manticore-studio.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/monitor-the-fleet.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/ocp-cluster-bringup.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/one-chain-station-ops.md
+    quadrant: how-to
+    owner: doctor
+    kind: authored
+  - path: how-to/pixi-tasks.md
+    quadrant: how-to
+    owner: steward
+    kind: generated
+    generator: scripts/docs_pixi_tasks.py
+    sources:
+      - pixi.toml
+    stamp:
+      derived_at: '2026-09-24T08:07:13-05:00'
+      tree: 94f0736147602c711656327cd5f9ad1494fb97ef
+  - path: how-to/presentation-deck.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/recipe-testing-and-builds.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/reconcile-spec-surface.md
+    quadrant: how-to
+    owner: doctor
+    kind: authored
+  - path: how-to/restore-operations.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/run-and-understand-detectors.md
+    quadrant: how-to
+    owner: doctor
+    kind: authored
+  - path: how-to/station-cli-operations.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/troubleshoot-bmad-agent-loops.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: how-to/troubleshooting-recipe-builds.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
+  - path: reference/README.md
+    quadrant: reference
+    owner: fleet
+    kind: pointer
+  - path: reference/agent-memory-lifecycle.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/antigravity-developer-startup.md
+    quadrant: reference
+    owner: fleet
+    kind: pointer
+  - path: reference/conda-forge-packaging-inventory-operations_prompt.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/conda-forge-packaging-inventory-operations_replay.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/container-base-layer-convention.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/detectors.md
+    quadrant: reference
+    owner: doctor
+    kind: generated
+    generator: scripts/docs_detectors.py
+    sources:
+      - scripts/detectors.py
+      - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
+    stamp:
+      derived_at: '2026-09-24T07:04:28-05:00'
+      tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
+  - path: reference/developer-guide.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/environments.md
+    quadrant: reference
+    owner: steward
+    kind: generated
+    generator: scripts/docs_environments.py
+    sources:
+      - pixi.toml
+    stamp:
+      derived_at: '2026-09-24T07:04:28-05:00'
+      tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
+  - path: reference/github-workflows.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/judgement-vocabulary.md
+    quadrant: reference
+    owner: doctor
+    kind: authored
+  - path: reference/library-llms-full.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/manticore-studio.md
+    quadrant: reference
+    owner: fleet
+    kind: pointer
+  - path: reference/mcp-server-architecture.md
+    quadrant: reference
+    owner: fleet
+    kind: pointer
+  - path: reference/skills-catalog.md
+    quadrant: reference
+    owner: steward
+    kind: generated
+    generator: scripts/docs_skills_catalog.py
+    sources:
+      - .claude/skills
+    stamp:
+      derived_at: '2026-09-24T08:07:13-05:00'
+      tree: 94f0736147602c711656327cd5f9ad1494fb97ef-dirty
+  - path: reference/station-cheat-sheet.md
+    quadrant: reference
+    owner: fleet
+    kind: generated
+    generator: scripts/docs_station_cli.py
+    sources:
+      - pixi.toml
+      - src/shared/packages
+    stamp:
+      derived_at: '2026-09-24T08:07:13-05:00'
+      tree: 94f0736147602c711656327cd5f9ad1494fb97ef-dirty
+  - path: reference/station-verify-commands.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/sync-jira-github-workflow-templates/README.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: reference/test-charter.md
+    quadrant: reference
+    owner: fleet
+    kind: authored
+  - path: explanation/README.md
+    quadrant: explanation
+    owner: fleet
+    kind: pointer
+  - path: explanation/airgap-distribution-contract.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
+  - path: explanation/enterprise-deployment.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
+  - path: explanation/mcp-server-architecture.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
+  - path: explanation/one-chain-lock-and-mop.md
+    quadrant: explanation
+    owner: doctor
+    kind: authored
+  - path: explanation/platform-deployment-architecture.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
+  - path: explanation/platform-requirements.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
+  - path: explanation/pyforge-ecosystem-architecture.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
+  - path: explanation/pyforge-estate-overview.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
+  - path: explanation/the-detector-framework.md
+    quadrant: explanation
+    owner: doctor
+    kind: authored
+  - path: explanation/the-tier-model-and-data-flow.md
+    quadrant: explanation
+    owner: fleet
+    kind: authored
