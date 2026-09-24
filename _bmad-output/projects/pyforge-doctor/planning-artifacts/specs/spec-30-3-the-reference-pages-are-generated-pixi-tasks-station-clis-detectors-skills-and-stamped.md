@@ -6,7 +6,24 @@ status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: ['{project-root}/_bmad-output/projects/pyforge-doctor/planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md']
-deferred: []
+deferred:
+  - summary: >-
+      spec-pyforge-doctor/SPEC.md's `surface:` list does not yet list the five
+      new docs-* generator scripts + shared helper (Story 30.2 precedent:
+      scripts/docs_map_render.py was added there directly). SPEC.md is
+      hook-blocked from a hand-edit in this session (AGENTS.md: re-derive via
+      `bmad-spec`, never hand-edit) and a station-Spec `bmad-spec`
+      re-derivation is out of scope for this one story's dispatch.
+    evidence: |-
+      spec-pyforge-doctor/.memlog.md's 2026-09-24 entry already names the six
+      new script paths under "Surface gains (surface: list): ...". Interim
+      fix: allowlisted in scripts/spec_surface_allowlist.txt with a reason
+      citing this story and the pending SPEC.md re-derivation.
+      `python scripts/spec_surface_reconcile.py` reports OK with the
+      allowlist entries in place.
+    location: >-
+      scripts/spec_surface_allowlist.txt
+    severity: low
 declared_low_risk: false
 baseline_revision: '3811d6805cfd6d2e555aed54a769a344517b435d'
 ---
