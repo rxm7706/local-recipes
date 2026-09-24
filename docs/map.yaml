@@ -84,8 +84,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-09-24T08:07:13-05:00'
-      tree: 94f0736147602c711656327cd5f9ad1494fb97ef
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -151,8 +151,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-09-24T07:04:28-05:00'
-      tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
@@ -165,8 +165,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-09-24T07:04:28-05:00'
-      tree: 0dbb6842f74c702e75d1d535d26c03728ff55803-dirty
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
@@ -195,8 +195,8 @@ pages:
     sources:
       - .claude/skills
     stamp:
-      derived_at: '2026-09-24T08:07:13-05:00'
-      tree: 94f0736147602c711656327cd5f9ad1494fb97ef-dirty
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
@@ -206,8 +206,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-09-24T08:07:13-05:00'
-      tree: 94f0736147602c711656327cd5f9ad1494fb97ef-dirty
+      derived_at: '2026-09-24T08:08:15-05:00'
+      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet
