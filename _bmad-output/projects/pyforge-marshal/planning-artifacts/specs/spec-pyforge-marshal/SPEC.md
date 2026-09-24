@@ -2,7 +2,7 @@
 id: SPEC-pyforge-marshal
 spec: pyforge-marshal
 status: ready
-updated: "2026-09-19"
+updated: "2026-09-24"
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
   - docs/dreams/pyforge-marshal.md
@@ -1022,6 +1022,9 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-264 — the dispatch supervisor entrypoint reaches the coverage floor** ← spec-pyforge-marshal CAP-264 (ready 2026-09-20)
   - **intent:** `dispatch_supervisor/__main__.py` (623 statements, 388 uncovered, 35% on 2026-09-20) is unit-covered to the station floor (80%) through ports-driven tests of its finalize / halt / land / completion sequences, and the per-module floor exception the 53.2 landing added to `coverage_thresholds.toml` is removed in the same story.
   - **success:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` reports the module ≥ 80% with no exception entry; the gate's OK line names no dated exception for marshal.
+- **CAP-265 — a landing's ledger promotion repairs its own feed drift, never a human's job** ← spec-pyforge-marshal CAP-265 (ready 2026-09-24)
+  - **intent:** `dispatch_land_finalize`'s promotion of the just-landed story into the tracked `sprint-status-ledger.yaml` retries with the Tier-3 feed's stale-but-safe keys repaired from the tracked twin (the same pull-forward `--repair-feed` already does, which is strictly safe — the twin is the authoritative record and the operation only ever moves a key toward `done`) whenever `sprint-ledger-sync`'s regression guard refuses solely because of keys *other than* the one being promoted; the feed catch-up lands in the SAME commit as the story it promotes, never a separate PR. The guard still refuses, and still needs a human, when the disagreement is about the story actually being promoted — that stays a genuine judgment call, not blind drift.
+  - **success:** doctor 24.2 and 24.3 (PRs #1577/#1578 merged, spec `status: done`; PRs #1579/#1580 merged, spec `status: done`) are the reproduction fixture — replaying either landing's stale-feed shape (13 and 14 unrelated keys behind, respectively) against the fixed finalize promotes the just-landed key and pulls the drifted-but-safe keys forward in one commit, with no second PR opened; a refusal caused by the promoted story's *own* key disagreeing with the twin still stops and names it, unchanged; `pyforge-marshal-test` green.
 
 ## Constraints
 

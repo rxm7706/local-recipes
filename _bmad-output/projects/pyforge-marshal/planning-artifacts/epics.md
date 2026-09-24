@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 48  # 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 300  # 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
+epicCount: 52  # 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 311  # 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-24"   # RE-STAMPED: Epic 54 / Story 54.1 appended (spec-pyforge-marshal CAP-265, FR-211; a landing's ledger promotion repairs its own feed drift). Prior 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -6865,6 +6865,41 @@ So that Epic 53 closes with no named debt and the touched-module gate is whole a
 **And** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci pyforge-deps-test` green
 
 **Outcome (2026-09-20):** landed as PR #1557 (`c19a212727`, `Merge pyforge-marshal/53-3 into main`), module measured at 97% with branch coverage (101+ tests across `test_dispatch_supervisor_main_loop.py` and its review-pass additions); the per-module exception removed from `coverage_thresholds.toml` and its pinning test retired. A review pass (42 findings, 4 layers) found 5 review findings claiming unreachable code were actually reachable and patched them — no production change (`git diff` on `__main__.py` is empty). Ten deferred findings ingested as DW-FU-53-3 through DW-FU-53-3-10. Landing needed a hand-resolved merge conflict: the dispatch worktree's baseline predated PR #1556 (the headroom-ai/caveman pixi.toml fix), so both branches had appended to the same append-only `spec-pyforge-marshal` memlog — resolved by unioning both branches' entries. Ledger row promoted by hand (same shape as 53.2): the hand-resolved merge meant `dispatch_land_finalize` never ran, so the Tier-3 feed needed constructing before `sprint-ledger-sync`. First dispatch attempt (`...2eac5b84`) also hit the pre-existing headroom `[proxy]`-extra crash fixed in PR #1556; the retry after that fix hit Claude Code's 600s background-wait ceiling (fixed with `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` on the second retry, which succeeded). epic-53 closes: 53.1/53.2/53.3 all done.
+
+## Epic 54: A landing's ledger promotion repairs its own feed drift (spec-pyforge-marshal CAP-265)
+
+Minted 2026-09-24 from the station Dream's entry of the same name: doctor 24.2 and 24.3 (PRs #1577/#1578,
+#1579/#1580) each needed the identical manual `--repair-feed` + hand-promote + separate PR dance because
+`sprint-ledger-sync`'s regression guard correctly refused a promotion over unrelated stale feed keys (13 and
+14, respectively). Reproduced a third time minting this very epic: marshal's own Tier-3 feed needed
+`--repair-feed` first (18 regressed + 11 missing keys) before this epic's own backlog rows could sync. A new
+epic because Epic 51 — the `dispatch_land_finalize` reliability thread this continues — is `done` (a done key
+never moves). **HARD boundaries:** the regression guard's safety property is never weakened — a refusal
+caused by the promoted story's OWN key disagreeing with the twin still stops and still needs a human; the
+auto-repair only ever pulls the tracked twin's `done` keys forward into the feed, the same one-directional
+operation `--repair-feed` already performs by hand.
+
+### Story 54.1: The landing repairs its own feed drift before it gives up
+
+As a fleet operator landing a dispatched story,
+I want the promotion step to retry with the Tier-3 feed's stale-but-safe keys pulled forward from the tracked twin when the regression guard's refusal names only keys other than the one being promoted,
+So that a landing never needs a second, human-authored PR just to carry a feed catch-up the twin already proves is safe.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-265
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` (the promotion attempt: on a
+regression-guard refusal, partition the refused keys into "the story being promoted" vs "everything else"; when the promoted story's
+own key is not among the refused set, repair the feed from the twin — the same operation `scripts/promote_sprint_status.py
+--repair-feed` performs — and retry the promotion once, in the same commit as the story's landing), `scripts/promote_sprint_status.py`
+(the repair-and-retry becomes an importable function `dispatch_land_finalize` calls directly, not a second CLI invocation), tests
+covering: a refusal on unrelated keys only (auto-repairs and promotes), a refusal that includes the promoted story's own key (still
+stops, names it, unchanged), and the doctor 24.2/24.3 fixture replayed against the fix.
+**Given** doctor 24.2 and 24.3 each landed cleanly (PR merged, spec `status: done`) but left the tracked ledger at `backlog` because
+`sprint-ledger-sync` refused over 13 and 14 unrelated stale feed keys
+**When** `dispatch_land_finalize` hits that same refusal shape
+**Then** it repairs the feed from the tracked twin (the authoritative record) and promotes the just-landed key in the same commit —
+no `--repair-feed` run by hand, no second PR
+**And** a refusal caused by the promoted story's own key disagreeing with the twin still stops the automation and surfaces the
+disagreement for a human, exactly as today
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
