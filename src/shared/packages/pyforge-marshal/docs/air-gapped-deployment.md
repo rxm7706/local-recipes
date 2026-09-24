@@ -49,7 +49,7 @@ none. The fetch happens only when you run this verb, and only in its default for
 
 | Form | Network | What it does |
 |---|---|---|
-| `marshal context bootstrap` | **Yes**: `gh release download` of the `substrate-nightly` prerelease (`--tag`, `--repo` override) | Announces the fetch on stderr before it starts, records `data.source.network: true` in the envelope, then verifies and installs each missing member |
+| `marshal context bootstrap` | **Yes**: `gh release download` of the `substrate-nightly` prerelease (`--tag`, `--repo` override) | Announces the fetch on stderr before it starts, records `data.source.network: true` in the envelope, then verifies and installs each missing member. `gh` must be authenticated (`GH_TOKEN`, or `gh auth login`) with read access to the repository's releases |
 | `marshal context bootstrap --from <dir>` | **None** | Installs from a pair you already have on disk |
 | `marshal context bootstrap --offline` | **None** | Fetches nothing; rebuilds each missing member locally (`codegraph init -y`, `scribe graph compile --nightly`, `scribe index refresh`), and each rebuild is a named `MRS-CTX-003` finding |
 
@@ -64,17 +64,24 @@ mismatch, a malformed manifest or an unsafe archive entry installs nothing: it i
 **authenticity**: the manifest and the archive come from the same release, so anyone who can
 publish to that release can publish a consistent pair.
 
-**Air-gapped sites.** On a connected host, produce the pair and carry it across; then install it
-without the network:
+**Air-gapped sites.** On a connected host, download the published pair and carry it across; then
+install it without the network:
 
 ```bash
-# connected host (or download the substrate-nightly assets there)
-marshal context pack --out substrate-pack
+# connected host: the published substrate-nightly assets, built on a CI runner
+gh release download substrate-nightly --repo <owner>/<repo> \
+  --pattern substrate-manifest.json --pattern substrate.tar.gz --dir substrate-pack
 # air-gapped host, after copying substrate-pack/ across
 marshal context bootstrap --from substrate-pack
 ```
 
-`context pack` writes deterministic bytes: packing the same substrate twice gives the same archive
-sha256, so the pair you carry can be compared against the published one. With no pair and no
-network, `--offline` rebuilds each member from the checkout, provided the rebuild tools
-(`codegraph`, and `scribe` with its graph extras) are installed from your mirror.
+Prefer the published pair. Its CI runner has no session transcripts, so its `graph.json` carries
+none. **Warning:** `marshal context pack --out substrate-pack` on a working checkout ships
+`graph.json` exactly as that host compiled it. That includes session-transcript nodes and absolute
+home-directory paths. Use `pack` only when no published pair exists, and review what it carries
+before it leaves the host.
+
+`context pack` writes deterministic bytes: packing the same substrate twice on one host gives the
+same archive sha256. A carried copy of the published pair verifies against its own manifest. With
+no pair and no network, `--offline` rebuilds each member from the checkout, provided the rebuild
+tools (`codegraph`, and `scribe` with its graph extras) are installed from your mirror.

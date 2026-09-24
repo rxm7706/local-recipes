@@ -7,8 +7,8 @@ from __future__ import annotations
 import json
 
 import pytest
-
 from pyforge.core.errors import PyforgeError
+
 from pyforge.marshal.core import substrate
 from pyforge.marshal.core.model import Severity, Verdict
 from pyforge.marshal.core.verdict import compute_verdict
