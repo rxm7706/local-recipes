@@ -28,6 +28,7 @@ Story 30.3's ``generated-page-stale`` check).
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -35,6 +36,10 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# A top-level, single-line `description:` value -- the one field a failed
+# frontmatter parse most needs to recover (see parse_frontmatter's fallback).
+_DESCRIPTION_LINE_RE = re.compile(r"^description:[ \t]*(.+)$", re.MULTILINE)
 
 
 def git(root: Path, *args: str) -> str:
@@ -66,6 +71,25 @@ def render_header(generator_rel: str, task: str, stamp: dict[str, str]) -> str:
     )
 
 
+def _description_fallback(block: str) -> dict:
+    """When ``block`` fails to parse as YAML, recover just the single-line
+    ``description:`` value via regex rather than silently losing it.
+
+    A plain-scalar ``description:`` value containing a mid-value ``": "``
+    (e.g. ``description: Measure before optimizing. Five-step workflow:
+    Measure -> ...``) is invalid unquoted YAML -- it reads as the start of a
+    nested mapping -- so the WHOLE frontmatter block fails to parse. Found
+    live 2026-09-24: ``idea-refine``, ``performance-optimization``,
+    ``security-and-hardening`` and ``spec-driven-development`` all render
+    blank descriptions in the skills catalog this way, with no finding
+    raised anywhere (a caller's ``name`` fallback to the skill directory
+    name already covers that field; ``description`` has no such fallback).
+    Narrow on purpose: recovers the one field every caller actually needs
+    when the full parse fails, not a general line-by-line re-parse."""
+    match = _DESCRIPTION_LINE_RE.search(block)
+    return {"description": match.group(1).strip()} if match else {}
+
+
 def parse_frontmatter(text: str) -> dict:
     """Minimal ``---``-fenced YAML frontmatter reader. A second small copy
     of ``pyforge.doctor.sources.docs_currency``'s own
@@ -81,7 +105,7 @@ def parse_frontmatter(text: str) -> dict:
             try:
                 data = yaml.safe_load(block)
             except yaml.YAMLError:
-                return {}
+                return _description_fallback(block)
             return data if isinstance(data, dict) else {}
     return {}
 
