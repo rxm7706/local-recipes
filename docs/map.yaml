@@ -78,8 +78,11 @@ pages:
     kind: authored
   - path: how-to/pixi-tasks.md
     quadrant: how-to
-    owner: fleet
-    kind: authored
+    owner: steward
+    kind: generated
+    generator: scripts/docs_pixi_tasks.py
+    sources:
+      - pixi.toml
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -136,10 +139,25 @@ pages:
     quadrant: reference
     owner: fleet
     kind: authored
+  - path: reference/detectors.md
+    quadrant: reference
+    owner: doctor
+    kind: generated
+    generator: scripts/docs_detectors.py
+    sources:
+      - scripts/detectors.py
+      - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
     kind: authored
+  - path: reference/environments.md
+    quadrant: reference
+    owner: steward
+    kind: generated
+    generator: scripts/docs_environments.py
+    sources:
+      - pixi.toml
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet

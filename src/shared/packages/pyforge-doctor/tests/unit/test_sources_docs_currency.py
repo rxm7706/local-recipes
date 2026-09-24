@@ -318,6 +318,132 @@ def test_dead_looking_reference_covered_by_gitignore_is_not_flagged(tmp_path: Pa
     assert finding.status == DoctorStatus.OK
 
 
+# --- generated-page-stale (Story 30.3, spec-pyforge-doctor CAP-84) -----------
+
+
+def _write_generator_script(repo: Path, rel: str, *, exit_code: int) -> None:
+    path = repo / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"import sys\nsys.exit({exit_code})\n", encoding="utf-8")
+
+
+def test_generated_page_current_reports_no_finding(tmp_path: Path):
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/docs_pixi_tasks.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="generated content\n")
+    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=0)
+    _commit_all(tmp_path, "seed")
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.status == DoctorStatus.OK
+
+
+def test_generated_page_stale_emits_warn(tmp_path: Path):
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/docs_pixi_tasks.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="stale content\n")
+    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=1)
+    _commit_all(tmp_path, "seed")
+
+    findings = docs_currency.gather(tmp_path)
+    stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
+    assert len(stale) == 1
+    assert stale[0].status == DoctorStatus.WARN
+    assert stale[0].source == Source.DOCS_CURRENCY
+    assert stale[0].evidence["page"] == "docs/how-to/pixi-tasks.md"
+    assert stale[0].evidence["generator"] == "scripts/docs_pixi_tasks.py"
+
+
+def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    _commit_all(tmp_path, "seed")
+
+    findings = docs_currency.gather(tmp_path)
+    stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
+    assert len(stale) == 1
+    assert "declares no" in stale[0].message
+
+
+def test_generated_page_with_missing_generator_script_emits_warn(tmp_path: Path):
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/does_not_exist.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    _commit_all(tmp_path, "seed")
+
+    findings = docs_currency.gather(tmp_path)
+    stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
+    assert len(stale) == 1
+    assert "does not exist" in stale[0].message
+
+
+def test_generated_page_never_yet_generated_is_skipped(tmp_path: Path):
+    # No page file on disk at all -- docs-map-hygiene's territory, not this
+    # check's -- mirrors the authored-page-stale check's same discretion.
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/docs_pixi_tasks.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=1)
+    _commit_all(tmp_path, "seed")
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.status == DoctorStatus.OK
+
+
 # --- skill-dir-hygiene --------------------------------------------------------
 
 
