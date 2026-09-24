@@ -2,12 +2,13 @@
 title: '30.3: The reference pages are generated — pixi tasks, station CLIs, detectors, skills — and stamped'
 type: 'feature'
 created: '2026-09-19'
-status: 'ready'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: ['{project-root}/_bmad-output/projects/pyforge-doctor/planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md']
 deferred: []
 declared_low_risk: false
+baseline_revision: '3811d6805cfd6d2e555aed54a769a344517b435d'
 ---
 
 <intent-contract>
