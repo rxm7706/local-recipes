@@ -1179,6 +1179,36 @@ cmd = "python scripts/docs_map_render.py"
 description = "tests/scripts/test_docs_map_render.py — scripts/docs_map_render.py's schema-validated error handling and marker-splice logic (review pass 1, Story 30.2, spec-pyforge-doctor CAP-84). Lives here, not folded into pyforge-doctor-scripts-test (pyforge-ci), because docs_map_render.py imports pyforge.doctor.sources.docs_currency for its shared render/splice functions, which needs jsonschema — unavailable in pyforge-ci's deliberately dependency-free env (that file's own tests skip cleanly there via pytest.importorskip). pyforge-guild carries pyforge-doctor's run-deps already."
 cmd = "pytest tests/scripts/test_docs_map_render.py -q"
 
+# Story 30.3 (spec-pyforge-doctor CAP-84): the five reference-page generators —
+# one docs-* task per generator, each registered as its page's `generator:` in
+# docs/map.yaml, so docs-currency's generated-page-stale check (Story 30.3) can
+# run it with --check and read the exit code. Every task rewrites its page and
+# advances docs/map.yaml's stamp for it; run after editing the page's declared
+# source, or after docs-currency-check reports it stale.
+[feature.guild-tasks.tasks.docs-pixi-tasks]
+description = "Generator: regenerates docs/how-to/pixi-tasks.md from pixi.toml's own [feature.*.tasks] tables and [environments] — every task's description, grouped by declaring feature, with the environments that compose it (Story 30.3, spec-pyforge-doctor CAP-84). -- --check reports staleness (exit 1) without writing."
+cmd = "python scripts/docs_pixi_tasks.py"
+
+[feature.guild-tasks.tasks.docs-environments]
+description = "Generator: regenerates docs/reference/environments.md from pixi.toml's [environments] table — every environment's composed feature list and no-default-feature flag (Story 30.3, spec-pyforge-doctor CAP-84). -- --check reports staleness (exit 1) without writing."
+cmd = "python scripts/docs_environments.py"
+
+[feature.guild-tasks.tasks.docs-detectors]
+description = "Generator: regenerates docs/reference/detectors.md from scripts/detectors.py's own registry (discover() + _DOCTOR_SOURCE_TASKS, imported directly — no duplication) — every scanned script and doctor-owned source, its scope and pixi task, plus any registry gap discover() itself reports (Story 30.3, spec-pyforge-doctor CAP-84). -- --check reports staleness (exit 1) without writing."
+cmd = "python scripts/docs_detectors.py"
+
+[feature.guild-tasks.tasks.docs-skills-catalog]
+description = "Generator: regenerates docs/reference/skills-catalog.md from every .claude/skills/*/ directory's own SKILL.md (or SKF-exported active/<name>/SKILL.md, or skill-brief.yaml) frontmatter (Story 30.3, spec-pyforge-doctor CAP-84). -- --check reports staleness (exit 1) without writing."
+cmd = "python scripts/docs_skills_catalog.py"
+
+[feature.guild-tasks.tasks.docs-station-cli]
+description = "Generator: regenerates docs/reference/station-cheat-sheet.md from each PyForge station's own pyproject.toml [project.scripts] entry, its live --help text (captured only for a station resolvable on PATH in the CURRENT environment — see the script's own docstring for why atlas/mason/warden get a deterministic note instead of a cross-env pixi invocation), and whether pixi.toml's feature.pyforge-guild composes it (Story 30.3, spec-pyforge-doctor CAP-84). Run under -e pyforge-guild for full coverage of the five guild-hosted stations. -- --check reports staleness (exit 1) without writing."
+cmd = "python scripts/docs_station_cli.py"
+
+[feature.guild-tasks.tasks.docs-gen-test]
+description = "tests/scripts/test_docs_{gen_common,pixi_tasks,environments,detectors,skills_catalog,station_cli}.py — the five Story 30.3 doc generators plus their shared _docs_gen_common.py plumbing (spec-pyforge-doctor CAP-84). Lives here, not folded into pyforge-doctor-scripts-test (pyforge-ci), same reason as docs-map-render-test: these import PyYAML (via _docs_gen_common), unavailable in pyforge-ci's deliberately dependency-free env (each file skips cleanly there via pytest.importorskip)."
+cmd = "pytest tests/scripts/test_docs_gen_common.py tests/scripts/test_docs_pixi_tasks.py tests/scripts/test_docs_environments.py tests/scripts/test_docs_detectors.py tests/scripts/test_docs_skills_catalog.py tests/scripts/test_docs_station_cli.py -q"
+
 [feature.guild-tasks.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."
 cmd = "python -m pyforge.doctor.sources pixi-currency-ledger"
