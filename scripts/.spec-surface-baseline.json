@@ -4076,6 +4076,8 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "d52234d9adcf0f20cab6b4e4b2033730bb10beaa",
+   "scripts/coverage_gates_ci.py": "5564b181d0f84cecffebc2fa66be8900d29eb745",
+   "scripts/run_station_coverage_gate.py": "a0e4044cf82545f34103822e3152105b82be14de",
    "src/shared/packages/pyforge-testing-kit/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-testing-kit/README.md": "9f5ec344f2daec5bf4d851dd3c397d64b2a1d2f0",
    "src/shared/packages/pyforge-testing-kit/pixi.toml": "503c4dfd85df11b09e0dd7a008bf3c7b4317a80a",
@@ -4092,7 +4094,7 @@
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_families.py": "38003507640139348c885bd4d15e0b3602fadfa5",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py": "f3191c31cb02585a8927cd9cb6ec50872a11ae66"
   },
-  "memlog": "07f2ee300082ac30dae11ec017e03b7c424ed9cc"
+  "memlog": "e170c31d1693175d63b5e20a9ea062418f1da88b"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {
