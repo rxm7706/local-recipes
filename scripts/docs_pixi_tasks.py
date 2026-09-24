@@ -26,6 +26,7 @@ membership below comes straight from ``pixi.toml``'s own tables.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -36,6 +37,13 @@ import _docs_gen_common as common  # noqa: E402
 PAGE_REL = "how-to/pixi-tasks.md"
 GENERATOR_REL = "scripts/docs_pixi_tasks.py"
 TASK_NAME = "docs-pixi-tasks"
+
+# A `scripts/`-rooted .sh/.py path referenced from a task's own `cmd` string
+# (e.g. `bash scripts/ensure-bmad-preflight.sh`) -- checked for existence so
+# a task shelling out to a script that was since deleted is flagged, not
+# silently listed as an ordinary task (found live: `bmad-preflight` still
+# shells to scripts/ensure-bmad-preflight.sh, which does not exist).
+_SCRIPT_REF_RE = re.compile(r"scripts/[A-Za-z0-9_./-]+\.(?:sh|py)")
 
 _INTRO = """\
 # Pixi tasks
@@ -93,6 +101,19 @@ def _feature_tasks(data: dict) -> dict[str, dict[str, dict]]:
     return out
 
 
+def _missing_script_refs(root: Path, cmd: object) -> list[str]:
+    """`scripts/*.sh`/`scripts/*.py` paths a task's own `cmd` string
+    references that do not exist on disk, in first-seen order."""
+    if not isinstance(cmd, str):
+        return []
+    missing: list[str] = []
+    for match in _SCRIPT_REF_RE.finditer(cmd):
+        ref = match.group(0)
+        if ref not in missing and not (root / ref).is_file():
+            missing.append(ref)
+    return missing
+
+
 def render(root: Path, stamp: dict[str, str]) -> str:
     data = _pixi_data(root)
     feature_tasks = _feature_tasks(data)
@@ -119,6 +140,10 @@ def render(root: Path, stamp: dict[str, str]) -> str:
         for task_name in sorted(tasks):
             description = tasks[task_name].get("description")
             cell = description.replace("|", "\\|").replace("\n", " ") if description else "*(no description)*"
+            missing = _missing_script_refs(root, tasks[task_name].get("cmd"))
+            if missing:
+                refs = ", ".join(f"`{ref}`" for ref in missing)
+                cell += f" — ⚠ script not found: {refs}"
             lines.append(f"| `{task_name}` | {cell} |")
         lines.append("")
 

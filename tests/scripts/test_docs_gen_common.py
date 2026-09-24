@@ -96,6 +96,28 @@ def test_parse_frontmatter_returns_empty_dict_on_malformed_yaml():
     assert common.parse_frontmatter(text) == {}
 
 
+def test_parse_frontmatter_recovers_description_via_regex_when_the_block_fails_to_parse():
+    # Real content (.claude/skills/performance-optimization/SKILL.md, found live
+    # 2026-09-24): a mid-value ": " in an unquoted plain scalar is invalid YAML
+    # (reads as a nested mapping), so the whole block fails to parse -- the
+    # regex fallback must still recover `description` rather than losing it.
+    text = (
+        "---\n"
+        "name: performance-optimization\n"
+        "description: Measure before optimizing. Five-step workflow: Measure -> "
+        "Identify -> Fix -> Verify -> Guard. No guessing.\n"
+        "source: https://github.com/addyosmani/agent-skills\n"
+        "---\n\nbody\n"
+    )
+
+    result = common.parse_frontmatter(text)
+
+    assert result == {
+        "description": "Measure before optimizing. Five-step workflow: Measure -> "
+        "Identify -> Fix -> Verify -> Guard. No guessing."
+    }
+
+
 # --- update_map_stamp ------------------------------------------------------
 
 
