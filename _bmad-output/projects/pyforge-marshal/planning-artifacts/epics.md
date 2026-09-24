@@ -4686,7 +4686,8 @@ So that a spin session's already-provisioned codegraph index (built since Story 
 **Given** a spin session in a loop home with `[context."structure-graph"].enabled = true` and a present `.codegraph/codegraph.db` **When** step-01's "Load context" item runs **Then** the agent is told to query the index (`codegraph context <task>` / `codegraph explore <query>`) instead of unbounded file reads for that same context-gathering step
 **And** a loop home with the layer off, or with no index present (dispatch worktrees, until 28.31 ships), reads nothing new — the reference is conditioned on the index's own presence, not on which engine launched the session
 **And** the existing epic-context/planning-graph/derived-context context sources are unchanged — this is an additional navigation aid, not a replacement for any of them
-**Status:** backlog
+
+**Outcome:** landed — `.claude/skills/bmad-build-auto/step-01-clarify-and-route.md` gained the new bullet in item 1, self-gated on the index's presence; the tracked ledger and this story's own spec (`spec-28-33-*.md`, Auto Run Result `Status: done`) both confirm it. This inline marker read `**Status:** backlog` after the story landed — corrected 2026-09-24 (found while decomposing Epic 55, the fleet rollout this unblocked).
 
 ## Epic 29: A harness halt of `done` ends the session, not the review
 
@@ -6900,6 +6901,33 @@ stops, names it, unchanged), and the doctor 24.2/24.3 fixture replayed against t
 no `--repair-feed` run by hand, no second PR
 **And** a refusal caused by the promoted story's own key disagreeing with the twin still stops the automation and surfaces the
 disagreement for a human, exactly as today
+
+## Epic 55: Wire and structure-graph roll out fleet-wide, finishing 28.32's deferred scope (token-economy CAP-3)
+
+Minted 2026-09-24 from the station Dream's token-economy sub-thread, 2026-09-24 entry. Story 28.32 (done,
+fleet rollout) deliberately rolled out only `derived-context`+`output` to all 8 stations, leaving
+`wire`+`structure-graph` declared-off pending two named blockers — Story 28.31 (dispatch-worktree
+provisioning-cost spike) and Story 28.33 (spin reference wiring). Both shipped (2026-09-10 and
+2026-09-20), but nobody returned to finish 28.32's own deferred scope. A new epic because Epic 28 is
+`done` (a done key never moves). **HARD boundaries:** deletion, not addition — the 3 declared
+`[context.X]` blocks each station carries are byte-identical no-ops against `policy-defaults.toml`'s
+own repo-wide default, so the fix removes the override rather than adding the two missing layers by
+hand; no production code changes, policy-file text only.
+
+### Story 55.1: The 7 non-marshal stations stop overriding `[context]` and inherit the clean default
+
+As a marshal operator,
+I want the 7 non-marshal stations' `marshal-policy.toml` to stop declaring a partial `[context]` override, now that Story 28.31 (dispatch-cost spike) and Story 28.33 (spin wiring) have both shipped,
+So that `wire` and `structure-graph` — the two layers 28.32 deliberately left behind — reach every station, not just `marshal`, and the savings comparison isn't leaving two of five layers on the table fleet-wide.
+
+**Type:** chore • **Effort:** S • **Deps:** 28.31, 28.33 (both done) • **FR/AD:** token-economy CAP-3
+**Note:** Found 2026-09-24 auditing the fleet's token-economy state: `marshal` itself declares no `[context]` block and inherits all 5 layers from `policy-defaults.toml` cleanly; every other station's own policy file declares exactly the 3 layers 28.32 rolled out (`planning-graph`/`derived-context`/`output`, each just `enabled = true`) — and per `core/policy.py`'s documented wholesale-replace composition, declaring any part of `[context]` at station level replaces the ENTIRE 5-layer default, silently defaulting the undeclared `wire`/`structure-graph` to off rather than inheriting the repo-wide `true`/`"auto"`. Since the 3 declared blocks are byte-identical no-ops against the repo default, the fix is deletion, not addition: remove the override entirely so each station inherits the clean shape, exactly as `policy-defaults.toml`'s own comment recommends. No production code changes — policy-file text only.
+**Given** the 7 non-marshal stations each declaring the same stale 3-of-5 `[context]` override, with its comment still citing 28.31/28.33 as pending blockers that have since shipped
+**When** each station's `marshal-policy.toml` has that override block removed
+**Then** `marshal factory dispatch` for any of the 7 stations resolves all 5 context layers the same way `marshal`'s own dispatches already do (`wire` auto-resolved per harness, `structure-graph` on) — verified live per station via the same `context: {...}` block a dispatch launch already reports
+**And** no other policy content changes; the removed blocks' comments are replaced with a short note explaining the station now inherits the repo-wide default
+
+**Outcome (2026-09-24):** landed hand-driven (config-only, no dev/review loop needed) — all 7 stations' `marshal-policy.toml` stale 3-of-5 override removed. `epics.md` Story 28.33's own inline status marker corrected in the same pass (found stale while decomposing this epic).
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

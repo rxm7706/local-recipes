@@ -391,6 +391,16 @@ def test_registered_codes_contains_the_real_codes():
             # and MRS-PREFLIGHT-015).
             "MRS-CTX-001",
             "MRS-CTX-002",
+            # Story 46.1 (a bare clone bootstraps the substrate,
+            # spec-pyforge-marshal CAP-192): 003 WARN rebuilt locally, 004
+            # UNEVALUABLE neither fetched nor rebuilt, 005 WARN fetched pack
+            # refused, 006 WARN pack with a gap, 007 UNEVALUABLE nothing
+            # packable.
+            "MRS-CTX-003",
+            "MRS-CTX-004",
+            "MRS-CTX-005",
+            "MRS-CTX-006",
+            "MRS-CTX-007",
             # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
             # `marshal context retrieve`'s degradation code -- WARN, never
             # blocking; falls back to Story 28.8's epic-context file.

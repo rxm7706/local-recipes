@@ -67,6 +67,7 @@ These guides map the internal PyForge scripts to their corresponding human opera
 | [`how-to/monitor-the-fleet.md`](how-to/monitor-the-fleet.md) | How-to | Generating a real-time fleet picture and scanning the estate |
 | [`how-to/configure-your-coding-agent.md`](how-to/configure-your-coding-agent.md) | How-to | Per-harness setting or command so every coding agent starts from `AGENTS.md`; Claude Code's `agents-md` mode pin and host check |
 | [`how-to/manage-worktrees-with-bmad.md`](how-to/manage-worktrees-with-bmad.md) | How-to | Managing worktrees, branch sweeping, and `bmad-switch` caveats |
+| [`how-to/launch-a-cost-saving-interactive-session.md`](how-to/launch-a-cost-saving-interactive-session.md) | How-to | `caveman-install` + `headroom wrap claude` for the interactive session path — the manual equivalent of the savings `marshal factory dispatch` applies automatically |
 | [`explanation/the-detector-framework.md`](explanation/the-detector-framework.md) | Explanation | Rationale for dynamic AST-discovery and the 'unknown, never green' inversion |
 
 ## Relocated in Story 22.5 (entry-point pointers remain until 22.6)
@@ -198,6 +199,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`how-to/feedstock-failure-remediation.md`](how-to/feedstock-failure-remediation.md) | fleet | authored |
 | [`how-to/feedstock-platform-expansion.md`](how-to/feedstock-platform-expansion.md) | fleet | authored |
 | [`how-to/github-actions-recipe-ci.md`](how-to/github-actions-recipe-ci.md) | fleet | authored |
+| [`how-to/launch-a-cost-saving-interactive-session.md`](how-to/launch-a-cost-saving-interactive-session.md) | fleet | authored |
 | [`how-to/manage-worktrees-with-bmad.md`](how-to/manage-worktrees-with-bmad.md) | fleet | authored |
 | [`how-to/manticore-studio.md`](how-to/manticore-studio.md) | fleet | authored |
 | [`how-to/monitor-the-fleet.md`](how-to/monitor-the-fleet.md) | fleet | authored |

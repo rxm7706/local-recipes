@@ -506,7 +506,7 @@
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
-   "docs/MAP.md": "57f8d4a21bce349917a512e84f792cd33aab6f08",
+   "docs/MAP.md": "647d5a5b1a5931cb15122ba5ecc3db62511c9d5c",
    "docs/_STYLE_GUIDE.md": "7768e9d1af089f55fbdb3c71629130fb49b9e1a6",
    "docs/explanation/README.md": "81b1b482086c5e46ff8536f0e22e69866da460b5",
    "docs/explanation/airgap-distribution-contract.md": "02160d11cded02af845a6d238562b99ae3a29df8",
@@ -530,6 +530,7 @@
    "docs/how-to/feedstock-failure-remediation.md": "91e90ba6b55ce01b38e536d86709230eac5f2b2e",
    "docs/how-to/feedstock-platform-expansion.md": "aa92bd1c61a0cbf1db5aa3f67601542c4d2c2b3d",
    "docs/how-to/github-actions-recipe-ci.md": "c9fdf96e110baa00068ee29da54e5e32ed4f8898",
+   "docs/how-to/launch-a-cost-saving-interactive-session.md": "534ff36c9ae1a73d04d05c1cdec982a0987903dd",
    "docs/how-to/manage-worktrees-with-bmad.md": "6adc29670139258805fccc49c073c30bf6440545",
    "docs/how-to/manticore-studio.md": "708c32a464cd31bd9e118dd88dd186927399983b",
    "docs/how-to/monitor-the-fleet.md": "9fd532b364f8ff1d692772334318a058d67df868",
@@ -544,7 +545,7 @@
    "docs/how-to/station-cli-operations.md": "9e2551ec419f3541373843fc98f5d229fe9774bc",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "5e96a3bbd5d6707576a87bc3f2c04e3dbc806e1d",
    "docs/how-to/troubleshooting-recipe-builds.md": "4c029ebd50084d47dc00bbd80aaad2372fbaa754",
-   "docs/map.yaml": "f38c3cbd42c7090b1e4fba39b771a39329bf45df",
+   "docs/map.yaml": "129fbe966f3d82528ad812b126e86e514d4a9b4b",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "85b4d0d4dd4cb85f640d492c8cfad832e2ad2e20",
    "docs/tutorials/local-platform-development.md": "c6acf468d653c6698bb8a1a0d7f675351cf72f8f",
@@ -633,6 +634,7 @@
    "src/shared/packages/pyforge-doctor/tests/fixtures/status_body/unresolvable-dream.md": "4f3db2901ed5e409ff6542b05729a25cf31956cd",
    "src/shared/packages/pyforge-doctor/tests/meta/test_atlas_sole_mcp_import.py": "63146952aed874f1f7a0f04edcb6f5b73657aded",
    "src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py": "c52782a2a7683e23b0dd5e4b7a33b1af648be8f3",
+   "src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py": "3bd7b2d6ed04c0c6789e8d85c7d6fe678d063532",
    "src/shared/packages/pyforge-doctor/tests/meta/test_env_hygiene_no_execution.py": "76c31c9d0773b288d65156a70b55e8adf731635e",
    "src/shared/packages/pyforge-doctor/tests/meta/test_no_warden_import.py": "567720d4a461f93c45d3dfe2203155d76830627f",
    "src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py": "a6237d02a0e324155ece70e8c7bc255538022aac",
@@ -715,7 +717,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "51e10e2c03c89f8dbf99e4f082bfcb57ab8c5155"
+  "memlog": "caddd2eb394709aeb4f1db62ccce79c3317efd3c"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},

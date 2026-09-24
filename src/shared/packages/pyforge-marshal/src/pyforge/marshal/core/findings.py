@@ -1852,6 +1852,19 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # today's compile-on-hunch behavior with a named reason).
         "MRS-CTX-001",
         "MRS-CTX-002",
+        # Story 46.1 (a bare clone bootstraps the substrate, spec-pyforge-
+        # marshal CAP-192): `marshal context bootstrap` / `context pack`.
+        # 003 WARN (a member was rebuilt locally -- names the command run
+        # and why the fetch did not serve it); 004 UNEVALUABLE (a member
+        # was neither fetched nor rebuilt); 005 WARN (a fetched pack was
+        # refused -- digest mismatch, malformed manifest or unsafe entry --
+        # and installed nothing); 006 WARN (`context pack` wrote the pair
+        # without an absent member); 007 UNEVALUABLE (nothing packable).
+        "MRS-CTX-003",
+        "MRS-CTX-004",
+        "MRS-CTX-005",
+        "MRS-CTX-006",
+        "MRS-CTX-007",
         # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
         # `marshal context retrieve`'s degradation code -- WARN, never
         # blocking; falls back to Story 28.8's epic-context file.

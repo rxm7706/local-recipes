@@ -73,7 +73,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from pyforge.core.errors import PyforgeError
-from pyforge.core.process import PosixProcess, ProcessError
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ...ports.fs import FsPort
 from ..detect.findings import Finding, FindingType, Severity
@@ -220,7 +220,7 @@ def render_deployed_skill(upstream: str, model_version: ModelVersion) -> str:
     return f"{prefix}\n{begin}\n{body}\n{end}\n"
 
 
-def build_codegraph_index(repo_root: Path, *, stale: bool, process: PosixProcess | None = None) -> str | None:
+def build_codegraph_index(repo_root: Path, *, stale: bool, process: ProcessPort | None = None) -> str | None:
     """Build or resync the codegraph index in ``repo_root``. Returns
     ``None`` on success or a human-readable failure reason.
 
@@ -240,7 +240,7 @@ def build_codegraph_index(repo_root: Path, *, stale: bool, process: PosixProcess
     quiet flag; ``sync``'s ``-q`` is documented "for git hooks", which is
     this call's shape exactly.
 
-    ``process`` is an injectable ``PosixProcess`` (the same seam
+    ``process`` is an injectable ``ProcessPort`` (the same seam
     ``detect/kit.py::head_commit_timestamp`` takes) so the argv, the flags
     and the timeouts above are pinned by a test rather than only by this
     docstring -- the `init`-vs-`index` correction was found by running the
