@@ -38,23 +38,29 @@ treats alike -- see ``_EIGHT_STATIONS`` below -- Doctor's own tree
 included; there is no legitimate reason for Doctor to define or import the
 evaluator either) for a module that EITHER:
 
-* **defines** the evaluator -- a file at the module path
-  ``pyforge.<station>.coverage_gate`` (or its package form,
-  ``coverage_gate/__init__.py``), the exact shape the marshal violation
-  took; or
+* **defines** the evaluator -- a file named ``coverage_gate.py`` (or a
+  ``coverage_gate/`` package directory, ``__init__.py`` or not) anywhere
+  under a station's ``src/pyforge/<station>/`` tree -- deliberately not
+  restricted to a direct child: a nested reintroduction is the identical
+  violation one directory deeper, and the marshal shim this closes is one
+  instance of the shape, not its only legal position; or
 * **imports** it -- any ``import``/``from ... import`` statement, absolute
   or relative, naming a module whose last dotted component is
-  ``coverage_gate`` (a station package importing the relocated
-  ``scripts/coverage_gate.py`` as a library would be the same class of
-  violation wearing a different hat: the eight ``pyforge-<station>-
-  coverage-gate`` pixi tasks and ``coverage-gates.yml`` invoke it as a
-  subprocess CLI, never as an import).
+  ``coverage_gate``, OR a dynamic ``importlib.import_module(...)``/
+  ``__import__(...)`` call whose string argument's last dotted component
+  is ``coverage_gate`` (a station package importing the relocated
+  ``scripts/coverage_gate.py`` as a library -- statically or dynamically
+  -- would be the same class of violation wearing a different hat: the
+  eight ``pyforge-<station>-coverage-gate`` pixi tasks and
+  ``coverage-gates.yml`` invoke it as a subprocess CLI, never as an
+  import).
 
 ``pyforge-core`` and ``pyforge-testing-kit`` are excluded from the scan
 roster: neither has its own ``pyforge-<station>-coverage-gate`` pixi task
 (the eight named in ``_EIGHT_STATIONS`` are the complete roster
 ``coverage-gates.yml`` gates), so neither is a "station" in this contract's
-sense.
+sense -- CAP-3's own text scopes the prohibition to ``pyforge.<station>``
+modules, and neither package is one.
 
 **Non-vacuous proof, per CAP-3's own Given/When/Then.** ``pytest``'s
 ``tmp_path`` fixture builds a throwaway ``pyforge.<station>.coverage_gate``
@@ -62,13 +68,28 @@ shim (parametrized across all eight stations, not just marshal) in a temp
 tree structurally identical to ``src/shared/packages/pyforge-<station>/
 src/pyforge/<station>/`` and proves the scan flags it, then proves the
 REAL, current (moved) repo tree scans clean -- mirroring
-``test_no_warden_import.py``'s and ``pyforge-core``'s
-``test_process_sole_ownership.py``'s own "guard fires on synthetic
-violation, guard is silent on the real tree" style.
+``test_no_warden_import.py``'s "guard fires on synthetic violation, guard
+is silent on the real tree" style, applied fleet-wide the way
+``pyforge-core``'s ``test_process_sole_ownership.py`` applies its own
+subprocess guard fleet-wide.
 
-Scans SOURCE trees (reads files from disk), matching every other
-``pyforge-core``/``pyforge-doctor`` meta test's convention -- not the
-installed package.
+**Divergence from Doctor's own sibling meta tests, deliberate.** Every
+OTHER file in this directory (``test_no_warden_import.py``,
+``test_atlas_sole_mcp_import.py``, ...) scans the INSTALLED
+``pyforge.doctor`` package via ``pyforge.doctor.__file__``, because they
+only ever need to see Doctor's own tree. This module instead scans SOURCE
+trees (reads files from disk, ``pyforge-core``'s
+``tests/meta/conftest.py`` convention) because it must reach the other
+seven stations' trees too -- ``pyforge-doctor`` does not depend on or
+install them, so there is no installed-package path to them at all. A
+second, narrower copy of this same check lives in ``pyforge-core``'s own
+``tests/meta/`` (see that file's docstring) purely so CI runs it on a PR
+that touches only one non-doctor, non-marshal station: this package's own
+CI job triggers on Doctor's own changed path, which such a PR never
+touches; ``pyforge-core-test`` already runs on any single-station change
+(Story 52.2), so it is the only job guaranteed to catch that case. Keep
+both copies' violation-detection logic in sync when either changes; this
+file stays the canonical, fully-documented, exhaustively-tested contract.
 """
 
 from __future__ import annotations
@@ -120,13 +141,15 @@ def _station_source_files(root: Path) -> list[Path]:
 
 
 def _defines_evaluator(path: Path) -> bool:
-    """True when ``path`` itself IS the module path
+    """True when ``path`` itself IS, or lives inside, the module path
     ``pyforge.<station>.coverage_gate`` -- a plain module (the exact shape
-    the marshal violation took) or its package form
-    (``coverage_gate/__init__.py``)."""
+    the marshal violation took) or ANY file inside a ``coverage_gate/``
+    directory, ``__init__.py`` or not: a PEP 420 namespace package (no
+    ``__init__.py``) holding the evaluator's implementation under
+    differently-named files is the identical violation one file deeper."""
     if path.stem == "coverage_gate":
         return True
-    return path.name == "__init__.py" and path.parent.name == "coverage_gate"
+    return path.parent.name == "coverage_gate"
 
 
 def _imports_evaluator(tree: ast.Module) -> list[int]:
@@ -142,6 +165,20 @@ def _imports_evaluator(tree: ast.Module) -> list[int]:
             for alias in node.names:
                 if alias.name == "coverage_gate":
                     violations.append(node.lineno)
+        elif isinstance(node, ast.Call):
+            # Dynamic reintroduction: importlib.import_module("...coverage_gate")
+            # or __import__("...coverage_gate") never appears as an
+            # ast.Import/ImportFrom node at all -- a station module using
+            # either to load the relocated scripts/coverage_gate.py (or a
+            # reintroduced copy) as a library would otherwise scan clean.
+            func = node.func
+            is_import_module_call = isinstance(func, ast.Attribute) and func.attr == "import_module"
+            is_dunder_import_call = isinstance(func, ast.Name) and func.id == "__import__"
+            if (is_import_module_call or is_dunder_import_call) and node.args:
+                first_arg = node.args[0]
+                if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
+                    if first_arg.value.split(".")[-1] == "coverage_gate":
+                        violations.append(node.lineno)
     return sorted(set(violations))
 
 
