@@ -130,6 +130,30 @@ def _run(repo: Path, engine, capsys, **kwargs) -> dict:
     return envelope
 
 
+def _bundle_args(
+    repo: Path,
+    *,
+    epic: str = "28",
+    project: str | None = _SLUG,
+    expect_digest: str | None = None,
+    format: str = "json",
+):
+    return argparse.Namespace(
+        project=project,
+        epic=epic,
+        root=str(repo),
+        expect_digest=expect_digest,
+        format=format,
+    )
+
+
+def _run_bundle(repo: Path, capsys, **kwargs) -> dict:
+    code = context_cli.run_context_bundle(_bundle_args(repo, **kwargs))
+    envelope = json.loads(capsys.readouterr().out)
+    envelope["exit_code"] = code
+    return envelope
+
+
 @pytest.fixture
 def engine(tmp_path: Path, monkeypatch) -> _FakeScribeEngine:
     monkeypatch.setattr(scribe_cli.shutil, "which", lambda _n: "/usr/bin/scribe")
