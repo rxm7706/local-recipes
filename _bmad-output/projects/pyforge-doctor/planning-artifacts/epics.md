@@ -2467,3 +2467,14 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+*`arch→epics` cascade (CHAIN-CURRENCY-RUNBOOK.md): the architecture spine re-dated to
+2026-09-24 (Story 30.3 landing — the five reference-page generators) past this epics'
+2026-09-20 stamp, past the 2-day feeds grace window. Story 30.3's own text above already
+describes the as-implemented surface (generator tasks, the five pages, `docs-currency`'s
+generated-page check) with no gap found on validation; no epic, story or AD content change
+required. Story 30.3's `**Status:**` line and the tracked `sprint-status-ledger.yaml` row stay
+`backlog` here on purpose — story-status/ledger promotion is a separate post-review landing
+step, not this currency cascade's job. `updated:` bumped to record the cascade.*
