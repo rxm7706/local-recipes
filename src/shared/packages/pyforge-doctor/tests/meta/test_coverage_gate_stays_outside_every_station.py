@@ -251,6 +251,43 @@ def test_guard_fires_on_a_planted_coverage_gate_package(tmp_path: Path):
     assert _module_violations(shim) == [1]
 
 
+def test_guard_fires_on_a_planted_coverage_gate_namespace_package(tmp_path: Path):
+    """A PEP 420 namespace package -- a ``coverage_gate/`` directory with NO
+    ``__init__.py``, implementation split across differently-named files --
+    is the identical violation one file deeper, not an escape hatch."""
+    shim = tmp_path / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "coverage_gate" / "evaluate.py"
+    shim.parent.mkdir(parents=True)
+    shim.write_text("def evaluate() -> bool:\n    return True\n", encoding="utf-8")
+    assert _module_violations(shim) == [1]
+
+
+def test_guard_fires_on_a_dynamic_import_module_call(tmp_path: Path):
+    module = tmp_path / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "cli.py"
+    module.parent.mkdir(parents=True)
+    module.write_text(
+        "import importlib\nimportlib.import_module('scripts.coverage_gate')\n",
+        encoding="utf-8",
+    )
+    assert _module_violations(module) == [2]
+
+
+def test_guard_fires_on_a_dunder_import_call(tmp_path: Path):
+    module = tmp_path / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "cli.py"
+    module.parent.mkdir(parents=True)
+    module.write_text("__import__('pyforge.marshal.coverage_gate')\n", encoding="utf-8")
+    assert _module_violations(module) == [1]
+
+
+def test_guard_does_not_fire_on_an_unrelated_dynamic_import(tmp_path: Path):
+    module = tmp_path / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "cli.py"
+    module.parent.mkdir(parents=True)
+    module.write_text(
+        "import importlib\nimportlib.import_module('pyforge.marshal.cli')\n",
+        encoding="utf-8",
+    )
+    assert _module_violations(module) == []
+
+
 def test_guard_fires_on_an_absolute_import_of_the_evaluator(tmp_path: Path):
     module = tmp_path / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "cli.py"
     module.parent.mkdir(parents=True)
