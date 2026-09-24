@@ -685,31 +685,14 @@ verify_commands = [
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
-# context.planning-graph (Story 28.27, token-economy CAP-6/CAP-13): verified
-# live 2026-09-10 against pyforge-marshal (the canary) -- grounded retrieval,
-# real measured savings, zero further engineering needed. scribe recall's
-# own project-scoping gap (a lexical query naming a project slug could still
-# be outscored by another project's denser-vocabulary node) was found and
-# fixed in the same pass -- see scribe Story marshal-28.27 / recall.py's own
-# scope= parameter. wire/output/structure-graph/derived-context stay
-# declared-off (undeclared = default off) pending Story 28.31 (dispatch
-# cost spike) / 28.33 (spin reference wiring).
-[context."planning-graph"]
-enabled = true
-
-# context.derived-context (Story 28.28/28.32, token-economy CAP-5): scribe's
-# `index refresh --declare` shipped and the lean pyforge-scribe env's
-# missing cocoindex dependency was fixed -- verified live 2026-09-10
-# against pyforge-marshal, mode: incremental with zero findings.
-[context."derived-context"]
-enabled = true
-
-# context.output (Story 28.30/28.32, token-economy CAP-3): caveman skill
-# deployment now reaches dispatch worktrees too (not just loop homes), and
-# bmad-build-auto's own step-01-clarify-and-route.md tells the agent to
-# invoke it.
-[context.output]
-enabled = true
+# context (Story 28.34, token-economy CAP-3): this station declares NO
+# [context] block -- 28.31 (dispatch-cost spike) and 28.33 (spin reference
+# wiring) both landed 2026-09-10/20, so the two layers this file used to
+# hold declared-off (wire, structure-graph) are no longer blocked. Per
+# policy-defaults.toml's own composition rule (declaring ANY part of
+# [context] here wholesale-replaces the 5-layer default for this station),
+# the fix is to declare nothing and inherit the clean repo-wide default:
+# all 4 harness-agnostic layers on, wire auto-resolved per harness.
 
 # 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
 # ladder as explicit {harness, model} tables so a Cursor id cannot land

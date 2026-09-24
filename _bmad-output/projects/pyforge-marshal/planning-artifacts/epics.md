@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 48  # 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 300  # 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
+epicCount: 52  # 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 311  # 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-24"   # RE-STAMPED: Epic 54 / Story 54.1 appended (spec-pyforge-marshal CAP-265, FR-211; a landing's ledger promotion repairs its own feed drift). Prior 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -4686,7 +4686,8 @@ So that a spin session's already-provisioned codegraph index (built since Story 
 **Given** a spin session in a loop home with `[context."structure-graph"].enabled = true` and a present `.codegraph/codegraph.db` **When** step-01's "Load context" item runs **Then** the agent is told to query the index (`codegraph context <task>` / `codegraph explore <query>`) instead of unbounded file reads for that same context-gathering step
 **And** a loop home with the layer off, or with no index present (dispatch worktrees, until 28.31 ships), reads nothing new — the reference is conditioned on the index's own presence, not on which engine launched the session
 **And** the existing epic-context/planning-graph/derived-context context sources are unchanged — this is an additional navigation aid, not a replacement for any of them
-**Status:** backlog
+
+**Outcome:** landed — `.claude/skills/bmad-build-auto/step-01-clarify-and-route.md` gained the new bullet in item 1, self-gated on the index's presence; the tracked ledger and this story's own spec (`spec-28-33-*.md`, Auto Run Result `Status: done`) both confirm it. This inline marker read `**Status:** backlog` after the story landed — corrected 2026-09-24 (found while decomposing Epic 55, the fleet rollout this unblocked).
 
 ## Epic 29: A harness halt of `done` ends the session, not the review
 
@@ -6865,6 +6866,68 @@ So that Epic 53 closes with no named debt and the touched-module gate is whole a
 **And** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci pyforge-deps-test` green
 
 **Outcome (2026-09-20):** landed as PR #1557 (`c19a212727`, `Merge pyforge-marshal/53-3 into main`), module measured at 97% with branch coverage (101+ tests across `test_dispatch_supervisor_main_loop.py` and its review-pass additions); the per-module exception removed from `coverage_thresholds.toml` and its pinning test retired. A review pass (42 findings, 4 layers) found 5 review findings claiming unreachable code were actually reachable and patched them — no production change (`git diff` on `__main__.py` is empty). Ten deferred findings ingested as DW-FU-53-3 through DW-FU-53-3-10. Landing needed a hand-resolved merge conflict: the dispatch worktree's baseline predated PR #1556 (the headroom-ai/caveman pixi.toml fix), so both branches had appended to the same append-only `spec-pyforge-marshal` memlog — resolved by unioning both branches' entries. Ledger row promoted by hand (same shape as 53.2): the hand-resolved merge meant `dispatch_land_finalize` never ran, so the Tier-3 feed needed constructing before `sprint-ledger-sync`. First dispatch attempt (`...2eac5b84`) also hit the pre-existing headroom `[proxy]`-extra crash fixed in PR #1556; the retry after that fix hit Claude Code's 600s background-wait ceiling (fixed with `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` on the second retry, which succeeded). epic-53 closes: 53.1/53.2/53.3 all done.
+
+## Epic 54: A landing's ledger promotion repairs its own feed drift (spec-pyforge-marshal CAP-265)
+
+Minted 2026-09-24 from the station Dream's entry of the same name: doctor 24.2 and 24.3 (PRs #1577/#1578,
+#1579/#1580) each needed the identical manual `--repair-feed` + hand-promote + separate PR dance because
+`sprint-ledger-sync`'s regression guard correctly refused a promotion over unrelated stale feed keys (13 and
+14, respectively). Reproduced a third time minting this very epic: marshal's own Tier-3 feed needed
+`--repair-feed` first (18 regressed + 11 missing keys) before this epic's own backlog rows could sync. A new
+epic because Epic 51 — the `dispatch_land_finalize` reliability thread this continues — is `done` (a done key
+never moves). **HARD boundaries:** the regression guard's safety property is never weakened — a refusal
+caused by the promoted story's OWN key disagreeing with the twin still stops and still needs a human; the
+auto-repair only ever pulls the tracked twin's `done` keys forward into the feed, the same one-directional
+operation `--repair-feed` already performs by hand.
+
+### Story 54.1: The landing repairs its own feed drift before it gives up
+
+As a fleet operator landing a dispatched story,
+I want the promotion step to retry with the Tier-3 feed's stale-but-safe keys pulled forward from the tracked twin when the regression guard's refusal names only keys other than the one being promoted,
+So that a landing never needs a second, human-authored PR just to carry a feed catch-up the twin already proves is safe.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-265
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` (the promotion attempt: on a
+regression-guard refusal, partition the refused keys into "the story being promoted" vs "everything else"; when the promoted story's
+own key is not among the refused set, repair the feed from the twin — the same operation `scripts/promote_sprint_status.py
+--repair-feed` performs — and retry the promotion once, in the same commit as the story's landing), `scripts/promote_sprint_status.py`
+(the repair-and-retry becomes an importable function `dispatch_land_finalize` calls directly, not a second CLI invocation), tests
+covering: a refusal on unrelated keys only (auto-repairs and promotes), a refusal that includes the promoted story's own key (still
+stops, names it, unchanged), and the doctor 24.2/24.3 fixture replayed against the fix.
+**Given** doctor 24.2 and 24.3 each landed cleanly (PR merged, spec `status: done`) but left the tracked ledger at `backlog` because
+`sprint-ledger-sync` refused over 13 and 14 unrelated stale feed keys
+**When** `dispatch_land_finalize` hits that same refusal shape
+**Then** it repairs the feed from the tracked twin (the authoritative record) and promotes the just-landed key in the same commit —
+no `--repair-feed` run by hand, no second PR
+**And** a refusal caused by the promoted story's own key disagreeing with the twin still stops the automation and surfaces the
+disagreement for a human, exactly as today
+
+## Epic 55: Wire and structure-graph roll out fleet-wide, finishing 28.32's deferred scope (token-economy CAP-3)
+
+Minted 2026-09-24 from the station Dream's token-economy sub-thread, 2026-09-24 entry. Story 28.32 (done,
+fleet rollout) deliberately rolled out only `derived-context`+`output` to all 8 stations, leaving
+`wire`+`structure-graph` declared-off pending two named blockers — Story 28.31 (dispatch-worktree
+provisioning-cost spike) and Story 28.33 (spin reference wiring). Both shipped (2026-09-10 and
+2026-09-20), but nobody returned to finish 28.32's own deferred scope. A new epic because Epic 28 is
+`done` (a done key never moves). **HARD boundaries:** deletion, not addition — the 3 declared
+`[context.X]` blocks each station carries are byte-identical no-ops against `policy-defaults.toml`'s
+own repo-wide default, so the fix removes the override rather than adding the two missing layers by
+hand; no production code changes, policy-file text only.
+
+### Story 55.1: The 7 non-marshal stations stop overriding `[context]` and inherit the clean default
+
+As a marshal operator,
+I want the 7 non-marshal stations' `marshal-policy.toml` to stop declaring a partial `[context]` override, now that Story 28.31 (dispatch-cost spike) and Story 28.33 (spin wiring) have both shipped,
+So that `wire` and `structure-graph` — the two layers 28.32 deliberately left behind — reach every station, not just `marshal`, and the savings comparison isn't leaving two of five layers on the table fleet-wide.
+
+**Type:** chore • **Effort:** S • **Deps:** 28.31, 28.33 (both done) • **FR/AD:** token-economy CAP-3
+**Note:** Found 2026-09-24 auditing the fleet's token-economy state: `marshal` itself declares no `[context]` block and inherits all 5 layers from `policy-defaults.toml` cleanly; every other station's own policy file declares exactly the 3 layers 28.32 rolled out (`planning-graph`/`derived-context`/`output`, each just `enabled = true`) — and per `core/policy.py`'s documented wholesale-replace composition, declaring any part of `[context]` at station level replaces the ENTIRE 5-layer default, silently defaulting the undeclared `wire`/`structure-graph` to off rather than inheriting the repo-wide `true`/`"auto"`. Since the 3 declared blocks are byte-identical no-ops against the repo default, the fix is deletion, not addition: remove the override entirely so each station inherits the clean shape, exactly as `policy-defaults.toml`'s own comment recommends. No production code changes — policy-file text only.
+**Given** the 7 non-marshal stations each declaring the same stale 3-of-5 `[context]` override, with its comment still citing 28.31/28.33 as pending blockers that have since shipped
+**When** each station's `marshal-policy.toml` has that override block removed
+**Then** `marshal factory dispatch` for any of the 7 stations resolves all 5 context layers the same way `marshal`'s own dispatches already do (`wire` auto-resolved per harness, `structure-graph` on) — verified live per station via the same `context: {...}` block a dispatch launch already reports
+**And** no other policy content changes; the removed blocks' comments are replaced with a short note explaining the station now inherits the repo-wide default
+
+**Outcome (2026-09-24):** landed hand-driven (config-only, no dev/review loop needed) — all 7 stations' `marshal-policy.toml` stale 3-of-5 override removed. `epics.md` Story 28.33's own inline status marker corrected in the same pass (found stale while decomposing this epic).
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

@@ -56,6 +56,10 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/launch-a-cost-saving-interactive-session.md
+    quadrant: how-to
+    owner: fleet
+    kind: authored
   - path: how-to/manage-worktrees-with-bmad.md
     quadrant: how-to
     owner: fleet
