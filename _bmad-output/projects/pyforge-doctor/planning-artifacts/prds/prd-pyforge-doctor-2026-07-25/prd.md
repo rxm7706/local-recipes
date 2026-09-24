@@ -1,9 +1,19 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-20'   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-19
+updated: '2026-09-24'   # RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
-currency_review: 'Reviewed 2026-09-19 — chain-currency sweep after PR #1529 (doctor Story
+currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
+  Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
+  pyforge-doctor/30-2 into main'', e2105fec02d, 2026-09-20) and now Story 30.3 (the
+  five reference-page generators — docs-pixi-tasks, docs-environments, docs-detectors,
+  docs-skills-catalog, docs-station-cli — plus docs_currency.py''s generated-page-stale
+  check) complete CAP-84 in full; FR-17''s two capabilities (CAP-83, CAP-84) are both
+  delivered. spec-pyforge-doctor''s .memlog moved to 2026-09-24T06:55 (Story 30.3''s
+  surface gains) while this PRD sat at 2026-09-20, tripping the spec→prd feeds check;
+  reconciled in the appended § Currency reconciliation — 2026-09-24. No FR/content
+  change required beyond marking FR-17''s decomposition current. Prior: Reviewed
+  2026-09-19 — chain-currency sweep after PR #1529 (doctor Story
   30.1). research/documentation-currency-and-repeatable-refresh-2026-09-19.md post-dated the
   brief; spec-pyforge-doctor minted CAP-83/CAP-84 (docs currency, Epic 30). FR-17 minted
   below to cite them; reconciled in the appended § Currency reconciliation — 2026-09-19.
@@ -622,7 +632,8 @@ inside SM-C1 (5.0s) — measured.
 prose-quality judgement — currency is about facts the code can refute, not style; the
 legacy `docs/specs/` intake tier, `docs/dreams/`, and `_bmad-output/` are not on the shelf.
 
-*Decomposed as Epic 30 — Stories 30.1 (done, PR #1529), 30.2, 30.3.*
+*Decomposed as Epic 30 — Stories 30.1 (done, PR #1529), 30.2 (done, hand-landed
+`Merge pyforge-doctor/30-2 into main`, e2105fec02d), 30.3 (done). Epic 30 complete.*
 
 ## 9. Assumptions Index
 
