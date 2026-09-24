@@ -99,7 +99,7 @@ development_status:
   3-4-doctor-diagnose-target-prescribe-cli-wiring-json-fr-9: done
   30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true: done
   30-2-docs-map-yaml-is-the-registry-map-md-is-its-render-and-docs-currency-reds-a-stale-page: done
-  30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: backlog
+  30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: done
   4-1-health-scoring-fr-10: done
   4-2-persistent-fleet-health-surface-fr-11: done
   4-3-adoption-tracking-watch-axis-fr-12: done
@@ -177,7 +177,7 @@ development_status:
   epic-29: done
   epic-3: done
   epic-3-retrospective: optional
-  epic-30: in-progress
+  epic-30: done
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done
