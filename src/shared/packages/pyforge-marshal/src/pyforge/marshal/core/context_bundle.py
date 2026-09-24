@@ -117,9 +117,6 @@ def digest_mismatch_finding(*, epic: str, expected: str, computed: str) -> Findi
     return Finding(
         code="MRS-CTX-008",
         severity=Severity.WARN,
-        message=(
-            f"context bundle digest mismatch for epic {epic!r}: expected "
-            f"{expected!r}, computed {computed!r}"
-        ),
+        message=(f"context bundle digest mismatch for epic {epic!r}: expected {expected!r}, computed {computed!r}"),
         path=None,
     )

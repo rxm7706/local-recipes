@@ -658,9 +658,7 @@ def run_context_bundle(args: argparse.Namespace) -> int:
         match = expect_digest == digest
         data["match"] = match
         if not match:
-            findings.append(
-                context_bundle.digest_mismatch_finding(epic=epic, expected=expect_digest, computed=digest)
-            )
+            findings.append(context_bundle.digest_mismatch_finding(epic=epic, expected=expect_digest, computed=digest))
     return _emit_bundle(args, findings, data)
 
 
