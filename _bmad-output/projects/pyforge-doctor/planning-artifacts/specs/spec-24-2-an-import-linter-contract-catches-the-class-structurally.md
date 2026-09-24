@@ -2,7 +2,8 @@
 title: '24.2: An import-linter contract catches the class structurally'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-review'
+baseline_revision: '42f4b5e9b53118f59e1c9e64f18164db4eaab77a'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
