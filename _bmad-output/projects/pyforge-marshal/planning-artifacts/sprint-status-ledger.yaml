@@ -258,7 +258,7 @@ development_status:
   45-1-a-pixi-task-generates-mdc-from-skill-md: done
   45-2-a-drift-detector-fails-a-stale-generated-mdc: done
   45-3-the-pilot-pair-uses-task-when-available-and-halts-when-it-is-not: done
-  46-1-a-bare-clone-bootstraps-the-substrate: backlog
+  46-1-a-bare-clone-bootstraps-the-substrate: done
   46-10-the-matrix-tells-the-truth-copilot-wrapper-gemini-probe-per-currency-cells: backlog
   46-11-the-dispatched-claude-session-is-launched-with-the-instruction-file-mode-pinned: done
   46-12-marshal-s-shell-outs-name-the-guild-env: done
