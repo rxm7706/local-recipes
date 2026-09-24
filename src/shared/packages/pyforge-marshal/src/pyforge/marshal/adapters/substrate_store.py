@@ -187,9 +187,7 @@ def write_pack(
     archive_path = out_dir / ASSET_ARCHIVE
     atomic_write(archive_path, _write_archive)
     archive_sha256, archive_size = sha256_file(archive_path)
-    member_files = {
-        name: tuple(measured[rel] for rel in sorted(files)) for name, files in sorted(members.items())
-    }
+    member_files = {name: tuple(measured[rel] for rel in sorted(files)) for name, files in sorted(members.items())}
     manifest_text = render_manifest(
         source_commit=source_commit,
         archive_sha256=archive_sha256,

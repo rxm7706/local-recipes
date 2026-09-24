@@ -198,12 +198,16 @@ class TestRebuild:
 
     def test_launch_failure_is_a_reason(self, tmp_path):
         process = _FakeProcess(error=ProcessError("timed out after 1800s"))
-        outcome = ScribeCli(process).rebuild(repo_root=tmp_path, argv_tail=("index", "refresh"), binary_path="/usr/bin/scribe")
+        outcome = ScribeCli(process).rebuild(
+            repo_root=tmp_path, argv_tail=("index", "refresh"), binary_path="/usr/bin/scribe"
+        )
         assert outcome.ok is False
         assert "could not run (timed out after 1800s)" in str(outcome.reason)
 
     def test_non_zero_exit_carries_the_last_output_line(self, tmp_path):
         process = _FakeProcess(ProcessResult(returncode=2, stdout="", stderr="progress\nError: graphifyy missing\n"))
-        outcome = ScribeCli(process).rebuild(repo_root=tmp_path, argv_tail=("index", "refresh"), binary_path="/usr/bin/scribe")
+        outcome = ScribeCli(process).rebuild(
+            repo_root=tmp_path, argv_tail=("index", "refresh"), binary_path="/usr/bin/scribe"
+        )
         assert outcome.ok is False
         assert "exited 2 (Error: graphifyy missing)" in str(outcome.reason)

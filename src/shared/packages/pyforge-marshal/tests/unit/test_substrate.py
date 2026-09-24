@@ -79,7 +79,9 @@ class TestManifestRoundTrip:
                 substrate.ManifestFile(".claude/data/pyforge-scribe/graph.json", "b" * 64, 7)
             ],
         }
-        text = substrate.render_manifest(source_commit="deadbeef", archive_sha256="c" * 64, archive_size=99, members=files)
+        text = substrate.render_manifest(
+            source_commit="deadbeef", archive_sha256="c" * 64, archive_size=99, members=files
+        )
         parsed = substrate.parse_manifest(text)
         assert parsed.source_commit == "deadbeef"
         assert parsed.archive_sha256 == "c" * 64
@@ -97,7 +99,11 @@ class TestManifestRoundTrip:
                 source_commit="x",
                 archive_sha256="not-hex",
                 archive_size=1,
-                members={substrate.MEMBER_PLANNING_GRAPH: [substrate.ManifestFile(".claude/data/pyforge-scribe/graph.json", _HEX, 1)]},
+                members={
+                    substrate.MEMBER_PLANNING_GRAPH: [
+                        substrate.ManifestFile(".claude/data/pyforge-scribe/graph.json", _HEX, 1)
+                    ]
+                },
             )
 
     def test_a_full_document_parses(self):

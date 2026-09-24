@@ -259,7 +259,9 @@ class TestRefusalsInstallNothing:
         clone.mkdir()
         data = b"{}\n"
         entry = _reg(".claude/data/pyforge-scribe/graph.json", data)
-        _forge(tmp_path / "pack", [entry, _reg(".claude/data/pyforge-scribe/graph.json", data)], _planning_members(data))
+        _forge(
+            tmp_path / "pack", [entry, _reg(".claude/data/pyforge-scribe/graph.json", data)], _planning_members(data)
+        )
         self._assert_nothing(clone, _install(clone, tmp_path / "pack"), "twice")
 
     def test_a_manifest_file_missing_from_the_archive(self, tmp_path):
@@ -384,7 +386,9 @@ class TestInstallDestinations:
 
 
 class _FakeGh:
-    def __init__(self, result: ProcessResult | None = None, *, error: Exception | None = None, source: Path | None = None):
+    def __init__(
+        self, result: ProcessResult | None = None, *, error: Exception | None = None, source: Path | None = None
+    ):
         self.result = result or ProcessResult(returncode=0, stdout="", stderr="")
         self.error = error
         self.source = source
@@ -419,7 +423,10 @@ class TestFetchPair:
         [
             (_FakeGh(error=ProcessError("executable not found: 'gh'")), "could not run"),
             (_FakeGh(error=ProcessError("timed out after 600s")), "timed out"),
-            (_FakeGh(ProcessResult(returncode=1, stdout="", stderr="release not found\n")), "exited 1 (release not found)"),
+            (
+                _FakeGh(ProcessResult(returncode=1, stdout="", stderr="release not found\n")),
+                "exited 1 (release not found)",
+            ),
             (_FakeGh(), "was not downloaded"),
         ],
     )

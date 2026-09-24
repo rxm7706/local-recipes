@@ -189,9 +189,7 @@ def run_context_bootstrap(
             states[member.name] = substrate.STATE_REBUILT
             findings.append(substrate.rebuild_finding(member, fetch_reason=fetch_reason))
         else:
-            findings.append(
-                substrate.unevaluable_finding(member, fetch_reason=fetch_reason, rebuild_reason=failure)
-            )
+            findings.append(substrate.unevaluable_finding(member, fetch_reason=fetch_reason, rebuild_reason=failure))
 
     data: dict[str, object] = {
         "root": str(root),
@@ -221,7 +219,11 @@ def _serve_from(
     not-served reason for every missing member that is still missing."""
     manifest_path = pack_dir / substrate.ASSET_MANIFEST
     archive_path = pack_dir / substrate.ASSET_ARCHIVE
-    absent = [name for name, path in ((substrate.ASSET_MANIFEST, manifest_path), (substrate.ASSET_ARCHIVE, archive_path)) if not path.is_file()]
+    absent = [
+        name
+        for name, path in ((substrate.ASSET_MANIFEST, manifest_path), (substrate.ASSET_ARCHIVE, archive_path))
+        if not path.is_file()
+    ]
     if absent:
         return {name: f"{pack_dir} holds no {' / '.join(absent)}" for name in missing}
     result = store.verify_and_install(root, manifest_path=manifest_path, archive_path=archive_path, members=missing)
