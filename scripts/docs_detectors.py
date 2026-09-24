@@ -106,7 +106,7 @@ def main() -> int:
 
     stamp = common.head_stamp(common.REPO_ROOT)
     content = render(common.REPO_ROOT, stamp)
-    return common.write_generated_page(common.REPO_ROOT, PAGE_REL, content, check=args.check)
+    return common.write_generated_page(common.REPO_ROOT, PAGE_REL, content, check=args.check, stamp=stamp)
 
 
 if __name__ == "__main__":

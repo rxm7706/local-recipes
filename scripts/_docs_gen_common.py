@@ -121,20 +121,31 @@ def update_map_stamp(root: Path, page_rel: str, stamp: dict[str, str]) -> None:
         )
 
 
-def write_generated_page(root: Path, page_rel: str, content: str, *, check: bool) -> int:
+def write_generated_page(
+    root: Path,
+    page_rel: str,
+    content: str,
+    *,
+    check: bool,
+    stamp: dict[str, str] | None = None,
+) -> int:
     """The write+``--check`` plumbing every generator's ``main()`` shares.
 
     ``check=True``: compare ``content`` (a fresh in-memory render, stamp
     included) against the page currently on disk; print + return 0 when
     they match, 1 when they differ (stale -- a source moved past the
-    stamp, a hand edit, or the page was never generated). Never writes --
-    this is the mode ``docs-currency``'s generated-page-stale check invokes
-    via ``cli_bridge.run_check_script``.
+    stamp, a hand edit, or the page was never generated). Never writes,
+    never touches ``docs/map.yaml`` -- this is the mode ``docs-currency``'s
+    generated-page-stale check invokes via ``cli_bridge.run_check_script``.
 
     ``check=False``: write ``content`` (creating parent directories as
-    needed), advance ``docs/map.yaml``'s stamp for this page, print
-    whether the page's bytes actually changed, and return 0 -- writing
-    always succeeds once the render itself didn't raise.
+    needed), advance ``docs/map.yaml``'s stamp for this page to ``stamp``
+    (the SAME dict the caller already embedded into ``content`` via
+    :func:`render_header` -- passed through rather than recomputed, so a
+    write is exactly one extra git read, not three), print whether the
+    page's bytes actually changed, and return 0 -- writing always succeeds
+    once the render itself didn't raise. ``stamp=None`` skips the
+    ``docs/map.yaml`` update entirely (a caller with no stamp to record).
     """
     page_path = root / "docs" / page_rel
     current = page_path.read_text(encoding="utf-8") if page_path.is_file() else None
@@ -152,6 +163,7 @@ def write_generated_page(root: Path, page_rel: str, content: str, *, check: bool
     page_path.parent.mkdir(parents=True, exist_ok=True)
     changed = current != content
     page_path.write_text(content, encoding="utf-8")
-    update_map_stamp(root, page_rel, head_stamp(root))
+    if stamp is not None:
+        update_map_stamp(root, page_rel, stamp)
     print(f"[{page_rel}] {'wrote' if changed else 'unchanged'} ({'changed' if changed else 'no content change'})")
     return 0

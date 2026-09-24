@@ -161,13 +161,39 @@ def test_write_generated_page_check_mode_reports_stale_when_never_generated(tmp_
 
 
 def test_write_generated_page_writes_and_is_idempotent(tmp_path: Path):
-    exit_code_1 = common.write_generated_page(tmp_path, "how-to/pixi-tasks.md", "content\n", check=False)
+    # stamp=None: no docs/map.yaml touched, so this needs no git repo at all.
+    exit_code_1 = common.write_generated_page(tmp_path, "how-to/pixi-tasks.md", "content\n", check=False, stamp=None)
     page = tmp_path / "docs" / "how-to" / "pixi-tasks.md"
 
     assert exit_code_1 == 0
     assert page.read_text(encoding="utf-8") == "content\n"
 
     # Re-running with the SAME content is a no-op write, and --check now agrees.
-    exit_code_2 = common.write_generated_page(tmp_path, "how-to/pixi-tasks.md", "content\n", check=False)
+    exit_code_2 = common.write_generated_page(tmp_path, "how-to/pixi-tasks.md", "content\n", check=False, stamp=None)
     assert exit_code_2 == 0
     assert common.write_generated_page(tmp_path, "how-to/pixi-tasks.md", "content\n", check=True) == 0
+
+
+def test_write_generated_page_records_the_passed_in_stamp_without_recomputing(tmp_path: Path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "map.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 1,
+                "pages": [
+                    {"path": "how-to/pixi-tasks.md", "quadrant": "how-to", "owner": "steward", "kind": "generated"},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    stamp = {"derived_at": "2026-01-01T00:00:00", "tree": "abc"}
+
+    # No git repo exists at tmp_path -- if this recomputed head_stamp() itself
+    # (rather than using the passed-in stamp), it would raise.
+    exit_code = common.write_generated_page(tmp_path, "how-to/pixi-tasks.md", "content\n", check=False, stamp=stamp)
+
+    assert exit_code == 0
+    data = yaml.safe_load((docs / "map.yaml").read_text(encoding="utf-8"))
+    assert data["pages"][0]["stamp"] == stamp
