@@ -1,0 +1,101 @@
+name: Substrate nightly
+
+# Story 46.1 (spec-pyforge-marshal CAP-192): publish the shared substrate so
+# a bare clone -- a cloud runner (Devin, Copilot cloud, Cursor background) --
+# opens on it with `pyforge context bootstrap` instead of re-deriving it
+# privately at ACU/quota cost.
+#
+# The substrate is three members, each with one sentinel:
+#   structure-graph  .codegraph/codegraph.db                     (codegraph)
+#   planning-graph   .claude/data/pyforge-scribe/graph.json      (scribe graph compile)
+#   derived-context  .claude/data/pyforge-scribe/move-list.json  (scribe index refresh;
+#                    + cocoindex-index.json when present)
+#
+# This job builds all three from the tip of main, then `marshal context pack`
+# writes the deterministic pair -- `substrate.tar.gz` and
+# `substrate-manifest.json` (per-file sha256 + size, source commit, archive
+# sha256) -- and uploads it to the `substrate-nightly` prerelease with
+# `--clobber`. The consumer (`marshal context bootstrap`) verifies every
+# digest before writing a byte, so a download racing this upload (a new
+# manifest beside an old archive) is refused and rebuilt locally, never
+# installed.
+#
+# Order matters: `scribe graph compile` runs BEFORE `scribe index refresh`,
+# because the refresh upserts into graph.json and a compile after it would
+# overwrite that.
+#
+# codegraph is not in any locked environment this job installs (its only
+# lock entry is the 10 GB local-recipes env, linux-64 via the SelfExplainML
+# channel), so it is resolved ad hoc with `pixi exec` -- a named limit: that
+# one tool's version floats within the spec below between nights.
+#
+# Digests prove integrity against the manifest, not authenticity: manifest
+# and archive come from the same release (the story's named trust limit).
+#
+# Inert while `.github/actions-policy.toml` keeps Actions disabled -- turning
+# it on is the operator's billing decision, not this workflow's.
+
+on:
+  schedule:
+    - cron: '30 3 * * *'   # nightly, ~03:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create the prerelease + upload its assets
+
+concurrency:
+  group: substrate-nightly
+  cancel-in-progress: false
+
+env:
+  SUBSTRATE_TAG: substrate-nightly
+  PACK_DIR: substrate-pack
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.80.0
+          environments: >-
+            pyforge-guild
+            pyforge-scribe
+          locked: true
+          cache: true
+
+      - name: Build the structure graph (codegraph)
+        run: |
+          pixi exec --channel conda-forge --channel SelfExplainML \
+            --spec "codegraph>=1.6.0" -- codegraph init -y .
+
+      - name: Build the planning graph (scribe graph compile)
+        run: pixi run -e pyforge-scribe scribe graph compile --nightly
+
+      - name: Build the derived-context distills (scribe index refresh)
+        run: pixi run -e pyforge-scribe scribe index refresh
+
+      # Exit 1 (MRS-CTX-007, nothing packable) fails the job; a gap
+      # (MRS-CTX-006, one member absent) is a WARN that still exits 0 and
+      # publishes the members that did build -- the consumer rebuilds the
+      # gap with a named finding.
+      - name: Pack the deterministic pair
+        run: |
+          pixi run -e pyforge-guild marshal context pack \
+            --out "$PACK_DIR" --source-commit "$GITHUB_SHA" --format json | tee substrate-pack.json
+
+      - name: Publish to the substrate-nightly prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$SUBSTRATE_TAG" >/dev/null 2>&1; then
+            gh release create "$SUBSTRATE_TAG" --prerelease --target "$GITHUB_SHA" \
+              --title "Substrate (nightly)" \
+              --notes "Shared substrate pair for \`pyforge context bootstrap\` (Story 46.1). Rebuilt nightly; the manifest's source_commit names the commit each pair was built from."
+          fi
+          gh release upload "$SUBSTRATE_TAG" \
+            "$PACK_DIR/substrate.tar.gz" "$PACK_DIR/substrate-manifest.json" --clobber
+          echo "::notice::published the substrate pair for $GITHUB_SHA to $SUBSTRATE_TAG"
