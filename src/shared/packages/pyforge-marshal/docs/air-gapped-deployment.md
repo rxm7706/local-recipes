@@ -37,3 +37,44 @@ Story 12.3 meta-tests (`tests/meta/test_ad65_no_network_stack_imports.py`, `test
 ```bash
 pixi run -e pyforge-marshal pyforge-marshal-test
 ```
+
+## The substrate bootstrap: the one explicit fetch (Story 46.1)
+
+`marshal context bootstrap` (also `pyforge context bootstrap`) fills a bare clone with the shared
+substrate: the structure graph (`.codegraph/codegraph.db`), the planning graph
+(`.claude/data/pyforge-scribe/graph.json`) and the derived-context distills
+(`.claude/data/pyforge-scribe/move-list.json`, plus `cocoindex-index.json` when the pack carries
+it). It is the **second** marshal path that can use the network. The seed machinery above has
+none. The fetch happens only when you run this verb, and only in its default form:
+
+| Form | Network | What it does |
+|---|---|---|
+| `marshal context bootstrap` | **Yes**: `gh release download` of the `substrate-nightly` prerelease (`--tag`, `--repo` override) | Announces the fetch on stderr before it starts, records `data.source.network: true` in the envelope, then verifies and installs each missing member |
+| `marshal context bootstrap --from <dir>` | **None** | Installs from a pair you already have on disk |
+| `marshal context bootstrap --offline` | **None** | Fetches nothing; rebuilds each missing member locally (`codegraph init -y`, `scribe graph compile --nightly`, `scribe index refresh`), and each rebuild is a named `MRS-CTX-003` finding |
+
+The fetch shells out to `gh`. Marshal imports no network stack, and `--from` and `--offline` never
+start `gh`. A member already in the clone is never overwritten. A member that is neither fetched
+nor rebuilt is `MRS-CTX-004` (exit `1`).
+
+**What the digests prove.** `substrate-manifest.json` records a sha256 and a size for every file
+and for `substrate.tar.gz` itself. Bootstrap checks every one of them before it writes a byte. A
+mismatch, a malformed manifest or an unsafe archive entry installs nothing: it is reported as
+`MRS-CTX-005`, and the member falls back to a local rebuild. The digests prove **integrity**, not
+**authenticity**: the manifest and the archive come from the same release, so anyone who can
+publish to that release can publish a consistent pair.
+
+**Air-gapped sites.** On a connected host, produce the pair and carry it across; then install it
+without the network:
+
+```bash
+# connected host (or download the substrate-nightly assets there)
+marshal context pack --out substrate-pack
+# air-gapped host, after copying substrate-pack/ across
+marshal context bootstrap --from substrate-pack
+```
+
+`context pack` writes deterministic bytes: packing the same substrate twice gives the same archive
+sha256, so the pair you carry can be compared against the published one. With no pair and no
+network, `--offline` rebuilds each member from the checkout, provided the rebuild tools
+(`codegraph`, and `scribe` with its graph extras) are installed from your mirror.
