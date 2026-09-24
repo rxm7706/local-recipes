@@ -109,7 +109,19 @@ class TestFreshnessMechanismIsWiredToWhatMarshalShips:
 
         assert "MRS-CTX-*" in _read(STEP_01)
         ctx_codes = {code for code in REGISTERED_CODES if code.startswith("MRS-CTX-")}
-        assert ctx_codes == {"MRS-CTX-001", "MRS-CTX-002"}
+        # Story 46.1 (spec-pyforge-marshal CAP-192) grew the area with the
+        # substrate verbs' codes -- emitted only by `context bootstrap` /
+        # `context pack`, which step-01 never calls. The set stays pinned
+        # exactly, so a NEW code still forces a look at the skill.
+        refresh_codes = {"MRS-CTX-001", "MRS-CTX-002"}
+        substrate_codes = {f"MRS-CTX-00{n}" for n in range(3, 8)}
+        assert ctx_codes == refresh_codes | substrate_codes
+        # ...and the verb step-01 does call cannot reach the substrate codes.
+        import inspect
+
+        from pyforge.marshal.cli.context import run_context_refresh
+
+        assert "substrate" not in inspect.getsource(run_context_refresh)
         # Advisory in the skill must mean advisory in the lattice: neither
         # code may ever classify a rung that refuses a run.
         assert classify("MRS-CTX-002") is Verdict.WARN

@@ -38,6 +38,12 @@ The manifest lands under ``.claude/data/pyforge-marshal/derived-context/``
 -- blanket-gitignored (``.gitignore``'s ``.claude/data/``), derived, and
 disposable, the same home Scribe gives its own fingerprint index. It is a
 restatement of the declaration, never a store of record.
+
+Story 28.9 added ``retrieve`` (the planning-graph layer). Story 46.1
+(spec-pyforge-marshal CAP-192) adds ``bootstrap`` and ``pack`` -- a bare
+clone fetches or rebuilds the shared substrate, and a producer writes the
+deterministic pair it fetches. Both live in ``cli/context_bootstrap.py``;
+this module only registers them.
 """
 
 from __future__ import annotations
@@ -55,6 +61,7 @@ from ..core.model import Finding, Severity, build_envelope
 from ..core.policy import _is_valid_project_slug
 from ..core.verdict import compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
+from .context_bootstrap import add_substrate_parsers
 from .seed import _resolve_project_slug, resolve_context_layers
 
 #: The declaration could not be resolved at all (malformed slug or epic, or
@@ -71,7 +78,8 @@ _MANIFEST_DIR_RELPATH = ".claude/data/pyforge-marshal/derived-context"
 
 
 def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
-    """Register ``context`` with its nested ``refresh`` action."""
+    """Register ``context`` with its nested ``refresh``, ``retrieve``,
+    ``bootstrap`` and ``pack`` actions."""
     parser = subparsers.add_parser(
         "context",
         help=(
@@ -86,7 +94,9 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
             "the `scribe index refresh` CLI grammar -- marshal declares the "
             "sources and renders the layer flag, never a second engine. With "
             "the layer declared off (the default), today's compile-on-hunch "
-            "behavior is unchanged."
+            "behavior is unchanged. `bootstrap` / `pack` (Story 46.1) fetch-or-"
+            "rebuild the shared substrate into a bare clone and write the pair "
+            "it fetches."
         ),
     )
     context_sub = parser.add_subparsers(dest="context_command", required=True)
@@ -175,6 +185,10 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     retrieve.set_defaults(handler=run_context_retrieve)
+
+    # Story 46.1 (spec-pyforge-marshal CAP-192): the substrate bootstrap and
+    # its producer, owned by cli/context_bootstrap.py.
+    add_substrate_parsers(context_sub)
 
 
 def _listing(directory: Path) -> tuple[str, ...]:
