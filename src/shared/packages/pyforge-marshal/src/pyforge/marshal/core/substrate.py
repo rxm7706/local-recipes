@@ -412,15 +412,15 @@ def gap_finding(member: SubstrateMember, *, reason: str) -> Finding:
     )
 
 
-def nothing_packable_finding() -> Finding:
-    """MRS-CTX-007 (UNEVALUABLE): no member is present, so no pair is written."""
-    return Finding(
-        code="MRS-CTX-007",
-        severity=Severity.ERROR,
-        message=(
+def nothing_packable_finding(*, write_error: str | None = None) -> Finding:
+    """MRS-CTX-007 (UNEVALUABLE): no pair was written -- no member is
+    present, or (``write_error``) writing the pair itself failed."""
+    if write_error is not None:
+        message = f"the substrate pair could not be written -- no pair written: {write_error}"
+    else:
+        message = (
             "no substrate member is present ("
             + ", ".join(member.sentinel for member in SUBSTRATE_MEMBERS)
             + " all absent) -- nothing to pack, no pair written"
-        ),
-        path=None,
-    )
+        )
+    return Finding(code="MRS-CTX-007", severity=Severity.ERROR, message=message, path=None)
