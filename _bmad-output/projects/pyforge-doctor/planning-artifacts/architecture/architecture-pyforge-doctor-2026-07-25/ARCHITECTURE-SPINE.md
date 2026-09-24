@@ -559,3 +559,14 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+*`prd→arch` cascade (CHAIN-CURRENCY-RUNBOOK.md): the PRD re-dated to 2026-09-24 (Story 30.3
+landing — the five reference-page generators, `docs_currency.py`'s `generated-page-stale`
+check) past this spine's 2026-09-20 stamp, past the 2-day feeds grace window. The generators
+are read-only-over-the-tree facade instruments — each reads its own source of truth (`pixi.toml`
+task tables, a station CLI's `--help`, `scripts/detectors.py`'s registry, `SKILL.md`
+frontmatter, `[environments]`) and writes one page plus a stamp — the same
+gather-then-render paradigm this spine already names; no new component, no new station
+boundary crossed. No AD added or changed. `updated:` bumped to record the cascade.*
