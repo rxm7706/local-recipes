@@ -2,7 +2,7 @@
 title: '46.1: A bare clone bootstraps the substrate'
 type: 'feature'
 created: '2026-09-24'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
