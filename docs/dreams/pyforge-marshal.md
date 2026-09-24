@@ -3941,6 +3941,25 @@ altered, only the encoding of what flows through.
   wire acts on spin the same way it acts on dispatch; derived-context and planning-graph remain
   dispatch/build-auto-only. Cost-sensitive drain for those two layers still belongs on
   ``factory dispatch``.
+- **2026-09-24 — Proposed: the stale-blocker leftover — wire and structure-graph still off fleet-wide.**
+  Story 28.32 (done, fleet rollout) deliberately rolled out only `derived-context`+`output` to all 8
+  stations, leaving `wire`+`structure-graph` declared-off pending two named blockers — Story 28.31
+  (the dispatch-worktree provisioning-cost spike) and Story 28.33 (spin reference wiring). Both
+  shipped (28.31 on 2026-09-10, 28.33 on 2026-09-20), but nobody returned to finish 28.32's own
+  deferred scope. Found 2026-09-24 auditing token-economy state: 7 of 8 stations' `marshal-policy.toml`
+  still carry the pre-28.31/28.33 3-of-5 override (`[context."planning-graph"]`/`[context."derived-
+  context"]`/`[context.output]`, each just `enabled = true`) — and per `core/policy.py`'s wholesale-
+  replace composition (declaring ANY part of `[context]` at station level replaces the entire 5-layer
+  default), that partial override silently drops `wire` and `structure-graph` to off for every one of
+  those 7 stations, even though the repo-wide default (`policy-defaults.toml`) has both enabled. Only
+  `marshal` itself (which declares no override) gets all 5 layers. The fix is mechanical and safe: the
+  3 declared blocks are byte-identical no-ops against the repo default, so deleting them (not adding
+  two more) lets all 7 stations inherit the clean 5-layer shape — matching `policy-defaults.toml`'s
+  own documented guidance ("a station file should declare nothing here to inherit this default
+  shape"). Decomposed same day as **Epic 55** / Story 55.1 (hand-driven — a config-only fix, no new
+  code path; a new epic because Epic 28 is `done` and a done key never moves).
+  This Dream's own guard is unaffected: `status: specified` still holds until a benchmark artifact
+  reports a measured saving; this entry closes a leftover deferral, not the measurement gate.
 
 ## 2026-09-16 — PR lifecycle — a story lands itself (folded from pr-lifecycle)
 
