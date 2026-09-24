@@ -81,11 +81,12 @@ jobs:
       # Exit 1 (MRS-CTX-007, nothing packable) fails the job; a gap
       # (MRS-CTX-006, one member absent) is a WARN that still exits 0 and
       # publishes the members that did build -- the consumer rebuilds the
-      # gap with a named finding.
+      # gap with a named finding. No pipe after this command: the step's
+      # verdict is marshal's own exit code.
       - name: Pack the deterministic pair
         run: |
           pixi run -e pyforge-guild marshal context pack \
-            --out "$PACK_DIR" --source-commit "$GITHUB_SHA" --format json | tee substrate-pack.json
+            --out "$PACK_DIR" --source-commit "$GITHUB_SHA" --format json
 
       - name: Publish to the substrate-nightly prerelease
         env:
