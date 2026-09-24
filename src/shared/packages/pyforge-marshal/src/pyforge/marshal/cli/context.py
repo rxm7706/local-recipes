@@ -55,6 +55,7 @@ from pathlib import Path
 from pyforge.core.atomic_write import atomic_write_text
 
 from ..adapters.scribe_cli import ScribeCli
+from ..core import context_bundle
 from ..core import derived_context as derived
 from ..core import planning_graph as planning
 from ..core.model import Finding, Severity, build_envelope
