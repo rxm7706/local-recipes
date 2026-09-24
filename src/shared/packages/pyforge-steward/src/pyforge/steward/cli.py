@@ -43,7 +43,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill;
 #   Story 61.4 added the outbound default-deny slice+signer gate),
 # `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
-# `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export).
+# `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export),
+# `session` (Epic 63, Story 63.4 — one verdict for the session preconditions, run from every entry point).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -68,6 +69,7 @@ DUTIES: tuple[str, ...] = (
     "load",
     "passport",
     "glass",
+    "session",
 )
 
 _HELP = {
@@ -153,6 +155,11 @@ _HELP = {
         "never a PR verdict (Story 53.4 / hub:CAP-4)"
     ),
     "cutover": ("flag-gated cutover plan/apply/flip (Story 44.12 / fnd:CAP-8); default root stays local-recipes"),
+    "session": (
+        "one verdict for the session preconditions -- pixi/pyforge-guild, bmad-method drift, "
+        "the token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3 sprint-status "
+        "feed, scribe reachability (Story 63.4 / spec-pyforge-steward CAP-5)"
+    ),
 }
 
 
@@ -218,6 +225,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_passport_subparsers(duty_parser)
         elif name == "glass":
             _add_glass_subparsers(duty_parser)
+        elif name == "session":
+            _add_session_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -909,6 +918,29 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     clean.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
 
+def _add_session_subparsers(session_parser: argparse.ArgumentParser) -> None:
+    """Add ``check`` (Story 63.4 — one verdict for the session preconditions)."""
+    session_subs = session_parser.add_subparsers(dest="session_verb", metavar="{check}")
+
+    check = session_subs.add_parser(
+        "check",
+        help="gather the seven session-precondition findings and report one verdict",
+    )
+    check.add_argument(
+        "--repo",
+        default=None,
+        metavar="PATH",
+        help="pixi project root (default: current repo root)",
+    )
+    check.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help="active BMAD project slug for the Tier-3 feed check (default: BMAD_ACTIVE_PROJECT or the marker file)",
+    )
+    check.add_argument("--json", action="store_true", help="emit JSON instead of text")
+
+
 def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
     """Add ``bmad-core`` (14.1–14.3), ``pin-fan-out`` (14.4), ``prove-landed`` (14.5)."""
     upgrade_subs = upgrade_parser.add_subparsers(
@@ -1301,6 +1333,10 @@ def resolve_duty(name: str) -> Duty:
         from .glass import GlassDuty
 
         return GlassDuty()
+    if name == "session":
+        from .session import SessionDuty
+
+        return SessionDuty()
     return NullDuty(name)
 
 
