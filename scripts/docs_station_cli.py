@@ -179,7 +179,10 @@ def main() -> int:
     args = parser.parse_args()
 
     stamp = common.head_stamp(common.REPO_ROOT)
-    content = render(common.REPO_ROOT, stamp)
+    # `capture_help` referenced by name (not via render()'s bound default) so
+    # a caller -- or a test -- that monkeypatches the module-level function
+    # is honored; render()'s own default is for direct callers of render().
+    content = render(common.REPO_ROOT, stamp, help_capture=capture_help)
     return common.write_generated_page(common.REPO_ROOT, PAGE_REL, content, check=args.check, stamp=stamp)
 
 
