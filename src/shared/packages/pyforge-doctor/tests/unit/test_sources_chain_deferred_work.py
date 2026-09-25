@@ -15,6 +15,7 @@ requirement.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -2044,6 +2045,206 @@ def test_mint_id_for_entry_raises_if_entry_already_has_an_id(tmp_path: Path) -> 
             tmp_path / "no-tier3.md",
             tmp_path / "no-tracked.md",
         )
+
+
+# vocabulary Dream Ruling 13: `mint_sweep_id` -- the second of the two blessed
+# `DW-` families, mirroring `mint_id_for_entry`'s own test shapes above rather
+# than a second test pattern.
+
+
+def test_mint_sweep_id_no_collision_mints_bare(tmp_path: Path) -> None:
+    """Nothing collected for `DW-doctor-vocab-2026-09-25*` -> bare
+    `DW-doctor-vocab-2026-09-25` (Ruling 14: every new mint, sweep-scoped or
+    story-scoped, carries the real station token)."""
+    result = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tmp_path / "no-tracked.md",
+    )
+    assert result == "DW-doctor-vocab-2026-09-25"
+
+
+def test_mint_sweep_id_bare_already_taken_suffixes_past_it(tmp_path: Path) -> None:
+    """A `DW-doctor-vocab-2026-09-25` sibling already collected must be
+    suffixed past: `DW-doctor-vocab-2026-09-25-2` -- same counting rule as
+    `mint_id_for_entry`, reused via `_next_free_suffix`, never reimplemented."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text("- `DW-doctor-vocab-2026-09-25` — first of this sweep.\n", encoding="utf-8")
+    result = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tracked,
+    )
+    assert result == "DW-doctor-vocab-2026-09-25-2"
+
+
+def test_mint_sweep_id_suffix_continuation(tmp_path: Path) -> None:
+    """A run of `DW-doctor-vocab-2026-09-25-2`..`-9` already collected mints
+    `-10` next -- numeric, not lexicographic, comparison."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    ids = [f"DW-doctor-vocab-2026-09-25-{n}" for n in range(2, 10)]
+    tracked.write_text("\n".join(f"- `{i}`" for i in ids) + "\n", encoding="utf-8")
+    result = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tracked,
+    )
+    assert result == "DW-doctor-vocab-2026-09-25-10"
+
+
+def test_mint_sweep_id_already_minted_accumulator_prevents_batch_collision(
+    tmp_path: Path,
+) -> None:
+    """`already_minted` folds in exactly as it does for `mint_id_for_entry` --
+    a caller minting several sweep ids in one batch, before any is written to
+    either ledger file, never collides within that batch."""
+    already_minted: set[str] = set()
+    first = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tmp_path / "no-tracked.md",
+        already_minted=already_minted,
+    )
+    already_minted.add(first)
+    second = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tmp_path / "no-tracked.md",
+        already_minted=already_minted,
+    )
+    assert first == "DW-doctor-vocab-2026-09-25"
+    assert second == "DW-doctor-vocab-2026-09-25-2"
+
+
+def test_mint_sweep_id_unrecognized_station_raises(tmp_path: Path) -> None:
+    """`_normalize_station` rejects an unknown station just as it does for
+    `mint_id_for_entry` -- reused, not reimplemented."""
+    with pytest.raises(ValueError, match="unrecognized station"):
+        chain.mint_sweep_id(
+            "vocab",
+            "not-a-real-station",
+            "2026-09-25",
+            tmp_path / "no-tier3.md",
+            tmp_path / "no-tracked.md",
+        )
+
+
+def test_mint_sweep_id_empty_slug_after_sanitizing_raises(tmp_path: Path) -> None:
+    """A slug that sanitizes to nothing (all-punctuation) must raise rather
+    than mint a phantom `DW-doctor--2026-09-25` id with an empty segment."""
+    with pytest.raises(ValueError, match="non-empty sweep slug"):
+        chain.mint_sweep_id(
+            "***",
+            "doctor",
+            "2026-09-25",
+            tmp_path / "no-tier3.md",
+            tmp_path / "no-tracked.md",
+        )
+
+
+@pytest.mark.parametrize("bad_date", ["2026-9-25", "09-25-2026", "2026-09-25T00:00:00", "not-a-date", ""])
+def test_mint_sweep_id_non_iso_date_raises(tmp_path: Path, bad_date: str) -> None:
+    """`date_str` must already be a zero-padded ISO date (AGENTS.md "Dates,
+    tags and versions") -- this function mints for a caller-supplied sweep
+    date, it does not stamp "today" itself, so an unpadded or malformed value
+    is rejected rather than silently embedded in a `DW-` id."""
+    with pytest.raises(ValueError, match="zero-padded ISO date"):
+        chain.mint_sweep_id(
+            "vocab",
+            "doctor",
+            bad_date,
+            tmp_path / "no-tier3.md",
+            tmp_path / "no-tracked.md",
+        )
+
+
+# vocabulary Dream Ruling 12: `slugify_title` / `mint_story_identity` /
+# `StoryIdentity` -- one mint-time slugify for a NEW story's heading, ledger
+# key, and spec filename.
+
+
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        ("One Mint-Time Slugify", "one-mint-time-slugify"),
+        ("Two DW- Families", "two-dw-families"),
+        ("  leading and trailing spaces  ", "leading-and-trailing-spaces"),
+        ("Apostrophe's Typographic ’Quote’", "apostrophe-s-typographic-quote"),
+        ("snake_case_already", "snake-case-already"),
+        ("UPPER-CASE", "upper-case"),
+    ],
+)
+def test_slugify_title_closed_alphabet(title: str, expected: str) -> None:
+    """Lowercase, collapse every run outside `[a-z0-9]` to one `-`, trim
+    leading/trailing `-` -- closed over `^[a-z0-9]+(-[a-z0-9]+)*$` by
+    construction, unlike the 14 of 952 existing ledger keys a looser regex
+    let an underscore, non-ASCII character, or collapsed apostrophe through
+    (Dream "The shapes", finding 3)."""
+    result = chain.slugify_title(title)
+    assert result == expected
+    assert re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", result)
+
+
+def test_slugify_title_all_punctuation_raises() -> None:
+    """A title that slugifies to nothing (all-punctuation) must raise rather
+    than mint an empty slug segment."""
+    with pytest.raises(ValueError, match="non-empty slug"):
+        chain.slugify_title("***")
+
+
+def test_mint_story_identity_derives_all_three_spellings_from_one_pair() -> None:
+    """Ruling 12: heading is human-canonical; ledger key and spec filename
+    both derive from it mechanically via `slugify_title` -- the exact gap
+    the Dream measured (53 of 842 existing number-pairs carry a different
+    slug in their ledger key than in their spec filename)."""
+    result = chain.mint_story_identity("59.5", "One Mint-Time Slugify And Two DW- Families")
+    assert result == chain.StoryIdentity(
+        heading="### Story 59.5: One Mint-Time Slugify And Two DW- Families",
+        ledger_key="59-5-one-mint-time-slugify-and-two-dw-families",
+        spec_filename="spec-59-5-one-mint-time-slugify-and-two-dw-families.md",
+    )
+
+
+def test_mint_story_identity_letter_suffixed_story_number() -> None:
+    """The fleet's own real shape includes an optional single trailing
+    letter on the story half (e.g. `22.4a`) -- carried through to both the
+    heading and the ledger key, lowercased in the ledger key."""
+    result = chain.mint_story_identity("22.4A", "Some Title")
+    assert result.heading == "### Story 22.4A: Some Title"
+    assert result.ledger_key == "22-4a-some-title"
+    assert result.spec_filename == "spec-22-4a-some-title.md"
+
+
+@pytest.mark.parametrize("bad_number", ["59", "59.", ".5", "59.5.1", "fifty-nine.5", ""])
+def test_mint_story_identity_malformed_number_raises(bad_number: str) -> None:
+    """A number that doesn't match the fleet's own `\\d+\\.\\d+[A-Za-z]?`
+    shape (952/952) must raise rather than mint a malformed heading."""
+    with pytest.raises(ValueError, match="dotted"):
+        chain.mint_story_identity(bad_number, "Some Title")
+
+
+def test_mint_story_identity_blank_title_raises() -> None:
+    """A blank title carries no information to slugify -- raise rather than
+    mint an identity with an empty title segment."""
+    with pytest.raises(ValueError, match="blank"):
+        chain.mint_story_identity("59.5", "   ")
+
+
+def test_mint_story_identity_all_punctuation_title_raises() -> None:
+    """A title that slugifies to nothing must raise via `slugify_title`,
+    surfaced through `mint_story_identity` rather than swallowed."""
+    with pytest.raises(ValueError, match="non-empty slug"):
+        chain.mint_story_identity("59.5", "***")
 
 
 # Review Triage Log 2026-08-15, item 5 (medium): backtick/`.md`-stripping boundaries -
