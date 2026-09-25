@@ -57,6 +57,7 @@ from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
 import yaml
+from pyforge.core.roster import STATIONS as _ROSTER_STATIONS
 
 from ..checks.env_hygiene import _PRUNED_DIR_NAMES
 from ..cli_bridge import CliBridgeError, run_git
@@ -1243,6 +1244,33 @@ def _dream_body_after_frontmatter(text: str) -> str:
     return joined + "\n" if text.endswith("\n") else joined
 
 
+def _status_frontmatter_trailing_comment(text: str) -> str | None:
+    """The Dream frontmatter's ``status:`` line, stripped, when it carries a
+    trailing ``# ...`` comment on the same line -- ``None`` otherwise.
+
+    Story 59.6 / CAP-137, Ruling 19: 19 of 165 Dreams made a five-value
+    status ladder parse as 40+ this way. ``yaml.safe_load`` (inside
+    ``_frontmatter_parse``) strips the inline comment silently, so it
+    survives only in the raw line scanned here -- never in the parsed
+    ``status:`` value the rest of this function checks against the
+    vocabulary. Uses the same line-anchored frontmatter block
+    (``_split_fenced_block`` / ``_fenced_lines``) ``_frontmatter_parse``
+    bounds its YAML with, so this only looks inside the frontmatter, never
+    the body.
+    """
+    split = _split_fenced_block(_fenced_lines(text))
+    if split is None:
+        return None
+    block, _body, closed = split
+    if not closed:
+        return None
+    for line in block:
+        stripped = line.strip()
+        if stripped.startswith("status:") and "#" in stripped:
+            return stripped
+    return None
+
+
 def _specs_covering_dream(
     slug: str,
     dream: Mapping[str, str],
@@ -1434,6 +1462,20 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
         except OSError:
             raw_text = ""
         kinship_body = _dream_body_after_frontmatter(raw_text)
+
+        trailing_comment = _status_frontmatter_trailing_comment(raw_text)
+        if trailing_comment is not None:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-status-trailing-comment",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} status: line carries a trailing # comment — put the comment on the next line"
+                    ),
+                    evidence={"subject": slug, "line": trailing_comment},
+                )
+            )
 
         if status_s in _STATUSES_REQUIRING_REALIZATION_LOG:
             body = raw_text
@@ -3116,22 +3158,10 @@ def _next_free_suffix(base_id: str, collected: set[str]) -> int | None:
 
 
 #: The fleet's 8 real stations (one per `_bmad-output/projects/pyforge-*/`
-#: directory) -- no existing canonical enum/list of station slugs was found
-#: anywhere in this package or `models.py` to reuse (checked per Review
-#: Triage Log 2026-08-15, item 3), so this is a minimal, deliberately local
-#: set rather than a hand-rolled shape-only check.
-_KNOWN_STATIONS = frozenset(
-    {
-        "atlas",
-        "doctor",
-        "herald",
-        "marshal",
-        "mason",
-        "scribe",
-        "steward",
-        "warden",
-    }
-)
+#: directory). Story 59.6 / CAP-137 replaced this package's own local copy
+#: with the one declared roster (``pyforge.core.roster``) -- order-agnostic
+#: here since this is a membership set, not a reported table.
+_KNOWN_STATIONS = frozenset(_ROSTER_STATIONS)
 
 
 def _normalize_station(station: str) -> str:

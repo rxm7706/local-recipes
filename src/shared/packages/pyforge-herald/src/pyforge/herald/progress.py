@@ -49,6 +49,8 @@ from datetime import UTC, datetime
 from datetime import date as date_cls
 from pathlib import Path
 
+from pyforge.core.roster import STATIONS as STATIONS
+
 from . import db, errors
 
 DEFAULT_PROGRESS_PATH = db.DEFAULT_DB_PATH
@@ -58,22 +60,13 @@ removed) so every existing call site (``cli.py``'s
 ``progress.DEFAULT_PROGRESS_PATH``) needs zero changes -- see ``db.py``'s
 module docstring on why one shared database, not per-module files."""
 
-STATIONS: tuple[str, ...] = (
-    "warden",
-    "atlas",
-    "marshal",
-    "mason",
-    "doctor",
-    "scribe",
-    "steward",
-    "herald",
-)
-"""The known PyForge Guild stations -- mirrors ``web/src/components/Sidebar.jsx``'s
-``STATIONS`` list. Used only to produce a helpful "did you mean" error
-message (``cli.py``'s unknown-station check); an operator naming a station
-outside this tuple is still free to record progress for it -- this module
-never rejects an unrecognized station, only the CLI's own error message
-consults the list."""
+# STATIONS re-exports ``pyforge.core.roster.STATIONS`` (Story 59.6 / CAP-137
+# -- the one declared Guild roster, no second hand-kept copy) under its
+# original name so every existing call site (``cli.py``'s unknown-station
+# "did you mean" hint) needs zero changes. Used only to produce that hint;
+# an operator naming a station outside this tuple is still free to record
+# progress for it -- this module never rejects an unrecognized station,
+# only the CLI's own error message consults the list.
 
 _PROGRESS_FIELDS = frozenset(
     (

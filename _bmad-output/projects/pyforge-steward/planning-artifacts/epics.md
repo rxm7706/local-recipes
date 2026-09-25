@@ -3966,7 +3966,7 @@ commit-subject convention (hook or detector). `S-N.N` stays prose-only.
 **And** a trailing `#` on Dream `status:` is a finding
 **And** commit subjects are Capitalized sentences with no trailing period,
 except `type(scope):` under `recipes/` and the CFE changelog
-**Status:** backlog
+**Status:** done
 
 ### Story 59.7: atlas check= is a finding code only
 

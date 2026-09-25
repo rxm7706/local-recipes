@@ -5,9 +5,13 @@ capability on the factory-governed surface (mason + atlas). That number was
 prose until this module; coverage is now computed and published — never
 hard-asserted to 100%.
 
-Stations are the Dream/SPEC six (not the full eight Smiths): mason, atlas,
-warden, herald, steward, marshal. A station counts as covered when it has a
-governed MCP tool surface under factory ownership:
+Stations are the one Guild roster of eight (``pyforge.core.roster``,
+Story 59.6 / CAP-137) — ``DREAM_STATIONS`` used to be a hand-kept
+six-station subset that silently omitted doctor and scribe; that omission
+was the defect a single shared list closes, so this module now measures
+against the full roster rather than a locally-scoped copy of part of it.
+A station counts as covered when it has a governed MCP tool surface under
+factory ownership:
 
 * **mason** — craft tools on ``.claude/tools/conda_forge_server.py``
 * **other stations** — a package ``mcp/`` package with ``server.py`` or
@@ -26,15 +30,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-# Dream ``docs/dreams/agent-tool-surface.md`` § Coverage — measured 2026-07-28.
-DREAM_STATIONS: tuple[str, ...] = (
-    "mason",
-    "atlas",
-    "warden",
-    "herald",
-    "steward",
-    "marshal",
-)
+from pyforge.core.roster import STATIONS as DREAM_STATIONS
 
 
 @dataclass(frozen=True, slots=True)

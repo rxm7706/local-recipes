@@ -159,6 +159,38 @@ def test_bad_status_reports_dream_vocab(tmp_path: Path) -> None:
     assert all(f.source is Source.DREAMS_HYGIENE for f in findings)
 
 
+def test_status_trailing_comment_reports(tmp_path: Path) -> None:
+    """Story 59.6 / CAP-137, Ruling 19: a trailing ``# ...`` on the same
+    line as Dream ``status:`` is a finding, distinct from ``dream-vocab``
+    (the parsed status value itself, ``ready``, is on-vocabulary)."""
+    _write_roster(tmp_path)
+    path = tmp_path / "docs" / "dreams" / "foo.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "---\nowner: marshal\nstatus: dreamt   # leftover note\ntype: dream\ntitle: Foo\n---\n\nbody\n",
+        encoding="utf-8",
+    )
+    _write_readme(tmp_path, [("foo.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    kinds = {f.check for f in findings}
+    assert "dream-status-trailing-comment" in kinds
+    assert "dream-vocab" not in kinds
+    hit = next(f for f in findings if f.check == "dream-status-trailing-comment")
+    assert hit.status is DoctorStatus.WARN
+    assert hit.evidence["subject"] == "foo"
+    assert "# leftover note" in hit.evidence["line"]
+
+
+def test_status_without_trailing_comment_is_clean(tmp_path: Path) -> None:
+    """No false positive on a plain ``status:`` line with no ``#``."""
+    _write_roster(tmp_path)
+    _write_dream(tmp_path, "foo", status="dreamt", realization_log=False)
+    _write_readme(tmp_path, [("foo.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    kinds = {f.check for f in findings}
+    assert "dream-status-trailing-comment" not in kinds
+
+
 def test_bad_owner_reports_dream_unowned(tmp_path: Path) -> None:
     _write_roster(tmp_path)
     _write_dream(tmp_path, "foo", owner="crew", realization_log=True)

@@ -13,18 +13,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from pyforge.core.dispatch import script_map_from_packages_root
+from pyforge.core.roster import STATIONS as _ROSTER_STATIONS
 
 TIERS: tuple[str, ...] = ("cli", "portal", "service", "skill", "persona")
-STATIONS: tuple[str, ...] = (
-    "atlas",
-    "doctor",
-    "herald",
-    "marshal",
-    "mason",
-    "scribe",
-    "steward",
-    "warden",
-)
+# Alphabetical, not roster declaration order (Story 59.6 / CAP-137): this
+# module reports a table, and a stable sort order for that table's rows is
+# its own concern, independent of the one declared roster's own ordering.
+STATIONS: tuple[str, ...] = tuple(sorted(_ROSTER_STATIONS))
 DENOMINATOR = len(STATIONS) * len(TIERS)
 
 # Roster drain (2026-08-26): all eight 03 stations are declared complete.
