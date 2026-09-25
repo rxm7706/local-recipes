@@ -1729,8 +1729,10 @@ def test_next_free_suffix_whole_remainder_must_be_integer_not_last_segment() -> 
 
 
 def test_mint_id_for_entry_non_mason_no_collision(tmp_path: Path) -> None:
-    """I/O matrix row 1: station=doctor, nothing collected for `DW-FU-7-1*`
-    -> bare `DW-FU-7-1`."""
+    """I/O matrix row 1: station=doctor, nothing collected for `DW-doctor-
+    7-1*` -> bare `DW-doctor-7-1` (vocabulary Dream Ruling 14: every new
+    mint carries the real station token, replacing the old generic `FU`
+    placeholder)."""
     entry = _entry_with_source_spec("`spec-7-1-something-brand-new.md`")
     result = chain.mint_id_for_entry(
         entry,
@@ -1738,81 +1740,88 @@ def test_mint_id_for_entry_non_mason_no_collision(tmp_path: Path) -> None:
         tmp_path / "no-tier3.md",
         tmp_path / "no-tracked.md",
     )
-    assert result == "DW-FU-7-1"
+    assert result == "DW-doctor-7-1"
 
 
-def test_mint_id_for_entry_non_mason_bare_already_taken_real_excerpt(tmp_path: Path) -> None:
-    """I/O matrix row 2, against a real excerpt: `_bmad-output/projects/
-    pyforge-steward/planning-artifacts/deferred-work-ledger.md` line 222 (a
-    `promoted:` note, not a heading -- proving the "harvest prose, not just
-    headings" rule) cites `DW-FU-10-1` as that entry's own Tier-3 origin id,
-    with no numeric-suffixed sibling anywhere else in that file. Minting for
-    the same story (`10-1`) must suffix past it: `DW-FU-10-1-2`."""
+def test_mint_id_for_entry_non_mason_bare_already_taken(tmp_path: Path) -> None:
+    """I/O matrix row 2, new-grammar shape (Ruling 14): a `DW-doctor-10-1`
+    sibling already collected for the same story (`10-1`) must be suffixed
+    past: `DW-doctor-10-1-2`. `_bmad-output/projects/pyforge-steward/
+    planning-artifacts/deferred-work-ledger.md` line 222 carries the
+    pre-ruling `DW-FU-10-1` shape for this same story (proof the "harvest
+    prose, not just headings" rule still applies) -- that id is untouched
+    on disk (no retro-rename) and, by construction, no longer shares a
+    prefix with any new-grammar base, so it cannot suffix-collide with a
+    fresh mint; this test's fixture uses the new shape instead to prove the
+    suffix-continuation logic still holds under it."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text(
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-10-1` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-10-1` there) "
         "during the pre-shutdown deferred-work audit.\n",
         encoding="utf-8",
     )
     entry = _entry_with_source_spec("`spec-10-1-something.md`")
     result = chain.mint_id_for_entry(entry, "doctor", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-FU-10-1-2"
+    assert result == "DW-doctor-10-1-2"
 
 
-def test_mint_id_for_entry_non_mason_suffix_continuation_real_excerpt(tmp_path: Path) -> None:
-    """I/O matrix row 3, against a real excerpt. The spec's own anecdote
-    names `DW-FU-10-5-1..8` (marshal); the live ledgers no longer carry
-    that exact family (same-day churn), but `_bmad-output/projects/
-    pyforge-steward/planning-artifacts/deferred-work-ledger.md` carries the
-    IDENTICAL shape for story `9-3`: ten `DW-9-3-*` headed entries, each
-    with a verbatim `promoted:` note (embedded below) citing its own
-    Tier-3 origin id -- `DW-FU-9-3` (bare) plus `DW-FU-9-3-2` through
-    `DW-FU-9-3-10`. Minting for the same story (`9-3`) must continue past
-    the highest, `-10`, to `-11` -- numerically, never by re-using the bare
-    id or restarting at `-1`."""
+def test_mint_id_for_entry_non_mason_suffix_continuation(tmp_path: Path) -> None:
+    """I/O matrix row 3, new-grammar shape (Ruling 14). `_bmad-output/
+    projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+    carries the pre-ruling shape for story `9-3` (`DW-FU-9-3` bare plus
+    `DW-FU-9-3-2` through `DW-FU-9-3-10`, untouched on disk); this fixture
+    mirrors that same suffix run under the new `DW-doctor-9-3...` shape to
+    prove minting for the same story continues past the highest, `-10`, to
+    `-11` -- numerically, never by re-using the bare id or restarting at
+    `-1`."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text(
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-2` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-2` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-3` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-3` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-4` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-4` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-5` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-5` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-6` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-6` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-7` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-7` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-8` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-8` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-9` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-9` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-10` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-10` there) "
         "during the pre-shutdown deferred-work audit.\n",
         encoding="utf-8",
     )
     entry = _entry_with_source_spec("`spec-9-3-something.md`")
     result = chain.mint_id_for_entry(entry, "doctor", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-FU-9-3-11"
+    assert result == "DW-doctor-9-3-11"
 
 
 def test_mint_id_for_entry_mason_no_suffix_collected(tmp_path: Path) -> None:
-    """I/O matrix row 4: mason always suffixes, even on a story with
-    nothing collected for it yet -- never bare."""
+    """I/O matrix row 4, post-Ruling-14: mason now mints under the same
+    bare-when-free convention as every other station -- `DW-mason-2-1`,
+    with the real station token where mason previously had none and
+    every other station carried the generic `FU` placeholder instead.
+    Mason's old always-suffixed special case (`DW-{story}-<n>`, never
+    bare) is retired for new mints; the 1338 existing ids it already
+    produced are untouched."""
     entry = _entry_with_source_spec("`spec-2-1-something-brand-new.md`")
     result = chain.mint_id_for_entry(
         entry,
@@ -1820,7 +1829,7 @@ def test_mint_id_for_entry_mason_no_suffix_collected(tmp_path: Path) -> None:
         tmp_path / "no-tier3.md",
         tmp_path / "no-tracked.md",
     )
-    assert result == "DW-2-1-1"
+    assert result == "DW-mason-2-1"
 
 
 def test_mint_id_for_entry_mason_dw_1_10_1_does_not_count_toward_1_1_real_excerpt(
@@ -1829,10 +1838,12 @@ def test_mint_id_for_entry_mason_dw_1_10_1_does_not_count_toward_1_1_real_excerp
     """I/O matrix row 5 and this story's Acceptance Criteria row 2, against
     a VERBATIM excerpt of `_bmad-output/projects/pyforge-mason/
     planning-artifacts/deferred-work-ledger.md` lines 57-64 -- mason's real
-    `DW-1-10-1` entry. Minting for a NEW orphan whose derived story is
-    `1-1` must not be skipped past it: the mint is `DW-1-1-1`, mason's
-    normal first-suffix mint for a story with nothing collected, never
-    `DW-1-1-2`."""
+    pre-ruling `DW-1-10-1` entry (untouched on disk; no retro-rename).
+    Minting for a NEW orphan whose derived story is `1-1` must not be
+    skipped past it: under the new grammar the mint is `DW-mason-1-1`,
+    mason's normal bare-when-free mint for a story with nothing collected
+    under the NEW shape -- the old-shaped `DW-1-10-1` shares no prefix with
+    it at all, so it trivially cannot count toward its suffix either way."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text(
         "### DW-1-10-1\n"
@@ -1865,7 +1876,7 @@ def test_mint_id_for_entry_mason_dw_1_10_1_does_not_count_toward_1_1_real_excerp
     )
     entry = _entry_with_source_spec("`spec-1-1-something-brand-new.md`")
     result = chain.mint_id_for_entry(entry, "mason", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-1-1-1"
+    assert result == "DW-mason-1-1"
 
 
 def test_mint_id_for_entry_letter_suffixed_story_key_distinct_from_unsuffixed(
@@ -1888,8 +1899,8 @@ def test_mint_id_for_entry_letter_suffixed_story_key_distinct_from_unsuffixed(
         no_tier3,
         no_tracked,
     )
-    assert result_a == "DW-FU-6-1a"
-    assert result_plain == "DW-FU-6-1"
+    assert result_a == "DW-doctor-6-1a"
+    assert result_plain == "DW-doctor-6-1"
 
 
 def test_mint_id_for_entry_raises_on_missing_source_spec_field(tmp_path: Path) -> None:
@@ -1941,19 +1952,19 @@ def test_mint_id_for_entry_never_writes_to_either_path(tmp_path: Path) -> None:
 def test_mint_id_for_entry_station_is_never_derived_from_ambient_state(tmp_path: Path) -> None:
     """Design Notes: `station` is an explicit caller-supplied parameter,
     never resolved from ambient active-project state -- an arbitrary KNOWN
-    non-mason station string still takes the FU-prefixed branch (updated
-    2026-08-15: the original used a garbage `"unknown"` value, but Review
-    Triage Log item 3 now requires an unrecognized station to raise rather
-    than silently fall through -- see
+    station string mints under its OWN token, never a generic placeholder
+    (updated 2026-08-15: the original used a garbage `"unknown"` value, but
+    Review Triage Log item 3 now requires an unrecognized station to raise
+    rather than silently fall through -- see
     `test_mint_id_for_entry_unrecognized_station_raises` for that case;
-    `"atlas"` here is a real, known, non-mason station)."""
+    `"atlas"` here is a real, known station)."""
     result = chain.mint_id_for_entry(
         _entry_with_source_spec("`spec-11-1-something.md`"),
         "atlas",
         tmp_path / "no-tier3.md",
         tmp_path / "no-tracked.md",
     )
-    assert result == "DW-FU-11-1"
+    assert result == "DW-atlas-11-1"
 
 
 # Review Triage Log 2026-08-15, item 3 (HIGH): station-string robustness ----------
@@ -1962,10 +1973,10 @@ def test_mint_id_for_entry_station_is_never_derived_from_ambient_state(tmp_path:
 def test_mint_id_for_entry_mason_station_variants_normalize_to_mason_branch(
     tmp_path: Path,
 ) -> None:
-    """`"pyforge-mason"`, `"Mason"`, and `" mason "` must all resolve to
-    mason's own always-suffixed convention -- normalizing common variants
-    defensively is zero-cost and the safer choice given `station` is
-    caller-supplied."""
+    """`"pyforge-mason"`, `"Mason"`, and `" mason "` must all normalize to
+    the same literal `mason` station token in the minted id -- normalizing
+    common variants defensively is zero-cost and the safer choice given
+    `station` is caller-supplied."""
     no_tier3, no_tracked = tmp_path / "no-tier3.md", tmp_path / "no-tracked.md"
     for station in ("pyforge-mason", "Mason", " mason "):
         result = chain.mint_id_for_entry(
@@ -1974,7 +1985,7 @@ def test_mint_id_for_entry_mason_station_variants_normalize_to_mason_branch(
             no_tier3,
             no_tracked,
         )
-        assert result == "DW-2-1-1", station
+        assert result == "DW-mason-2-1", station
 
 
 def test_mint_id_for_entry_unrecognized_station_raises(tmp_path: Path) -> None:
