@@ -653,6 +653,58 @@ enters the seven.
 Stations. Those three stay ours. The Cogs/Skills collision is named so no
 agent treats “Cog” as a ninth Smith.
 
+### BMAD vocabulary — cross-walk, never a shared noun *(amended 2026-09-24)*
+
+*(Amended 2026-09-24 — steward Story 59.3 / `spec-vocabulary-one-name-one-job`
+CAP-3. Source: `docs/dreams/vocabulary-one-name-one-job.md` § Operator
+rulings (accepted 2026-09-15), Rulings 5 and 6.)*
+
+BMAD has its own daily nouns — Epic, Story, Sprint, PRD, Retrospective — and,
+same as the Hub whitepaper's vocabulary above, they have no walk of their
+own. Ruling 5's own words are the doctrine here too: these words **map
+onto** this Lexicon; they **do not join** it.
+
+| BMAD term | Nearest Lexicon / estate surface |
+|---|---|
+| Epic | a capability grouping inside a Spec's decomposition, recorded in that station's `epics.md` |
+| Story | the numbered unit BMAD's chain produces from a Spec, tracked as a row in the Guild's `sprint-status-ledger.yaml` |
+| Sprint | a batch of Stories drawn for one planning/build pass — a BMAD planning-lane concept, with no Lexicon noun of its own |
+| PRD | a decomposition artifact beside the Spec, under `planning-artifacts/`, produced only for product/platform scope |
+| Retrospective | the mechanism that re-forges a Skill once an effort closes (Lexicon noun 6's Rule 2: "a skill sharpened by one effort upgrades **every future wielder**") |
+
+`Spec` deliberately has no row above and no reverse-walk entry below: BMAD
+and this estate already use the identical word for the identical thing —
+`bmad-spec` derives the same Spec this repo's planning chain binds to — so
+there is nothing to cross-walk.
+
+Three divergences, named in the open rather than left to infer:
+
+1. **Spec `shipped` ≠ story `done` ≠ Dream `realized`.** All three describe
+   completion, at three different granularities, on three different ladders.
+   A Spec can be `shipped` while a Story on a sibling chain is still open; a
+   Story can be `done` while its Dream is nowhere near `realized` (this very
+   Charter's own frontmatter is the live example: `specified`, not
+   `realized`, because CAP-7's Guildhall half is still unbacked, long after
+   its stories landed). None of the three stands in for either of the
+   others.
+2. **Ledger `blocked` is Guild-only.** `sprint-status-ledger.yaml`'s
+   `blocked` key has no BMAD counterpart — it is this estate's own
+   mechanism for a Story an operator has deliberately halted, and only an
+   operator flips it back.
+3. **BMAD's `optional` is a correctly-reused term, not an invented one.**
+   The story-ledger's `optional` value reuses BMAD's own retrospective
+   lattice, used exactly where it belongs (Ruling 5's own wording). This is
+   a separate, unrelated fact from a Dream sitting at `pitched` (Ruling 6,
+   `docs/dreams/vocabulary-one-name-one-job.md`) — the two share no spelling
+   and nothing else beyond being stated side by side here: `pitched` is a
+   rung on the Dream ladder, used only once Herald has actually made the
+   case (a deck exists) and the Spec is still `draft`, never required and
+   never backfilled onto an existing Dream.
+
+**Reverse walk — Lexicon nouns with no BMAD counterpart:** Charter, Guild,
+Smiths, Stations, Guildhall. `Spec` is the deliberate exception, explained
+above rather than listed bare here.
+
 ### Gate has three senses; verdict has one *(amended 2026-09-14)*
 
 The Cogs/Smith collision was named here and the neighbouring one was not, so
