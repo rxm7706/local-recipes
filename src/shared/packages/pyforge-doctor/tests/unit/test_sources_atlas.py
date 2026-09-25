@@ -15,7 +15,7 @@ import pytest
 
 from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Finding, Source
-from pyforge.doctor.sources.atlas import _call_mcp_async, gather
+from pyforge.doctor.sources.atlas import _CHECK_STALENESS, _call_mcp_async, gather
 
 _ROWS = [
     {
@@ -82,8 +82,9 @@ def test_mcp_success_returns_one_finding_per_row():
     for finding, row in zip(findings, _ROWS):
         assert isinstance(finding, Finding)
         assert finding.source is Source.STALENESS_REPORT
-        assert finding.check == row["feedstock_name"]
+        assert finding.check == _CHECK_STALENESS
         assert finding.status is DoctorStatus.WARN
+        assert row["feedstock_name"] in finding.message
         assert row["latest_conda_version"] in finding.message
         assert row["uploaded_iso"] in finding.message
         assert str(row["age_days"]) in finding.message
@@ -111,7 +112,7 @@ def test_mcp_unreachable_falls_back_to_cli_transparently():
     assert len(findings) == 2
     for finding, row in zip(findings, _ROWS):
         assert finding.source is Source.STALENESS_REPORT
-        assert finding.check == row["feedstock_name"]
+        assert finding.check == _CHECK_STALENESS
         assert finding.status is DoctorStatus.WARN
         assert finding.evidence == row
 

@@ -14,7 +14,14 @@ import pytest
 
 from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Finding, Source
-from pyforge.doctor.sources.atlas import gather
+from pyforge.doctor.sources.atlas import (
+    _CHECK_ADOPTION_STAGE,
+    _CHECK_CVE,
+    _CHECK_FEEDSTOCK_HEALTH,
+    _CHECK_RELEASE_CADENCE,
+    _CHECK_VERSION_DOWNLOADS,
+    gather,
+)
 
 # --- cve axis fixtures -----------------------------------------------------
 
@@ -78,16 +85,16 @@ def test_cve_mcp_success_returns_one_finding_per_row():
     for finding, row in zip(findings, _CVE_ROWS):
         assert isinstance(finding, Finding)
         assert finding.source is Source.CVE_WATCHER
-        assert finding.check == row["conda_name"]
+        assert finding.check == _CHECK_CVE
         assert finding.evidence["severity"] == "C"
         assert finding.evidence["conda_name"] == row["conda_name"]
 
 
 def test_cve_delta_positive_is_fail_delta_nonpositive_is_warn():
     findings = gather("cve", mcp_caller=_mcp_returns("cve_watcher", json.dumps(_CVE_PAYLOAD)))
-    by_check = {f.check: f for f in findings}
-    assert by_check["some-package"].status is DoctorStatus.FAIL  # delta=2
-    assert by_check["another-package"].status is DoctorStatus.WARN  # delta=-2
+    by_conda_name = {f.evidence["conda_name"]: f for f in findings}
+    assert by_conda_name["some-package"].status is DoctorStatus.FAIL  # delta=2
+    assert by_conda_name["another-package"].status is DoctorStatus.WARN  # delta=-2
 
 
 def test_cve_severity_threads_to_mcp_and_cli():
@@ -269,26 +276,30 @@ def test_abandonment_composes_three_sub_calls_with_correct_sources():
     # feedstock_health: one row from "stuck" + one from "bad" = 2 Findings.
     assert len(by_source[Source.FEEDSTOCK_HEALTH]) == 2
     checks = {f.check for f in by_source[Source.FEEDSTOCK_HEALTH]}
-    assert checks == {"stuck-package-feedstock", "bad-package-feedstock"}
+    assert checks == {_CHECK_FEEDSTOCK_HEALTH}
+    names = {f.evidence.get("feedstock_name") for f in by_source[Source.FEEDSTOCK_HEALTH]}
+    assert names == {"stuck-package-feedstock", "bad-package-feedstock"}
 
     # release_cadence: only decelerating/silent rows survive the client-side
     # filter -- "accelerating-package" must be excluded entirely.
     cadence_checks = {f.check for f in by_source[Source.RELEASE_CADENCE]}
-    assert cadence_checks == {"silent-package", "decelerating-package"}
+    assert cadence_checks == {_CHECK_RELEASE_CADENCE}
+    cadence_names = {f.evidence.get("conda_name") for f in by_source[Source.RELEASE_CADENCE]}
+    assert cadence_names == {"silent-package", "decelerating-package"}
 
 
 def test_abandonment_bad_filter_is_fail_stuck_filter_is_warn():
     findings = gather("abandonment", mcp_caller=_abandonment_mcp_caller())
-    by_check = {f.check: f for f in findings if f.source is Source.FEEDSTOCK_HEALTH}
-    assert by_check["bad-package-feedstock"].status is DoctorStatus.FAIL
-    assert by_check["stuck-package-feedstock"].status is DoctorStatus.WARN
+    by_name = {f.evidence.get("feedstock_name"): f for f in findings if f.source is Source.FEEDSTOCK_HEALTH}
+    assert by_name["bad-package-feedstock"].status is DoctorStatus.FAIL
+    assert by_name["stuck-package-feedstock"].status is DoctorStatus.WARN
 
 
 def test_abandonment_silent_trend_is_fail_decelerating_is_warn():
     findings = gather("abandonment", mcp_caller=_abandonment_mcp_caller())
-    by_check = {f.check: f for f in findings if f.source is Source.RELEASE_CADENCE}
-    assert by_check["silent-package"].status is DoctorStatus.FAIL
-    assert by_check["decelerating-package"].status is DoctorStatus.WARN
+    by_name = {f.evidence.get("conda_name"): f for f in findings if f.source is Source.RELEASE_CADENCE}
+    assert by_name["silent-package"].status is DoctorStatus.FAIL
+    assert by_name["decelerating-package"].status is DoctorStatus.WARN
 
 
 def test_abandonment_one_sub_call_failing_does_not_hide_the_others():
@@ -316,7 +327,7 @@ def test_abandonment_one_sub_call_failing_does_not_hide_the_others():
     fail_sentinel = [f for f in health_findings if f.check == "doctor.sources.atlas"]
     assert len(fail_sentinel) == 1
     assert fail_sentinel[0].status is DoctorStatus.FAIL
-    real_bad = [f for f in health_findings if f.check == "bad-package-feedstock"]
+    real_bad = [f for f in health_findings if f.evidence.get("feedstock_name") == "bad-package-feedstock"]
     assert len(real_bad) == 1
 
     assert Source.RELEASE_CADENCE in by_source
@@ -427,15 +438,17 @@ def test_adoption_stage_only_when_no_target_given():
     # adoption_stage's rows are gathered.
     assert len(findings) == len(_ADOPTION_STAGE_ROWS)
     checks = {f.check for f in findings}
-    assert checks == {"silent-package", "declining-package", "stable-package"}
+    assert checks == {_CHECK_ADOPTION_STAGE}
+    names = {f.evidence.get("conda_name") for f in findings}
+    assert names == {"silent-package", "declining-package", "stable-package"}
 
 
 def test_adoption_silent_stage_is_fail_declining_is_warn_other_is_ok():
     findings = gather("adoption", mcp_caller=_adoption_mcp_caller())
-    by_check = {f.check: f for f in findings}
-    assert by_check["silent-package"].status is DoctorStatus.FAIL
-    assert by_check["declining-package"].status is DoctorStatus.WARN
-    assert by_check["stable-package"].status is DoctorStatus.OK
+    by_name = {f.evidence.get("conda_name"): f for f in findings}
+    assert by_name["silent-package"].status is DoctorStatus.FAIL
+    assert by_name["declining-package"].status is DoctorStatus.WARN
+    assert by_name["stable-package"].status is DoctorStatus.OK
 
 
 def test_adoption_version_downloads_sub_call_only_runs_with_a_target():
@@ -446,7 +459,7 @@ def test_adoption_version_downloads_sub_call_only_runs_with_a_target():
     assert len(version_download_findings) == len(_VERSION_DOWNLOADS_ROWS)
     assert all(f.source is Source.ADOPTION for f in version_download_findings)
     assert all(f.status is DoctorStatus.OK for f in version_download_findings)
-    assert all(f.check == "stable-package" for f in version_download_findings)
+    assert all(f.check == _CHECK_VERSION_DOWNLOADS for f in version_download_findings)
 
 
 def test_adoption_target_threads_maintainer_to_adoption_stage():
@@ -483,8 +496,8 @@ def test_adoption_one_sub_call_failing_does_not_hide_the_other():
         # CLI fallback succeeds and the degrade path under test never runs.
         cli_runner=_cli_raises(CliBridgeError("simulated: script missing")),
     )
-    by_source_check = {(f.source, f.check) for f in findings}
-    assert (Source.ADOPTION, "silent-package") in by_source_check
+    by_source_name = {(f.source, f.evidence.get("conda_name")) for f in findings}
+    assert (Source.ADOPTION, "silent-package") in by_source_name
     fail_sentinels = [f for f in findings if f.check == "doctor.sources.atlas"]
     assert len(fail_sentinels) == 1
     assert fail_sentinels[0].status is DoctorStatus.FAIL

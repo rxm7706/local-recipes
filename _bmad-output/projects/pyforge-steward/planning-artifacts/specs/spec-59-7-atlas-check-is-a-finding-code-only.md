@@ -2,7 +2,7 @@
 title: '59.7: atlas check= is a finding code only'
 type: 'fix'
 created: '2026-09-16'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
