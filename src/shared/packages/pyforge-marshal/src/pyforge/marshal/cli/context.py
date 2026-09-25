@@ -48,23 +48,45 @@ adds ``bundle`` -- the canonical, digest-pinned context bundle extending
 Story 28.8's declaration half (``core/context_bundle.py``): no scribe
 subprocess, so two harnesses on the same commit produce byte-identical
 bundles deterministically.
+
+Story 46.6 (spec-pyforge-marshal CAP-193, fold-remint of spec-marshal-
+token-economy CAP-20) adds ``advisory`` -- a persistence advisory naming
+which declared-active ``[context]`` layers have lapsed (a kit item
+``MISSING``/``STALE``/``UNAVAILABLE``, or an enabled derived-context/
+planning-graph layer whose ``scribe`` binary no longer resolves on PATH),
+so an interactive session's silent savings do not silently stop. Never
+blocks: an unresolvable session, or a session where every declared-active
+layer still resolves, both emit no findings and write no journal entry.
+When something has lapsed, exactly one ``Phase.OBSERVATION`` journal entry
+is appended naming every lapsed layer, under a fresh ``session-advisories/
+<run_id>/`` run directory -- a sibling of, never inside, ``dispatch-runs/``,
+so every existing dispatch-run reader (``core/layer_savings_sources.py``,
+``cli/status.py``) stays unaffected.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import secrets
+from datetime import datetime, timezone
 from pathlib import Path
 
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.process import PosixProcess
 
+from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.scribe_cli import ScribeCli
 from ..core import context_bundle
 from ..core import derived_context as derived
 from ..core import planning_graph as planning
+from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Finding, Severity, build_envelope
 from ..core.policy import _is_valid_project_slug
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.fs import FsPort
+from ..seed.detect.kit import KitStatus, kit_checks
 from .config import _suppress_downstream_pipe_close, repo_root
 from .context_bootstrap import add_substrate_parsers
 from .seed import _resolve_project_slug, resolve_context_layers
@@ -76,15 +98,29 @@ _MRS_CTX_UNEVALUABLE = "MRS-CTX-001"
 _MRS_CTX_DEGRADED = "MRS-CTX-002"
 #: Planning-graph retrieval degraded (Story 28.9). WARN, never blocking.
 _MRS_PLAN_DEGRADED = "MRS-PLAN-001"
+#: A declared-active [context] layer's instrument/binary no longer resolves
+#: (Story 46.6, spec-pyforge-marshal CAP-193). WARN, never blocking.
+_MRS_CTX_LAPSED = "MRS-CTX-009"
 
 #: Derived, gitignored home for the declaration manifest -- alongside the
 #: rest of this repo's per-station derived data, never a tracked artifact.
 _MANIFEST_DIR_RELPATH = ".claude/data/pyforge-marshal/derived-context"
 
+#: Story 46.6's Tier-3 run directory -- a SIBLING of `core/dispatch.py`'s
+#: `_DISPATCH_RUNS_DIRNAME` ("dispatch-runs"), never that same dirname.
+#: Deliberately not reused from `core/dispatch.py` (Design Notes): a
+#: provably-disjoint glob target keeps a synthetic advisory run invisible to
+#: every reader that globs `dispatch-runs/*/journal.jsonl` specifically
+#: (`core/layer_savings_sources.py`, `cli/status.py`) by construction,
+#: rather than by auditing every present and future reader for tolerance of
+#: a run with no `dispatch-launch` entry.
+_SESSION_ADVISORIES_DIRNAME = "session-advisories"
+_ADVISORY_JOURNAL_FILENAME = "journal.jsonl"
+
 
 def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register ``context`` with its nested ``refresh``, ``retrieve``,
-    ``bundle``, ``bootstrap`` and ``pack`` actions."""
+    ``bundle``, ``advisory``, ``bootstrap`` and ``pack`` actions."""
     parser = subparsers.add_parser(
         "context",
         help=(
