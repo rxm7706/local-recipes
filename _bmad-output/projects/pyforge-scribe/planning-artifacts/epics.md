@@ -781,6 +781,27 @@ So that I place a task on the right root and in the right mode before I read a s
 **And** the story's run result records the removed → target map (one row per removed note, the target file and anchor), and a one-shot check at landing confirms every target exists; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; `governance-currency` (in `detectors-ci`) green; `CLAUDE.md` still imports `@AGENTS.md` bare; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
 **Status:** backlog
 
+## Epic 22: The local Postgres cluster starts from any checkout (spec-pyforge-scribe CAP-31)
+
+Minted 2026-09-25 from the station Dream's entry of the same date (found landing PR #1605). A
+new epic because Epic 21 carries a different capability (`fnd:CAP-15`). One story. **HARD
+boundaries:** the data directory stays under the checkout's `var/scribe-pg/`; port 5433 and the
+DSN `tests/unit/conftest.py` hard-codes do not change; no container.
+
+### Story 22.1: `scribe-pg-up` succeeds from a long-path worktree
+
+As a contributor running scribe's suite from a worktree the estate named,
+I want the cluster's Unix socket to live in a short per-user directory,
+So that `pr-preflight` is red only for my change, never for the length of my worktree's path.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-31 • Dream 2026-09-25
+**Surface:** `scripts/scribe_pg.py` (socket dir: `SCRIBE_PG_SOCKET_DIR` → `$XDG_RUNTIME_DIR/scribe-pg` → `/tmp/scribe-pg-<uid>`, created 0700; `-k` and `status` follow it), `tests/scripts/test_scribe_pg.py` (new), `pixi.toml` (`scribe-pg-up` / `scribe-pg-status` descriptions name the socket dir).
+**Given** `scripts/scribe_pg.py` passes `-k <checkout>/var/scribe-pg` and a worktree such as `local-recipes-wt-unifying-strategy-dream-seeds-2026-09-25` pushes that socket path past PostgreSQL's ~107-byte limit, so `pg_ctl start` fails with "could not create any Unix-domain sockets" (found 2026-09-25)
+**When** this story lands
+**Then** `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0 from such a worktree and `scribe-pg-status` reports the cluster listening on 127.0.0.1:5433 with the socket directory it used; the data directory is unchanged (`var/scribe-pg/data`); a cluster already listening is reused, not re-initialised
+**And** `tests/scripts/test_scribe_pg.py` covers the directory choice, the override and the length guard without starting a server; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green with the cluster up; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
+**Status:** backlog
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

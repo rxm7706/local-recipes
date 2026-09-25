@@ -115,6 +115,18 @@ verify_commands = [
   ".claude/memory/**",
   "docs/reference/**",
 ]
+"22" = [  # the local Postgres cluster starts from any checkout (spec-pyforge-scribe CAP-31), added 2026-09-25
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/scribe_pg.py",
+  "tests/scripts/test_scribe_pg.py",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

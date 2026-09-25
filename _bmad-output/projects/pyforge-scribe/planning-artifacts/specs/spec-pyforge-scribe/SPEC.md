@@ -2,7 +2,7 @@
 id: SPEC-scribe
 spec: pyforge-scribe
 status: ready
-updated: "2026-09-19"
+updated: "2026-09-25"
 owner-dream: docs/dreams/pyforge-scribe.md
 covers-dreams:
   - docs/dreams/pyforge-scribe.md
@@ -159,6 +159,10 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 - **CAP-30 — the managed instruction block carries no aspiration** ← spec-pyforge-scribe CAP-30 (ready 2026-09-20)
   - **intent:** `tests/meta/test_instruction_surface_parity.py` reds a `TODO:` / `FIXME:` / "not yet landed" line inside `AGENTS.md`'s `bmad:context` block (between the markers only), naming the line; the block states present truth, and an intent that has no Story goes to a Dream entry instead.
   - **success:** the meta-test fails on a planted `TODO:` line inside the markers and passes on the live block once steward CAP-154 retires the two lines standing on 2026-09-20; it stays silent for TODO text outside the markers.
+
+- **CAP-31 — the local Postgres cluster starts from any checkout** ← spec-pyforge-scribe CAP-31 (ready 2026-09-25)
+  - **intent:** `scribe-pg-up` starts the per-user PostgreSQL + pgvector cluster from any checkout or worktree the estate creates, however long its path: the Unix socket directory is short and per-user (`SCRIBE_PG_SOCKET_DIR` when set, else `$XDG_RUNTIME_DIR/scribe-pg`, else `/tmp/scribe-pg-<uid>`, created 0700), while the data directory stays under the checkout's gitignored `var/scribe-pg/`; `scribe-pg-status` reports the socket directory in use.
+  - **success:** from a worktree whose `var/scribe-pg` path exceeds 100 bytes, `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0 and `scribe-pg-status` reports listening on 127.0.0.1:5433; `tests/scripts/test_scribe_pg.py` (new) covers the directory choice, the override and the length guard without starting a server; the up path stays idempotent against a cluster already listening on :5433; port 5433, the DSN `tests/unit/conftest.py` hard-codes, and the no-container rule are unchanged.
 
 ## Constraints
 
