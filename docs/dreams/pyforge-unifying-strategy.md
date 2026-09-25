@@ -878,3 +878,29 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   Realization log for the full narrative, including a mid-turn process correction (a Story
   must exist before hand-implementation, no exemption for a small fix) now codified in
   `AGENTS.md` / `CLAUDE.md`.
+- **2026-09-25 (seed)** — **`local-recipes` repo-size measurement, folded into the cutover's
+  "only move what it needs" principle.** Trigger: `local-recipes` measured at 285 MB current
+  working tree (299 MB GitHub-reported git-compressed size) while attempting a Gemini
+  chat-session URL import (100 MB ceiling). Live breakdown (measured 2026-09-25):
+  `presentations/` 134.7 MB / 944 files (**47% of the tree — the single largest category by
+  far**), `_bmad-output/` 34.6 MB, `src/` 34.3 MB, `recipes/` 30.4 MB / 14,414 files, `.claude/`
+  22.3 MB, `docs/dashboard/` 9.7 MB. Git history separately carries `pixi.lock` at 239
+  revisions / 539 MB and `docs/dashboard/` generated build output at 816 revisions / 162 MB
+  (both pure churn from files that fully rewrite on nearly every touching commit and never
+  delta-compress), plus a since-deleted 50 MB `recipes/openmc-plotter/tests/setup_test/plot_settings.pkl`
+  still costing every clone. **Already solved by the existing plan:** the "Foundry is a fresh
+  empty repo" decision above (operator, 2026-09-04) already drops ALL git-history churn by
+  construction — the `pixi.lock`/dashboard-build revision bloat never crosses into foundry
+  regardless of this entry. Story 44.8's in-flight-only recipe filter already bounds `recipes/`'s
+  contribution too. **The one real gap:** Story 44.5 ("Move the estate") currently names
+  "decks" as an unconditional move alongside skills/BMAD/dreams, with no filter analogous to
+  44.8's — and decks are the single largest current-tree category (134.7 MB), including
+  several topics with 2–4 superseded dated `.pptx` versions kept side by side (e.g.
+  `pyforge-unifying-strategy` itself has 4, `pyforge-atlas` has 3). **Seeded, not yet specced:**
+  when 44.5 is next amended, give decks the same working-set discipline 44.8 gives recipes —
+  latest deck per topic only (or decks excluded from the estate move entirely, regenerated
+  on demand from their source `.dc.html` prototypes per `docs/how-to/presentation-deck.md`,
+  or relocated to Git LFS / a satellite decks repo) — so foundry starts minimal by construction
+  rather than inheriting the accumulated deck-duplication local-recipes was never pruned of.
+  No CAP minted, no story touched; a future `bmad-correct-course` pass on
+  `spec-python-foundry-cutover` resolves this into a concrete 44.5 sub-decision or a new story.
