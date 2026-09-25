@@ -682,6 +682,31 @@ verify_commands = [
   "src/shared/packages/pyforge-scribe/**",
   "src/shared/packages/pyforge-atlas/**",
 ]
+"67" = [  # the estate consolidates — laptop SBOM, gap list, spine no-archive (spec-python-foundry-cutover fnd:CAP-12..15), added 2026-09-25
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/**",
+  "AGENTS.md",
+  "docs/foundry/**",
+  "docs/reference/developer-guide.md",
+  "docs/reference/library-llms-full.md",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  "scripts/pixi_version_registry.py",
+  "scripts/sbom_laptop_gate.py",
+  "scripts/sbom_gap_derive.py",
+  "tests/scripts/test_sbom_laptop_gate.py",
+  "tests/scripts/test_sbom_gap_derive.py",
+  ".claude/skills/conda-forge-expert/**",
+  ".claude/skills/pyforge-steward/**",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

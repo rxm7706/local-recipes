@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-09-19"
+updated: "2026-09-25"
 source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -1259,9 +1259,9 @@ capabilities:
   - id: fnd:CAP-7
     spec: python-foundry-cutover
     station: pyforge-steward
-    heading: Archive `local-recipes` (Phase 6)
+    heading: Archive `local-recipes` (Phase 6). RETIRED 2026-09-25.
     mode: retire
-    note: archive local-recipes; must not appear on B
+    note: CAP withdrawn 2026-09-25 (operator — no archive of A), never realized on A; 44.10 never dispatched; must not appear on B; not B-side retirement work
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
   - id: fnd:CAP-8
     spec: python-foundry-cutover
@@ -1291,6 +1291,38 @@ capabilities:
     heading: Foundry kernel regenerate
     mode: rebuild
     note: kernel 54.2-54.4 landed on B
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-12
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: The laptop SBOM
+    mode: A-only
+    expiry: 2026-12-31
+    note: laptop SBOM is A-side until Frames / this ledger carry it (Dream 2026-09-25); Story 67.1
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-13
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: The SBOM is checkable
+    mode: A-only
+    expiry: 2026-12-31
+    note: laptop gate + gap list on A; Stories 67.2-67.4; Mason gap stories minted from 67.3
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-14
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: The dossier is the cutover's control plane
+    mode: A-only
+    expiry: 2026-12-31
+    note: the control-plane claim surface lives on A until cutover_root flips; herald Story 26.1
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-15
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: The instruction surface names the estate first
+    mode: A-only
+    expiry: 2026-12-31
+    note: A's AGENTS.md; B's instruction surface is B's under the writer lock (python-foundry PR 19); scribe Story 21.1
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
   - id: scratch-worktree-lifecycle:CAP-1
     spec: scratch-worktree-lifecycle

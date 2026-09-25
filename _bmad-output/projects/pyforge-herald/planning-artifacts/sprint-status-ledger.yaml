@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 155
+# stories: 158
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -96,6 +96,7 @@ development_status:
   24-2-the-docsite-has-a-pr-gate: done
   24-3-the-second-sync-all-run-is-proven-unchanged-on-a-real-deck: done
   25-1-the-deck-pipeline-runs-from-the-guild-env: done
+  26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact: backlog
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: done
@@ -155,6 +156,8 @@ development_status:
   epic-24-retrospective: optional
   epic-25: done
   epic-25-retrospective: optional
+  epic-26: backlog
+  epic-26-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done

@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade after herald one-chain fold; no AD added or changed
+updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 altitude: feature
 ---
 
@@ -676,3 +676,9 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`prd→arch` edge after the PRD re-stamp of 2026-09-25 (steward 59.6's roster re-export in
+`progress.py`). The roster is read from `pyforge-core`, the shared leaf every station already
+depends on — no new import boundary, no AD added, changed or removed. `updated:` bumped.

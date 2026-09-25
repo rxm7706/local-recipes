@@ -10,6 +10,11 @@ deferred: []
 declared_low_risk: false
 ---
 
+> **Retired 2026-09-25 — never dispatch.** `fnd:CAP-7` was retired by the operator's no-archive
+> ruling (`spec-python-foundry-cutover` memlog 2026-09-25); this story retires with it. The ledger
+> key stays `blocked`; an operator flip does not revive it. Text kept as history. The spine
+> amendment is Story 67.8.
+
 <intent-contract>
 
 ## Intent

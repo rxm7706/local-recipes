@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 407
+# stories: 417
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -270,6 +270,14 @@ development_status:
   65-2-the-ledger-query-answers-done-running-next-in-one-call: done
   66-1-lint-and-types-gate-the-ten-packages-locally-and-on-the-runners-alike: done
   66-2-the-pre-commit-set-attribution-lines-and-un-preflighted-pushes-are-refused-by-hooks: done
+  67-1-the-sbom-composes-the-laptop-bill-of-materials-on-three-platforms-with-postgresql-17-held: backlog
+  67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: backlog
+  67-3-every-gap-and-every-fat-only-pin-has-a-disposition-and-an-owner: backlog
+  67-4-upstream-tickets-for-the-gaps-that-need-one: blocked
+  67-5-the-estate-points-at-the-sbom: backlog
+  67-6-index-herald-s-dossier-states-the-cutover-s-control-plane-herald-26-1: blocked
+  67-7-index-scribe-s-instruction-surface-names-the-estate-first-scribe-21-1: blocked
+  67-8-the-cutover-spine-drops-the-archive: backlog
   7-1-one-build-whole-guild: done
   7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: done
@@ -415,6 +423,8 @@ development_status:
   epic-65-retrospective: optional
   epic-66: done
   epic-66-retrospective: optional
+  epic-67: backlog
+  epic-67-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done
