@@ -1883,9 +1883,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # of spec-marshal-token-economy CAP-20): `marshal context advisory`'s
         # own code. 009 WARN -- a declared-active `[context]` layer's
         # instrument/binary no longer resolves at session-close (a kit item
-        # MISSING/STALE/UNAVAILABLE, or an enabled derived-context/
-        # planning-graph layer whose `scribe` binary does not resolve on
-        # PATH); never blocks.
+        # gone MISSING/STALE -- UNAVAILABLE is deliberately excluded -- or
+        # an enabled derived-context/planning-graph layer whose `scribe`
+        # binary does not resolve on PATH); never blocks.
         "MRS-CTX-009",
         # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
         # `marshal context retrieve`'s degradation code -- WARN, never

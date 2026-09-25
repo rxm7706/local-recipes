@@ -401,10 +401,10 @@ that either one failed to run.
 Story 46.6 (``spec-pyforge-marshal`` CAP-193, fold-remint of ``spec-marshal-
 token-economy`` CAP-20) adds ``MRS-CTX-009`` at ``Verdict.WARN`` for
 ``marshal context advisory``: a declared-active ``[context]`` layer's kit
-item (a kit-provisioned layer gone ``MISSING``/``STALE``/``UNAVAILABLE``) or
-scribe binary no longer resolves -- the same never-blocking tier as the rest
-of this area, since the layer's savings silently stop but nothing about the
-session itself failed.
+item (a kit-provisioned layer gone ``MISSING``/``STALE`` -- ``UNAVAILABLE``
+is deliberately excluded) or scribe binary no longer resolves -- the same
+never-blocking tier as the rest of this area, since the layer's savings
+silently stop but nothing about the session itself failed.
 
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
