@@ -3939,7 +3939,7 @@ project-context-as-constitution)
 **And** a detector flags a silent size/etag drift
 **And** the pulled deck does not label story modes L1–L5 or an autonomy
 percentage (operator 2026-09-16: teaching-only until the Guildhall exists)
-**Status:** backlog
+**Status:** done
 
 ### Story 59.5: One mint-time slugify and two DW families
 
@@ -3952,7 +3952,7 @@ from one function
 **And** a new `DW-` id is story-scoped or sweep-scoped and includes the short
 station token
 **And** the 53 divergent slugs and 1338 existing `DW-` ids are untouched
-**Status:** backlog
+**Status:** done
 
 ### Story 59.6: Shape hygiene — roster, S-N.N, commits, status comments
 

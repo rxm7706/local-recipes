@@ -2,12 +2,34 @@
 title: '59.5: One mint-time slugify and two DW families'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
-deferred: []
+deferred:
+  - summary: >-
+      `mint_sweep_id` (the sweep-scoped `DW-{station}-{slug}-{date}[-n]` family)
+      and `slugify_title`/`StoryIdentity`/`mint_story_identity` (one mint-time
+      slugify deriving a new story's heading, ledger key, and spec filename)
+      have no caller yet: `scripts/deferred_work_promote.py` only imports the
+      story-scoped `mint_id_for_entry`, and no script mints a new story's three
+      spellings today (that still happens by hand, mirroring `epics.md`'s own
+      established numbering convention per `AGENTS.md` § *Spec → Story before
+      code*). This story's own scope is the derivation functions themselves
+      (I/O matrix: "new story mint" / "existing DW- id"), not their wiring.
+    evidence: >-
+      `grep -rn "mint_sweep_id\|mint_story_identity\|slugify_title\|StoryIdentity"
+      --include="*.py" .` outside `sources/chain.py` and its tests returns
+      nothing. Closure: wire `mint_sweep_id` into a future sweep-promotion
+      entrypoint (natural home: `scripts/deferred_work_promote.py`, alongside
+      `mint_id_for_entry`) and `mint_story_identity` into whichever script
+      first automates `bmad-create-epics-and-stories`' hand-mirrored numbering
+      convention — both outside this story's surface.
+    location: >-
+      src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
+    severity: low
 declared_low_risk: false
+baseline_revision: '685667273e3f5d680464de653d4bcdc26c01bcea'
 ---
 
 <intent-contract>
@@ -49,4 +71,23 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
+**Evidence (2026-09-25):** `mint_id_for_entry` rewritten to the unified
+`DW-{station}-{story}[-n]` grammar (drops the old mason-bare/`DW-FU` split,
+Ruling 14: every new id carries the real station token); new `mint_sweep_id`
+(sweep-scoped `DW-{station}-{slug}-{date}[-n]`) and `slugify_title` /
+`StoryIdentity` / `mint_story_identity` (Ruling 12: heading, ledger key, and
+spec filename all derive from one slugify) added to
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`.
+`tests/scripts/test_deferred_work_promote.py` updated for the new grammar
+(7 assertions: `DW-FU-1-8` → `DW-doctor-1-8`, mason's forced-suffix special
+case dropped). `pixi run --frozen -e pyforge-steward pyforge-steward-test`:
+**1692 passed, 5 skipped**. `pixi run --frozen -e pyforge-doctor
+pyforge-doctor-test`: **2444 passed, 1 skipped**.
+`pytest tests/scripts/test_deferred_work_promote.py -q`: **41 passed**.
+`python scripts/spec_surface_reconcile.py`: **OK, exit 0** (co-governors
+`spec-pyforge-doctor`, `spec-pyforge-marshal`, `spec-pyforge-core` each
+reconciled via their own `.memlog.md`, 2026-09-25). `pixi run -e pyforge-guild
+lint-types`: clean. The 1338 existing `DW-` ids and 53 divergent story slugs
+are untouched; no Epic 44 `blocked` key moved.
 

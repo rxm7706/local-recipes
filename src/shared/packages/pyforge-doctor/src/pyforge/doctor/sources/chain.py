@@ -75,6 +75,10 @@ __all__ = (
     "SpecDeferredFinding",
     "classify_tier3_entries",
     "mint_id_for_entry",
+    "mint_sweep_id",
+    "StoryIdentity",
+    "slugify_title",
+    "mint_story_identity",
     "parse_spec_frontmatter_deferrals",
     "discover_spec_frontmatter_deferrals",
     "frontmatter_deferral_in_tracked",
@@ -3174,14 +3178,20 @@ def mint_id_for_entry(
     with an empty story segment would be exactly the anonymous-entry
     failure this whole mechanism exists to eliminate.
 
-    ``station`` is normalized/validated via ``_normalize_station`` before
-    the mason/non-mason branch below (Review Triage Log 2026-08-15, item 3).
-    ``station == "mason"`` (after normalization) always mints a suffixed
-    ``DW-{story}-<n>`` (never bare, mason's own real convention -- see
-    ``DW-1-10-1``'s ``promoted:`` note in its tracked ledger). Every other
-    known station mints bare ``DW-FU-{story}`` unless that bare id or a
-    ``DW-FU-{story}-...`` id was already collected, in which case
-    ``DW-FU-{story}-<n>`` one past the highest counting suffix.
+    ``station`` is normalized/validated via ``_normalize_station`` (Review
+    Triage Log 2026-08-15, item 3) and always appears in the minted id
+    (vocabulary Dream, Ruling 14 -- every NEW ``DW-`` id includes the short
+    station token; bare ``DW-1``...``DW-10`` collide across ledgers by
+    construction, and this Dream's own ``DW-VOCAB`` sequence split silently
+    across steward and marshal for exactly that reason). This replaces the
+    former mason/non-mason branch, which minted mason bare (``DW-{story}-
+    <n>``, no token at all) and every other station under the generic ``FU``
+    placeholder (``DW-FU-{story}...``) instead of its own real station name
+    -- both are pre-ruling shapes and are never minted again; the 1338
+    existing ids already on disk are untouched (no retro-rename). Mints
+    bare ``DW-{station}-{story}`` unless that bare id or a
+    ``DW-{station}-{story}-...`` id was already collected, in which case
+    ``DW-{station}-{story}-<n>`` one past the highest counting suffix.
 
     ``already_minted`` is an optional accumulator of ids minted earlier in
     the SAME in-progress batch that have not yet been written to either
@@ -3212,14 +3222,133 @@ def mint_id_for_entry(
     if already_minted:
         collected = collected | already_minted
 
-    if station_norm == "mason":
-        base_id = f"DW-{story}"
-        n = _next_free_suffix(base_id, collected)
-        return f"{base_id}-{1 if n is None else n}"
-
-    base_id = f"DW-FU-{story}"
+    base_id = f"DW-{station_norm}-{story}"
     n = _next_free_suffix(base_id, collected)
     return base_id if n is None else f"{base_id}-{n}"
+
+
+#: A zero-padded ISO date (`AGENTS.md` "Dates, tags and versions": dates are
+#: zero-padded so they sort correctly as plain text) -- the date segment of
+#: a sweep-scoped id.
+_SWEEP_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def mint_sweep_id(
+    slug: str,
+    station: str,
+    date_str: str,
+    tier3_path: Path,
+    tracked_path: Path,
+    already_minted: set[str] | None = None,
+) -> str:
+    """Mint the next free sweep-scoped ``DW-`` id: ``DW-{station}-{SLUG}-
+    {date}[-<n>]`` -- the second of the vocabulary Dream's two blessed
+    families (Ruling 13; the fleet's own ``DW-VOCAB-2026-09-14-1..7`` is a
+    live example of the shape, minus the station token Ruling 14 now
+    requires on every new mint). Reuses ``_collect_dw_tokens`` and
+    ``_next_free_suffix`` exactly as ``mint_id_for_entry`` does -- same
+    counting rule, same pure-computation/no-write contract, same
+    ``already_minted`` batch-accumulator convention -- rather than a second
+    implementation of either.
+
+    ``station`` is normalized/validated via ``_normalize_station`` (raises
+    ``ValueError`` on an unrecognized station). ``slug`` is sanitized via
+    ``_sanitize_story_key`` (the same ``[A-Za-z0-9-]`` alphabet the story-
+    scoped mint uses); raises ``ValueError`` if sanitizing empties it.
+    ``date_str`` must already be a zero-padded ISO date (``YYYY-MM-DD``);
+    raises ``ValueError`` otherwise -- this function mints an id for a
+    caller-supplied sweep date, it does not stamp "today" itself, so a
+    stray non-ISO or unpadded value is rejected rather than silently
+    embedded in a `DW-` id.
+
+    This mints a NEW sweep id only. The ~30 existing sweep-scoped ids
+    (``DW-<SLUG>-<date>-<n>``, no station token) are untouched -- Ruling 14
+    bans the no-token shape for anything minted from here on, and is
+    silent on the 1338 ids already on disk."""
+    station_norm = _normalize_station(station)
+    sweep_slug = _sanitize_story_key(slug)
+    if not sweep_slug:
+        raise ValueError(f"could not derive a non-empty sweep slug from {slug!r}")
+    if not _SWEEP_DATE_RE.match(date_str):
+        raise ValueError(f"date_str must be a zero-padded ISO date (YYYY-MM-DD), got {date_str!r}")
+
+    collected = _collect_dw_tokens(tier3_path, tracked_path)
+    if already_minted:
+        collected = collected | already_minted
+
+    base_id = f"DW-{station_norm}-{sweep_slug}-{date_str}"
+    n = _next_free_suffix(base_id, collected)
+    return base_id if n is None else f"{base_id}-{n}"
+
+
+#: The fleet's own real story-number shape, 952/952 (Dream "The shapes"):
+#: dotted `<epic>.<story>`, an optional single trailing letter on the story
+#: half (e.g. `59.5`, `22.4a`).
+_STORY_NUMBER_RE = re.compile(r"^(\d+)\.(\d+[A-Za-z]?)$")
+
+
+@dataclass(frozen=True)
+class StoryIdentity:
+    """A new story's three derived spellings (vocabulary Dream, Ruling 12):
+    the heading is human-canonical, the ledger key and spec filename are
+    both mechanically derived from it -- never authored a second time."""
+
+    heading: str
+    ledger_key: str
+    spec_filename: str
+
+
+def slugify_title(title: str) -> str:
+    """The one slugify Ruling 12 calls for: lowercase, then every run of
+    characters outside ``[a-z0-9]`` collapses to a single ``-``, with
+    leading/trailing ``-`` trimmed. Closed over its own alphabet
+    (``^[a-z0-9]+(-[a-z0-9]+)*$``) by construction -- unlike the 14 of 952
+    existing ledger keys that let an underscore, non-ASCII characters, or a
+    collapsed typographic apostrophe through a looser regex (Dream "The
+    shapes", finding 3). Raises ``ValueError`` if the title slugifies to
+    nothing (e.g. an all-punctuation title).
+
+    Only ever called at mint time, for a NEW story (Ruling 12). The 53
+    existing number-pairs whose ledger key and spec filename already carry
+    different slugs for the same story are never re-derived through this
+    function -- no retro-rename."""
+    slug = re.sub(r"[^a-z0-9]+", "-", title.strip().lower()).strip("-")
+    if not slug:
+        raise ValueError(f"could not derive a non-empty slug from title: {title!r}")
+    return slug
+
+
+def mint_story_identity(number: str, title: str) -> StoryIdentity:
+    """Mint a new story's identity from ONE input pair, per Ruling 12: the
+    heading is human-canonical (``### Story {number}: {title}``); the
+    ledger key and spec filename both derive from it mechanically, via
+    ``slugify_title``, rather than being authored independently (the exact
+    failure the Dream measured: 53 of 842 existing number-pairs carry a
+    different slug in their ledger key than in their spec filename, because
+    nothing today derives one from the other).
+
+    ``number`` is the dotted ``<epic>.<story>`` form a heading already uses
+    (e.g. ``"59.5"``, ``"22.4a"``) -- raises ``ValueError`` if it does not
+    match the fleet's own ``\\d+\\.\\d+[A-Za-z]?`` shape (952/952), or if
+    ``title`` is blank or slugifies to nothing.
+
+    Mints a NEW story's identity only -- never applied retroactively. The
+    53 existing divergent number-pairs are untouched by construction: this
+    function is never called against them."""
+    match = _STORY_NUMBER_RE.match(number.strip())
+    if not match:
+        raise ValueError(f"story number must be dotted <epic>.<story> (e.g. '59.5'), got {number!r}")
+    epic, story = match.group(1), match.group(2)
+    clean_title = title.strip()
+    if not clean_title:
+        raise ValueError("story title must not be blank")
+    slug = slugify_title(clean_title)
+    ledger_key = f"{epic}-{story.lower()}-{slug}"
+    return StoryIdentity(
+        heading=f"### Story {epic}.{story}: {clean_title}",
+        ledger_key=ledger_key,
+        spec_filename=f"spec-{ledger_key}.md",
+    )
 
 
 # --- Story 25.6 / CAP-6: spec-frontmatter `deferred:` intake -----------------
