@@ -18,6 +18,7 @@ spelling" claim fails here rather than silently drifting. Pure stdlib
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -43,12 +44,15 @@ def _charter_text() -> str:
 def _bmad_subsection() -> str:
     """The new subsection's text, from its heading up to the next `### `
     heading (`### Gate has three senses`), so term/divergence checks are
-    scoped to the new content rather than matching anywhere in the file."""
+    scoped to the new content rather than matching anywhere in the file.
+    Whitespace (including hard line-wraps) is collapsed to single spaces so
+    a substring check does not depend on exactly where prose wraps."""
     text = _charter_text()
     start = text.index(_BMAD_HEADING)
     rest = text[start + len(_BMAD_HEADING) :]
     end = rest.index("\n### ")
-    return _BMAD_HEADING + rest[:end]
+    raw = _BMAD_HEADING + rest[:end]
+    return re.sub(r"\s+", " ", raw)
 
 
 def test_the_bmad_vocabulary_subsection_exists():
