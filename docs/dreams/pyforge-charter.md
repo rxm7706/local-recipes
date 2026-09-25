@@ -653,6 +653,46 @@ enters the seven.
 Stations. Those three stay ours. The Cogs/Skills collision is named so no
 agent treats “Cog” as a ninth Smith.
 
+### BMAD vocabulary — cross-walk, never a shared noun
+
+*(Added 2026-09-24 — steward Story 59.3 / `spec-vocabulary-one-name-one-job`
+CAP-3, operator Rulings 5–6, `docs/dreams/vocabulary-one-name-one-job.md` §
+Operator rulings, 2026-09-15.)*
+
+BMAD's daily nouns — Epic, Story, Sprint, PRD, Retrospective — never had a
+cross-walk of their own, unlike the Hub's six shared abstractions above.
+Those words **map onto** this Lexicon; they **do not join** it — same shape
+as the Hub walk: map, never join. BMAD does not gain an eighth Lexicon noun
+any more than the Hub did.
+
+| BMAD term | Nearest Lexicon / estate surface |
+|---|---|
+| Epic | a `## Epic <n>` heading in a station's `epics.md`, paired with an `epic-<n>` ledger key, grouping the Stories that together deliver one or more of a Spec's CAPs — not a Lexicon noun in its own right |
+| Story | work bound by a Spec and dispatched at a station (`marshal factory dispatch` / `spin`) — the same estate surface the Hub walk's Ops row names above |
+| Sprint | a station's own `sprint-status-ledger.yaml` — a Guild-generated tracking artifact, not a time-boxed iteration this estate runs |
+| PRD | the planning chain's decomposition of a Spec for product/platform scope (`bmad-prd`) — the chain, never a substitute for the Spec it decomposes (Charter § The Lexicon §2) |
+| Retrospective | the closeout loop that lands findings back into a Skill (e.g. `conda-forge-expert`'s CHANGELOG, CLAUDE.md Rule 2) — a Skill-maintenance act, not a verdict |
+
+Three divergences, named so no agent conflates them:
+
+1. **Spec `shipped` ≠ story `done` ≠ Dream `realized`.** Three separate facts
+   at three separate tiers, never collapsed into one
+   (`docs/governance/guild-roster.json`'s `$comment_spec_statuses` already
+   states the `shipped` half; this completes the cross-walk).
+2. **Ledger `blocked` is ours.** The story-ledger's `backlog · in-progress ·
+   done · blocked · optional` lattice is a Guild artifact; `blocked` is
+   operator-flipped only (AGENTS.md § Policy) and has no BMAD counterpart.
+3. **Two unrelated words spelled `optional`.** That same story-ledger
+   lattice's `optional` value is BMAD's own retrospective vocabulary
+   (`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` §4) — a
+   different word from a Dream sitting at `pitched`, which is declared,
+   never required, never backfilled
+   (`docs/governance/guild-roster.json`'s `$comment_dream_statuses`). The two
+   share an English spelling and nothing else; they are never conflated.
+
+**Reverse walk — Lexicon nouns with no BMAD counterpart:** Charter, Guild,
+Smiths, Guildhall. Those four stay ours.
+
 ### Gate has three senses; verdict has one *(amended 2026-09-14)*
 
 The Cogs/Smith collision was named here and the neighbouring one was not, so
@@ -1200,3 +1240,25 @@ herald broadcast slack,email --channel engineering-updates
   yet landed; the BMAD↔Lexicon cross-walk content (Spec `shipped` ≠ story
   `done` ≠ Dream `realized`) is `spec-vocabulary-one-name-one-job` CAP-3
   (Story 59.3), referenced above but not written out here.
+
+- **2026-09-24 (amendment)** — **The BMAD↔Lexicon cross-walk is written out,
+  and `pitched`'s optionality is declared alongside it.** Two writes, both
+  closing gaps the 2026-09-18 entry above left open. *The first.* A new §
+  The Lexicon subsection, `### BMAD vocabulary — cross-walk, never a shared
+  noun`, maps BMAD's daily nouns — Epic, Story, Sprint, PRD, Retrospective —
+  onto the nearest Lexicon/estate surface, same shape as the Hub walk: map,
+  never join. It resolves the dangling forward-reference at `### The Spec
+  ladder` above and names the three divergences operator Ruling 5
+  (`docs/dreams/vocabulary-one-name-one-job.md` § Operator rulings,
+  2026-09-15) records in the open: Spec `shipped` ≠ story `done` ≠ Dream
+  `realized`; ledger `blocked` is Guild-only; and the story-ledger's own
+  `optional` value (BMAD's retrospective lattice) is a different word from a
+  Dream sitting at `pitched` — the same English spelling, not the same
+  concept. *The second.* `guild-roster.json`'s `$comment_dream_statuses`
+  gains one prose entry declaring operator Ruling 6 (same date): `pitched`
+  stays optional — never required to advance `dreamt` → `specified`, never
+  backfilled onto an existing Dream, used only once Herald has actually made
+  the case (a deck exists) and the Spec is still `draft`. No Dream file
+  other than this one changed, and no Epic 44 `blocked` key moved. Completes
+  `spec-vocabulary-one-name-one-job` CAP-3 (Story 59.3), whose
+  forward-reference sat at `### The Spec ladder` above.

@@ -106,7 +106,19 @@
     "live build lines. A `building` status was considered and rejected -- it",
     "would go stale the moment a line pauses or finishes, which is exactly how",
     "pyforge-warden came to read `in-spec` while shipped 31/31, and deckcraft",
-    "`dreamt` while holding a deck AND a Spec (both found + fixed 2026-07-25)."
+    "`dreamt` while holding a deck AND a Spec (both found + fixed 2026-07-25).",
+    "",
+    "`pitched` IS OPTIONAL (steward Story 59.3, operator Ruling 6,",
+    "vocabulary-one-name-one-job, 2026-09-15). It is never required to",
+    "advance a Dream from `dreamt` to `specified` -- a Dream may skip straight",
+    "past it. It is never backfilled onto an existing Dream just to fill the",
+    "rung. Use it only once Herald has actually made the case for the Dream --",
+    "a deck exists -- and the Spec is still `draft`. Zero live Dreams use it;",
+    "forcing the rung would invent ceremony the factory does not run. The",
+    "cross-walk naming this word's collision with BMAD's own retrospective-",
+    "lattice `optional` (a story-ledger status, unrelated) lives in",
+    "docs/dreams/pyforge-charter.md's `### BMAD vocabulary` subsection, not",
+    "restated here."
   ],
 
   "dream_types": [
