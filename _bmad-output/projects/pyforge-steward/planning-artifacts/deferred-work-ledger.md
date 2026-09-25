@@ -4796,3 +4796,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-59-5: `mint_sweep_id` (the sweep-scoped `DW-{station}-{slug}-{date}[-n]` family) and `slugify_title`/`StoryIdentity`/`mint_story_identity` (one mint-time slugify deriving a new story's heading, ledger key, and spec filename) have no caller yet: `scripts/deferred_work_promote.py` only imports the story-scoped `mint_id_for_entry`, and no script mints a new story's three spellings today (that still happens by hand, mirroring `epics.md`'s own established numbering convention per `AGENTS.md` § *Spec → Stor... [truncated, 648 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-59-5-one-mint-time-slugify-and-two-dw-families.md`
+  summary: `mint_sweep_id` (the sweep-scoped `DW-{station}-{slug}-{date}[-n]` family) and `slugify_title`/`StoryIdentity`/`mint_story_identity` (one mint-time slugify deriving a new story's heading, ledger key, and spec filename) have no caller yet: `scripts/deferred_work_promote.py` only imports the story-scoped `mint_id_for_entry`, and no script mints a new story's three spellings today (that still happens by hand, mirroring `epics.md`'s own established numbering convention per `AGENTS.md` § *Spec → Stor... [truncated, 648 chars total]
+  evidence: `grep -rn "mint_sweep_id\|mint_story_identity\|slugify_title\|StoryIdentity" --include="*.py" .` outside `sources/chain.py` and its tests returns nothing. Closure: wire `mint_sweep_id` into a future sweep-promotion entrypoint (natural home: `scripts/deferred_work_promote.py`, alongside `mint_id_for_entry`) and `mint_story_identity` into whichever script first automates `bmad-create-epics-and-stories`' hand-mirrored numbering convention — both outside this story's surface.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
+  origin: spec-deferred b8614a9a7e69 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
