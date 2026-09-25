@@ -11,3 +11,5 @@ Gemini-specific:
 - `GEMINI.md` may `@import` other files, but everything cross-tool belongs in `AGENTS.md`, not here.
 - Work in your own worktree and land through a PR (`AGENTS.md` § *Trunk, worktrees, PRs*); never run
   `scripts/bmad-switch` from a parallel session — pass `BMAD_ACTIVE_PROJECT=<slug>` instead.
+- Before ending a session, run `scribe capture` — the session-close ritual for every harness
+  (`AGENTS.md` § *Team memory*), not a Gemini-specific step.

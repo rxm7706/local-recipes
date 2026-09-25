@@ -310,6 +310,9 @@ Repo-wide pointers:
 
 This repo carries a checked-in team-memory index at `.claude/memory/MEMORY.md` — one-line entries capturing team-relevant decisions, feedback, and reference material as reviewable prose (see `.claude/memory/README.md` for the schema and promotion workflow). It is imported below so the index is in context for every session. The import line must stay bare — a backticked `@path` is an inert code span, not an import.
 
+The session-close ritual is `scribe capture`, stated once, in `AGENTS.md` § *Team memory — read at
+session start, every harness* (imported above via `@AGENTS.md`) — not restated here.
+
 @.claude/memory/MEMORY.md
 
 <!-- SKF:BEGIN updated:2026-08-26 -->

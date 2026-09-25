@@ -22,7 +22,9 @@ not commit on the shared checkout.
    `platform-ci-local` if platform). Merge `--merge` (admin if Actions is
    still red). Add `maintenance` if the PR leaves `recipes/`. If `pixi.toml`
    changed, regenerate `environment.yaml` in the same PR.
-4. **Clean:** `pyforge steward workspace clean --merged-only` after merge.
+4. **Close the session:** run `scribe capture` — the session-close ritual for
+   every harness (`AGENTS.md` § *Team memory*), not a Cursor-specific step.
+5. **Clean:** `pyforge steward workspace clean --merged-only` after merge.
    Marshal loop homes (`~/.bmad-loops/`) are not these worktrees — do not
    `clean` them via steward.
 

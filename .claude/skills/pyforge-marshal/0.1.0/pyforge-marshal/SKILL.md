@@ -66,6 +66,7 @@ named finding and never blocks.
 <!-- [MANUAL:additional-notes] -->
 <!-- Persona grammar is `pyforge marshal …` (FR-13), not the `marshal` binary. -->
 <!-- Track writer is `steward track assemble` (Story 53.3); marshal supplies field enumeration, not track.json. -->
+<!-- Session-close ritual, every harness: `scribe capture` (AGENTS.md § Team memory), not restated here. -->
 <!-- [/MANUAL:additional-notes] -->
 
 ## Common Workflows

@@ -12,4 +12,5 @@
 
 persistent_facts = [
   "Default execution path: `marshal factory dispatch` (single story) or `marshal factory spin` (multi-story) is the default way to run this skill — both launch it under marshal governance in an isolated worktree, journaled and benchmarked. Invoking this skill bare is sanctioned but unmeasured: it forgoes the shared substrate/compression layers dispatch wires up, the journal entry a supervised run writes, and the per-harness savings benchmark that reads that journal. Use bare invocation only when a dispatch/spin session isn't available.",
+  "Session-close ritual, every harness: `scribe capture` (AGENTS.md § Team memory) is the way whatever this run learned lands in the shared substrate — no secrets, decision-grade facts only.",
 ]
