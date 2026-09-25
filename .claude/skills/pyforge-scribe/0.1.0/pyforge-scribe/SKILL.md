@@ -106,6 +106,7 @@ grammar only -- never to `pyforge.scribe.extras` internals.
 
 <!-- [MANUAL:additional-notes] -->
 Frame store (steward Story 53.2 pointer only): Company + eight station Frames live in `docs/foundry/frames/` in git — do not graph-ingest them unless a later Spec says so.
+Session-close ritual, every harness: `scribe capture` (AGENTS.md § Team memory), not restated here.
 <!-- [/MANUAL:additional-notes] -->
 
 ## Common Workflows

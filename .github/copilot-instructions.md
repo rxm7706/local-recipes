@@ -16,3 +16,5 @@ Copilot-specific:
 - Because the agent also ingests `CLAUDE.md` and `GEMINI.md`, never copy their content here.
 - Verify with `/instructions` (CLI) or the **References** list on a chat reply that `AGENTS.md` was
   loaded.
+- Before the 59-minute session ends, run `scribe capture` — the session-close ritual for every
+  harness (`AGENTS.md` § *Team memory*), not a Copilot-specific step.

@@ -143,6 +143,9 @@ assume they are enforced there.
 (`~/.claude/projects/<encoded-path>/memory/`), which lives outside the repo and is invisible to every
 other tool and person.
 
+**The session-close ritual, in every harness, is `scribe capture` — stated once, here.** Capture
+hygiene: no secrets, decision-grade facts only. See "Add to it" below for the command.
+
 - **At session start** read `.claude/memory/MEMORY.md` — one line per entry: decisions, failure-mode
   traps, reference material. Claude Code gets it through `CLAUDE.md`'s `@.claude/memory/MEMORY.md`
   import; every other harness reads the file.

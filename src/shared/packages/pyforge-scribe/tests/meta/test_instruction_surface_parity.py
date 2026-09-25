@@ -145,6 +145,35 @@ def test_agents_md_names_the_team_memory_boot_read_and_the_way_in() -> None:
     )
 
 
+def test_agents_md_states_the_session_close_ritual_with_hygiene() -> None:
+    """Story 46.3 / spec-pyforge-marshal CAP-192: the close ritual is named once, in
+    AGENTS.md, with capture hygiene stated alongside it -- not left implicit in the
+    conditional bullets around it."""
+    text = AGENTS.read_text(encoding="utf-8")
+    assert "session-close ritual" in text.casefold(), "AGENTS.md must name the session-close ritual"
+    assert "no secrets, decision-grade facts only" in text, "AGENTS.md must state capture hygiene"
+
+
+@pytest.mark.parametrize(
+    "rel",
+    (
+        "CLAUDE.md",
+        "GEMINI.md",
+        ".github/copilot-instructions.md",
+        ".cursor/rules/trunk-worktree-pr.mdc",
+        ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md",
+        ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md",
+    ),
+)
+def test_harness_profile_points_at_the_session_close_ritual(rel: str) -> None:
+    """Each harness profile / station skill note carries a one-line pointer to the ritual,
+    never a restatement."""
+    text = (ROOT / rel).read_text(encoding="utf-8")
+    assert "scribe capture" in text and "session-close ritual" in text.casefold(), (
+        f"{rel} must point at the AGENTS.md session-close ritual"
+    )
+
+
 def test_every_team_memory_path_agents_md_cites_exists() -> None:
     """PR #1513 cited five memory files that lived only in one operator's home directory."""
     text = AGENTS.read_text(encoding="utf-8")
