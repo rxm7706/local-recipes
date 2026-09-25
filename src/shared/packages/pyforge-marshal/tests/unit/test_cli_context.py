@@ -30,6 +30,7 @@ import pytest
 from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters import scribe_cli
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.scribe_cli import ScribeCli
 from pyforge.marshal.cli import context as context_cli
 from pyforge.marshal.cli.main import main
@@ -554,6 +555,28 @@ class _FakeGitLogProcess:
 
     def run(self, argv, *, cwd, timeout_s=None):
         return ProcessResult(returncode=0, stdout=f"{self._head_ts}\n", stderr="")
+
+
+class _AppendLineRaisesFs:
+    """A minimal ``FsPort`` double -- Story 46.6 review triage fix 3.
+    Directory creation and the sidecar write behave like a normal
+    filesystem, but ``append_line`` (the final step of the journal write,
+    outside the original ``try`` block's coverage) always raises
+    ``FsError``. Proves the write's ``FsError`` guard now covers the WHOLE
+    write, not just ``ensure_dir``/``create_dir_exclusive`` -- the command
+    must degrade cleanly (no journal, clean exit code) rather than crash."""
+
+    def ensure_dir(self, path: Path) -> None:
+        path.mkdir(parents=True, exist_ok=True)
+
+    def create_dir_exclusive(self, path: Path) -> None:
+        path.mkdir(parents=False, exist_ok=False)
+
+    def write_text_atomic(self, path: Path, content: str) -> None:
+        path.write_text(content, encoding="utf-8")
+
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        raise FsError("simulated append_line failure (Story 46.6 review triage fix 3)")
 
 
 class TestContextAdvisory:
