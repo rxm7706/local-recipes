@@ -25,6 +25,7 @@ declared_low_risk: false
 **Always:**
 - Spine changes go through `bmad-architecture` from its memlog.
 - Re-stamp scoped: one `--spec` per Spec the detector names.
+- Co-governor reconcile before landing: a memlog entry on every Spec `spec-surface-check` names, `git add`, then `python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>` per named Spec, re-run the check and read its exit code; never a bare stamp.
 
 **Never:**
 - Do not merge PRs #1563 / #1564 / #1576; port their payload by hand where this story names it.

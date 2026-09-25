@@ -604,7 +604,7 @@ solver farm. Graphify move-list and package fold never in one story. No `CAP-20`
 evergreen Spec. The archive's phase table is the record of where this came from, not a
 second copy to maintain.
 
-## Where next — the unification strategy at 2026-09-09
+## Where next — the unification strategy at 2026-09-09 (consolidated 2026-09-25)
 
 Written from the currency review (`research/currency-review-pyforge-unifying-strategy-2026-09-09.md`)
 after 384 commits and 13 PRs. The review's deepest finding is not any stale line. It is a pattern.
@@ -733,7 +733,7 @@ is re-derived; and the Single-Spec merge is minted now, as Story 48.8, before an
 
 ### Consolidation — 2026-09-25: one laptop SBOM, one control plane, one instruction surface
 
-**Ruling (operator, 2026-09-25).** Three open PRs and one pasted whitepaper arrived beside the
+**Direction (operator, 2026-09-25).** Three open PRs and one pasted whitepaper arrived beside the
 chain instead of through it: #1563 (rewrite `AGENTS.md` for PyForge + the BMAD Agentic-SDLC),
 #1564 (`pyforge-foundry-full` as the laptop SBOM, with its own Dream file), #1576 (the estate
 dossier as the A→B cutover control plane, with its own Dream file), and *Architectural
@@ -749,7 +749,9 @@ Dream (`pyforge-foundry-full-sbom.md`, `pyforge-estate-whitepaper.md`). Under th
 (`chain-sprawl-check`; `CHAIN-STANDARD.md` § 9) an unexempted satellite on a PR is rewritten as a
 dated section on the owning Dream and the extra file is dropped. Their substance is below; the
 files do not land. The whitepaper is kept whole, every claim checked against the installed
-skills, in `research/technical-bmad-method-whitepaper-verification-2026-09-25.md` (steward).
+skills, in `research/technical-pyforge-unifying-strategy-bmad-method-whitepaper-2026-09-25.md`
+(steward). The four operator rulings are in § *Operator rulings* below; the dispatch order is in
+§ *The execution plan*.
 
 #### Where the estate is (measured 2026-09-25, `main` `5ab472318b`)
 
@@ -766,8 +768,9 @@ re-derived; this Dream was not, until now.
   pins — B's `PIN.md` cites contract `local-recipes@9e9f685`). CFE is rebuilt from Specs, not
   moved. The table's "Fold the packages" and "Move the estate" are superseded wording.
 - **Capability ledger** ([[foundry-capability-ledger]], Epic 55): `docs/foundry/capability-ledger.yaml`
-  holds 907 rows — 815 `rebuild`, 87 `A-only`, 5 `retire`; `never_move: true`; no row yet
-  claims `verified-in-foundry`. Frames: company + eight stations at Frame Spec v0.3 (Epics 53, 64).
+  holds 907 rows at `5ab472318b` (911 once this PR adds `fnd:CAP-12..15` as `A-only`) — 815
+  `rebuild`, 87 → 91 `A-only`, 5 `retire` (one of them `fnd:CAP-7`, a withdrawn contract id, not
+  B-side retirement work); `never_move: true`; no row yet claims `verified-in-foundry`. Frames: company + eight stations at Frame Spec v0.3 (Epics 53, 64).
 - **B (`python-foundry`):** private; `main` last merged 2026-09-14; three packages; `docs/foundry/`
   carries `PIN`, `SPEC`, `ab-sync`, `case-list`, `modes`, `renovate` and the Frames. Its open
   PR #19 is #1563's companion (the same behavioural block on B).
@@ -794,7 +797,9 @@ compose line.**
   needs it; out otherwise, even when `local-recipes` pins it today. Never compose `local-recipes`;
   no `desktop-lab` kitchen sink.
 - **Constraints (operator, 2026-09-21):** PostgreSQL major **17** (`>=17.11,<18`); keep
-  `platform-dev`; hold libpq 17 by capping `psycopg >=3.2.9,<3.2.10` and `pgvector >=0.8.0,<0.8.2`,
+  `platform-dev`; hold libpq 17 by capping psycopg and pgvector below the first builds that need
+  libpq 18 (#1564 wrote `psycopg <3.2.10` / `pgvector <0.8.2`; the lock shows psycopg 3.2.10
+  already on libpq 17.11, so 67.1 measures the boundary — psycopg-c 3.3 today — before pinning),
   never by bumping Postgres; never push a stub or placeholder `pixi.toml` to test write access —
   it happened twice on 2026-09-21 and reddened CI.
 - **Campaign map:** (1) the BoM core — `build`, `grayskull`, `crm`, `platform-dev`,
@@ -810,15 +815,18 @@ Found while folding — none of it is in the PR:
   (734 packages) where `main` resolves three. A Mac or Windows laptop could no longer install it.
 - **PG17 is not true on `main`.** `scribe-pg` pins `postgresql >=18.3,<19` and `pgvector >=0.8.6`
   on purpose: scribe's `psycopg >=3.3.4` pulls psycopg-c, which needs libpq ≥18.3 (the
-  `pixi.toml` comment says so). `python-agent-platform` (`>=3.2.10`), `mcp-host`,
-  `platform-ci-test` and `pyforge-scribe` (`>=3.3.4`) also float to libpq 18. Only the PR branch
-  carries the caps, and its `doctor-test` was red at fold time.
+  `pixi.toml` comment says so). `mcp-host`, `platform-ci-test` and `pyforge-scribe`
+  (`psycopg >=3.3.4`) also resolve libpq 18.6. `python-agent-platform` and `platform-dev`, though,
+  already solve psycopg 3.2.10 on libpq 17.11 (measured in the lock, review pass 2026-09-25) — so
+  the libpq-18 boundary is psycopg-c 3.3, not the 3.2.10 #1564's text claimed. Only the PR branch
+  carries caps, and its `doctor-test` was red at fold time.
 - **It changes an existing contract.** CAP-151 / Story 63.5 define `pyforge-foundry-full` as
   closure-only and never installed by default; #1564 makes it the default laptop install.
 
 #### Input 2 — the dossier is the cutover's control plane (PR #1576, seeded 2026-09-21)
 
-The PyForge dossier (`docsite/content/dossier.yml`, herald's [[pyforge-pages]]) states the A→B
+The PyForge dossier (`docsite/content/dossier.yml`, on [[pyforge-herald]]'s Spec surface — the
+`pyforge-pages` Dream was absorbed into it 2026-09-17) states the A→B
 cutover as control-plane fact for operators and Smiths — not a forensic inventory of A, and not a
 vision deck. A (`local-recipes`) is control plane and oracle, root of record until
 `pyforge.cutover_root` flips; B (`python-foundry`) is the lasting root, its engines rebuilt from
@@ -876,12 +884,15 @@ and its suite table is this repo's own register echoed back.
 2. **All three laptop platforms, layered.** The SBOM keeps linux-64, osx-arm64 and win-64;
    platform-limited stack pieces (`platform-object-storage`, `platform-dev`'s pgvector) compose
    in a layer environment on top, the pattern `scribe-pg` already uses.
-3. **PostgreSQL 17 everywhere, proven.** Scribe's psycopg caps at 3.2.9 and `scribe-pg` moves to
-   PG17 — only if scribe's Postgres suite passes; if it cannot, the story halts `blocked` and
-   Postgres is never bumped.
+3. **PostgreSQL 17 everywhere, proven.** Scribe's psycopg caps below the first psycopg-c that
+   needs libpq 18 (3.3 as measured; 67.1 re-measures) and `scribe-pg` moves to PG17 — only if
+   scribe's Postgres suite passes; if it cannot, the story halts `blocked` and Postgres is never
+   bumped.
 4. **No archive of A.** `fnd:CAP-7` / Story 44.10 retire. Two git roots stay live after the
    `cutover_root` flip; what A hosts afterwards is decided per capability by the ledger's modes.
    44.10's ledger key stays `blocked` (a retired story is never dispatched; no key is flipped).
+5. **Ledger modes** (confirmed in the review pass): `fnd:CAP-12..15` are `A-only`, expiry
+   2026-12-31.
 
 Still open: **`deck-carriage`** — decks cross to B as a rebuild from their `.dc.html`
 prototypes, stay `A-only`, or retire their binaries. No story in this plan waits on it.
@@ -892,22 +903,23 @@ prototypes, stay `A-only`, or retire their binaries. No story in this plan waits
 |---|---|---|---|---|
 | 0 | This PR: Dream → `fnd:CAP-12..15`, `fnd:CAP-7` retired → Epic 67 + herald / scribe stories, ledger rows, story specs | all | this PR | full review on a second model; operator merges; #1563 / #1564 / #1576 close |
 | 1 | The SBOM composes the laptop BoM on three platforms, platform-limited pieces in a layer; PG17 held estate-wide; the `AGENTS.md` line follows | 1 | steward 67.1 | `pr-preflight`; `pyforge-station-tests`; scribe's Postgres suite on PG17 |
-| 2 | The laptop gate: one task proves the laptop needs nothing beyond the SBOM | 1 | steward 67.2 | green on `main` |
-| 3 | Gap dispositions: every residual solve gap and fat-only pin gets promote / won't-do / upstream + owner, derived from `pixi.toml` | 1 | steward 67.3 | complete against the derivation |
+| 2 | The laptop gate: one task proves the laptop needs nothing beyond the SBOM | 1 | steward 67.2 | `pixi run -e pyforge-foundry-full sbom-laptop-gate` exit 0 on `main` |
+| 3 | Gap dispositions: every feature outside the SBOM and its layer, and every fat-only pin, gets promote / won't-do / upstream + owner, derived from `pixi.toml` | 1 | steward 67.3 | `pixi run -e pyforge-guild sbom-gaps-check` exit 0 |
 | 4 | Upstream tickets for the gaps that need one | 1 | steward 67.4 | **outward** — `blocked` until the operator flips |
-| 5 | Point the estate at the SBOM (developer guide, `AGENTS.md`, Mason and CFE docs) | 1 | steward 67.5 | after 67.2 is green |
-| 6 | The dossier states the control plane | 2 | herald 26.1 (steward index 67.6) | `site-check`; every *Verified* claim cites a source |
-| 7 | The instruction surface names the estate first | 3 | scribe 21.1 (steward index 67.7) | scribe parity meta-test; `governance-currency` |
-| — | Close the conda-forge gaps (campaign phase 5) | 1 | Mason stories minted from 67.3's list | Rule 1 / Rule 2 |
+| 5 | Point the estate at the SBOM (every page that teaches an install, `AGENTS.md`, Mason and CFE docs) | 1 | steward 67.5 | after 67.2 is green; `detectors-ci` exit 0 |
+| 6 | The dossier states the control plane | 2 | herald 26.1 (steward index 67.6) | `pixi run -e site site-check` exit 0; the structural test 26.1 adds asserts every *Verified* item cites a source |
+| 7 | The instruction surface names the estate first | 3 | scribe 21.1 (steward index 67.7) | `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` (parity meta-test); `detectors-ci` (`governance-currency`); the removed → target map in the run result |
+| — | The cutover spine drops the archive (`fnd:AD-1`, `fnd:AD-21`, the roles table) | ruling 4 | steward 67.8 | `bmad-architecture` re-render from a memlog entry; scoped stamps; `spec-surface-check` exit 0 |
+| — | Close the conda-forge gaps (campaign phase 5) | 1 | Mason stories minted from 67.3's list | Rule 1 / Rule 2 (policy — undecomposed until 67.3 names the gaps) |
 
-**Order.** 67.1 → 67.2 → 67.3 ∥ 26.1 ∥ 21.1 → 67.5; 67.4 whenever the operator flips it. Phase 5
+**Order.** 67.1 → (67.2 ∥ 67.3) → 67.5; 26.1 ∥ 21.1 ∥ 67.8 at any time; 67.4 when the operator flips it. Phase 5
 is not decomposed here on purpose: its stories cannot exist before 67.3 names the gaps, and 67.3's
 list is their decomposition input. None of this waits on B, and none of it flips an Epic 44
 `blocked` key or `pyforge.cutover_root`.
 
 ## Kinships
 
-[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] (Panel/Bokeh over `cf_atlas.db` at `pyforge/atlas/views/` — **retired 2026-09-09 (fleet readiness C1)**: no caller outside its own tests, and it read a private SQLite store through a dynamic-import bridge against CAP-19's "no private DuckDB" ruling; superseded by the Vizro/BSL board, which is the live Lane-3 runtime) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[marshal-token-economy]] (own Spec, CAP-1..CAP-17; five-layer compression + retrieval — built 24/24 and **every layer off** as of 2026-09-09; three of five layers apply only on `factory dispatch`) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine — Dream archived into [[pyforge-marshal]] 2026-08-08; Spec stays live) · [`docs/specs/presentation-deck.md`](../specs/presentation-deck.md) (deck standards — a legacy Tier-1 spec, not a Dream) · [[django-accelerator-framework]] (Lane 2 portal scaffolding — **absorbed 2026-09-09 (C3)** into this Spec as `daf:CAP-1`, Dream now `archived`/`absorbed`: CAP-2's counting trigger was falsified by `PortalConfig` — the estate reached nine Django faces by factoring a declarative registration in `django-pyforge`, not by repeating a hand-copy, so no templating engine is wanted) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · *pyforge-operation* (estate-wide operating model — promotion 01/02/03 + Golden Path; a sibling-repo file never minted here, see the archive § Living names; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[build-league-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · [[python-agent-platform]] (**the parent** — `pap:CAP-1..6` / `pap:AD-1..17`; this Spec `extends` it) · [[intelligence-hub]] (the OpenTeams whitepaper seed; proposes a `hub:` prefix extending this Spec, a `nebariapp.yaml` chart template and a NIC profile — candidates, none chosen) · [[bmad-suite-lifecycle]] (Epics 46–47; **Epic 47's P1–P18 readiness gate precedes 44.3**) · [[bmad-eval-quality]] (Epic 45 — the slot the R-18..R-22 band once expected) · [[chain-currency-sweep]] (CAP-4 names this pack as a mandatory grounding source) · [[ocp-as-a-portability-profile]] (the OCP overlay a NIC profile would sit beside) · [[mcp-era-isolation]] (slice 1 sidecar shipped; slice 3 parked) · [[platform-image-one-pixi-env]] (pip-layer fold, shipped) · [[pixi-candidate-currency]] (binds the OpenFeature packaging ruling to Grounding 2026-08-24) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects) · [[foundry-regenerate-not-fold]] (the 2026-09-13 contract that superseded this Dream's fold / move wording; Epic 54) · [[foundry-capability-ledger]] (the strangler routing table; Epic 55) · [[pyforge-pages]] (herald — the dossier `fnd:CAP-14` makes the cutover's control plane)
+[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] (Panel/Bokeh over `cf_atlas.db` at `pyforge/atlas/views/` — **retired 2026-09-09 (fleet readiness C1)**: no caller outside its own tests, and it read a private SQLite store through a dynamic-import bridge against CAP-19's "no private DuckDB" ruling; superseded by the Vizro/BSL board, which is the live Lane-3 runtime) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[marshal-token-economy]] (own Spec, CAP-1..CAP-17; five-layer compression + retrieval — built 24/24 and **every layer off** as of 2026-09-09; three of five layers apply only on `factory dispatch`) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine — Dream archived into [[pyforge-marshal]] 2026-08-08; Spec stays live) · [`docs/specs/presentation-deck.md`](../specs/presentation-deck.md) (deck standards — a legacy Tier-1 spec, not a Dream) · [[django-accelerator-framework]] (Lane 2 portal scaffolding — **absorbed 2026-09-09 (C3)** into this Spec as `daf:CAP-1`, Dream now `archived`/`absorbed`: CAP-2's counting trigger was falsified by `PortalConfig` — the estate reached nine Django faces by factoring a declarative registration in `django-pyforge`, not by repeating a hand-copy, so no templating engine is wanted) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · *pyforge-operation* (estate-wide operating model — promotion 01/02/03 + Golden Path; a sibling-repo file never minted here, see the archive § Living names; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[build-league-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · [[python-agent-platform]] (**the parent** — `pap:CAP-1..6` / `pap:AD-1..17`; this Spec `extends` it) · [[intelligence-hub]] (the OpenTeams whitepaper seed; proposes a `hub:` prefix extending this Spec, a `nebariapp.yaml` chart template and a NIC profile — candidates, none chosen) · [[bmad-suite-lifecycle]] (Epics 46–47; **Epic 47's P1–P18 readiness gate precedes 44.3**) · [[bmad-eval-quality]] (Epic 45 — the slot the R-18..R-22 band once expected) · [[chain-currency-sweep]] (CAP-4 names this pack as a mandatory grounding source) · [[ocp-as-a-portability-profile]] (the OCP overlay a NIC profile would sit beside) · [[mcp-era-isolation]] (slice 1 sidecar shipped; slice 3 parked) · [[platform-image-one-pixi-env]] (pip-layer fold, shipped) · [[pixi-candidate-currency]] (binds the OpenFeature packaging ruling to Grounding 2026-08-24) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects) · [[foundry-regenerate-not-fold]] (the 2026-09-13 contract that superseded this Dream's fold / move wording; Epic 54) · [[foundry-capability-ledger]] (the strangler routing table; Epic 55) · [[pyforge-herald]]'s docsite (`spec-pyforge-herald` owns `docsite/**`; the `pyforge-pages` Dream was absorbed into it 2026-09-17 — the dossier `fnd:CAP-14` makes the cutover's control plane; herald Story 26.1)
 
 ---
 

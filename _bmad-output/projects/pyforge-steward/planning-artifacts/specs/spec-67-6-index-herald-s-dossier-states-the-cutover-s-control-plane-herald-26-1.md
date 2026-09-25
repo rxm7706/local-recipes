@@ -16,7 +16,7 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** CAP-14's surface is herald's `docsite/`; steward needs one row showing it.
+**Problem:** CAP-14's surface is herald's `docsite/**` (`spec-pyforge-herald`, which absorbed `spec-pyforge-pages` 2026-09-17); steward needs one row showing it.
 
 **Approach:** This row flips `done` when herald Story 26.1 closes.
 
@@ -52,7 +52,7 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Type:** index • **Effort:** S • **Deps:** cross-station: herald Story 26.1 (ledger `blocked` until it closes) • **FR/AD:** fnd:CAP-14
 **Surface:** this file only (the index row). Herald's artifacts are **named, never edited** by steward.
-**Given** herald owns `docsite/` (Epic 22, `spec-pyforge-pages`) and CAP-14's surface is the dossier
+**Given** herald owns `docsite/**` (`spec-pyforge-herald`'s surface; it absorbed `spec-pyforge-pages` on 2026-09-17) and CAP-14's surface is the dossier
 **When** herald lands Story 26.1
 **Then** this row flips `done`
 

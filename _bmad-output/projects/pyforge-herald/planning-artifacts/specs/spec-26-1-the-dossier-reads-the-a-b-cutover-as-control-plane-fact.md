@@ -25,7 +25,8 @@ declared_low_risk: false
 **Always:**
 - A is never archived; B is the lasting root rebuilt from Frame + Spec; modes never `move`.
 - SBOM claims are labelled A-side.
-- Every Verified claim cites `docs/foundry/capability-ledger.yaml`, B's `case-list.md`, or a named CI run.
+- Every Verified claim cites `docs/foundry/capability-ledger.yaml`, B's `case-list.md`, or a named CI run — enforced by `tests/unit/test_dossier_structure.py` (new), not by review alone.
+- Co-governor reconcile before landing: a memlog entry on every Spec `spec-surface-check` names, `git add`, then `python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>` per named Spec, re-run the check and read its exit code; never a bare stamp.
 
 **Never:**
 - Do not merge PRs #1563 / #1564 / #1576; port their payload by hand where this story names it.
@@ -38,7 +39,8 @@ declared_low_risk: false
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| Verified claim without a source | dossier.yml | rejected in review | fail loud |
+| Verified item without a `source` | planted in dossier.yml | `test_dossier_structure.py` reds naming the item | fail loud |
+| Estate text calls local-recipes archived / read-only | dossier.yml | `test_dossier_structure.py` reds | fail loud |
 | site render | `pixi run -e site site-check` | green | fail loud |
 
 </intent-contract>
@@ -54,11 +56,11 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 ## Epic excerpt
 
 **Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** fnd:CAP-14 • cross-station: steward index 67.6 flips `done` when this closes; reference payload PR #1576 (branch `docs/pyforge-estate-whitepaper`, 118 insertions in `dossier.yml`)
-**Surface:** `docsite/content/dossier.yml` (Estate, Foundation, Synthesis and Verified sections), `docsite/` templates only if a new section needs one, herald tests that assert dossier structure.
+**Surface:** `docsite/content/dossier.yml` (Estate, Foundation, Synthesis and Verified sections), `docsite/` templates only if a new section needs one, `src/shared/packages/pyforge-herald/tests/unit/test_dossier_structure.py` (new — the structural oracle: every item under the Verified section carries a non-empty `source` naming a `docs/foundry/capability-ledger.yaml` id, a `case-list.md` case id or a CI run URL; no Estate text calls `local-recipes` archived or read-only).
 **Given** the dossier (re-verified 2026-09-13) is a forensic inventory of A's stations, and the cutover's state — A/B roles, modes, `pyforge.cutover_root`, the four campaign verbs — lives in the Spec, the capability ledger and B's `PIN.md`
 **When** this story lands
 **Then** the Estate section states A (`local-recipes`: control plane, oracle, root of record until the flip, never archived) and B (`python-foundry`: lasting root, engines rebuilt from Frame + Spec), the modes with "never `move`", and the four campaign verbs each with a done / not-done line; SBOM claims are labelled A-side; the Verified section cites, per claim, `docs/foundry/capability-ledger.yaml`, B's `case-list.md`, or a named CI run
-**And** `pixi run -e site site-check` is green, and no claim reads the cutover as flipped or B as a mirror of A
+**And** `pixi run -e site site-check` is green; `test_dossier_structure.py` passes in `pyforge-herald-test` and reds on a planted Verified item without a `source`; no claim reads the cutover as flipped or B as a mirror of A; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
 
 ## Verification
 
@@ -67,3 +69,4 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Manual checks:**
 - `pixi run -e site site-check` — expected: exit 0.
+- `test_dossier_structure.py` runs inside `pyforge-herald-test` and reds on a planted Verified item without a `source`.

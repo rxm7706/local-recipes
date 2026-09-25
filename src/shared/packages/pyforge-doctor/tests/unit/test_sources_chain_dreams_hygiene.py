@@ -514,10 +514,10 @@ def test_live_tree_kinship_wikilink_dead_count() -> None:
     ``unparseable-frontmatter`` before the Kinship scan runs; the old
     reader parsed that opener leniently and scanned its body, where
     ``[[deckcraft]]`` and ``[[pyforge-genesis]]`` do not resolve. The
-    count returns to 33 once that Dream's opener is repaired (and its two
+    count rises by two once that Dream's opener is repaired (and its two
     links are still dead); this test only tracks the live count.
 
-    30 since 2026-09-25: ``pyforge-pages.md``'s ``[[python-foundry-cutover]]``
+    30 since 2026-09-25 (32 once ``enterprise-airgap.md``'s opener is repaired): ``pyforge-pages.md``'s ``[[python-foundry-cutover]]``
     (no Dream by that name; the cutover Spec's owning Dream is
     ``pyforge-unifying-strategy``) was repointed in the unifying-strategy
     consolidation."""

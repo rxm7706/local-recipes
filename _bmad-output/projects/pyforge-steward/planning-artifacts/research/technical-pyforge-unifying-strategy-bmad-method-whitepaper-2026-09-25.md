@@ -57,6 +57,10 @@ the `local-recipes` env also carries a stale `bmad_loop-0.8.1.dist-info` beside 
 | 17 | `bmad-prd` modes in `steps-c/`, `steps-e/`, `steps-v/`; trade-offs in `.memlog.md` | partly contradicted | `bmad-prd/SKILL.md:14,24,30-36` | Create/Update/Validate are modes inside `SKILL.md` + `references/validate.md`; the `steps-c/e/v` layout is TEA's. Rejected alternatives go to `addendum.md`. |
 | 18 | `forge-report.html` / `forged-idea.md`; `brainstorm.html` / `brainstorm-intent.md` | verified | `bmad-forge-idea/SKILL.md:12,100,104`; `bmad-brainstorming/references/finalize.md:20-21` | `forged-idea.md` only when the idea ends "Hardened"; brainstorm artifacts are opt-in outside "Ideate for me". |
 
+**Tally.** 8 of 18 claims hold as stated (3, 4, 6, 7, 9, 15, 16, 18); 1 holds with a nuance (1);
+6 are partly true or partly contradicted (5, 8, 12, 13, 14, 17); 2 are contradicted (2, 10); 1 is
+unverifiable here (11).
+
 **Reading.** Reliable on the `bmad-build-auto` worker contract (lifecycle, halts, dispatch shapes,
 patch recovery), `bmad-loop`'s two modes, and suite membership. Unreliable on review-lens naming,
 persona codes, customization layers and several specific counts. Any Spec that wants to lean on a
@@ -79,8 +83,9 @@ claim in § 3 re-verifies it against the installed skill first.
    either.
 5. **TEA as an independent gate** (`tea-test-review`) is installed (steward 46.3) but is not a
    merge gate. Whether it becomes one is an open candidate, not a decision.
-6. **Broken window found by the check:** the stale `bmad_loop-0.8.1.dist-info` beside 0.11.1 in
-   the `local-recipes` env.
+6. **Machine-local observation, not a repo fact:** a stale `bmad_loop-0.8.1.dist-info` beside
+   0.11.1 in the primary checkout's `local-recipes` env (gitignored `.pixi/`; a fresh worktree's
+   env has only 0.11.1).
 
 ## 3. The text as captured (2026-09-25)
 
@@ -423,7 +428,7 @@ The BMad Method converges with the [Own Your Intelligence](https://ownyourintell
 
 Built on Nebari and the scientific Python stack (NumPy, SciPy, PyTorch, Dask, Conda) as private execution foundation. Requires the "Pod of Four" topology — engineers shift from "in-the-loop" prompting to "on-the-loop" supervisory governance as Frame Custodians.
 
-##### Diagrams (as given)
+#### Diagrams (as given)
 
 **Four-Phase Agentic SDLC:**
 ```

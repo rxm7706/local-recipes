@@ -1073,7 +1073,7 @@ check ran.*
 sat at 2026-09-20.
 
 **What moved, and why the FR delta is none.** One entry: steward Story 59.6
-(`spec-pyforge-steward` CAP-137, the Guild roster collapse) changed
+(`spec-pyforge-steward:CAP-137`, the Guild roster collapse) changed
 `src/shared/packages/pyforge-herald/src/pyforge/herald/progress.py` so `STATIONS` re-exports
 `pyforge.core.roster.STATIONS` instead of declaring its own tuple. Same eight stations, one
 declared source; no herald behaviour or requirement changes. `updated:` bumped to record that the

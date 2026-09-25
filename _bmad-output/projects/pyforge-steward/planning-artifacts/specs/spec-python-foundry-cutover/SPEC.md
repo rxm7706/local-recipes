@@ -14,7 +14,7 @@ companions:
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
   - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md
-  - ../../research/technical-bmad-method-whitepaper-verification-2026-09-25.md
+  - ../../research/technical-pyforge-unifying-strategy-bmad-method-whitepaper-2026-09-25.md
 open_questions:
   - deck-carriage
 ---
@@ -65,9 +65,10 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     under `src/packages/`. The BMAD chain is seeded from Dreams and memlogs. Host and
     `django-*` are out of Launch.
   - **success:** Each Launch kernel row is `verified-in-foundry` under its rebuild gate
-    (thin archived suite, `fnd:CAP-11`). `src/shared/` may remain on `local-recipes` until
-    archive. No Containerfile `COPY` of package source. Host boot is not a Launch success
-    criterion. `apply --phase 1a` is not the realization path.
+    (thin archived suite, `fnd:CAP-11`). `src/shared/` may remain on `local-recipes`
+    indefinitely; the ledger's A-only rows decide what stays. No Containerfile `COPY` of
+    package source. Host boot is not a Launch success criterion. `apply --phase 1a` is not
+    the realization path.
 
 - **CAP-3 — CFE on foundry (Phase 2).**
   - **intent:** Foundry gains conda-forge-expert by **rebuild from Specs**, using
@@ -147,15 +148,19 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     alone runs the stations, local recipe generation and builds, tests, lint and
     the local CI mirrors, and — through a layer environment — the platform local
     stack. It is the default laptop install (a new capability over
-    `spec-pyforge-steward` CAP-151's closure-only env).
+    `spec-pyforge-steward:CAP-151`, amended 2026-09-25 by its own memlog). The session and
+    runtime default stays `pyforge-guild` (`spec-pyforge-steward:CAP-5`); the laptop installs
+    the superset.
   - **success:** `pixi install -e pyforge-foundry-full` solves on linux-64,
     osx-arm64 and win-64 and composes the `build`, `grayskull` and `crm` features
     beside the station features, with `pnpm` in the `python` feature; the
     platform-limited stack (`platform-dev`,
     `platform-object-storage`) solves as a layer environment over it; every
-    `postgresql` pin in the estate is `>=17.11,<18` with `psycopg >=3.2.9,<3.2.10`
-    and `pgvector >=0.8.0,<0.8.2`; neither `local-recipes` nor a `desktop-lab`
-    feature is composed; `AGENTS.md` names it the laptop install.
+    `postgresql` pin in the estate is `>=17.11,<18`, with psycopg and pgvector capped
+    below the first builds that require libpq 18 (psycopg `<3.3` as measured in the lock
+    on 2026-09-25 — 3.2.10 already solves on libpq 17.11; Story 67.1 re-measures before it
+    pins); neither `local-recipes` nor a `desktop-lab` feature is composed; `AGENTS.md`
+    names it the laptop install.
 
 - **CAP-13 — The SBOM is checkable.**
   - **intent:** The operator can prove the laptop needs nothing beyond the SBOM,
@@ -216,7 +221,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
   suite, the story halts `blocked`. Never push a stub or placeholder `pixi.toml`;
   after any write, verify the full manifest and a `--frozen` re-solve.
 - `AGENTS.md`'s managed `bmad:context` block changes only through
-  `bmad-project-context` under `spec-pyforge-scribe` CAP-27. `python-foundry`'s
+  `bmad-project-context` under `spec-pyforge-scribe:CAP-27`. `python-foundry`'s
   instruction surface is B's (writer lock). Every dossier Verified claim cites a
   source; SBOM claims stay A-side until the capability ledger carries them.
 - PRs #1563 / #1564 / #1576 are reference only: the stories port their payloads;
@@ -263,7 +268,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 - Adopting a claim from the BMAD-method whitepaper without re-verifying it
   against the installed skill.
 - Carrying rendered planning narrative (research, reviews, proposals, reports, retros, run
-  records, per-story specs of shipped stories); the archive keeps them.
+  records, per-story specs of shipped stories); `local-recipes` keeps them.
 
 ## Success signal
 
@@ -289,8 +294,8 @@ case-list or CI evidence. Launch stories: 44.3 / 44.7 / 44.12 done; Epic 54 kern
   the file past 43.1's 400-line target by design.
 - Stock Windows developers (no WSL, no Developer Mode) are a real population; the estate
   is native for them and the host is remote (spine fnd:AD-19).
-- Scribe's code runs on psycopg 3.2.9 (CAP-12); Story 67.1 proves it against scribe's
-  Postgres suite or halts `blocked`.
+- Scribe's code runs on the last psycopg below the libpq-18 boundary (3.2.10 as measured;
+  CAP-12); Story 67.1 proves it against scribe's Postgres suite or halts `blocked`.
 - `build`, `grayskull` and `crm` declare no platform restriction, and only
   `platform-dev` and `platform-object-storage` are platform-limited (measured
   2026-09-25); that the union co-solves on all three platforms is what Story 67.1

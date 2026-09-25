@@ -52,7 +52,7 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Type:** index • **Effort:** S • **Deps:** cross-station: scribe Story 21.1 (ledger `blocked` until it closes) • **FR/AD:** fnd:CAP-15
 **Surface:** this file only (the index row). Scribe's artifacts are **named, never edited** by steward.
-**Given** scribe owns the instruction surface (`spec-pyforge-scribe` CAP-27) and CAP-15's surface is `AGENTS.md` / `CLAUDE.md`
+**Given** scribe owns the instruction surface (`spec-pyforge-scribe:CAP-27`) and CAP-15's surface is `AGENTS.md` / `CLAUDE.md`
 **When** scribe lands Story 21.1
 **Then** this row flips `done`
 

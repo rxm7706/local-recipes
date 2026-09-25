@@ -1259,9 +1259,9 @@ capabilities:
   - id: fnd:CAP-7
     spec: python-foundry-cutover
     station: pyforge-steward
-    heading: Archive `local-recipes` (Phase 6)
+    heading: Archive `local-recipes` (Phase 6). RETIRED 2026-09-25.
     mode: retire
-    note: CAP retired 2026-09-25 (operator — no archive of A); 44.10 never dispatched; must not appear on B
+    note: CAP withdrawn 2026-09-25 (operator — no archive of A), never realized on A; 44.10 never dispatched; must not appear on B; not B-side retirement work
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
   - id: fnd:CAP-8
     spec: python-foundry-cutover

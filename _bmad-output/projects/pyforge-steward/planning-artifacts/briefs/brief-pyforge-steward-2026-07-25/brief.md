@@ -209,7 +209,7 @@ unchanged.
 
 ## Currency reconciliation — 2026-09-25
 
-`research→brief` edge: `research/technical-bmad-method-whitepaper-verification-2026-09-25.md`
+`research→brief` edge: `research/technical-pyforge-unifying-strategy-bmad-method-whitepaper-2026-09-25.md`
 landed while this brief sat at 2026-09-14.
 
 **What it is and why the brief does not change.** The file keeps an operator-pasted whitepaper

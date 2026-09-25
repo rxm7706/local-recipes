@@ -108,6 +108,10 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "AGENTS.md",
   "CLAUDE.md",
+  "GEMINI.md",
+  ".github/copilot-instructions.md",
+  ".cursor/rules/**",
+  ".vscode/settings.json",
   ".claude/memory/**",
   "docs/reference/**",
 ]

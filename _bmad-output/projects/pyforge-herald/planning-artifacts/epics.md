@@ -9,11 +9,11 @@ status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 sti
 updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
 ---
 
+# pyforge-herald — Epic Breakdown
+
 ## Fold provenance (2026-09-17)
 
 Station Spec spec-pyforge-herald reminted absorbed capabilities as CAP-1..47. Historical stories keep sequential epic numbers 1..23; Epic 23 story gaps closed (23.5–23.8 → 23.3–23.6). This heading is the INV-A citation window for the folded set (`spec-pyforge-herald` CAP-1..47).
-
-# pyforge-herald — Epic Breakdown
 
 Rebuilt 2026-08-08 from `sprint-status-ledger.yaml`. The previous file was a
 planning-workflow scratch document ("REQUIREMENTS EXTRACTED & VERIFIED", "READY FOR NEXT
@@ -912,11 +912,11 @@ I want the dossier's Estate, Foundation, Synthesis and Verified sections to stat
 So that I read the cutover's state in one place instead of reconstructing it from ledgers, PIN files and chat.
 
 **Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** fnd:CAP-14 • cross-station: steward index 67.6 flips `done` when this closes; reference payload PR #1576 (branch `docs/pyforge-estate-whitepaper`, 118 insertions in `dossier.yml`)
-**Surface:** `docsite/content/dossier.yml` (Estate, Foundation, Synthesis and Verified sections), `docsite/` templates only if a new section needs one, herald tests that assert dossier structure.
+**Surface:** `docsite/content/dossier.yml` (Estate, Foundation, Synthesis and Verified sections), `docsite/` templates only if a new section needs one, `src/shared/packages/pyforge-herald/tests/unit/test_dossier_structure.py` (new — the structural oracle: every item under the Verified section carries a non-empty `source` naming a `docs/foundry/capability-ledger.yaml` id, a `case-list.md` case id or a CI run URL; no Estate text calls `local-recipes` archived or read-only).
 **Given** the dossier (re-verified 2026-09-13) is a forensic inventory of A's stations, and the cutover's state — A/B roles, modes, `pyforge.cutover_root`, the four campaign verbs — lives in the Spec, the capability ledger and B's `PIN.md`
 **When** this story lands
 **Then** the Estate section states A (`local-recipes`: control plane, oracle, root of record until the flip, never archived) and B (`python-foundry`: lasting root, engines rebuilt from Frame + Spec), the modes with "never `move`", and the four campaign verbs each with a done / not-done line; SBOM claims are labelled A-side; the Verified section cites, per claim, `docs/foundry/capability-ledger.yaml`, B's `case-list.md`, or a named CI run
-**And** `pixi run -e site site-check` is green, and no claim reads the cutover as flipped or B as a mirror of A
+**And** `pixi run -e site site-check` is green; `test_dossier_structure.py` passes in `pyforge-herald-test` and reds on a planted Verified item without a `source`; no claim reads the cutover as flipped or B as a mirror of A; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
@@ -936,4 +936,6 @@ check ran.*
 steward's 2026-09-25 consolidation (`spec-python-foundry-cutover` fnd:CAP-14 — the dossier as the
 cutover's control plane; steward index row 67.6). Every Story heading still maps 1:1 to a
 `sprint-status-ledger.yaml` key; the Tier-3 feed was repaired from the tracked twin first
-(stale-slug orphans dropped). `updated:` bumped.
+(stale-slug orphans dropped). Frontmatter repaired: the Fold provenance block had sat inside the
+YAML fence since the 2026-09-17 fold (unparseable); it now follows the H1, as in steward and
+scribe. `updated:` bumped.

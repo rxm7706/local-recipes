@@ -2,7 +2,6 @@
  "recorded": "2026-09-25",
  "known": [
   "pyforge-doctor: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md cites bare CAP-265, which this project does not define -- qualify it (`<spine>:CAP-265`) or fix the id",
-  "pyforge-herald: _bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-pyforge-herald-2026-08-01/prd.md cites bare CAP-137, which this project does not define -- qualify it (`<spine>:CAP-137`) or fix the id",
   "pyforge-mason: _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md cites bare CAP-13, which this project does not define -- qualify it (`<spine>:CAP-13`) or fix the id",
   "pyforge-mason: _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md cites bare CAP-9, which this project does not define -- qualify it (`<spine>:CAP-9`) or fix the id",
   "pyforge-mason: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/.memlog.md cites bare CAP-11, which this project does not define -- qualify it (`<spine>:CAP-11`) or fix the id",

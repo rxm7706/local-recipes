@@ -18,13 +18,14 @@ declared_low_risk: false
 
 **Problem:** Residual solve gaps and fat-only `local-recipes` pins exist only in PR #1564's text.
 
-**Approach:** Derive the list from `pixi.toml` into `docs/foundry/sbom-gaps.md`; each row gets promote / won't-do / upstream, a reason and an owner station; `sbom-gaps-check` keeps file and derivation equal.
+**Approach:** Derive the list from `pixi.toml` into `docs/foundry/sbom-gaps.md`: a residual solve gap is every feature declared in `pixi.toml` that is in neither the SBOM nor its layer environment (`conda-smithy`, `python-agent-platform` today); a fat-only pin is every package in `[feature.local-recipes.dependencies]` and in no SBOM feature. Each row gets promote / won't-do / upstream, a reason and an owner station; `sbom-gaps-check` keeps file and derivation equal.
 
 ## Boundaries & Constraints
 
 **Always:**
-- Derive, never hand-list: the check reds a missing or stale row.
+- Derive, never hand-list: the check reds a missing or stale row of either kind.
 - Conda-forge packaging rows name Mason as owner.
+- Co-governor reconcile before landing: a memlog entry on every Spec `spec-surface-check` names, `git add`, then `python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>` per named Spec, re-run the check and read its exit code; never a bare stamp.
 
 **Never:**
 - Do not merge PRs #1563 / #1564 / #1576; port their payload by hand where this story names it.
@@ -38,6 +39,7 @@ declared_low_risk: false
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
 | new fat-only pin appears | derivation vs file | check reds naming the pin | fail loud |
+| feature outside the SBOM and layer added or removed | derivation vs file | check reds naming the feature | fail loud |
 | row no longer derivable | file keeps a stale row | check reds naming the row | fail loud |
 
 </intent-contract>
@@ -56,8 +58,8 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 **Surface:** `docs/foundry/sbom-gaps.md` (new), `scripts/sbom_gap_derive.py` (new), `tests/scripts/test_sbom_gap_derive.py` (new), `pixi.toml` (a read-only `sbom-gaps-check` task in `guild-tasks`).
 **Given** the residual solve gaps (`conda-smithy`: py-rattler / conda co-solve; `python-agent-platform`: langflow vs pandas / onnxruntime) and the fat-only pins exist only in #1564's PR text
 **When** this story lands
-**Then** `docs/foundry/sbom-gaps.md` lists every residual gap and every package declared in `[feature.local-recipes.dependencies]` and in no SBOM feature, each with a disposition — `promote`, `won't-do` or `upstream` — a one-line reason and an owner station
-**And** `sbom-gaps-check` reds when the derivation finds a row the file lacks, or the file keeps a row the derivation no longer finds; rows whose fix is conda-forge packaging name Mason as owner and become Mason stories in a later mint
+**Then** `docs/foundry/sbom-gaps.md` lists every feature declared in `pixi.toml` that is in neither the SBOM nor its layer environment (the residual solve gaps — `conda-smithy` and `python-agent-platform` today) and every package declared in `[feature.local-recipes.dependencies]` and in no SBOM feature, each with a disposition — `promote`, `won't-do` or `upstream` — a one-line reason and an owner station
+**And** `sbom-gaps-check` reds when the derivation finds a row the file lacks (a feature outside the SBOM and layer, or a fat-only pin), or the file keeps a row the derivation no longer finds; rows whose fix is conda-forge packaging name Mason as owner and become Mason stories in a later mint
 
 ## Verification
 
