@@ -624,19 +624,37 @@ class TestContextAdvisory:
         assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
         assert envelope["data"]["journal"] is not None
 
-    def test_layer_enabled_but_instrument_unavailable_emits_one_finding(self, repo, capsys, monkeypatch):
+    def test_layer_enabled_but_instrument_unavailable_emits_nothing(self, repo, capsys, monkeypatch):
+        """Story 46.6 review triage fix 1: ``KitStatus.UNAVAILABLE`` means
+        the instrument itself cannot exist on this platform (a linux-64-only
+        tool probed on macOS, say) -- ``kit.py``'s own
+        ``_FINDING_FOR_STATUS`` already classifies that ``Severity.INFO``,
+        not ``DRIFT``. Treating it as lapsed here would emit a persistent,
+        unfixable WARN every single run on a platform that will never have
+        the instrument, so it must produce no finding at all."""
         from pyforge.marshal.seed.detect import kit as kit_module
 
         _declare(repo, "wire", enabled=True)
         monkeypatch.setattr(kit_module.shutil, "which", lambda _n: None)
         envelope = _run_advisory(repo, capsys)
         assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "clean"
+        assert envelope["findings"] == []
+        assert envelope["data"]["journal"] is None
+
+    def test_an_enabled_scribe_backed_layer_with_no_resolvable_binary_emits_one_finding(self, repo, capsys):
+        _declare(repo, "derived-context", enabled=True)
+        envelope = _run_advisory(repo, capsys, scribe=_ScribeBinaryDouble(None))
+        assert envelope["exit_code"] == EXIT_OK
         assert envelope["verdict"] == "warn"
         assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
         assert envelope["data"]["journal"] is not None
 
-    def test_an_enabled_scribe_backed_layer_with_no_resolvable_binary_emits_one_finding(self, repo, capsys):
-        _declare(repo, "derived-context", enabled=True)
+    def test_an_enabled_planning_graph_layer_with_no_resolvable_binary_emits_one_finding(self, repo, capsys):
+        """Story 46.6 review triage fix 4: the scribe-binary branch pair
+        (``derived-context``, ``planning-graph``) had only ``derived-context``
+        exercised, even though Tasks & Acceptance names both layers."""
+        _declare(repo, "planning-graph", enabled=True)
         envelope = _run_advisory(repo, capsys, scribe=_ScribeBinaryDouble(None))
         assert envelope["exit_code"] == EXIT_OK
         assert envelope["verdict"] == "warn"
@@ -656,13 +674,42 @@ class TestContextAdvisory:
         assert envelope["findings"] == []
         assert envelope["data"]["journal"] is None
 
+    def test_two_simultaneously_lapsed_layers_write_one_journal_entry_naming_both(self, repo, capsys, monkeypatch):
+        """Story 46.6 review triage fix 5: every existing test lapses only
+        one layer at a time -- none proves the "one entry naming every
+        lapsed layer" AC for the 2+-simultaneous case. Lapses a kit layer
+        (``structure-graph``, MISSING) and a scribe-backed layer
+        (``derived-context``, unresolvable binary) together."""
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        _declare(repo, "structure-graph", enabled=True)
+        _declare(repo, "derived-context", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: "/usr/bin/codegraph")
+        # No .codegraph/codegraph.db written under repo -> MISSING.
+        envelope = _run_advisory(repo, capsys, scribe=_ScribeBinaryDouble(None))
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "warn"
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009", "MRS-CTX-009"]
+        assert envelope["data"]["journal"] is not None
+
+        journal = Path(envelope["data"]["journal"])
+        lines = journal.read_text(encoding="utf-8").splitlines()
+        assert len(lines) == 1
+        record = json.loads(lines[0])
+        lapsed = record["payload"]["lapsed"]
+        assert len(lapsed) == 2
+        messages = [entry["message"] for entry in lapsed]
+        assert any("structure-graph" in message for message in messages)
+        assert any("derived-context" in message for message in messages)
+
     def test_the_journal_entry_is_a_single_valid_observation_never_matched_by_the_dispatch_runs_glob(
         self, repo, capsys, monkeypatch
     ):
         from pyforge.marshal.seed.detect import kit as kit_module
 
-        _declare(repo, "wire", enabled=True)
-        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: None)
+        _declare(repo, "structure-graph", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: "/usr/bin/codegraph")
+        # No .codegraph/codegraph.db written under repo -> MISSING.
         envelope = _run_advisory(repo, capsys)
         journal = Path(envelope["data"]["journal"])
         lines = journal.read_text(encoding="utf-8").splitlines()
@@ -678,6 +725,51 @@ class TestContextAdvisory:
         matched = list(dispatch_runs_dir.glob("*/journal.jsonl")) if dispatch_runs_dir.is_dir() else []
         assert matched == []
         assert journal.relative_to(implementation_dir).parts[0] == "session-advisories"
+
+    def test_findings_without_an_active_project_are_still_emitted_with_a_skip_reason_and_no_journal(
+        self, repo, capsys, monkeypatch
+    ):
+        """Story 46.6 review triage fix 2: no ``--project``, no
+        ``BMAD_ACTIVE_PROJECT``, no active-project marker file -- a common
+        state -- resolves ``slug`` to ``""``. Repo-default ``[context]``
+        layers still compose in that state (``resolve_context_layers``
+        folds ``_bmad-output/policy-defaults.toml`` even with no project
+        layer), so a real lapse can still be found with nothing safe to
+        journal it under. That must not look identical to "nothing lapsed"
+        -- ``journal`` stays ``None`` but ``journal_skipped_reason`` names
+        why."""
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+        _write(repo / "_bmad-output" / "policy-defaults.toml", "[context.wire]\nenabled = true\n")
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: "/usr/bin/headroom")
+        # No .marshal/wire directory written under repo -> MISSING.
+        envelope = _run_advisory(repo, capsys, project=None)
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["data"]["project"] == ""
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
+        assert envelope["data"]["journal"] is None
+        assert envelope["data"]["journal_skipped_reason"] == context_cli._NO_ACTIVE_PROJECT_REASON
+
+    def test_an_fs_error_during_the_journal_write_degrades_cleanly_rather_than_crashing(
+        self, repo, capsys, monkeypatch
+    ):
+        """Story 46.6 review triage fix 3: the original ``try/except
+        FsError`` only wrapped ``ensure_dir``/``create_dir_exclusive``. An
+        ``FsError`` from ``append_line`` (the final write step) must also
+        degrade cleanly -- no journal path, no reason, a normal exit code --
+        rather than propagate uncaught through ``cli/main.py::run()``."""
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        _declare(repo, "structure-graph", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: "/usr/bin/codegraph")
+        # No .codegraph/codegraph.db written under repo -> MISSING.
+        envelope = _run_advisory(repo, capsys, fs=_AppendLineRaisesFs())
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "warn"
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
+        assert envelope["data"]["journal"] is None
+        assert envelope["data"]["journal_skipped_reason"] is None
 
     def test_runs_end_to_end_through_main_with_every_layer_off(self, repo, capsys):
         code = main(
