@@ -27,7 +27,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 
-from .derived_context import DerivedArtifactDeclaration
+from .derived_context import DerivedArtifactDeclaration, manifest_payload
 from .model import Finding, Severity
 
 __all__ = (
@@ -61,10 +61,9 @@ def assemble_bundle(
     absent/off layer, the same rule every other consumer of that
     composition applies.
 
-    ``declarations`` is sorted by name in the output -- the same stability
-    ``derived_context.manifest_payload`` gives its own manifest, and for
-    the same reason: an unstable ordering would churn the digest for no
-    reason.
+    ``declarations`` is shaped and sorted by name via
+    ``derived_context.manifest_payload`` -- the same helper the scribe
+    grammar's own manifest uses, so the two never drift apart.
 
     Deliberately hashes only the DECLARATION half (source lists + resolved
     layer config), never the LLM-authored ``epic-<N>-context.md`` prose
@@ -82,14 +81,7 @@ def assemble_bundle(
         "derived_context": {
             "enabled": bool(derived_layer.get("enabled", False)),
             "aggressiveness": derived_layer.get("aggressiveness"),
-            "declarations": [
-                {
-                    "name": declaration.name,
-                    "sources": list(declaration.sources),
-                    "output": declaration.output,
-                }
-                for declaration in sorted(declarations, key=lambda item: item.name)
-            ],
+            "declarations": manifest_payload(declarations)["artifacts"],
         },
         "planning_graph": {
             "enabled": bool(planning_layer.get("enabled", False)),

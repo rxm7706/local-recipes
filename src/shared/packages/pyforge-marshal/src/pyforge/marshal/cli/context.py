@@ -591,7 +591,7 @@ def run_context_bundle(args: argparse.Namespace) -> int:
     findings: list[Finding] = []
     root = Path(args.root).resolve() if args.root else repo_root()
     epic = str(args.epic).strip()
-    expect_digest = args.expect_digest or None
+    expect_digest = (args.expect_digest or "").strip() or None
 
     layers = resolve_context_layers(root, args.project)
     derived_layer = layers.get(derived.DERIVED_CONTEXT_LAYER)
@@ -605,6 +605,7 @@ def run_context_bundle(args: argparse.Namespace) -> int:
     }
 
     slug = _resolve_project_slug(root, args.project)
+    data["project"] = slug
     if not _resolvable(slug, epic):
         findings.append(
             Finding(
@@ -620,7 +621,6 @@ def run_context_bundle(args: argparse.Namespace) -> int:
         )
         return _emit_bundle(args, findings, data)
 
-    data["project"] = slug
     planning_dir = root / derived.planning_artifacts_relpath(slug)
     if not planning_dir.is_dir():
         findings.append(
@@ -655,7 +655,7 @@ def run_context_bundle(args: argparse.Namespace) -> int:
     data["digest"] = digest
 
     if expect_digest:
-        match = expect_digest == digest
+        match = expect_digest.lower() == digest.lower()
         data["match"] = match
         if not match:
             findings.append(context_bundle.digest_mismatch_finding(epic=epic, expected=expect_digest, computed=digest))
@@ -689,5 +689,29 @@ def _print_bundle_text(data: dict[str, object], findings: list[Finding], verdict
         f"expect_digest={data.get('expect_digest')} match={data.get('match')} "
         f"verdict={verdict}"
     )
+    bundle = data.get("bundle")
+    if isinstance(bundle, dict):
+        derived_ctx = bundle.get("derived_context") or {}
+        planning_ctx = bundle.get("planning_graph") or {}
+        if isinstance(derived_ctx, dict):
+            print(
+                f"derived_context: enabled={derived_ctx.get('enabled')} "
+                f"aggressiveness={derived_ctx.get('aggressiveness')}"
+            )
+            declarations = derived_ctx.get("declarations")
+            if isinstance(declarations, list) and declarations:
+                print("declarations:")
+                for declaration in declarations:
+                    if not isinstance(declaration, dict):
+                        continue
+                    print(
+                        f"  - {declaration.get('name')} "
+                        f"({len(declaration.get('sources') or [])} declared source(s))"
+                    )
+        if isinstance(planning_ctx, dict):
+            print(
+                f"planning_graph: enabled={planning_ctx.get('enabled')} "
+                f"aggressiveness={planning_ctx.get('aggressiveness')}"
+            )
     for finding in findings:
         print(f"{finding.code} {finding.severity.value}: {finding.message}")
