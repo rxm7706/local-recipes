@@ -1626,6 +1626,35 @@ kinship, not a merge)
 
 *(truncated in fold; original file remains archived)*
 
+- **2026-09-25 (seed)** — **`verify_scope` is doing exactly its designed job, but this Dream's
+  own scope never covered the launch-time gap it creates.** Live incident: a `marshal factory
+  dispatch pyforge-marshal 46.9` attempt was correctly refused (`MRS-DISP-041`) while
+  `pyforge-steward`'s own chained campaign (59.4→59.5→59.6, continuously live since ~06:24) held
+  the shared marker + both symlinks on itself — no silent wrong-project write occurred, which is
+  the guarantee this Dream shipped. `BMAD_ACTIVE_PROJECT=pyforge-marshal` was tried as a
+  workaround and had **zero effect**: read `_dispatch_scope_refusal`
+  (`cli/dispatch.py:278-302`) directly — the env var only catches the *opposite* contradiction
+  (env disagreeing with the dispatch target), and when it agrees with the target the code falls
+  straight through to the same `verify_scope(repo_root, slug)` physical read regardless. The gap
+  this exposes: **there is no sanctioned way to launch a single-story dispatch on station B while
+  station A's chain is continuously live**, other than waiting for a gap — even though the
+  dispatch's own detached worker doesn't need the shared marker at all once running (per its own
+  `--help` text: "launches ... with `BMAD_ACTIVE_PROJECT` per-invocation and physical artifact
+  paths"). Re-checked this session's own earlier apparent successes (marshal 46.6 launching while
+  steward 59.4 was live, ~06:42): those worked only because the marker happened to already sit on
+  the right project at that instant, most plausibly a residual left by that same station's own
+  immediately-preceding launch — a timing coincidence surviving because nobody's chain had
+  claimed the marker back yet, not a guaranteed capability this Dream (or Story 22.5's
+  cross-station allowance) actually promises. **Proposed direction, not yet specced:** since only
+  the *launch* step (not the detached worker) ever touches the shared marker, and only briefly,
+  `_dispatch_scope_refusal`'s call site could atomically flip-check-launch-restore instead of
+  refusing on mismatch — hold a short-lived advisory lock, flip marker + both symlinks to the
+  target slug, launch the detached worker (which is already self-sufficient via
+  `BMAD_ACTIVE_PROJECT` + physical paths per the existing design), then restore the prior marker
+  state immediately after handoff succeeds. This still never lets a *write* land in the wrong
+  project — the property this Dream actually guarantees — it just stops requiring the marker to
+  already, coincidentally, agree before a launch is even attempted. No CAP minted, no story
+  touched.
 
 ## 2026-09-16 — Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones (folded from dashboard-velocity-captures-hand-driven-work)
 
