@@ -704,10 +704,7 @@ def _print_bundle_text(data: dict[str, object], findings: list[Finding], verdict
                 for declaration in declarations:
                     if not isinstance(declaration, dict):
                         continue
-                    print(
-                        f"  - {declaration.get('name')} "
-                        f"({len(declaration.get('sources') or [])} declared source(s))"
-                    )
+                    print(f"  - {declaration.get('name')} ({len(declaration.get('sources') or [])} declared source(s))")
         if isinstance(planning_ctx, dict):
             print(
                 f"planning_graph: enabled={planning_ctx.get('enabled')} "
