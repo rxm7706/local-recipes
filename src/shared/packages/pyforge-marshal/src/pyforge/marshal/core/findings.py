@@ -1879,6 +1879,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # code. 008 WARN -- a second harness's `--expect-digest` does not
         # match the freshly assembled bundle's digest; never blocks.
         "MRS-CTX-008",
+        # Story 46.6 (2026-09-25, spec-pyforge-marshal CAP-193, fold-remint
+        # of spec-marshal-token-economy CAP-20): `marshal context advisory`'s
+        # own code. 009 WARN -- a declared-active `[context]` layer's
+        # instrument/binary no longer resolves at session-close (a kit item
+        # MISSING/STALE/UNAVAILABLE, or an enabled derived-context/
+        # planning-graph layer whose `scribe` binary does not resolve on
+        # PATH); never blocks.
+        "MRS-CTX-009",
         # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
         # `marshal context retrieve`'s degradation code -- WARN, never
         # blocking; falls back to Story 28.8's epic-context file.
