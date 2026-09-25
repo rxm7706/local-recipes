@@ -349,6 +349,12 @@ def test_registered_codes_contains_the_real_codes():
             # the reconcile commit/push) -- refuses the landing.
             "MRS-DISP-047",
             "MRS-DISP-048",
+            # Story 63.4 (spec-pyforge-steward CAP-5): dispatch_once shells
+            # `steward session check --json` right after repo_root resolves
+            # and folds a non-ok session-precondition verdict into a WARN
+            # finding -- non-blocking, mirroring MRS-DISP-036's worktree-WIP
+            # surfacing shape.
+            "MRS-DISP-049",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",

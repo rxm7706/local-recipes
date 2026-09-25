@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessError, ProcessResult
 from scope_triangle import point_scope_triangle
 
-from pyforge.marshal.cli.dispatch import dispatch_once, resolve_max_parallel, run_dispatch
+from pyforge.marshal.cli.dispatch import (
+    _surface_session_precondition_findings,
+    dispatch_once,
+    resolve_max_parallel,
+    run_dispatch,
+)
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
@@ -153,14 +160,111 @@ class FakeBuildHarness:
 
 
 class FakeProcess:
-    def __init__(self, *, alive: bool = True) -> None:
+    def __init__(self, *, alive: bool = True, session_check_returncode: int = 0) -> None:
         self.alive = alive
+        # Story 63.4: dispatch_once shells `steward session check --json`
+        # right after repo_root resolves. Default 0 ("ok") keeps every
+        # pre-existing fixture behaviour byte-identical -- no unexpected
+        # MRS-DISP-049 finding unless a test opts in.
+        self.session_check_returncode = session_check_returncode
+        self.run_calls: list[list[str]] = []
 
     def is_alive(self, _pid: int) -> bool:
         return self.alive
 
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         return 4243
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+        self.run_calls.append(list(argv))
+        return ProcessResult(returncode=self.session_check_returncode, stdout="", stderr="")
+
+
+def test_surface_session_precondition_findings_ok_returns_none(tmp_path: Path) -> None:
+    process = FakeProcess(session_check_returncode=0)
+    finding = _surface_session_precondition_findings(process=process, repo_root=tmp_path)
+    assert finding is None
+    assert process.run_calls == [
+        ["pixi", "run", "--frozen", "-e", "pyforge-guild", "steward", "session", "check", "--json"]
+    ]
+
+
+def test_surface_session_precondition_findings_names_non_ok_findings(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            payload = json.dumps(
+                {
+                    "ok": False,
+                    "findings": [
+                        {"name": "gh-auth", "ok": False},
+                        {"name": "pixi-guild", "ok": True},
+                    ],
+                }
+            )
+            return ProcessResult(returncode=1, stdout=payload, stderr="")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+    assert finding.severity is Severity.WARN
+    assert "gh-auth" in finding.message
+    assert "pixi-guild" not in finding.message
+
+
+def test_surface_session_precondition_findings_unparseable_output_uses_tail(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            return ProcessResult(returncode=1, stdout="not json", stderr="traceback\nlast line")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+    assert "last line" in finding.message
+
+
+def test_surface_session_precondition_findings_process_error_warns(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            raise ProcessError("steward is not on PATH")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+    assert finding.severity is Severity.WARN
+    assert "could not run" in finding.message
+
+
+def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 63.4 review finding (Verification Gap #1): the ``_surface_session_precondition_findings``
+    unit is covered directly above, but its wiring into ``dispatch_once`` --
+    the call site an operator actually drives -- was never exercised
+    end-to-end. This proves a non-ok ``steward session check`` verdict
+    reaches ``attempt.findings`` through the real ``dispatch_once`` call,
+    not only through the isolated helper."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
+
+    class NonOkSessionProcess(FakeProcess):
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            self.run_calls.append(list(argv))
+            payload = json.dumps({"ok": False, "findings": [{"name": "gh-auth", "ok": False}]})
+            return ProcessResult(returncode=1, stdout=payload, stderr="")
+
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=NonOkSessionProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-049"]
+    assert finding.severity is Severity.WARN
+    assert "gh-auth" in finding.message
 
 
 def test_resolve_story_spec_path_finds_tracked_spec(tmp_path: Path) -> None:

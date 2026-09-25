@@ -402,6 +402,45 @@ def _surface_worktree_wip_before_dispatch(
     )
 
 
+_SESSION_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", "pyforge-guild", "steward", "session", "check", "--json")
+_SESSION_CHECK_TIMEOUT_S = 60.0
+
+
+def _surface_session_precondition_findings(*, process: ProcessPort, repo_root: Path) -> Finding | None:
+    """Story 63.4 (spec-pyforge-steward CAP-5): shell ``steward session check
+    --json`` right after ``repo_root`` resolves and fold a non-ok
+    session-precondition verdict (pixi/pyforge-guild, bmad-method drift, the
+    token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3
+    sprint-status feed) into a WARN finding -- non-blocking, mirroring
+    ``_surface_worktree_wip_before_dispatch``'s shape. Never escalated to
+    ERROR: a session-precondition gap is worth flagging before a dispatch
+    launches, not worth refusing the launch over.
+    """
+    try:
+        result = process.run(list(_SESSION_CHECK_ARGV), cwd=repo_root, timeout_s=_SESSION_CHECK_TIMEOUT_S)
+    except ProcessError as exc:
+        return Finding(
+            code="MRS-DISP-049",
+            severity=Severity.WARN,
+            message=f"steward session check could not run: {exc} -- session preconditions unverified",
+        )
+    if result.returncode == 0:
+        return None
+    detail: str
+    try:
+        payload = json.loads(result.stdout)
+        non_ok = [row.get("name", "?") for row in payload.get("findings", []) if not row.get("ok", True)]
+        detail = f"non-ok findings: {', '.join(non_ok)}" if non_ok else "reported findings"
+    except json.JSONDecodeError, AttributeError, TypeError:
+        tail_lines = (result.stderr or result.stdout or "").strip().splitlines()
+        detail = tail_lines[-1] if tail_lines else "steward session check reported findings"
+    return Finding(
+        code="MRS-DISP-049",
+        severity=Severity.WARN,
+        message=f"steward session check reported a non-ok session-precondition verdict: {detail}",
+    )
+
+
 def _seed_dispatch_output_layer(*, fs: FsPort, worktree: Path, context_payload: Mapping[str, object]) -> Finding | None:
     """Story 28.30 (CAP-3, dispatch half of the ``output`` layer): deploy
     the caveman output-compression skill into a fresh dispatch worktree
@@ -1745,6 +1784,10 @@ def dispatch_once(
             )
         )
         return _done()
+
+    session_finding = _surface_session_precondition_findings(process=process, repo_root=repo_root)
+    if session_finding is not None:
+        findings.append(session_finding)
 
     scope_refusal = _dispatch_scope_refusal(repo_root, slug)
     if scope_refusal is not None:
