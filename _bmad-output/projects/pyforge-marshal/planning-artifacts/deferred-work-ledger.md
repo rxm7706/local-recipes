@@ -6712,3 +6712,14 @@ status: open
   severity: low
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-46-6: Nothing yet documents running `marshal context advisory` as part of session close, so the AC's "session ends" trigger and epics.md's "session-close output" Surface are realized only as an on-demand capability, not as a close-time ritual.
+
+- source_spec: `planning-artifacts/specs/spec-46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory.md`
+  summary: Nothing yet documents running `marshal context advisory` as part of session close, so the AC's "session ends" trigger and epics.md's "session-close output" Surface are realized only as an on-demand capability, not as a close-time ritual (the repo's one precedent, `scribe capture`, ties in by documented convention, not a hook).
+  evidence: Review Triage Log 2026-09-25, finding #14. `run_context_advisory` produces correct output when invoked, but no doc names it as part of the session-close ritual the way AGENTS.md names `scribe capture`.
+  location: AGENTS.md
+  origin: spec-deferred f19691fb2515 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

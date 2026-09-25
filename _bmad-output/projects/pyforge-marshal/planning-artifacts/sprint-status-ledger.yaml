@@ -266,7 +266,7 @@ development_status:
   46-3-scribe-capture-is-the-blessed-session-close-ritual: done
   46-4-wire-auto-resolves-against-the-declared-wrapper: done
   46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency: done
-  46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory: backlog
+  46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory: done
   46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
