@@ -2,7 +2,8 @@
 title: '59.3: The Charter carries the BMAD cross-walk and pitched stays optional'
 type: 'docs'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '9bdabafaa0966bf6d2ae78b0888c4e913f6418de'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
