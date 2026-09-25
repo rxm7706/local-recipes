@@ -3952,7 +3952,7 @@ from one function
 **And** a new `DW-` id is story-scoped or sweep-scoped and includes the short
 station token
 **And** the 53 divergent slugs and 1338 existing `DW-` ids are untouched
-**Status:** backlog
+**Status:** done
 
 ### Story 59.6: Shape hygiene — roster, S-N.N, commits, status comments
 

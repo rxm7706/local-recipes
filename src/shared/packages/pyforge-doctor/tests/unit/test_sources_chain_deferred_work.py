@@ -15,6 +15,7 @@ requirement.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -1729,8 +1730,10 @@ def test_next_free_suffix_whole_remainder_must_be_integer_not_last_segment() -> 
 
 
 def test_mint_id_for_entry_non_mason_no_collision(tmp_path: Path) -> None:
-    """I/O matrix row 1: station=doctor, nothing collected for `DW-FU-7-1*`
-    -> bare `DW-FU-7-1`."""
+    """I/O matrix row 1: station=doctor, nothing collected for `DW-doctor-
+    7-1*` -> bare `DW-doctor-7-1` (vocabulary Dream Ruling 14: every new
+    mint carries the real station token, replacing the old generic `FU`
+    placeholder)."""
     entry = _entry_with_source_spec("`spec-7-1-something-brand-new.md`")
     result = chain.mint_id_for_entry(
         entry,
@@ -1738,81 +1741,88 @@ def test_mint_id_for_entry_non_mason_no_collision(tmp_path: Path) -> None:
         tmp_path / "no-tier3.md",
         tmp_path / "no-tracked.md",
     )
-    assert result == "DW-FU-7-1"
+    assert result == "DW-doctor-7-1"
 
 
-def test_mint_id_for_entry_non_mason_bare_already_taken_real_excerpt(tmp_path: Path) -> None:
-    """I/O matrix row 2, against a real excerpt: `_bmad-output/projects/
-    pyforge-steward/planning-artifacts/deferred-work-ledger.md` line 222 (a
-    `promoted:` note, not a heading -- proving the "harvest prose, not just
-    headings" rule) cites `DW-FU-10-1` as that entry's own Tier-3 origin id,
-    with no numeric-suffixed sibling anywhere else in that file. Minting for
-    the same story (`10-1`) must suffix past it: `DW-FU-10-1-2`."""
+def test_mint_id_for_entry_non_mason_bare_already_taken(tmp_path: Path) -> None:
+    """I/O matrix row 2, new-grammar shape (Ruling 14): a `DW-doctor-10-1`
+    sibling already collected for the same story (`10-1`) must be suffixed
+    past: `DW-doctor-10-1-2`. `_bmad-output/projects/pyforge-steward/
+    planning-artifacts/deferred-work-ledger.md` line 222 carries the
+    pre-ruling `DW-FU-10-1` shape for this same story (proof the "harvest
+    prose, not just headings" rule still applies) -- that id is untouched
+    on disk (no retro-rename) and, by construction, no longer shares a
+    prefix with any new-grammar base, so it cannot suffix-collide with a
+    fresh mint; this test's fixture uses the new shape instead to prove the
+    suffix-continuation logic still holds under it."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text(
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-10-1` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-10-1` there) "
         "during the pre-shutdown deferred-work audit.\n",
         encoding="utf-8",
     )
     entry = _entry_with_source_spec("`spec-10-1-something.md`")
     result = chain.mint_id_for_entry(entry, "doctor", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-FU-10-1-2"
+    assert result == "DW-doctor-10-1-2"
 
 
-def test_mint_id_for_entry_non_mason_suffix_continuation_real_excerpt(tmp_path: Path) -> None:
-    """I/O matrix row 3, against a real excerpt. The spec's own anecdote
-    names `DW-FU-10-5-1..8` (marshal); the live ledgers no longer carry
-    that exact family (same-day churn), but `_bmad-output/projects/
-    pyforge-steward/planning-artifacts/deferred-work-ledger.md` carries the
-    IDENTICAL shape for story `9-3`: ten `DW-9-3-*` headed entries, each
-    with a verbatim `promoted:` note (embedded below) citing its own
-    Tier-3 origin id -- `DW-FU-9-3` (bare) plus `DW-FU-9-3-2` through
-    `DW-FU-9-3-10`. Minting for the same story (`9-3`) must continue past
-    the highest, `-10`, to `-11` -- numerically, never by re-using the bare
-    id or restarting at `-1`."""
+def test_mint_id_for_entry_non_mason_suffix_continuation(tmp_path: Path) -> None:
+    """I/O matrix row 3, new-grammar shape (Ruling 14). `_bmad-output/
+    projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+    carries the pre-ruling shape for story `9-3` (`DW-FU-9-3` bare plus
+    `DW-FU-9-3-2` through `DW-FU-9-3-10`, untouched on disk); this fixture
+    mirrors that same suffix run under the new `DW-doctor-9-3...` shape to
+    prove minting for the same story continues past the highest, `-10`, to
+    `-11` -- numerically, never by re-using the bare id or restarting at
+    `-1`."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text(
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-2` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-2` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-3` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-3` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-4` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-4` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-5` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-5` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-6` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-6` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-7` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-7` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-8` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-8` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-9` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-9` there) "
         "during the pre-shutdown deferred-work audit.\n"
         "  promoted: 2026-08-15 — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-10` there) "
+        "`implementation-artifacts/deferred-work.md` (id `DW-doctor-9-3-10` there) "
         "during the pre-shutdown deferred-work audit.\n",
         encoding="utf-8",
     )
     entry = _entry_with_source_spec("`spec-9-3-something.md`")
     result = chain.mint_id_for_entry(entry, "doctor", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-FU-9-3-11"
+    assert result == "DW-doctor-9-3-11"
 
 
 def test_mint_id_for_entry_mason_no_suffix_collected(tmp_path: Path) -> None:
-    """I/O matrix row 4: mason always suffixes, even on a story with
-    nothing collected for it yet -- never bare."""
+    """I/O matrix row 4, post-Ruling-14: mason now mints under the same
+    bare-when-free convention as every other station -- `DW-mason-2-1`,
+    with the real station token where mason previously had none and
+    every other station carried the generic `FU` placeholder instead.
+    Mason's old always-suffixed special case (`DW-{story}-<n>`, never
+    bare) is retired for new mints; the 1338 existing ids it already
+    produced are untouched."""
     entry = _entry_with_source_spec("`spec-2-1-something-brand-new.md`")
     result = chain.mint_id_for_entry(
         entry,
@@ -1820,7 +1830,7 @@ def test_mint_id_for_entry_mason_no_suffix_collected(tmp_path: Path) -> None:
         tmp_path / "no-tier3.md",
         tmp_path / "no-tracked.md",
     )
-    assert result == "DW-2-1-1"
+    assert result == "DW-mason-2-1"
 
 
 def test_mint_id_for_entry_mason_dw_1_10_1_does_not_count_toward_1_1_real_excerpt(
@@ -1829,10 +1839,12 @@ def test_mint_id_for_entry_mason_dw_1_10_1_does_not_count_toward_1_1_real_excerp
     """I/O matrix row 5 and this story's Acceptance Criteria row 2, against
     a VERBATIM excerpt of `_bmad-output/projects/pyforge-mason/
     planning-artifacts/deferred-work-ledger.md` lines 57-64 -- mason's real
-    `DW-1-10-1` entry. Minting for a NEW orphan whose derived story is
-    `1-1` must not be skipped past it: the mint is `DW-1-1-1`, mason's
-    normal first-suffix mint for a story with nothing collected, never
-    `DW-1-1-2`."""
+    pre-ruling `DW-1-10-1` entry (untouched on disk; no retro-rename).
+    Minting for a NEW orphan whose derived story is `1-1` must not be
+    skipped past it: under the new grammar the mint is `DW-mason-1-1`,
+    mason's normal bare-when-free mint for a story with nothing collected
+    under the NEW shape -- the old-shaped `DW-1-10-1` shares no prefix with
+    it at all, so it trivially cannot count toward its suffix either way."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text(
         "### DW-1-10-1\n"
@@ -1865,7 +1877,7 @@ def test_mint_id_for_entry_mason_dw_1_10_1_does_not_count_toward_1_1_real_excerp
     )
     entry = _entry_with_source_spec("`spec-1-1-something-brand-new.md`")
     result = chain.mint_id_for_entry(entry, "mason", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-1-1-1"
+    assert result == "DW-mason-1-1"
 
 
 def test_mint_id_for_entry_letter_suffixed_story_key_distinct_from_unsuffixed(
@@ -1888,8 +1900,8 @@ def test_mint_id_for_entry_letter_suffixed_story_key_distinct_from_unsuffixed(
         no_tier3,
         no_tracked,
     )
-    assert result_a == "DW-FU-6-1a"
-    assert result_plain == "DW-FU-6-1"
+    assert result_a == "DW-doctor-6-1a"
+    assert result_plain == "DW-doctor-6-1"
 
 
 def test_mint_id_for_entry_raises_on_missing_source_spec_field(tmp_path: Path) -> None:
@@ -1941,19 +1953,19 @@ def test_mint_id_for_entry_never_writes_to_either_path(tmp_path: Path) -> None:
 def test_mint_id_for_entry_station_is_never_derived_from_ambient_state(tmp_path: Path) -> None:
     """Design Notes: `station` is an explicit caller-supplied parameter,
     never resolved from ambient active-project state -- an arbitrary KNOWN
-    non-mason station string still takes the FU-prefixed branch (updated
-    2026-08-15: the original used a garbage `"unknown"` value, but Review
-    Triage Log item 3 now requires an unrecognized station to raise rather
-    than silently fall through -- see
+    station string mints under its OWN token, never a generic placeholder
+    (updated 2026-08-15: the original used a garbage `"unknown"` value, but
+    Review Triage Log item 3 now requires an unrecognized station to raise
+    rather than silently fall through -- see
     `test_mint_id_for_entry_unrecognized_station_raises` for that case;
-    `"atlas"` here is a real, known, non-mason station)."""
+    `"atlas"` here is a real, known station)."""
     result = chain.mint_id_for_entry(
         _entry_with_source_spec("`spec-11-1-something.md`"),
         "atlas",
         tmp_path / "no-tier3.md",
         tmp_path / "no-tracked.md",
     )
-    assert result == "DW-FU-11-1"
+    assert result == "DW-atlas-11-1"
 
 
 # Review Triage Log 2026-08-15, item 3 (HIGH): station-string robustness ----------
@@ -1962,10 +1974,10 @@ def test_mint_id_for_entry_station_is_never_derived_from_ambient_state(tmp_path:
 def test_mint_id_for_entry_mason_station_variants_normalize_to_mason_branch(
     tmp_path: Path,
 ) -> None:
-    """`"pyforge-mason"`, `"Mason"`, and `" mason "` must all resolve to
-    mason's own always-suffixed convention -- normalizing common variants
-    defensively is zero-cost and the safer choice given `station` is
-    caller-supplied."""
+    """`"pyforge-mason"`, `"Mason"`, and `" mason "` must all normalize to
+    the same literal `mason` station token in the minted id -- normalizing
+    common variants defensively is zero-cost and the safer choice given
+    `station` is caller-supplied."""
     no_tier3, no_tracked = tmp_path / "no-tier3.md", tmp_path / "no-tracked.md"
     for station in ("pyforge-mason", "Mason", " mason "):
         result = chain.mint_id_for_entry(
@@ -1974,7 +1986,7 @@ def test_mint_id_for_entry_mason_station_variants_normalize_to_mason_branch(
             no_tier3,
             no_tracked,
         )
-        assert result == "DW-2-1-1", station
+        assert result == "DW-mason-2-1", station
 
 
 def test_mint_id_for_entry_unrecognized_station_raises(tmp_path: Path) -> None:
@@ -1999,13 +2011,17 @@ def test_mint_id_for_entry_mason_bare_legacy_id_already_collected_real_excerpt(
     """Review Triage Log 2026-08-15, item 9: no end-to-end test previously
     exercised mason's BARE (non-suffixed) legacy id already-collected case
     through `mint_id_for_entry` itself -- only unit-tested directly against
-    `_next_free_suffix`. A bare `DW-<story>` legacy id counts as suffix `1`,
-    so mason's next mint for the same story continues from `2`."""
+    `_next_free_suffix`. Post-Ruling-14, that pre-existing bare legacy id
+    (`DW-1-1`, no station token, untouched on disk) shares no prefix with
+    the new-grammar base (`DW-mason-1-1`), so it cannot suffix-collide with
+    a fresh mint for the same story: the new mint comes out bare too,
+    exactly as it would for any other story with nothing collected under
+    the new shape."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text("### DW-1-1\n\n- status: open\n", encoding="utf-8")
     entry = _entry_with_source_spec("`spec-1-1-something-else.md`")
     result = chain.mint_id_for_entry(entry, "mason", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-1-1-2"
+    assert result == "DW-mason-1-1"
 
 
 # Review Triage Log 2026-08-15, item 4 (medium): guard against re-minting ---------
@@ -2029,6 +2045,206 @@ def test_mint_id_for_entry_raises_if_entry_already_has_an_id(tmp_path: Path) -> 
             tmp_path / "no-tier3.md",
             tmp_path / "no-tracked.md",
         )
+
+
+# vocabulary Dream Ruling 13: `mint_sweep_id` -- the second of the two blessed
+# `DW-` families, mirroring `mint_id_for_entry`'s own test shapes above rather
+# than a second test pattern.
+
+
+def test_mint_sweep_id_no_collision_mints_bare(tmp_path: Path) -> None:
+    """Nothing collected for `DW-doctor-vocab-2026-09-25*` -> bare
+    `DW-doctor-vocab-2026-09-25` (Ruling 14: every new mint, sweep-scoped or
+    story-scoped, carries the real station token)."""
+    result = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tmp_path / "no-tracked.md",
+    )
+    assert result == "DW-doctor-vocab-2026-09-25"
+
+
+def test_mint_sweep_id_bare_already_taken_suffixes_past_it(tmp_path: Path) -> None:
+    """A `DW-doctor-vocab-2026-09-25` sibling already collected must be
+    suffixed past: `DW-doctor-vocab-2026-09-25-2` -- same counting rule as
+    `mint_id_for_entry`, reused via `_next_free_suffix`, never reimplemented."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text("- `DW-doctor-vocab-2026-09-25` — first of this sweep.\n", encoding="utf-8")
+    result = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tracked,
+    )
+    assert result == "DW-doctor-vocab-2026-09-25-2"
+
+
+def test_mint_sweep_id_suffix_continuation(tmp_path: Path) -> None:
+    """A run of `DW-doctor-vocab-2026-09-25-2`..`-9` already collected mints
+    `-10` next -- numeric, not lexicographic, comparison."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    ids = [f"DW-doctor-vocab-2026-09-25-{n}" for n in range(2, 10)]
+    tracked.write_text("\n".join(f"- `{i}`" for i in ids) + "\n", encoding="utf-8")
+    result = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tracked,
+    )
+    assert result == "DW-doctor-vocab-2026-09-25-10"
+
+
+def test_mint_sweep_id_already_minted_accumulator_prevents_batch_collision(
+    tmp_path: Path,
+) -> None:
+    """`already_minted` folds in exactly as it does for `mint_id_for_entry` --
+    a caller minting several sweep ids in one batch, before any is written to
+    either ledger file, never collides within that batch."""
+    already_minted: set[str] = set()
+    first = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tmp_path / "no-tracked.md",
+        already_minted=already_minted,
+    )
+    already_minted.add(first)
+    second = chain.mint_sweep_id(
+        "vocab",
+        "doctor",
+        "2026-09-25",
+        tmp_path / "no-tier3.md",
+        tmp_path / "no-tracked.md",
+        already_minted=already_minted,
+    )
+    assert first == "DW-doctor-vocab-2026-09-25"
+    assert second == "DW-doctor-vocab-2026-09-25-2"
+
+
+def test_mint_sweep_id_unrecognized_station_raises(tmp_path: Path) -> None:
+    """`_normalize_station` rejects an unknown station just as it does for
+    `mint_id_for_entry` -- reused, not reimplemented."""
+    with pytest.raises(ValueError, match="unrecognized station"):
+        chain.mint_sweep_id(
+            "vocab",
+            "not-a-real-station",
+            "2026-09-25",
+            tmp_path / "no-tier3.md",
+            tmp_path / "no-tracked.md",
+        )
+
+
+def test_mint_sweep_id_empty_slug_after_sanitizing_raises(tmp_path: Path) -> None:
+    """A slug that sanitizes to nothing (all-punctuation) must raise rather
+    than mint a phantom `DW-doctor--2026-09-25` id with an empty segment."""
+    with pytest.raises(ValueError, match="non-empty sweep slug"):
+        chain.mint_sweep_id(
+            "***",
+            "doctor",
+            "2026-09-25",
+            tmp_path / "no-tier3.md",
+            tmp_path / "no-tracked.md",
+        )
+
+
+@pytest.mark.parametrize("bad_date", ["2026-9-25", "09-25-2026", "2026-09-25T00:00:00", "not-a-date", ""])
+def test_mint_sweep_id_non_iso_date_raises(tmp_path: Path, bad_date: str) -> None:
+    """`date_str` must already be a zero-padded ISO date (AGENTS.md "Dates,
+    tags and versions") -- this function mints for a caller-supplied sweep
+    date, it does not stamp "today" itself, so an unpadded or malformed value
+    is rejected rather than silently embedded in a `DW-` id."""
+    with pytest.raises(ValueError, match="zero-padded ISO date"):
+        chain.mint_sweep_id(
+            "vocab",
+            "doctor",
+            bad_date,
+            tmp_path / "no-tier3.md",
+            tmp_path / "no-tracked.md",
+        )
+
+
+# vocabulary Dream Ruling 12: `slugify_title` / `mint_story_identity` /
+# `StoryIdentity` -- one mint-time slugify for a NEW story's heading, ledger
+# key, and spec filename.
+
+
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        ("One Mint-Time Slugify", "one-mint-time-slugify"),
+        ("Two DW- Families", "two-dw-families"),
+        ("  leading and trailing spaces  ", "leading-and-trailing-spaces"),
+        ("Apostrophe's Typographic ’Quote’", "apostrophe-s-typographic-quote"),
+        ("snake_case_already", "snake-case-already"),
+        ("UPPER-CASE", "upper-case"),
+    ],
+)
+def test_slugify_title_closed_alphabet(title: str, expected: str) -> None:
+    """Lowercase, collapse every run outside `[a-z0-9]` to one `-`, trim
+    leading/trailing `-` -- closed over `^[a-z0-9]+(-[a-z0-9]+)*$` by
+    construction, unlike the 14 of 952 existing ledger keys a looser regex
+    let an underscore, non-ASCII character, or collapsed apostrophe through
+    (Dream "The shapes", finding 3)."""
+    result = chain.slugify_title(title)
+    assert result == expected
+    assert re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", result)
+
+
+def test_slugify_title_all_punctuation_raises() -> None:
+    """A title that slugifies to nothing (all-punctuation) must raise rather
+    than mint an empty slug segment."""
+    with pytest.raises(ValueError, match="non-empty slug"):
+        chain.slugify_title("***")
+
+
+def test_mint_story_identity_derives_all_three_spellings_from_one_pair() -> None:
+    """Ruling 12: heading is human-canonical; ledger key and spec filename
+    both derive from it mechanically via `slugify_title` -- the exact gap
+    the Dream measured (53 of 842 existing number-pairs carry a different
+    slug in their ledger key than in their spec filename)."""
+    result = chain.mint_story_identity("59.5", "One Mint-Time Slugify And Two DW- Families")
+    assert result == chain.StoryIdentity(
+        heading="### Story 59.5: One Mint-Time Slugify And Two DW- Families",
+        ledger_key="59-5-one-mint-time-slugify-and-two-dw-families",
+        spec_filename="spec-59-5-one-mint-time-slugify-and-two-dw-families.md",
+    )
+
+
+def test_mint_story_identity_letter_suffixed_story_number() -> None:
+    """The fleet's own real shape includes an optional single trailing
+    letter on the story half (e.g. `22.4a`) -- carried through to both the
+    heading and the ledger key, lowercased in the ledger key."""
+    result = chain.mint_story_identity("22.4A", "Some Title")
+    assert result.heading == "### Story 22.4A: Some Title"
+    assert result.ledger_key == "22-4a-some-title"
+    assert result.spec_filename == "spec-22-4a-some-title.md"
+
+
+@pytest.mark.parametrize("bad_number", ["59", "59.", ".5", "59.5.1", "fifty-nine.5", ""])
+def test_mint_story_identity_malformed_number_raises(bad_number: str) -> None:
+    """A number that doesn't match the fleet's own `\\d+\\.\\d+[A-Za-z]?`
+    shape (952/952) must raise rather than mint a malformed heading."""
+    with pytest.raises(ValueError, match="dotted"):
+        chain.mint_story_identity(bad_number, "Some Title")
+
+
+def test_mint_story_identity_blank_title_raises() -> None:
+    """A blank title carries no information to slugify -- raise rather than
+    mint an identity with an empty title segment."""
+    with pytest.raises(ValueError, match="blank"):
+        chain.mint_story_identity("59.5", "   ")
+
+
+def test_mint_story_identity_all_punctuation_title_raises() -> None:
+    """A title that slugifies to nothing must raise via `slugify_title`,
+    surfaced through `mint_story_identity` rather than swallowed."""
+    with pytest.raises(ValueError, match="non-empty slug"):
+        chain.mint_story_identity("59.5", "***")
 
 
 # Review Triage Log 2026-08-15, item 5 (medium): backtick/`.md`-stripping boundaries -
@@ -2117,8 +2333,12 @@ def test_mint_id_for_entry_batch_minting_without_accumulator_collides_real_data(
     """Regression proof for the ORIGINAL bug, against real data: minting
     repeatedly for entries that share a derived story key, with no
     accumulator threaded through, collides every time -- confirming the
-    defect the companion test below then fixes. Every one of the 24 real
-    orphans mints the identical `DW-FU-6-4-2` without an accumulator."""
+    defect the companion test below then fixes. The tracked heading still
+    carries the real pre-ruling `DW-FU-6-4` id (untouched on disk); under
+    the new grammar it shares no prefix with the fresh `DW-doctor-6-4`
+    base, so nothing is collected for it and every one of the 24 real
+    orphans mints the identical bare `DW-doctor-6-4` without an
+    accumulator."""
     tier3 = tmp_path / "deferred-work.md"
     tier3.write_text("# Deferred Work\n\n" + _REAL_6_4_ORPHAN_BULLET * 24, encoding="utf-8")
     tracked = tmp_path / "deferred-work-ledger.md"
@@ -2129,7 +2349,7 @@ def test_mint_id_for_entry_batch_minting_without_accumulator_collides_real_data(
     assert len(orphans) == 24
 
     results = [chain.mint_id_for_entry(e, "doctor", tier3, tracked) for e in orphans]
-    assert results == ["DW-FU-6-4-2"] * 24
+    assert results == ["DW-doctor-6-4"] * 24
 
 
 def test_mint_id_for_entry_batch_minting_with_accumulator_no_collisions_real_data(
@@ -2140,7 +2360,7 @@ def test_mint_id_for_entry_batch_minting_with_accumulator_no_collisions_real_dat
     every returned id to it immediately, matching the source prose's own
     "mint one at a time, write before minting next" discipline -- produces
     24 UNIQUE ids with zero duplicates, where the unfixed code minted
-    `DW-FU-6-4-2` 24 times over."""
+    bare `DW-doctor-6-4` 24 times over."""
     tier3 = tmp_path / "deferred-work.md"
     tier3.write_text("# Deferred Work\n\n" + _REAL_6_4_ORPHAN_BULLET * 24, encoding="utf-8")
     tracked = tmp_path / "deferred-work-ledger.md"
@@ -2159,7 +2379,7 @@ def test_mint_id_for_entry_batch_minting_with_accumulator_no_collisions_real_dat
 
     assert len(results) == 24
     assert len(set(results)) == 24, "batch minting must not collide within one batch"
-    assert results == [f"DW-FU-6-4-{n}" for n in range(2, 26)]
+    assert results == ["DW-doctor-6-4"] + [f"DW-doctor-6-4-{n}" for n in range(2, 25)]
 
 
 def test_mint_id_for_entry_accumulator_folds_in_like_a_collected_ledger_id(
@@ -2172,11 +2392,11 @@ def test_mint_id_for_entry_accumulator_folds_in_like_a_collected_ledger_id(
     no_tier3, no_tracked = tmp_path / "no-tier3.md", tmp_path / "no-tracked.md"
 
     first = chain.mint_id_for_entry(entry, "doctor", no_tier3, no_tracked)
-    assert first == "DW-FU-4-1"
+    assert first == "DW-doctor-4-1"
 
     already_minted = {first}
     second = chain.mint_id_for_entry(entry, "doctor", no_tier3, no_tracked, already_minted)
-    assert second == "DW-FU-4-1-2"
+    assert second == "DW-doctor-4-1-2"
 
 
 # --- Story 25.6: spec-frontmatter deferred intake --------------------------------
