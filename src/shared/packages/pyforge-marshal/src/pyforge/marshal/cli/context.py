@@ -117,6 +117,14 @@ _MANIFEST_DIR_RELPATH = ".claude/data/pyforge-marshal/derived-context"
 _SESSION_ADVISORIES_DIRNAME = "session-advisories"
 _ADVISORY_JOURNAL_FILENAME = "journal.jsonl"
 
+#: Story 46.6 review triage fix 2 -- the distinguishing marker `data`
+#: carries when findings exist but there is no usable project slug to mint
+#: a run under (no `--project`, no `BMAD_ACTIVE_PROJECT`, no active-project
+#: marker file): a common state, and repo-default `[context]` layers can
+#: still produce real findings in it, so a silent `journal: null` would be
+#: indistinguishable from "nothing lapsed".
+_NO_ACTIVE_PROJECT_REASON = "no active project; findings not journaled"
+
 
 def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register ``context`` with its nested ``refresh``, ``retrieve``,
@@ -832,10 +840,19 @@ def _lapsed_layer_findings(
     vocabulary -- see Design Notes). The remaining two (``derived-context``,
     ``planning-graph``) are answered the way ``run_context_refresh``'s own
     degrade path already does: an enabled layer whose scribe binary no
-    longer resolves on PATH is lapsed."""
+    longer resolves on PATH is lapsed.
+
+    ``KitStatus.UNAVAILABLE`` is deliberately excluded (Story 46.6 review
+    triage): it means the instrument itself cannot exist on this platform
+    (e.g. a linux-64-only tool probed on macOS) -- ``kit.py``'s own
+    ``_FINDING_FOR_STATUS`` already classifies it ``Severity.INFO``, not
+    ``DRIFT``, for exactly that reason. Only ``MISSING``/``STALE`` are a
+    real, fixable lapse of a layer the operator asked for; treating
+    ``UNAVAILABLE`` the same way would emit a persistent, unfixable WARN
+    every single run on a platform that will never have the instrument."""
     findings: list[Finding] = []
     for check in kit_checks(root, layers, process=process):
-        if check.status in (KitStatus.MISSING, KitStatus.STALE, KitStatus.UNAVAILABLE):
+        if check.status in (KitStatus.MISSING, KitStatus.STALE):
             findings.append(
                 Finding(
                     code=_MRS_CTX_LAPSED,
