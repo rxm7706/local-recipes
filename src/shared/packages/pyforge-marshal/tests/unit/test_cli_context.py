@@ -130,6 +130,30 @@ def _run(repo: Path, engine, capsys, **kwargs) -> dict:
     return envelope
 
 
+def _bundle_args(
+    repo: Path,
+    *,
+    epic: str = "28",
+    project: str | None = _SLUG,
+    expect_digest: str | None = None,
+    format: str = "json",
+):
+    return argparse.Namespace(
+        project=project,
+        epic=epic,
+        root=str(repo),
+        expect_digest=expect_digest,
+        format=format,
+    )
+
+
+def _run_bundle(repo: Path, capsys, **kwargs) -> dict:
+    code = context_cli.run_context_bundle(_bundle_args(repo, **kwargs))
+    envelope = json.loads(capsys.readouterr().out)
+    envelope["exit_code"] = code
+    return envelope
+
+
 @pytest.fixture
 def engine(tmp_path: Path, monkeypatch) -> _FakeScribeEngine:
     monkeypatch.setattr(scribe_cli.shutil, "which", lambda _n: "/usr/bin/scribe")
@@ -397,3 +421,87 @@ class TestCliSurface:
         assert derived.DERIVED_CONTEXT_LAYER in out
         assert derived.MODE_INCREMENTAL in out
         assert "artifacts:" in out
+
+
+class TestContextBundle:
+    """Story 46.2 (spec-pyforge-marshal CAP-192) -- ``marshal context
+    bundle``: no scribe subprocess, no freshness state, just the declared
+    sources plus the resolved layer config, hashed. Two independent runs
+    against the SAME fixture tree must produce byte-identical digests, and
+    ``--expect-digest`` names any drift as ``MRS-CTX-008`` (WARN, never
+    blocking) rather than silently reporting a new number."""
+
+    def test_two_runs_against_the_same_fixture_tree_produce_an_identical_digest(self, repo, capsys):
+        first = _run_bundle(repo, capsys)
+        second = _run_bundle(repo, capsys)
+        assert first["exit_code"] == EXIT_OK
+        assert first["verdict"] == "clean"
+        assert first["data"]["digest"] == second["data"]["digest"]
+        assert first["data"]["bundle"] == second["data"]["bundle"]
+        assert first["findings"] == []
+
+    def test_the_bundle_names_the_epic_and_carries_both_layers(self, repo, capsys):
+        _declare_layer(repo, enabled=True)
+        envelope = _run_bundle(repo, capsys)
+        bundle = envelope["data"]["bundle"]
+        assert bundle["epic"] == "28"
+        assert bundle["derived_context"]["enabled"] is True
+        assert isinstance(bundle["derived_context"]["declarations"], list)
+        assert "planning_graph" in bundle
+
+    def test_expect_digest_matching_reports_match_true_with_no_finding(self, repo, capsys):
+        first = _run_bundle(repo, capsys)
+        digest = first["data"]["digest"]
+        second = _run_bundle(repo, capsys, expect_digest=digest)
+        assert second["exit_code"] == EXIT_OK
+        assert second["verdict"] == "clean"
+        assert second["data"]["match"] is True
+        assert second["findings"] == []
+
+    def test_expect_digest_mismatched_emits_mrs_ctx_008_warn_and_match_false(self, repo, capsys):
+        envelope = _run_bundle(repo, capsys, expect_digest="0" * 64)
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "warn"
+        assert envelope["data"]["match"] is False
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-008"]
+
+    def test_a_malformed_epic_is_unevaluable_with_no_digest_computed(self, repo, capsys):
+        envelope = _run_bundle(repo, capsys, epic="twenty-eight")
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-001"]
+        assert envelope["data"]["digest"] is None
+        assert envelope["data"]["bundle"] is None
+
+    def test_a_project_with_no_planning_artifacts_is_unevaluable(self, repo, capsys):
+        envelope = _run_bundle(repo, capsys, project="pyforge-nowhere")
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-001"]
+        assert envelope["data"]["digest"] is None
+
+    def test_a_malformed_slug_is_unevaluable_never_an_interpolated_path(self, repo, capsys):
+        envelope = _run_bundle(repo, capsys, project="../escape")
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-001"]
+        assert envelope["data"]["digest"] is None
+
+    def test_runs_end_to_end_through_main_with_the_layer_off(self, repo, capsys):
+        code = main(
+            [
+                "context",
+                "bundle",
+                "--project",
+                _SLUG,
+                "--epic",
+                "28",
+                "--root",
+                str(repo),
+                "--format",
+                "json",
+            ]
+        )
+        envelope = json.loads(capsys.readouterr().out)
+        assert code == EXIT_OK
+        assert envelope["data"]["bundle"]["derived_context"]["enabled"] is False
+
+    def test_text_rendering_names_the_digest_and_the_match(self, repo, capsys):
+        context_cli.run_context_bundle(_bundle_args(repo, format="text"))
+        out = capsys.readouterr().out
+        assert "digest=" in out
+        assert "match=None" in out

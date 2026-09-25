@@ -43,7 +43,11 @@ Story 28.9 added ``retrieve`` (the planning-graph layer). Story 46.1
 (spec-pyforge-marshal CAP-192) adds ``bootstrap`` and ``pack`` -- a bare
 clone fetches or rebuilds the shared substrate, and a producer writes the
 deterministic pair it fetches. Both live in ``cli/context_bootstrap.py``;
-this module only registers them.
+this module only registers them. Story 46.2 (spec-pyforge-marshal CAP-192)
+adds ``bundle`` -- the canonical, digest-pinned context bundle extending
+Story 28.8's declaration half (``core/context_bundle.py``): no scribe
+subprocess, so two harnesses on the same commit produce byte-identical
+bundles deterministically.
 """
 
 from __future__ import annotations
@@ -55,6 +59,7 @@ from pathlib import Path
 from pyforge.core.atomic_write import atomic_write_text
 
 from ..adapters.scribe_cli import ScribeCli
+from ..core import context_bundle
 from ..core import derived_context as derived
 from ..core import planning_graph as planning
 from ..core.model import Finding, Severity, build_envelope
@@ -79,7 +84,7 @@ _MANIFEST_DIR_RELPATH = ".claude/data/pyforge-marshal/derived-context"
 
 def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register ``context`` with its nested ``refresh``, ``retrieve``,
-    ``bootstrap`` and ``pack`` actions."""
+    ``bundle``, ``bootstrap`` and ``pack`` actions."""
     parser = subparsers.add_parser(
         "context",
         help=(
@@ -185,6 +190,55 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     retrieve.set_defaults(handler=run_context_retrieve)
+
+    bundle = context_sub.add_parser(
+        "bundle",
+        help="Assemble the canonical, digest-pinned context bundle for one epic (Story 46.2).",
+        description=(
+            "Assembles the declared derived-context artifacts plus the "
+            "resolved derived-context/planning-graph layer config into one "
+            "canonical, JSON-safe bundle, sha256-hashed over its sorted-key "
+            "serialization. No scribe subprocess: two harnesses on the same "
+            "commit produce byte-identical bundles deterministically. "
+            "`--expect-digest` compares against a prior harness's recorded "
+            "digest; a mismatch is a named MRS-CTX-008 WARN finding, never "
+            "silent."
+        ),
+    )
+    bundle.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help=(
+            "Project slug (default: BMAD_ACTIVE_PROJECT, then the repo's "
+            "active-project marker). Never scripts/bmad-switch."
+        ),
+    )
+    bundle.add_argument(
+        "--epic",
+        required=True,
+        metavar="N",
+        help="Epic number whose context bundle is being assembled.",
+    )
+    bundle.add_argument(
+        "--root",
+        default=None,
+        metavar="PATH",
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
+    )
+    bundle.add_argument(
+        "--expect-digest",
+        default=None,
+        metavar="SHA256",
+        help="A prior harness's recorded bundle digest to compare against (optional).",
+    )
+    bundle.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    bundle.set_defaults(handler=run_context_bundle)
 
     # Story 46.1 (spec-pyforge-marshal CAP-192): the substrate bootstrap and
     # its producer, owned by cli/context_bootstrap.py.
@@ -523,6 +577,138 @@ def _print_text(data: dict[str, object], findings: list[Finding], verdict: objec
             print(
                 f"  - {artifact.get('state')}: {artifact.get('name')} "
                 f"({len(artifact.get('sources') or [])} declared source(s))"
+            )
+    for finding in findings:
+        print(f"{finding.code} {finding.severity.value}: {finding.message}")
+
+
+def run_context_bundle(args: argparse.Namespace) -> int:
+    """CLI entry for ``marshal context bundle`` (Story 46.2, spec-pyforge-
+    marshal CAP-192). Assembles the canonical, digest-pinned context bundle
+    for one epic from already-declared, already-resolved data only -- no
+    scribe subprocess, so two harnesses on the same commit produce
+    byte-identical bundles deterministically."""
+    findings: list[Finding] = []
+    root = Path(args.root).resolve() if args.root else repo_root()
+    epic = str(args.epic).strip()
+    expect_digest = (args.expect_digest or "").strip() or None
+
+    layers = resolve_context_layers(root, args.project)
+    derived_layer = layers.get(derived.DERIVED_CONTEXT_LAYER)
+    planning_layer = layers.get(planning.PLANNING_GRAPH_LAYER)
+    data: dict[str, object] = {
+        "epic": epic,
+        "digest": None,
+        "expect_digest": expect_digest,
+        "match": None,
+        "bundle": None,
+    }
+
+    slug = _resolve_project_slug(root, args.project)
+    data["project"] = slug
+    if not _resolvable(slug, epic):
+        findings.append(
+            Finding(
+                code=_MRS_CTX_UNEVALUABLE,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot assemble a context bundle for project {slug!r} "
+                    f"epic {epic!r} -- a usable project slug and a plain "
+                    "epic number are both required; no bundle/digest computed"
+                ),
+                path=str(root),
+            )
+        )
+        return _emit_bundle(args, findings, data)
+
+    planning_dir = root / derived.planning_artifacts_relpath(slug)
+    if not planning_dir.is_dir():
+        findings.append(
+            Finding(
+                code=_MRS_CTX_UNEVALUABLE,
+                severity=Severity.ERROR,
+                message=(
+                    f"no planning-artifacts directory at {planning_dir!s} -- "
+                    "there is nothing to declare as a source; no bundle/"
+                    "digest computed"
+                ),
+                path=str(planning_dir),
+            )
+        )
+        return _emit_bundle(args, findings, data)
+
+    declarations = derived.declare_derived_context(
+        project_slug=slug,
+        epic=epic,
+        planning_filenames=_listing(planning_dir),
+        planning_spec_filenames=_listing(root / derived.planning_specs_relpath(slug)),
+        implementation_filenames=_listing(root / derived.implementation_artifacts_relpath(slug)),
+    )
+    bundle = context_bundle.assemble_bundle(
+        epic=epic,
+        derived_context_layer=derived_layer,
+        planning_graph_layer=planning_layer,
+        declarations=declarations,
+    )
+    digest = context_bundle.bundle_digest(bundle)
+    data["bundle"] = bundle
+    data["digest"] = digest
+
+    if expect_digest:
+        match = expect_digest.lower() == digest.lower()
+        data["match"] = match
+        if not match:
+            findings.append(context_bundle.digest_mismatch_finding(epic=epic, expected=expect_digest, computed=digest))
+    return _emit_bundle(args, findings, data)
+
+
+def _emit_bundle(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
+    verdict = compute_verdict(findings)
+    envelope = build_envelope(
+        command="context bundle",
+        verdict=verdict,
+        data=data,
+        findings=tuple(findings),
+    )
+    try:
+        if args.format == "json":
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
+        else:
+            _print_bundle_text(data, findings, envelope.verdict)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+def _print_bundle_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
+    print(
+        f"context bundle epic={data.get('epic')} digest={data.get('digest')} "
+        f"expect_digest={data.get('expect_digest')} match={data.get('match')} "
+        f"verdict={verdict}"
+    )
+    bundle = data.get("bundle")
+    if isinstance(bundle, dict):
+        derived_ctx = bundle.get("derived_context") or {}
+        planning_ctx = bundle.get("planning_graph") or {}
+        if isinstance(derived_ctx, dict):
+            print(
+                f"derived_context: enabled={derived_ctx.get('enabled')} "
+                f"aggressiveness={derived_ctx.get('aggressiveness')}"
+            )
+            declarations = derived_ctx.get("declarations")
+            if isinstance(declarations, list) and declarations:
+                print("declarations:")
+                for declaration in declarations:
+                    if not isinstance(declaration, dict):
+                        continue
+                    print(f"  - {declaration.get('name')} ({len(declaration.get('sources') or [])} declared source(s))")
+        if isinstance(planning_ctx, dict):
+            print(
+                f"planning_graph: enabled={planning_ctx.get('enabled')} "
+                f"aggressiveness={planning_ctx.get('aggressiveness')}"
             )
     for finding in findings:
         print(f"{finding.code} {finding.severity.value}: {finding.message}")

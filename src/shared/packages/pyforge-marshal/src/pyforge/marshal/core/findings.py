@@ -1874,6 +1874,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-CTX-005",
         "MRS-CTX-006",
         "MRS-CTX-007",
+        # Story 46.2 (the canonical context bundle is digest-pinned,
+        # spec-pyforge-marshal CAP-192): `marshal context bundle`'s own
+        # code. 008 WARN -- a second harness's `--expect-digest` does not
+        # match the freshly assembled bundle's digest; never blocks.
+        "MRS-CTX-008",
         # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
         # `marshal context retrieve`'s degradation code -- WARN, never
         # blocking; falls back to Story 28.8's epic-context file.

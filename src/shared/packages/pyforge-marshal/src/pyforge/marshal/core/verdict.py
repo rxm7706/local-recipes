@@ -392,6 +392,12 @@ Story 46.1 (``spec-pyforge-marshal`` CAP-192) extends the area for
 ``-005`` (fetched pack refused) and ``-006`` (pack written with a gap) at
 ``Verdict.WARN``; ``-004`` (member neither fetched nor rebuilt) and ``-007``
 (nothing packable) at ``Verdict.UNEVALUABLE``.
+Story 46.2 (``spec-pyforge-marshal`` CAP-192) adds ``MRS-CTX-008`` at
+``Verdict.WARN`` for ``marshal context bundle``: a second harness's
+``--expect-digest`` does not match the freshly assembled bundle's digest --
+the same never-blocking tier as ``-002``/``-003``/``-005``/``-006``, since a
+digest mismatch means the two harnesses disagree on what to open with, not
+that either one failed to run.
 
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
@@ -1207,6 +1213,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-CTX-005": Verdict.WARN,
     "MRS-CTX-006": Verdict.WARN,
     "MRS-CTX-007": Verdict.UNEVALUABLE,
+    # Story 46.2 (the canonical context bundle is digest-pinned,
+    # spec-pyforge-marshal CAP-192). A digest mismatch (008) is WARN, the
+    # same never-blocking tier as the rest of this area: the two harnesses
+    # disagree on what to open with, but the bundle itself still assembled.
+    "MRS-CTX-008": Verdict.WARN,
     "MRS-PLAN-001": Verdict.WARN,
     # Story 28.7 (index freshness is an advisory finding,
     # SPEC-marshal-token-economy CAP-10): all four staleness codes are
