@@ -875,7 +875,9 @@ def _session_advisory_runs_dir(root: Path, slug: str) -> Path:
     ``session-advisories`` instead of ``dispatch-runs`` -- mirrored rather
     than imported so no existing dispatch-run reader ever globs this
     directory (Design Notes)."""
-    return root.resolve() / "_bmad-output" / "projects" / slug / "implementation-artifacts" / _SESSION_ADVISORIES_DIRNAME
+    return (
+        root.resolve() / "_bmad-output" / "projects" / slug / "implementation-artifacts" / _SESSION_ADVISORIES_DIRNAME
+    )
 
 
 def _session_advisory_run_dir(root: Path, slug: str, run_id: str) -> Path:
@@ -970,9 +972,6 @@ def _emit_advisory(args: argparse.Namespace, findings: list[Finding], data: dict
 
 
 def _print_advisory_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
-    print(
-        f"context advisory project={data.get('project')} "
-        f"journal={data.get('journal')} verdict={verdict}"
-    )
+    print(f"context advisory project={data.get('project')} journal={data.get('journal')} verdict={verdict}")
     for finding in findings:
         print(f"{finding.code} {finding.severity.value}: {finding.message}")
