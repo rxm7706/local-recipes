@@ -1,6 +1,7 @@
 """The BMAD↔Lexicon cross-walk and `pitched`'s optionality are pinned against
 ``docs/dreams/pyforge-charter.md`` and ``docs/governance/guild-roster.json``
-(steward Story 59.3, ``spec-vocabulary-one-name-one-job`` CAP-3).
+(steward Story 59.3, ``spec-vocabulary-one-name-one-job`` CAP-3, folded
+2026-09-17 into ``spec-pyforge-steward`` CAP-133).
 
 Hub has a Charter cross-walk (``### Intelligence Hub vocabulary``); BMAD's own
 daily nouns -- Epic, Story, Sprint, PRD, Retrospective -- did not, leaving a
@@ -31,6 +32,7 @@ _PRE_STORY_DREAM_STATUSES = ["dreamt", "pitched", "specified", "realized", "arch
 
 _BMAD_HEADING = "### BMAD vocabulary — cross-walk, never a shared noun"
 _BMAD_TERMS = ("Epic", "Story", "Sprint", "PRD", "Retrospective")
+_REVERSE_WALK_NOUNS = ("Charter", "Guild", "Smiths", "Stations", "Guildhall")
 
 
 def _load_roster() -> dict:
@@ -48,8 +50,16 @@ def _bmad_subsection() -> str:
     Whitespace (including hard line-wraps) is collapsed to single spaces so
     a substring check does not depend on exactly where prose wraps."""
     text = _charter_text()
+    assert _BMAD_HEADING in text, (
+        f"{CHARTER.relative_to(REPO)} no longer carries the heading "
+        f"{_BMAD_HEADING!r} this test scopes its checks from."
+    )
     start = text.index(_BMAD_HEADING)
     rest = text[start + len(_BMAD_HEADING) :]
+    assert "\n### " in rest, (
+        "No closing `### ` heading found after the BMAD vocabulary "
+        "subsection -- cannot scope the section's text."
+    )
     end = rest.index("\n### ")
     raw = _BMAD_HEADING + rest[:end]
     return re.sub(r"\s+", " ", raw)
@@ -112,6 +122,10 @@ def test_the_three_divergences_are_named_without_the_false_spelling_claim():
 def test_the_reverse_walk_names_the_untouched_lexicon_nouns():
     section = _bmad_subsection()
     assert "Reverse walk — Lexicon nouns with no BMAD counterpart" in section
+    for noun in _REVERSE_WALK_NOUNS:
+        assert noun in section, (
+            f"Reverse walk no longer names Lexicon noun `{noun}`"
+        )
 
 
 def test_the_spec_ladder_forward_reference_now_resolves():

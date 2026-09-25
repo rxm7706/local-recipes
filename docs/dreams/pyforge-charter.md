@@ -656,8 +656,10 @@ agent treats “Cog” as a ninth Smith.
 ### BMAD vocabulary — cross-walk, never a shared noun *(amended 2026-09-24)*
 
 *(Amended 2026-09-24 — steward Story 59.3 / `spec-vocabulary-one-name-one-job`
-CAP-3. Source: `docs/dreams/vocabulary-one-name-one-job.md` § Operator
-rulings (accepted 2026-09-15), Rulings 5 and 6.)*
+CAP-3 (folded 2026-09-17 into `spec-pyforge-steward` CAP-133 — the id above is
+the originating capability, CAP-133 is where it lives now). Source:
+`docs/dreams/vocabulary-one-name-one-job.md` § Operator rulings (accepted
+2026-09-15), Rulings 5 and 6.)*
 
 BMAD has its own daily nouns — Epic, Story, Sprint, PRD, Retrospective — and,
 same as the Hub whitepaper's vocabulary above, they have no walk of their
@@ -667,7 +669,7 @@ onto** this Lexicon; they **do not join** it.
 | BMAD term | Nearest Lexicon / estate surface |
 |---|---|
 | Epic | a capability grouping inside a Spec's decomposition, recorded in that station's `epics.md` |
-| Story | the numbered unit BMAD's chain produces from a Spec, tracked as a row in the Guild's `sprint-status-ledger.yaml` |
+| Story | the numbered unit BMAD's chain produces from a Spec, tracked as a row in that station's `sprint-status-ledger.yaml` |
 | Sprint | a batch of Stories drawn for one planning/build pass — a BMAD planning-lane concept, with no Lexicon noun of its own |
 | PRD | a decomposition artifact beside the Spec, under `planning-artifacts/`, produced only for product/platform scope |
 | Retrospective | the mechanism that re-forges a Skill once an effort closes (Lexicon noun 6's Rule 2: "a skill sharpened by one effort upgrades **every future wielder**") |
@@ -1274,4 +1276,5 @@ herald broadcast slack,email --channel engineering-updates
   which is unchanged. No other Dream file's frontmatter changed; no Epic 44
   `blocked` key was flipped. Pinned by
   `tests/scripts/test_bmad_cross_walk_is_declared.py`. Closes
-  `spec-vocabulary-one-name-one-job` CAP-3 (Story 59.3).
+  `spec-vocabulary-one-name-one-job` CAP-3 (Story 59.3), folded 2026-09-17
+  into `spec-pyforge-steward` CAP-133.
