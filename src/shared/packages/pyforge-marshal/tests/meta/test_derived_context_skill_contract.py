@@ -115,7 +115,11 @@ class TestFreshnessMechanismIsWiredToWhatMarshalShips:
         # exactly, so a NEW code still forces a look at the skill.
         refresh_codes = {"MRS-CTX-001", "MRS-CTX-002"}
         substrate_codes = {f"MRS-CTX-00{n}" for n in range(3, 8)}
-        assert ctx_codes == refresh_codes | substrate_codes
+        # Story 46.2 (spec-pyforge-marshal CAP-192): `bundle`'s own new
+        # code, reachable from neither `refresh` nor the substrate verbs
+        # step-01 never calls either.
+        bundle_codes = {"MRS-CTX-008"}
+        assert ctx_codes == refresh_codes | substrate_codes | bundle_codes
         # ...and the verb step-01 does call cannot reach the substrate codes.
         import inspect
 
