@@ -4774,3 +4774,25 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium (unverified)
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-59-4: The pulled deck does not yet state teaching-only except the two named exceptions (method-vs-machinery, project-context-as-constitution) -- that is a Design-side content edit, and this session has no reachable Claude Design MCP connection (claude-design: FIRST_PARTY_AUTH_REJECTED, confirmed live this session) to make it.
+
+- source_spec: `planning-artifacts/specs/spec-59-4-design-teaching-is-named-the-pull-cannot-silently-rot.md`
+  summary: The pulled deck does not yet state teaching-only except the two named exceptions (method-vs-machinery, project-context-as-constitution) -- that is a Design-side content edit, and this session has no reachable Claude Design MCP connection (claude-design: FIRST_PARTY_AUTH_REJECTED, confirmed live this session) to make it.
+  evidence: DW-VOCAB-2026-09-14-3's 2026-09-14 progress note: operator ruled "pull only -- no Design-side edits this pass" for the prior pull: (a), the Design-tier practice vocabulary entering no repo artifact (four-phases/three-tracks teaching), is explicitly still open and untouched by a pull.
+  location: presentations/agentic-sdlc/project/Agentic SDLC.dc.html
+  origin: spec-deferred e6011d230ef2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-59-4-2: Four unprefixed `quick-dev`/`dev-auto` mentions survived the 2026-09-14 Design-side rename pass (one body line on Quick flow, three speaker notes on Quick flow / Workflow matrix); Paige and the four `bmad`-prefixed retired skill names are already gone (0 hits each).
+
+- source_spec: `planning-artifacts/specs/spec-59-4-design-teaching-is-named-the-pull-cannot-silently-rot.md`
+  summary: Four unprefixed `quick-dev`/`dev-auto` mentions survived the 2026-09-14 Design-side rename pass (one body line on Quick flow, three speaker notes on Quick flow / Workflow matrix); Paige and the four `bmad`-prefixed retired skill names are already gone (0 hits each).
+  evidence: DW-VOCAB-2026-09-14-3's 2026-09-14 progress note, verified against the pulled deck rather than the entry's original claim.
+  location: presentations/agentic-sdlc/project/Agentic SDLC.dc.html
+  origin: spec-deferred 44d6be34a8fd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
