@@ -119,7 +119,12 @@ class TestFreshnessMechanismIsWiredToWhatMarshalShips:
         # code, reachable from neither `refresh` nor the substrate verbs
         # step-01 never calls either.
         bundle_codes = {"MRS-CTX-008"}
-        assert ctx_codes == refresh_codes | substrate_codes | bundle_codes
+        # Story 46.6 (spec-pyforge-marshal CAP-193, fold-remint of
+        # spec-marshal-token-economy CAP-20): `advisory`'s own new code,
+        # reachable from none of refresh, the substrate verbs or bundle --
+        # step-01 never calls `context advisory` either.
+        advisory_codes = {"MRS-CTX-009"}
+        assert ctx_codes == refresh_codes | substrate_codes | bundle_codes | advisory_codes
         # ...and the verb step-01 does call cannot reach the substrate codes.
         import inspect
 

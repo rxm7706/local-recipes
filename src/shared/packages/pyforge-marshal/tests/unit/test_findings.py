@@ -412,6 +412,12 @@ def test_registered_codes_contains_the_real_codes():
             # code -- 008 WARN, a second harness's `--expect-digest` does
             # not match the freshly assembled bundle's digest; never blocks.
             "MRS-CTX-008",
+            # Story 46.6 (a persistence advisory for a lapsed [context]
+            # layer, spec-pyforge-marshal CAP-193, fold-remint of
+            # spec-marshal-token-economy CAP-20): `marshal context
+            # advisory`'s own code -- 009 WARN, a declared-active layer's
+            # kit item or scribe binary no longer resolves; never blocks.
+            "MRS-CTX-009",
             # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
             # `marshal context retrieve`'s degradation code -- WARN, never
             # blocking; falls back to Story 28.8's epic-context file.
