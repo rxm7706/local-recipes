@@ -515,11 +515,16 @@ def test_live_tree_kinship_wikilink_dead_count() -> None:
     reader parsed that opener leniently and scanned its body, where
     ``[[deckcraft]]`` and ``[[pyforge-genesis]]`` do not resolve. The
     count returns to 33 once that Dream's opener is repaired (and its two
-    links are still dead); this test only tracks the live count."""
+    links are still dead); this test only tracks the live count.
+
+    30 since 2026-09-25: ``pyforge-pages.md``'s ``[[python-foundry-cutover]]``
+    (no Dream by that name; the cutover Spec's owning Dream is
+    ``pyforge-unifying-strategy``) was repointed in the unifying-strategy
+    consolidation."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 31
+    assert len(dead) == 30
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
