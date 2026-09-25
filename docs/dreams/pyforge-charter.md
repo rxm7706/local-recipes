@@ -653,7 +653,7 @@ enters the seven.
 Stations. Those three stay ours. The Cogs/Skills collision is named so no
 agent treats “Cog” as a ninth Smith.
 
-### BMAD vocabulary — cross-walk, never a shared noun *(amended 2026-09-24)*
+### BMAD vocabulary — cross-walk, never a shared noun
 
 *(Amended 2026-09-24 — steward Story 59.3 / `spec-vocabulary-one-name-one-job`
 CAP-3 (folded 2026-09-17 into `spec-pyforge-steward` CAP-133 — the id above is
@@ -670,7 +670,7 @@ onto** this Lexicon; they **do not join** it.
 |---|---|
 | Epic | a capability grouping inside a Spec's decomposition, recorded in that station's `epics.md` |
 | Story | the numbered unit BMAD's chain produces from a Spec, tracked as a row in that station's `sprint-status-ledger.yaml` |
-| Sprint | a batch of Stories drawn for one planning/build pass — a BMAD planning-lane concept, with no Lexicon noun of its own |
+| Sprint | a batch of Stories drawn for one `marshal factory spin` pass, tracked implicitly through that pass's own rows in the station's `sprint-status-ledger.yaml` — not a distinct artifact of its own |
 | PRD | a decomposition artifact beside the Spec, under `planning-artifacts/`, produced only for product/platform scope |
 | Retrospective | the mechanism that re-forges a Skill once an effort closes (Lexicon noun 6's Rule 2: "a skill sharpened by one effort upgrades **every future wielder**") |
 
@@ -704,8 +704,11 @@ Three divergences, named in the open rather than left to infer:
    never backfilled onto an existing Dream.
 
 **Reverse walk — Lexicon nouns with no BMAD counterpart:** Charter, Guild,
-Smiths, Stations, Guildhall. `Spec` is the deliberate exception, explained
-above rather than listed bare here.
+Stations, Guildhall, Skills. `Spec` is the deliberate exception, explained
+above rather than listed bare here; `Smiths` is not listed here either —
+Charter § The Smiths already names BMAD's own counterpart (`Smith` = agent =
+**persona**, three registers of one identity), so there is nothing left to
+cross-walk for it beyond that existing equivalence.
 
 ### Gate has three senses; verdict has one *(amended 2026-09-14)*
 

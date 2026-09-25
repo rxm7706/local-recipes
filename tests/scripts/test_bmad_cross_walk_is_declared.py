@@ -32,7 +32,7 @@ _PRE_STORY_DREAM_STATUSES = ["dreamt", "pitched", "specified", "realized", "arch
 
 _BMAD_HEADING = "### BMAD vocabulary — cross-walk, never a shared noun"
 _BMAD_TERMS = ("Epic", "Story", "Sprint", "PRD", "Retrospective")
-_REVERSE_WALK_NOUNS = ("Charter", "Guild", "Smiths", "Stations", "Guildhall")
+_REVERSE_WALK_NOUNS = ("Charter", "Guild", "Stations", "Guildhall", "Skills")
 
 
 def _load_roster() -> dict:
@@ -117,6 +117,15 @@ def test_the_three_divergences_are_named_without_the_false_spelling_claim():
     assert "share no spelling and nothing else" in section
     assert "share an English spelling" not in section
     assert "share a spelling" not in section
+
+
+def test_smiths_is_explained_not_silently_reverse_walked():
+    """`Smiths` deliberately has no reverse-walk entry -- Charter § The
+    Smiths already names BMAD's own counterpart (`persona`), so listing it
+    bare in the reverse walk would contradict that existing equivalence."""
+    section = _bmad_subsection()
+    assert "`Smiths` is not listed here either" in section
+    assert "Smith` = agent =" in section
 
 
 def test_the_reverse_walk_names_the_untouched_lexicon_nouns():
