@@ -894,8 +894,11 @@ and its suite table is this repo's own register echoed back.
 5. **Ledger modes** (confirmed in the review pass): `fnd:CAP-12..15` are `A-only`, expiry
    2026-12-31.
 
-Still open: **`deck-carriage`** — decks cross to B as a rebuild from their `.dc.html`
-prototypes, stay `A-only`, or retire their binaries. No story in this plan waits on it.
+6. **Deck carriage** (answered in the review pass): the deck binaries under `presentations/`
+   stay `A-only`; B regenerates any deck on demand from its `.dc.html` prototype through herald's
+   deck pipeline, which the ledger already routes as `rebuild`. Nothing moves; no story.
+
+No Spec question stays open.
 
 #### The execution plan
 

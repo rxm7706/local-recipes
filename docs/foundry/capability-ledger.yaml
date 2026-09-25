@@ -814,6 +814,13 @@ capabilities:
     heading: "the managed instruction block carries no aspiration"
     mode: rebuild
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-31
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "the local Postgres cluster starts from any checkout"
+    mode: rebuild
+    note: provisioning script; Story 22.1 (socket dir short and per-user), added 2026-09-25
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward

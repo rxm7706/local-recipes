@@ -15,8 +15,7 @@ sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
   - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md
   - ../../research/technical-pyforge-unifying-strategy-bmad-method-whitepaper-2026-09-25.md
-open_questions:
-  - deck-carriage
+open_questions: []
 ---
 
 > **Canonical contract.** Re-derived 2026-09-25 from `.memlog.md` (D1–D3,
@@ -303,12 +302,13 @@ case-list or CI evidence. Launch stories: 44.3 / 44.7 / 44.12 done; Epic 54 kern
 
 ## Open Questions
 
-- **deck-carriage:** do decks (`presentations/`, 47% of the tree) cross to B as a
-  rebuild from their `.dc.html` prototypes, stay `A-only`, or retire their binaries?
-  No Epic 67 story waits on it; 44.5's former deck-filter question is subsumed by the
-  ledger modes.
+None. `deck-carriage` answered 2026-09-25 (operator): the deck binaries under
+`presentations/` stay `A-only`; B regenerates any deck on demand from its `.dc.html`
+prototype through herald's deck pipeline, already a `rebuild` row
+(`deck-family-lockstep:CAP-1..4`). Nothing moves, no story; 44.5's former deck-filter
+question closes with it.
 
-Answered: `actions-minutes` (2026-09-04, amended 2026-09-13 D1/D1b — authoritative CAP-1
+Also answered: `actions-minutes` (2026-09-04, amended 2026-09-13 D1/D1b — authoritative CAP-1
 evidence is fresh-clone local `detectors-ci` + `platform-ci-local`; CAP-10 / 44.15 is
 later metering, not a 44.3 gate); `repo-visibility` (2026-09-04 — private, permanently,
 spine fnd:AD-14).

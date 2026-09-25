@@ -100,6 +100,22 @@ is not installed — `.claude/data/pyforge-scribe/graph.json` was last written
 default, and ranks over a 7-entry synonym map; that is carried as steward
 Story 49.7 (Unifying CAP-14), not re-minted here.
 
+## 2026-09-25 — The local Postgres cluster starts from any worktree
+
+Found while landing PR #1605 from `local-recipes-wt-unifying-strategy-dream-seeds-2026-09-25`:
+`pixi run -e pyforge-scribe-pg scribe-pg-up` initialised the cluster, then PostgreSQL refused to
+start — "could not create any Unix-domain sockets" — because `scripts/scribe_pg.py` passes
+`-k <checkout>/var/scribe-pg` and that socket path exceeds the ~107-byte limit. Every long-named
+worktree hits it; the 18 durable-GraphStore tests then fail loudly, by design, and `pr-preflight`
+is red for a reason that has nothing to do with the change. The workaround was to start the
+primary checkout's cluster and let the tests reach it over TCP.
+
+The Dream: the socket directory is short and per-user (`SCRIBE_PG_SOCKET_DIR`, else
+`$XDG_RUNTIME_DIR/scribe-pg`, else `/tmp/scribe-pg-<uid>`), the data directory stays under the
+checkout's gitignored `var/scribe-pg/`, and `scribe-pg-up` succeeds from any checkout the estate
+creates. Port 5433, the DSN the tests hard-code, and the no-container rule do not change.
+`bmad-spec` mints **CAP-31**; Epic 22 / Story 22.1.
+
 ## Realization log
 
 - **2026-07-23** — Seeded when the crew grew 6 → 8 (Scribe + Steward adopted; `3a50eebfc9`).
@@ -210,3 +226,4 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   operator-only ask writes it with `scribe capture --type project` before it ends, and the
   `.claude/memory/project/operator-inbox-*` entry is the human-readable twin of the DW rows
   (owner: scribe — this item). Seeded here; `bmad-spec` mints the CAPs on the next pass.
+- **2026-09-25** — Dated section *The local Postgres cluster starts from any worktree* seeded (socket-path limit found landing PR #1605); `spec-pyforge-scribe` CAP-31 minted; Epic 22 / Story 22.1 `backlog` with a tracked spec.

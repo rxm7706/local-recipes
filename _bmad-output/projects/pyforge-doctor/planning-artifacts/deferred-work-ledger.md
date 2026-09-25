@@ -1921,3 +1921,13 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+## DW-LEDGER-2026-09-25-1 — `capability-ledger` warns "post-PIN Spec without a ledger row" for Specs that are `absorbed` or `draft`
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/SPEC.md` (fcl:CAP-2, the detector lives in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py`)
+  summary: `pixi run -e pyforge-guild capability-ledger-check` emits eight `post-PIN Spec without a ledger row --append` warnings (docs-shelf-alignment, design-sync-loop, marshal-recall-in-the-loop, marshal-run-watch, token-economy-claude-session-path, self-hosted-bmad-marketplace, vocabulary-one-name-one-job, work-passports-dated-extracts). Seven are `status: absorbed` (folded into their station Specs on 2026-09-17; their CAPs already carry rows under the station Spec) and one is `draft` — none is in `_LIVE_STATUSES` (`ready` | `in-progress`), so none can take a ledger row. The post-PIN path checks the file's date against the PIN SHA but not its status; the extract path does. The warnings read as eight operator decisions owed; there are none.
+  evidence: verified 2026-09-25 (PR #1605 review pass) — `grep -m1 '^status:'` on each of the eight SPEC.md files; the station Specs' CAP rows pass the extract comparison (`capability-ledger-check` exit 0 apart from these warns).
+  severity: low
+  fix: filter the post-PIN warn path by `_LIVE_STATUSES` (or by the same status read the extract uses); add a fixture with an `absorbed` post-PIN Spec that must not warn.
+
+  status: open
