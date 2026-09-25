@@ -45,6 +45,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
 # `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export),
 # `session` (Epic 63, Story 63.4 — one verdict for the session preconditions, run from every entry point).
+# `deck-drift` (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5 — flags silent
+#   size/etag drift on a pulled Design deck artifact; Herald owns the pull itself).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -70,9 +72,15 @@ DUTIES: tuple[str, ...] = (
     "passport",
     "glass",
     "session",
+    "deck-drift",
 )
 
 _HELP = {
+    "deck-drift": (
+        "flags silent size/etag drift on a pulled Design deck artifact -- Herald owns the "
+        "pull, this owns the recurrence check against a steward-owned baseline sidecar "
+        "(Story 59.4)"
+    ),
     "glass": (
         "as-of glass -- standup/shipped freshness over the inbound corridor "
         "(cites a waybill; empty on-time file fails; late drop leaves yesterday stale; "
@@ -227,6 +235,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_glass_subparsers(duty_parser)
         elif name == "session":
             _add_session_subparsers(duty_parser)
+        elif name == "deck-drift":
+            _add_deck_drift_arguments(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -358,6 +368,47 @@ def _add_revoke_arguments(revoke_parser: argparse.ArgumentParser) -> None:
         default=None,
         metavar="BIN",
         help=("interpreter that can import the platform's Django (default: the one running steward)"),
+    )
+
+
+def _add_deck_drift_arguments(deck_drift_parser: argparse.ArgumentParser) -> None:
+    """Story 59.4: flags directly on the duty, mirroring `revoke`.
+
+    `--slug`/`--path` name which pulled deck artifact to check (never
+    hardcoded: `presentations/agentic-sdlc/project/` alone holds three
+    `.dc.html` files, and Herald's `PyForge {persona}.dc.html` naming
+    convention does not match the live prototype filename here, so this
+    duty does not guess).
+    """
+    deck_drift_parser.add_argument(
+        "--slug",
+        required=True,
+        metavar="SLUG",
+        help="the deck slug recorded in .herald/bridge-state.json",
+    )
+    deck_drift_parser.add_argument(
+        "--path",
+        required=True,
+        metavar="PATH",
+        help="path to the pulled deck artifact on disk (relative to the repo root, or absolute)",
+    )
+    deck_drift_parser.add_argument(
+        "--artifact-key",
+        default=None,
+        metavar="KEY",
+        help="the etags key within the deck's bridge-state entry (default: prototype)",
+    )
+    deck_drift_parser.add_argument(
+        "--bridge-state",
+        default=None,
+        metavar="PATH",
+        help="override .herald/bridge-state.json (default: <repo root>/.herald/bridge-state.json)",
+    )
+    deck_drift_parser.add_argument(
+        "--baseline",
+        default=None,
+        metavar="PATH",
+        help="override the steward baseline sidecar (default: <repo root>/.steward/deck-integrity-baseline.json)",
     )
 
 
@@ -1337,6 +1388,10 @@ def resolve_duty(name: str) -> Duty:
         from .session import SessionDuty
 
         return SessionDuty()
+    if name == "deck-drift":
+        from .deck_integrity import DeckDriftDuty
+
+        return DeckDriftDuty()
     return NullDuty(name)
 
 
