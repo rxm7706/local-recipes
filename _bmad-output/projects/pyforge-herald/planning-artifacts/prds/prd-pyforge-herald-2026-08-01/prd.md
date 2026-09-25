@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # one-chain herald fold; FR←CAP annotations; CAP-1..47
+updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -1066,3 +1066,15 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`spec→prd` edge: `spec-pyforge-herald`'s `.memlog.md` moved to 2026-09-25T04:02 while this PRD
+sat at 2026-09-20.
+
+**What moved, and why the FR delta is none.** One entry: steward Story 59.6
+(`spec-pyforge-steward` CAP-137, the Guild roster collapse) changed
+`src/shared/packages/pyforge-herald/src/pyforge/herald/progress.py` so `STATIONS` re-exports
+`pyforge.core.roster.STATIONS` instead of declaring its own tuple. Same eight stations, one
+declared source; no herald behaviour or requirement changes. `updated:` bumped to record that the
+check ran.

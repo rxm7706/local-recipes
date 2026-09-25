@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-19   # RE-STAMPED 2026-09-19: brief→prd cascade (research 2026-09-19); FR-16/FR-17 ← CAP-27/CAP-28; § Currency reconciliation — 2026-09-19 appended.
+updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
 status: final
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
@@ -409,3 +409,14 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`spec→prd` edge: `spec-pyforge-scribe`'s `.memlog.md` moved to 2026-09-24T20:28 while this PRD
+sat at 2026-09-20.
+
+**What moved, and why the FR delta is none.** Two entries from marshal Story 46.3: `AGENTS.md`,
+`GEMINI.md` and `.github/copilot-instructions.md` gained the session-close ritual statement
+(`scribe capture`, with its capture hygiene), and the parity meta-test gained two assertions
+guarding it. Both sit inside CAP-27's existing instruction-surface parity contract (FR-16);
+nothing new is required of Scribe. `updated:` bumped to record that the check ran.

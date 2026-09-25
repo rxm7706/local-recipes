@@ -1,17 +1,17 @@
 ---
 epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
-
-## Fold provenance (2026-09-17)
-
-Station Spec spec-pyforge-herald reminted absorbed capabilities as CAP-1..47. Historical stories keep sequential epic numbers 1..23; Epic 23 story gaps closed (23.5–23.8 → 23.3–23.6). This heading is the INV-A citation window for the folded set (`spec-pyforge-herald` CAP-1..47).
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
 epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
 storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade (arch→epics) after the 2026-09-20 docs-site research seed; no story minted. Prior 2026-09-18   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
+updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
 ---
+
+## Fold provenance (2026-09-17)
+
+Station Spec spec-pyforge-herald reminted absorbed capabilities as CAP-1..47. Historical stories keep sequential epic numbers 1..23; Epic 23 story gaps closed (23.5–23.8 → 23.3–23.6). This heading is the INV-A citation window for the folded set (`spec-pyforge-herald` CAP-1..47).
 
 # pyforge-herald — Epic Breakdown
 
@@ -929,3 +929,11 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`arch→epics` edge after the spine re-stamp of 2026-09-25. Epic 26 / Story 26.1 minted from
+steward's 2026-09-25 consolidation (`spec-python-foundry-cutover` fnd:CAP-14 — the dossier as the
+cutover's control plane; steward index row 67.6). Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key; the Tier-3 feed was repaired from the tracked twin first
+(stale-slug orphans dropped). `updated:` bumped.

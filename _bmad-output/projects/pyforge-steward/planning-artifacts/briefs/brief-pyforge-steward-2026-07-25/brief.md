@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-09-14"   # currency reconciliation — the two 2026-09-14 vocabulary research passes (three-source reconciliation + identifier-shapes inventory) landed under this station's research folder and fired the research->brief edge. Both are chain-scoped to `vocabulary-one-name-one-job`, both declare `status: draft` and "takes no decision"; no change to Steward's charter. See "Currency reconciliation — 2026-09-14" at the end of this file. Prior stamp 2026-09-09.
+updated: "2026-09-25"   # RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -206,3 +206,17 @@ Steward measures anything:**
 **Nothing here adds a capability to Steward the station.** The vocabulary work is a chain with
 its own Dream and its own Spec folder; this brief's scope, success criteria and vision are
 unchanged.
+
+## Currency reconciliation — 2026-09-25
+
+`research→brief` edge: `research/technical-bmad-method-whitepaper-verification-2026-09-25.md`
+landed while this brief sat at 2026-09-14.
+
+**What it is and why the brief does not change.** The file keeps an operator-pasted whitepaper
+whole and checks 18 of its claims against the installed BMAD skills (8 hold as stated). It is
+chain-scoped to `pyforge-unifying-strategy`, declares `status: draft` and takes no decision; its
+one strategic reading — the three BMAD execution modes are already this estate's session path,
+`marshal factory dispatch` and the drains — is recorded in that Dream's 2026-09-25 consolidation,
+not here. The same consolidation adds cutover capabilities (`fnd:CAP-12..15`) that Steward owns
+as the cutover's through-line, which is already this brief's scope. Vision, users and success
+criteria are unchanged.

@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-17  # one-chain fold remint; Fold provenance names CAP-1..26  # Epic 17 + Story 17.1 minted in the reserved 16→18 hole
+updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -799,3 +799,11 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`arch→epics` edge after the spine re-stamp of 2026-09-25. Epic 21 / Story 21.1 minted from
+steward's 2026-09-25 consolidation (`spec-python-foundry-cutover` fnd:CAP-15 — `AGENTS.md` opens
+with what this repository is; steward index row 67.7). Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key; the Tier-3 feed was repaired from the tracked twin first.
+`updated:` bumped.
