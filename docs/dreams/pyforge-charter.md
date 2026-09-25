@@ -1252,3 +1252,26 @@ herald broadcast slack,email --channel engineering-updates
   yet landed; the BMAD↔Lexicon cross-walk content (Spec `shipped` ≠ story
   `done` ≠ Dream `realized`) is `spec-vocabulary-one-name-one-job` CAP-3
   (Story 59.3), referenced above but not written out here.
+
+- **2026-09-24 (amendment)** — **The BMAD↔Lexicon cross-walk this section
+  deferred (2026-09-18, above) now exists.** New subsection "BMAD vocabulary
+  — cross-walk, never a shared noun" maps Epic / Story / Sprint / PRD /
+  Retrospective onto the nearest Lexicon/estate surface, same "map, never
+  join" shape as the Intelligence Hub walk, per
+  `docs/dreams/vocabulary-one-name-one-job.md` § Operator rulings (accepted
+  2026-09-15) Ruling 5. Three divergences are named in the open: Spec
+  `shipped` ≠ story `done` ≠ Dream `realized`; ledger `blocked` is
+  Guild-only; and BMAD's `optional` retrospective-lattice value is a
+  correctly-reused term, unrelated to (and sharing no spelling with) a
+  Dream sitting at `pitched`. `Spec` deliberately carries no row and no
+  reverse-walk entry — BMAD and this estate already use the identical word
+  for the identical thing. Companion change, Ruling 6: `pitched` stays
+  declared and optional — never required to advance `dreamt` to `specified`,
+  never backfilled onto an existing Dream, used only once Herald has
+  actually made the case (a deck exists) and the Spec is still `draft` —
+  declared as prose in `docs/governance/guild-roster.json`'s
+  `$comment_dream_statuses`, beside the existing `dream_statuses` array,
+  which is unchanged. No other Dream file's frontmatter changed; no Epic 44
+  `blocked` key was flipped. Pinned by
+  `tests/scripts/test_bmad_cross_walk_is_declared.py`. Closes
+  `spec-vocabulary-one-name-one-job` CAP-3 (Story 59.3).
