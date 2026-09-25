@@ -944,7 +944,7 @@ def _write_advisory_journal_entry(
     )
     prepared = prepare_for_write(entry)
     journal_path = run_dir / _ADVISORY_JOURNAL_FILENAME
-    if prepared.sidecar_relative_path is not None:
+    if prepared.sidecar_relative_path is not None and prepared.sidecar_content is not None:
         writer.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     writer.append_line(journal_path, prepared.line, fsync=True)
     return str(journal_path)
