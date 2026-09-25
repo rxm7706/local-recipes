@@ -48,23 +48,46 @@ adds ``bundle`` -- the canonical, digest-pinned context bundle extending
 Story 28.8's declaration half (``core/context_bundle.py``): no scribe
 subprocess, so two harnesses on the same commit produce byte-identical
 bundles deterministically.
+
+Story 46.6 (spec-pyforge-marshal CAP-193, fold-remint of spec-marshal-
+token-economy CAP-20) adds ``advisory`` -- a persistence advisory naming
+which declared-active ``[context]`` layers have lapsed (a kit item gone
+``MISSING``/``STALE`` -- ``UNAVAILABLE`` is deliberately excluded, see
+``_lapsed_layer_findings`` -- or an enabled derived-context/planning-graph
+layer whose ``scribe`` binary no longer resolves on PATH), so an
+interactive session's silent savings do not silently stop. Never
+blocks: an unresolvable session, or a session where every declared-active
+layer still resolves, both emit no findings and write no journal entry.
+When something has lapsed, exactly one ``Phase.OBSERVATION`` journal entry
+is appended naming every lapsed layer, under a fresh ``session-advisories/
+<run_id>/`` run directory -- a sibling of, never inside, ``dispatch-runs/``,
+so every existing dispatch-run reader (``core/layer_savings_sources.py``,
+``cli/status.py``) stays unaffected.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import secrets
+from datetime import datetime, timezone
 from pathlib import Path
 
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.process import PosixProcess
 
+from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.scribe_cli import ScribeCli
 from ..core import context_bundle
 from ..core import derived_context as derived
 from ..core import planning_graph as planning
+from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Finding, Severity, build_envelope
 from ..core.policy import _is_valid_project_slug
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.fs import FsPort
+from ..seed.detect.kit import KitStatus, kit_checks
 from .config import _suppress_downstream_pipe_close, repo_root
 from .context_bootstrap import add_substrate_parsers
 from .seed import _resolve_project_slug, resolve_context_layers
@@ -76,15 +99,37 @@ _MRS_CTX_UNEVALUABLE = "MRS-CTX-001"
 _MRS_CTX_DEGRADED = "MRS-CTX-002"
 #: Planning-graph retrieval degraded (Story 28.9). WARN, never blocking.
 _MRS_PLAN_DEGRADED = "MRS-PLAN-001"
+#: A declared-active [context] layer's instrument/binary no longer resolves
+#: (Story 46.6, spec-pyforge-marshal CAP-193). WARN, never blocking.
+_MRS_CTX_LAPSED = "MRS-CTX-009"
 
 #: Derived, gitignored home for the declaration manifest -- alongside the
 #: rest of this repo's per-station derived data, never a tracked artifact.
 _MANIFEST_DIR_RELPATH = ".claude/data/pyforge-marshal/derived-context"
 
+#: Story 46.6's Tier-3 run directory -- a SIBLING of `core/dispatch.py`'s
+#: `_DISPATCH_RUNS_DIRNAME` ("dispatch-runs"), never that same dirname.
+#: Deliberately not reused from `core/dispatch.py` (Design Notes): a
+#: provably-disjoint glob target keeps a synthetic advisory run invisible to
+#: every reader that globs `dispatch-runs/*/journal.jsonl` specifically
+#: (`core/layer_savings_sources.py`, `cli/status.py`) by construction,
+#: rather than by auditing every present and future reader for tolerance of
+#: a run with no `dispatch-launch` entry.
+_SESSION_ADVISORIES_DIRNAME = "session-advisories"
+_ADVISORY_JOURNAL_FILENAME = "journal.jsonl"
+
+#: Story 46.6 review triage fix 2 -- the distinguishing marker `data`
+#: carries when findings exist but there is no usable project slug to mint
+#: a run under (no `--project`, no `BMAD_ACTIVE_PROJECT`, no active-project
+#: marker file): a common state, and repo-default `[context]` layers can
+#: still produce real findings in it, so a silent `journal: null` would be
+#: indistinguishable from "nothing lapsed".
+_NO_ACTIVE_PROJECT_REASON = "no active project; findings not journaled"
+
 
 def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register ``context`` with its nested ``refresh``, ``retrieve``,
-    ``bundle``, ``bootstrap`` and ``pack`` actions."""
+    ``bundle``, ``advisory``, ``bootstrap`` and ``pack`` actions."""
     parser = subparsers.add_parser(
         "context",
         help=(
@@ -239,6 +284,46 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     bundle.set_defaults(handler=run_context_bundle)
+
+    advisory = context_sub.add_parser(
+        "advisory",
+        help="Persistence advisory: which declared-active [context] layers have lapsed (Story 46.6).",
+        description=(
+            "Scans every declared-active [context] layer for whether it is "
+            "still resolvable -- a kit item (output/wire/structure-graph) "
+            "gone MISSING/STALE (UNAVAILABLE is deliberately excluded), or "
+            "an enabled derived-context/planning-graph layer whose scribe "
+            "binary no longer resolves on "
+            "PATH. Emits one MRS-CTX-009 WARN finding per lapsed layer and "
+            "appends exactly one Phase.OBSERVATION journal entry naming "
+            "every lapsed layer, so a session's silent savings do not "
+            "silently stop. Never blocks: an unresolvable session, or a "
+            "session where every declared-active layer still resolves, both "
+            "emit no findings and write no journal entry."
+        ),
+    )
+    advisory.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help=(
+            "Project slug (default: BMAD_ACTIVE_PROJECT, then the repo's "
+            "active-project marker). Never scripts/bmad-switch."
+        ),
+    )
+    advisory.add_argument(
+        "--root",
+        default=None,
+        metavar="PATH",
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
+    )
+    advisory.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    advisory.set_defaults(handler=run_context_advisory)
 
     # Story 46.1 (spec-pyforge-marshal CAP-192): the substrate bootstrap and
     # its producer, owned by cli/context_bootstrap.py.
@@ -710,5 +795,224 @@ def _print_bundle_text(data: dict[str, object], findings: list[Finding], verdict
                 f"planning_graph: enabled={planning_ctx.get('enabled')} "
                 f"aggressiveness={planning_ctx.get('aggressiveness')}"
             )
+    for finding in findings:
+        print(f"{finding.code} {finding.severity.value}: {finding.message}")
+
+
+def run_context_advisory(
+    args: argparse.Namespace,
+    *,
+    scribe: ScribeCli | None = None,
+    process: PosixProcess | None = None,
+    fs: FsPort | None = None,
+) -> int:
+    """CLI entry for ``marshal context advisory`` (Story 46.6, spec-pyforge-
+    marshal CAP-193, fold-remint of spec-marshal-token-economy CAP-20).
+    ``scribe``/``process``/``fs`` are injection seams so tests drive kit
+    probing, process execution and the journal write without touching a
+    real install."""
+    root = Path(args.root).resolve() if args.root else repo_root()
+    scribe_client = scribe if scribe is not None else ScribeCli()
+    layers = resolve_context_layers(root, args.project)
+    slug = _resolve_project_slug(root, args.project)
+
+    findings = _lapsed_layer_findings(root, layers, scribe=scribe_client, process=process)
+    journal_path, journal_skipped_reason = _write_advisory_journal_entry(root, slug, findings, fs=fs)
+
+    data: dict[str, object] = {
+        "project": slug,
+        "lapsed": [finding.to_json_dict() for finding in findings],
+        "journal": journal_path,
+        "journal_skipped_reason": journal_skipped_reason,
+    }
+    return _emit_advisory(args, findings, data)
+
+
+def _lapsed_layer_findings(
+    root: Path,
+    layers: dict[str, dict[str, object]],
+    *,
+    scribe: ScribeCli,
+    process: PosixProcess | None,
+) -> list[Finding]:
+    """One ``MRS-CTX-009`` WARN per declared-active ``[context]`` layer that
+    no longer resolves. The 3 kit-provisioned layers (``output``, ``wire``,
+    ``structure-graph``) are answered by ``seed/detect/kit.py``'s own
+    ``KitCheck.status`` -- read as plain data here, never through
+    ``kit_findings()`` (a structurally separate, unregistered Finding
+    vocabulary -- see Design Notes). The remaining two (``derived-context``,
+    ``planning-graph``) are answered the way ``run_context_refresh``'s own
+    degrade path already does: an enabled layer whose scribe binary no
+    longer resolves on PATH is lapsed.
+
+    ``KitStatus.UNAVAILABLE`` is deliberately excluded (Story 46.6 review
+    triage): it means the instrument itself cannot exist on this platform
+    (e.g. a linux-64-only tool probed on macOS) -- ``kit.py``'s own
+    ``_FINDING_FOR_STATUS`` already classifies it ``Severity.INFO``, not
+    ``DRIFT``, for exactly that reason. Only ``MISSING``/``STALE`` are a
+    real, fixable lapse of a layer the operator asked for; treating
+    ``UNAVAILABLE`` the same way would emit a persistent, unfixable WARN
+    every single run on a platform that will never have the instrument."""
+    findings: list[Finding] = []
+    for check in kit_checks(root, layers, process=process):
+        if check.status in (KitStatus.MISSING, KitStatus.STALE):
+            findings.append(
+                Finding(
+                    code=_MRS_CTX_LAPSED,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{check.layer!r} context layer's {check.instrument} "
+                        f"no longer resolves ({check.status.value}): {check.detail}"
+                    ),
+                    path=check.path,
+                )
+            )
+
+    for layer_name, enabled_probe in (
+        (derived.DERIVED_CONTEXT_LAYER, derived.layer_enabled),
+        (planning.PLANNING_GRAPH_LAYER, planning.layer_enabled),
+    ):
+        layer = layers.get(layer_name)
+        if not enabled_probe(layer):
+            continue
+        if scribe.resolve_binary(root) is None:
+            findings.append(
+                Finding(
+                    code=_MRS_CTX_LAPSED,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{layer_name!r} context layer is declared active "
+                        "but its scribe binary no longer resolves on PATH"
+                    ),
+                    path=str(root),
+                )
+            )
+    return findings
+
+
+def _session_advisory_runs_dir(root: Path, slug: str) -> Path:
+    """Sibling of ``core/dispatch.py::dispatch_runs_dir`` -- same shape,
+    ``session-advisories`` instead of ``dispatch-runs`` -- mirrored rather
+    than imported so no existing dispatch-run reader ever globs this
+    directory (Design Notes)."""
+    return (
+        root.resolve() / "_bmad-output" / "projects" / slug / "implementation-artifacts" / _SESSION_ADVISORIES_DIRNAME
+    )
+
+
+def _session_advisory_run_dir(root: Path, slug: str, run_id: str) -> Path:
+    return _session_advisory_runs_dir(root, slug) / run_id
+
+
+def _writer_id() -> str:
+    return f"context-advisory-{os.getpid()}"
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _format_utc_compact(moment: datetime) -> str:
+    return moment.strftime("%Y%m%dT%H%M%S") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _format_entry_ts(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _random_token() -> str:
+    return secrets.token_hex(4)
+
+
+def _write_advisory_journal_entry(
+    root: Path,
+    slug: str,
+    findings: list[Finding],
+    *,
+    fs: FsPort | None,
+) -> tuple[str | None, str | None]:
+    """Appends one ``Phase.OBSERVATION`` journal entry naming every lapsed
+    layer, under a fresh, isolated ``session-advisories/<run_id>/`` run
+    directory. Returns ``(journal_path, journal_skipped_reason)``.
+
+    ``findings`` empty: nothing to report, both ``None`` -- this module's
+    existing off/healthy -> no artifact convention (mirrors
+    ``run_context_refresh``'s manifest-write branch).
+
+    ``findings`` non-empty but ``slug`` is not a usable single-path-segment
+    project (no ``--project``, no ``BMAD_ACTIVE_PROJECT``, no active-project
+    marker file -- the same guard ``mint_run_id`` itself applies): a common
+    state, and repo-default ``[context]`` layers can still produce real
+    findings in it (Story 46.6 review triage fix 2), so this is NOT treated
+    the same as "nothing to report" -- journal path is ``None`` but
+    ``journal_skipped_reason`` names why, so the findings are never silently
+    unaccounted for.
+
+    Any ``FsError`` raised anywhere in the write -- directory creation,
+    ``build_entry``/``prepare_for_write``, the sidecar write, or the journal
+    append itself (Story 46.6 review triage fix 3) -- is caught and
+    degrades to ``(None, None)`` rather than propagating: this module's
+    findings are WARN, never-blocking, and a filesystem hiccup while
+    journaling an advisory must not crash the command that is reporting
+    one."""
+    if not findings:
+        return None, None
+    if not _is_valid_project_slug(slug):
+        return None, _NO_ACTIVE_PROJECT_REASON
+
+    writer = fs if fs is not None else LocalFs()
+    writer_id = _writer_id()
+    mint_moment = _now_utc()
+    run_id = mint_run_id(slug, _format_utc_compact(mint_moment), _random_token())
+    run_dir = _session_advisory_run_dir(root, slug, run_id)
+
+    try:
+        writer.ensure_dir(run_dir.parent)
+        writer.create_dir_exclusive(run_dir)
+        entry = build_entry(
+            id=JournalEntryId(writer_id, 0),
+            ts=_format_entry_ts(mint_moment),
+            run_id=run_id,
+            kind="context-advisory",
+            phase=Phase.OBSERVATION,
+            payload={"lapsed": [finding.to_json_dict() for finding in findings]},
+        )
+        prepared = prepare_for_write(entry)
+        journal_path = run_dir / _ADVISORY_JOURNAL_FILENAME
+        if prepared.sidecar_relative_path is not None and prepared.sidecar_content is not None:
+            writer.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
+        writer.append_line(journal_path, prepared.line, fsync=True)
+    except FsError:
+        return None, None
+    return str(journal_path), None
+
+
+def _emit_advisory(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
+    verdict = compute_verdict(findings)
+    envelope = build_envelope(
+        command="context advisory",
+        verdict=verdict,
+        data=data,
+        findings=tuple(findings),
+    )
+    try:
+        if args.format == "json":
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
+        else:
+            _print_advisory_text(data, findings, envelope.verdict)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+def _print_advisory_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
+    line = f"context advisory project={data.get('project')} journal={data.get('journal')} verdict={verdict}"
+    reason = data.get("journal_skipped_reason")
+    if reason is not None:
+        line += f" journal_skipped_reason={reason}"
+    print(line)
     for finding in findings:
         print(f"{finding.code} {finding.severity.value}: {finding.message}")
