@@ -815,12 +815,13 @@ def run_context_advisory(
     slug = _resolve_project_slug(root, args.project)
 
     findings = _lapsed_layer_findings(root, layers, scribe=scribe_client, process=process)
-    journal_path = _write_advisory_journal_entry(root, slug, findings, fs=fs)
+    journal_path, journal_skipped_reason = _write_advisory_journal_entry(root, slug, findings, fs=fs)
 
     data: dict[str, object] = {
         "project": slug,
         "lapsed": [finding.to_json_dict() for finding in findings],
         "journal": journal_path,
+        "journal_skipped_reason": journal_skipped_reason,
     }
     return _emit_advisory(args, findings, data)
 
@@ -927,17 +928,35 @@ def _write_advisory_journal_entry(
     findings: list[Finding],
     *,
     fs: FsPort | None,
-) -> str | None:
+) -> tuple[str | None, str | None]:
     """Appends one ``Phase.OBSERVATION`` journal entry naming every lapsed
     layer, under a fresh, isolated ``session-advisories/<run_id>/`` run
-    directory. ``findings`` empty, or ``slug`` not a usable single-path-
-    segment project (nothing safe to mint a run-id or interpolate into a
-    path with -- the same guard ``mint_run_id`` itself applies), both do
-    nothing and return ``None`` -- this module's existing off/healthy -> no
-    artifact convention (mirrors ``run_context_refresh``'s manifest-write
-    branch)."""
-    if not findings or not _is_valid_project_slug(slug):
-        return None
+    directory. Returns ``(journal_path, journal_skipped_reason)``.
+
+    ``findings`` empty: nothing to report, both ``None`` -- this module's
+    existing off/healthy -> no artifact convention (mirrors
+    ``run_context_refresh``'s manifest-write branch).
+
+    ``findings`` non-empty but ``slug`` is not a usable single-path-segment
+    project (no ``--project``, no ``BMAD_ACTIVE_PROJECT``, no active-project
+    marker file -- the same guard ``mint_run_id`` itself applies): a common
+    state, and repo-default ``[context]`` layers can still produce real
+    findings in it (Story 46.6 review triage fix 2), so this is NOT treated
+    the same as "nothing to report" -- journal path is ``None`` but
+    ``journal_skipped_reason`` names why, so the findings are never silently
+    unaccounted for.
+
+    Any ``FsError`` raised anywhere in the write -- directory creation,
+    ``build_entry``/``prepare_for_write``, the sidecar write, or the journal
+    append itself (Story 46.6 review triage fix 3) -- is caught and
+    degrades to ``(None, None)`` rather than propagating: this module's
+    findings are WARN, never-blocking, and a filesystem hiccup while
+    journaling an advisory must not crash the command that is reporting
+    one."""
+    if not findings:
+        return None, None
+    if not _is_valid_project_slug(slug):
+        return None, _NO_ACTIVE_PROJECT_REASON
 
     writer = fs if fs is not None else LocalFs()
     writer_id = _writer_id()
@@ -948,23 +967,22 @@ def _write_advisory_journal_entry(
     try:
         writer.ensure_dir(run_dir.parent)
         writer.create_dir_exclusive(run_dir)
+        entry = build_entry(
+            id=JournalEntryId(writer_id, 0),
+            ts=_format_entry_ts(mint_moment),
+            run_id=run_id,
+            kind="context-advisory",
+            phase=Phase.OBSERVATION,
+            payload={"lapsed": [finding.to_json_dict() for finding in findings]},
+        )
+        prepared = prepare_for_write(entry)
+        journal_path = run_dir / _ADVISORY_JOURNAL_FILENAME
+        if prepared.sidecar_relative_path is not None and prepared.sidecar_content is not None:
+            writer.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
+        writer.append_line(journal_path, prepared.line, fsync=True)
     except FsError:
-        return None
-
-    entry = build_entry(
-        id=JournalEntryId(writer_id, 0),
-        ts=_format_entry_ts(mint_moment),
-        run_id=run_id,
-        kind="context-advisory",
-        phase=Phase.OBSERVATION,
-        payload={"lapsed": [finding.to_json_dict() for finding in findings]},
-    )
-    prepared = prepare_for_write(entry)
-    journal_path = run_dir / _ADVISORY_JOURNAL_FILENAME
-    if prepared.sidecar_relative_path is not None and prepared.sidecar_content is not None:
-        writer.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
-    writer.append_line(journal_path, prepared.line, fsync=True)
-    return str(journal_path)
+        return None, None
+    return str(journal_path), None
 
 
 def _emit_advisory(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
@@ -989,6 +1007,10 @@ def _emit_advisory(args: argparse.Namespace, findings: list[Finding], data: dict
 
 
 def _print_advisory_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
-    print(f"context advisory project={data.get('project')} journal={data.get('journal')} verdict={verdict}")
+    line = f"context advisory project={data.get('project')} journal={data.get('journal')} verdict={verdict}"
+    reason = data.get("journal_skipped_reason")
+    if reason is not None:
+        line += f" journal_skipped_reason={reason}"
+    print(line)
     for finding in findings:
         print(f"{finding.code} {finding.severity.value}: {finding.message}")
