@@ -268,9 +268,7 @@ def test_duty_reports_a_malformed_bridge_state_as_a_failed_duty_not_a_crash(monk
     bridge_state_path.write_text("not json", encoding="utf-8")
     monkeypatch.setattr("pyforge.steward.deck_integrity.repo_root", lambda: tmp_path)
 
-    result = DeckDriftDuty().run(
-        _ns(bridge_state=str(bridge_state_path), baseline=str(tmp_path / "baseline.json"))
-    )
+    result = DeckDriftDuty().run(_ns(bridge_state=str(bridge_state_path), baseline=str(tmp_path / "baseline.json")))
 
     assert result.ok is False
     assert "not valid JSON" in result.summary
