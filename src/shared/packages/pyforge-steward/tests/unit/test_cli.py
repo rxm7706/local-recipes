@@ -124,6 +124,7 @@ def test_setup_initrepo_validate_fast_are_wired_into_help():
             "passport",
             "glass",
             "session",
+            "deck-drift",
         )
     ],
 )
