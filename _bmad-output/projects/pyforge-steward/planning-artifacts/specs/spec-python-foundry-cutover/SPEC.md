@@ -4,9 +4,9 @@ spec: python-foundry-cutover
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-09-04"
-updated: "2026-09-13"
+updated: "2026-09-25"
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
-extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-1..7 outside it; Unifying CAP-1..19 and pap:CAP-1..6 are different sets — never collapse
+extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-N outside it; Unifying CAP-1..19 and pap:CAP-1..6 are different sets — never collapse
 surface: []
 companions:
   - cutover.md
@@ -14,15 +14,21 @@ companions:
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
   - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md
-open_questions: []
+  - ../../research/technical-bmad-method-whitepaper-verification-2026-09-25.md
+open_questions:
+  - deck-carriage
 ---
 
-> **Canonical contract.** Re-derived 2026-09-13 from `.memlog.md` (D1–D3 plus
-> regenerate-not-fold). Invent in `local-recipes`; foundry receives proven
-> capability as **regenerated** packages, not a fold of `src/shared/packages/`.
-> Extends `spec-pyforge-unifying-strategy`; cite this file as `fnd:CAP-1..11`.
-> Decomposed as steward **Epic 44** (44.1–44.15) plus **Epic 54** (kernel).
-> 44.4 / 44.5 are parked file-move stories — do not dispatch. The cutover is
+> **Canonical contract.** Re-derived 2026-09-25 from `.memlog.md` (D1–D3,
+> regenerate-not-fold, and the 2026-09-25 consolidation of PRs #1563 / #1564 /
+> #1576). Invent in `local-recipes`; foundry receives proven capability as
+> **regenerated** packages, not a fold of `src/shared/packages/`. **`local-recipes`
+> is never archived** (CAP-7 retired 2026-09-25). Extends
+> `spec-pyforge-unifying-strategy`; cite this file as `fnd:CAP-1..15`. Decomposed as
+> steward **Epic 44** (44.1–44.15), **Epic 54** (kernel) and **Epic 67** (laptop
+> SBOM, dossier, instruction surface), with herald **26.1** and scribe **21.1**
+> taking the stories on the surfaces they own. 44.4 / 44.5 / 44.6 are parked
+> file-move stories and 44.10 is retired — do not dispatch. The cutover is
 > regenerative: Dreams and memlogs seed foundry.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
@@ -36,7 +42,10 @@ name `staged-recipes`, 7,855 recipe dirs beside the platform, one 59k-line lock
 for 29 environments, a staged-recipes linter gating every non-recipe PR, and 268
 registered worktrees. The review's gate on the cutover (Epics 40 → 43, Mason 13)
 closed 2026-09-03 with nothing downstream of it. This Spec is that downstream:
-the contract Epic 44 realizes, and the gate Phase 0 waits on.
+the contract Epic 44 realizes, and the gate Phase 0 waits on. On 2026-09-25
+three proposals arrived beside the chain — a laptop SBOM, a cutover dossier, an
+estate-first instruction surface — and were folded in as CAP-12..15, so the
+laptop, the claim surface and the agents all describe the same two-root estate.
 
 ## Capabilities
 
@@ -88,11 +97,13 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     (asserted on the submit path). Out of this campaign; 44.9 stays blocked
     (operator 2026-09-13 D2).
 
-- **CAP-7 — Archive `local-recipes` (Phase 6).**
-  - **intent:** `local-recipes` is read-only history.
-  - **success:** README superseded; Azure disabled; last SHA pinned in the foundry
-    manifest; history kept; worktree residue retired; the default clone is foundry
-    and `.steward` has one git root.
+- **CAP-7 — Archive `local-recipes` (Phase 6). RETIRED 2026-09-25.**
+  - **intent:** (retired) `local-recipes` was to become read-only history.
+  - **success:** None — retired by the operator's no-archive ruling (2026-09-25).
+    Two git roots stay live after the `cutover_root` flip; what `local-recipes`
+    hosts afterwards is decided per capability by the ledger's modes. Story 44.10
+    retires with it (ledger key stays `blocked`, never dispatched). The id is not
+    reused.
 
 - **CAP-9 — Capability ledger and rebuild harness.**
   - **intent:** The operator sets a mode per capability; the ledger derives from the Dreams
@@ -131,6 +142,51 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     ceiling; the honest-stub property is retired for this source only. Not a
     Launch / 44.3 confirmation gate (operator 2026-09-13 D1b).
 
+- **CAP-12 — The laptop SBOM.**
+  - **intent:** A developer laptop installs `pyforge-foundry-full` and from it
+    alone runs the stations, local recipe generation and builds, tests, lint and
+    the local CI mirrors, and — through a layer environment — the platform local
+    stack. It is the default laptop install (a new capability over
+    `spec-pyforge-steward` CAP-151's closure-only env).
+  - **success:** `pixi install -e pyforge-foundry-full` solves on linux-64,
+    osx-arm64 and win-64 and composes the `build`, `grayskull` and `crm` features
+    beside the station features, with `pnpm` in the `python` feature; the
+    platform-limited stack (`platform-dev`,
+    `platform-object-storage`) solves as a layer environment over it; every
+    `postgresql` pin in the estate is `>=17.11,<18` with `psycopg >=3.2.9,<3.2.10`
+    and `pgvector >=0.8.0,<0.8.2`; neither `local-recipes` nor a `desktop-lab`
+    feature is composed; `AGENTS.md` names it the laptop install.
+
+- **CAP-13 — The SBOM is checkable.**
+  - **intent:** The operator can prove the laptop needs nothing beyond the SBOM,
+    and every gap has an owner.
+  - **success:** One pixi task run from the SBOM (plus its layer) alone runs
+    `lint-types`, the station suites, the platform bring-up smoke and a channel
+    audit; a failure names a gap. A tracked `docs/foundry/` gap list, derived
+    from `pixi.toml`, gives every residual solve gap (`conda-smithy`,
+    `python-agent-platform`) and every fat-only `local-recipes` pin a disposition
+    — promote, won't-do or upstream — with an owner. Upstream filing is outward and
+    operator-flipped; closing conda-forge gaps is Mason work minted from that list.
+
+- **CAP-14 — The dossier is the cutover's control plane.**
+  - **intent:** Operators and Smiths read the A→B cutover's state in one place.
+  - **success:** `docsite/content/dossier.yml` carries Estate, Foundation,
+    Synthesis and Verified sections stating the A/B roles, the modes (never
+    `move`), `pyforge.cutover_root`, the four campaign verbs each with a done /
+    not-done line, and SBOM claims labelled A-side; every Verified claim cites the
+    capability ledger, the case list or a CI run; herald's `site-check` is green.
+
+- **CAP-15 — The instruction surface names the estate first.**
+  - **intent:** Every harness reads first what this repository is and how A and B
+    divide work, then a short behavioural core.
+  - **success:** `AGENTS.md` opens with A's identity (control plane and BMAD
+    Agentic-SDLC host; the recipe factory one cell), the A/B roles, modes and
+    writer lock, and a behavioural core adding heal-the-tissue, state over action,
+    read-only harness ledgers and implement / review separation; every removed
+    incident note has a pointer target first; scribe's parity meta-test and
+    `governance-currency` are green; `CLAUDE.md` stays the `@AGENTS.md` import plus
+    Claude-only notes.
+
 ## Constraints
 
 - Solutioning before implementation (operator 2026-09-04): this Spec, the cutover spine
@@ -150,8 +206,21 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - No symlink is tracked in git; runtime links are generated per machine (symlink on POSIX,
   junction on Windows) and gitignored. Runtime state lives in gitignored `var/`.
 - Contract before repo: CAP-1 is not dispatched until this Spec is `ready` and Epic 44
-  exists. CAP-1, CAP-6 and CAP-7 are outward; the ledger holds them `blocked` until
-  the operator flips each one. Never auto-drained.
+  exists. CAP-1, CAP-6 and CAP-13's upstream filing (Story 67.4) are outward; the
+  ledger holds them `blocked` until the operator flips each one. Never auto-drained.
+  CAP-7 is retired; Story 44.10 is never dispatched.
+- The SBOM never composes the fat `local-recipes` feature or a `desktop-lab`
+  feature; inclusion is "used by PyForge code or needed by a PyForge developer or
+  operator workflow". PostgreSQL stays major 17: no Postgres bump and no dropping
+  `platform-dev` to clear a solve; if a psycopg / pgvector cap breaks a station's
+  suite, the story halts `blocked`. Never push a stub or placeholder `pixi.toml`;
+  after any write, verify the full manifest and a `--frozen` re-solve.
+- `AGENTS.md`'s managed `bmad:context` block changes only through
+  `bmad-project-context` under `spec-pyforge-scribe` CAP-27. `python-foundry`'s
+  instruction surface is B's (writer lock). Every dossier Verified claim cites a
+  source; SBOM claims stay A-side until the capability ledger carries them.
+- PRs #1563 / #1564 / #1576 are reference only: the stories port their payloads;
+  none is merged.
 - Foundry is private, permanently (operator 2026-09-04, iteration 4): Pages and the win-64
   leg ride the paid plan; Actions minutes are a standing budget; nothing Mason submits
   carries a foundry URL.
@@ -187,7 +256,12 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - Rewriting `local-recipes` git history; the fresh repo leaves it behind.
 - Closing R-18..R-22 (an Epic 45 candidate).
 - Copying the `recipes/` universe or the feedstock mirrors.
-- Migrating the 268 registered worktrees; CAP-7 retires them.
+- Migrating the 268 registered worktrees.
+- Archiving `local-recipes` (CAP-7 retired 2026-09-25).
+- Closing conda-forge gaps inside Epic 67; Mason stories are minted from CAP-13's
+  gap list.
+- Adopting a claim from the BMAD-method whitepaper without re-verifying it
+  against the installed skill.
 - Carrying rendered planning narrative (research, reviews, proposals, reports, retros, run
   records, per-story specs of shipped stories); the archive keeps them.
 
@@ -198,9 +272,13 @@ steward, marshal CLI + MCP) against the thin oracle (`fnd:CAP-11` / Epic 54)
 and `mason recipe build factory/recipes/<r>` builds a recipe there with the
 publish path a SelfExplainML upload — not an agent-opened conda-forge PR
 (operator 2026-09-13 D2). Host boot is not a Launch signal. Two git roots stay
-live; archive (CAP-7 / 44.10) is out. Launch stories: 44.3 / 44.7 / 44.12 done;
-Epic 54 kernel; 44.4 / 44.5 / 44.6 parked file-move. Later: CFE rebuild-from-spec, 44.8, 44.14, 44.15.
-Out: 44.9, 44.10, 44.11.
+live, and `local-recipes` is never archived (CAP-7 retired). Beside it, a laptop
+on linux-64, osx-arm64 or win-64 installs `pyforge-foundry-full` and passes the
+laptop gate from it alone, and the dossier's Verified section cites only ledger,
+case-list or CI evidence. Launch stories: 44.3 / 44.7 / 44.12 done; Epic 54 kernel;
+44.4 / 44.5 / 44.6 parked file-move. Consolidation: Epic 67, herald 26.1, scribe
+21.1. Later: CFE rebuild-from-spec, 44.8, 44.14, 44.15. Out: 44.9, 44.11. Retired:
+44.10.
 
 ## Assumptions
 
@@ -211,10 +289,21 @@ Out: 44.9, 44.10, 44.11.
   the file past 43.1's 400-line target by design.
 - Stock Windows developers (no WSL, no Developer Mode) are a real population; the estate
   is native for them and the host is remote (spine fnd:AD-19).
+- Scribe's code runs on psycopg 3.2.9 (CAP-12); Story 67.1 proves it against scribe's
+  Postgres suite or halts `blocked`.
+- `build`, `grayskull` and `crm` declare no platform restriction, and only
+  `platform-dev` and `platform-object-storage` are platform-limited (measured
+  2026-09-25); that the union co-solves on all three platforms is what Story 67.1
+  proves.
 
 ## Open Questions
 
-None. `actions-minutes` answered 2026-09-04 (iteration 4) and amended 2026-09-13 (D1/D1b):
-authoritative CAP-1 evidence is fresh-clone local `detectors-ci` + `platform-ci-local`;
-CAP-10 / 44.15 is later metering for GHA twins and drains, not a 44.3 confirmation
-gate. `repo-visibility` answered 2026-09-04: private, permanently (spine fnd:AD-14).
+- **deck-carriage:** do decks (`presentations/`, 47% of the tree) cross to B as a
+  rebuild from their `.dc.html` prototypes, stay `A-only`, or retire their binaries?
+  No Epic 67 story waits on it; 44.5's former deck-filter question is subsumed by the
+  ledger modes.
+
+Answered: `actions-minutes` (2026-09-04, amended 2026-09-13 D1/D1b — authoritative CAP-1
+evidence is fresh-clone local `detectors-ci` + `platform-ci-local`; CAP-10 / 44.15 is
+later metering, not a 44.3 gate); `repo-visibility` (2026-09-04 — private, permanently,
+spine fnd:AD-14).

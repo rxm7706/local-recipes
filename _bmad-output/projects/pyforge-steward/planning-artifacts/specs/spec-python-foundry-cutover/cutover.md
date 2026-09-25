@@ -46,7 +46,9 @@ is the campaign gate. Fresh-clone local is not provisional. Story 44.15 /
 minutes when GHA twins or Marshal drains spend them. Nothing Mason submits
 carries a foundry URL. This campaign's publish path is SelfExplainML (D2);
 44.9 stays blocked. Launch = 44.12 + 44.3–44.7; later 44.8 / 44.14 / 44.15;
-out of campaign 44.9 / 44.10 / 44.11 (D3). Two git roots stay live in Launch.
+out of campaign 44.9 / 44.11 (D3). **No archive of A (operator 2026-09-25):** CAP-7 and
+44.10 are retired; two git roots stay live after the `cutover_root` flip, and what
+`local-recipes` hosts afterwards is decided per capability by the ledger's modes.
 
 ## Phases → stories
 
@@ -66,9 +68,24 @@ out of campaign 44.9 / 44.10 / 44.11 (D3). Two git roots stay live in Launch.
 | — | CAP-9 | 44.14 rebuild harness + oracle gate | Dream + memlog → re-derived Spec → spine → epics in foundry; Marshal drains under a budget; the archived suite runs as oracle; per-capability freeze + `--append` drift finding | one pilot capability (Scribe) rebuilt end to end and `verified-in-foundry` through the oracle gate | deps 44.12 |
 | — | CAP-10 | 44.15 Actions-minutes metering | `steward budget check` meters the account's Actions minutes (billing API through a `user`-scoped key in `steward keys`) against included minutes and the declared ceiling; `--json` for Marshal drains and 44.14 when those spend minutes | a real under/over verdict; a refused runner is a finding, never a cheap green | later, not Launch; unhooked from 44.3 (D1b) |
 | — | CAP-8 | 44.12 cutover flag + replay harness | `pyforge.cutover_root` flag + `pyforge-core` reader; `steward cutover plan --regenerate\|--append` and `apply --phase` | both modes preserve `moved` rows; apply is idempotent; the flip switches ledger, Mason targets, loop homes | deps 44.1 |
-| 6 — Archive | CAP-7 | 44.10 | README superseded; disable Azure; pin last SHA; keep history; retire the worktree residue (268 registered; 85 GB under `.claude/worktrees/`) | default clone is foundry; `.steward` has one git root | **outward, irreversible**; deps all |
+| 6 — Archive | CAP-7 | 44.10 | **Retired 2026-09-25** (no archive of A); the ledger key stays `blocked` and is never dispatched | — | — |
 
-**Order.** 44.13 → 44.1 ∥ 44.2 ∥ 44.15 → operator flips 44.3 → 44.11 ∥ 44.12 → 44.14 → capability realization in dependency order (`pyforge-core` move → moved engines → rebuilt portals and ingest against the moved host → CFE cell placement; 44.4 / 44.5 are the move path's replays) → **flag flip** when the dependencies are verified → 44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10.
+**Order.** 44.13 → 44.1 ∥ 44.2 ∥ 44.15 → operator flips 44.3 → 44.11 ∥ 44.12 → 44.14 → capability realization in dependency order (`pyforge-core` move → moved engines → rebuilt portals and ingest against the moved host → CFE cell placement; 44.4 / 44.5 are the move path's replays) → **flag flip** when the dependencies are verified → 44.6 ∥ 44.7 → 44.8 → operator flips 44.9. (44.10 retired 2026-09-25.)
+
+## Consolidation (2026-09-25) → stories
+
+| CAP | Story | Do | Done when | Gate |
+|---|---|---|---|---|
+| CAP-12 | steward 67.1 | `pyforge-foundry-full` composes the `build` / `grayskull` / `crm` features (and `pnpm` in `python`) on three platforms; a layer env carries `platform-dev` + `platform-object-storage`; psycopg / pgvector caps and PG17 estate-wide; the `AGENTS.md` line | solves on linux-64, osx-arm64, win-64; the layer solves; scribe's Postgres suite green on PG17 | `pr-preflight`; `pyforge-station-tests` |
+| CAP-13 | steward 67.2 | one laptop-gate task from the SBOM + layer alone | green on `main`; a planted missing dependency reds it | deps 67.1 |
+| CAP-13 | steward 67.3 | tracked `docs/foundry/` gap list derived from `pixi.toml` | every residual gap and fat-only pin has a disposition and an owner | deps 67.1 |
+| CAP-13 | steward 67.4 | upstream tickets for the `upstream` rows | each ticket linked from its row | **outward** — `blocked` until the operator flips; deps 67.3 |
+| CAP-12 | steward 67.5 | developer guide, `AGENTS.md`, Mason / CFE docs name the SBOM | no doc names `-e local-recipes` as the laptop install | deps 67.2 |
+| CAP-14 | herald 26.1 (steward index 67.6) | dossier Estate / Foundation / Synthesis / Verified | `site-check` green; every Verified claim cites a source | — |
+| CAP-15 | scribe 21.1 (steward index 67.7) | `AGENTS.md` estate-first through `bmad-project-context` | parity meta-test and `governance-currency` green | — |
+| — (spine) | steward 67.8 | `bmad-architecture` amends fnd:AD-1, fnd:AD-21 and the roles table for no-archive | the spine names no read-only archive; the oracle is a pinned SHA | — |
+
+Campaign phase 5 (close conda-forge gaps) is minted as Mason stories from 67.3's list.
 
 ## Target tree
 
@@ -126,7 +143,7 @@ the `recipes/` universe · the 268 registered worktrees · `local-recipes` git h
 
 - Source of truth is the spec-surface map (`scripts/spec_surface_check.py`): every
   tracked file already resolves to an owning Spec; the manifest adds a destination.
-- One destination per path: a target-tree path, `stays` (archived with local-recipes),
-  or `dies` (not carried). No path may resolve to two.
-- Records the `local-recipes` source SHA the manifest was derived at; CAP-7 pins the
-  final one.
+- One destination per path: a target-tree path, `stays` (remains on local-recipes,
+  which is never archived), or `dies` (not carried). No path may resolve to two.
+- Records the `local-recipes` source SHA the manifest was derived at; each regenerate
+  re-records it (CAP-7, which pinned a final SHA, is retired).

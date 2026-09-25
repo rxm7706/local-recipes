@@ -87,8 +87,10 @@ retired, Kedro-Viz kept) · [[pyforge-steward]] (Pages deploy duct;
 `dashboard.yml`) · [[pyforge-atlas]] (Kedro-Viz at `/kedro-viz/`) ·
 [[deck-family-currency]] (infographics the gallery publishes; facts stay on
 their own ledger) · [[foundry-regenerate-not-fold]] (B rebuilds this surface
-from the Spec after 54.5; A pins) · [[python-foundry-cutover]] (cargo on the
-kernel move list, not a 44.4 fold).
+from the Spec after 54.5; A pins) · [[pyforge-unifying-strategy]] (its
+`spec-python-foundry-cutover`: cargo on the kernel move list, not a 44.4 fold;
+since 2026-09-25 `fnd:CAP-14` makes this dossier the cutover's control plane —
+herald Story 26.1).
 
 ## Realization log
 

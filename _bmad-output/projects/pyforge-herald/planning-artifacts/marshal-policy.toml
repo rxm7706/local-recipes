@@ -253,6 +253,17 @@ verify_commands = [
   "presentations/**",
   "AGENTS.md",
 ]
+"26" = [  # the dossier states the cutover's control plane (spec-python-foundry-cutover fnd:CAP-14), added 2026-09-25
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docsite/**",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

@@ -757,6 +757,30 @@ So that a decision without a Story cannot sit in the block as a line every sessi
 
 **Outcome (2026-09-20):** done, hand-driven in PR #1553 with steward 66.2 — see the tracked spec's Auto Run Result.
 
+## Epic 21: The instruction surface names the estate first (spec-python-foundry-cutover fnd:CAP-15)
+
+Minted 2026-09-25 from steward's `docs/dreams/pyforge-unifying-strategy.md` § *Consolidation —
+2026-09-25* (Input 3, folded from PR #1563). A new epic because Epic 20 is `done`. The capability
+is steward's (`spec-python-foundry-cutover` fnd:CAP-15); the surface is scribe's (CAP-27, the
+instruction-surface parity contract), so the story lives here and steward carries index row 67.7.
+**HARD boundaries:** PR #1563's hand-written `AGENTS.md` is reference only, never merged; the
+managed `bmad:context` block changes only through `bmad-project-context`; nothing edits
+`python-foundry`'s instruction surface (its PR #19 is B's under the writer lock).
+
+### Story 21.1: `AGENTS.md` opens with what this repository is
+
+As an agent in any harness opening this repository cold,
+I want `AGENTS.md` to tell me first that this is A — the PyForge control plane and BMAD Agentic-SDLC host, with the recipe factory as one cell — and how A and B divide work, then a short behavioural core,
+So that I place a task on the right root and in the right mode before I read a single incident note.
+
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** fnd:CAP-15 • spec-pyforge-scribe CAP-27 • cross-station: steward index 67.7 flips `done` when this closes; reference payload PR #1563 (branch `docs/agents-pyforge-bmad`)
+**Surface:** `AGENTS.md` (managed block through `bmad-project-context`; sections outside it by hand), `CLAUDE.md` (pointer + Claude-only notes), the pointer targets each removed note moves to (`.claude/memory/`, `docs/reference/`), `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` only if a parity rule must follow a moved section.
+**Given** `AGENTS.md` opens with the recipe factory and carries ~500 lines of accumulated notes, while the estate is two roots under a writer lock
+**When** this story lands
+**Then** the file opens with A's identity, the A/B roles, the modes (never `move`) and the writer lock, stating that A is never archived; the behavioural core adds heal-the-tissue, state over action, read-only harness ledgers and implement / review separation, using the worker's real status vocabulary (`draft → ready-for-dev → in-progress → in-review → done`); every incident note removed from the file has a named pointer target that exists
+**And** `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; `governance-currency` (in `detectors-ci`) green; `CLAUDE.md` still imports `@AGENTS.md` bare
+**Status:** backlog
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

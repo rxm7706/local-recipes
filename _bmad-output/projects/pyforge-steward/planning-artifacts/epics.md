@@ -2701,6 +2701,11 @@ So that an agent-opened PR never targets `local-recipes`.
 
 ### Story 44.10: Archive local-recipes
 
+> **Retired 2026-09-25 — never dispatch.** Operator ruling "no archive of A" retired
+> `fnd:CAP-7` and this story with it (`spec-python-foundry-cutover` memlog 2026-09-25). The
+> ledger key stays `blocked`; no key is flipped. Two git roots stay live after the
+> `cutover_root` flip. The text below is kept as history. The spine amendment is Story 67.8.
+
 As a platform operator,
 I want `local-recipes` read-only with its README superseded, Azure disabled, the last SHA pinned in foundry, history kept, and the worktree residue retired,
 So that the default clone is foundry and `.steward` has one git root.
@@ -4323,6 +4328,121 @@ So that the two rules are enforced where the mistake happens and the block's `TO
 **Then** a commit carrying `Co-Authored-By:` is refused locally with the rule named; a push whose `pr-preflight` is red is refused unless the documented opt-out is set; `steward setup` on a fresh clone installs both hooks; CI reds a missing file or hook; the two managed-block `TODO:` lines are gone
 **And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Outcome (2026-09-20):** done, hand-driven in PR #1553 — see the tracked spec's Auto Run Result.
+
+## Epic 67: The estate consolidates — one laptop SBOM, one control plane, one instruction surface (spec-python-foundry-cutover fnd:CAP-12..15)
+
+Minted 2026-09-25 from `docs/dreams/pyforge-unifying-strategy.md` § *Where next* →
+*Consolidation — 2026-09-25*, which folds PRs #1563 / #1564 / #1576 and the BMAD-method
+whitepaper (`research/technical-bmad-method-whitepaper-verification-2026-09-25.md`). The
+operator's rulings are in the Spec's memlog: `pyforge-foundry-full` is the default laptop
+install; three platforms, platform-limited stack pieces in a layer; PostgreSQL 17 everywhere,
+proven; no archive of A (`fnd:CAP-7` / 44.10 retired). **HARD boundaries:** the three source
+PRs are reference only — each story ports its payload and never merges a PR; no Epic 44
+`blocked` key flips; `pyforge.cutover_root` does not flip; nothing edits `python-foundry`;
+Postgres is never bumped and `platform-dev` never dropped to clear a solve. Herald (26.1) and
+scribe (21.1) own the stories on their surfaces; this epic carries index rows for them only.
+Campaign phase 5 (close conda-forge gaps) is minted as Mason stories from 67.3's list, not here.
+
+### Story 67.1: The SBOM composes the laptop bill of materials on three platforms, with PostgreSQL 17 held
+
+As a PyForge developer on any laptop the estate supports,
+I want `pyforge-foundry-full` to carry the recipe tooling beside the stations and a layer environment to carry the platform's local stack, all on PostgreSQL 17,
+So that one install runs everything I do, and the SBOM is a bill of materials instead of a historical pin dump.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** fnd:CAP-12 • Dream 2026-09-25 (Consolidation, Input 1); reference payload PR #1564 (branch `sbom/pyforge-foundry-full-compose`, not merged)
+**Surface:** `pixi.toml` (`[environments] pyforge-foundry-full` gains the `build`, `grayskull` and `crm` features; `pnpm` in `[feature.python.dependencies]`; a new layer environment composing the SBOM's features plus `platform-dev` and `platform-object-storage` on their platforms; `psycopg >=3.2.9,<3.2.10` in `python-agent-platform`, `mcp-host`, `platform-ci-test` and `pyforge-scribe`; `[feature.scribe-pg.dependencies]` `postgresql >=17.11,<18` and `pgvector >=0.8.0,<0.8.2`, with the PG18 comment replaced by the reason), `pixi.lock`, `environment.yaml`, `scripts/pixi_version_registry.py` (new pin sites), `docs/reference/library-llms-full.md` (regenerated), the measured pixi env matrix in `docs/dreams/pyforge-unifying-strategy.md` (regenerated), `AGENTS.md` (the "`pyforge-foundry-full` … never installed by default" line — inside the managed block, so through `bmad-project-context`).
+**Given** `pyforge-foundry-full` is closure-only and solves on three platforms (680 / 646 / 629 packages), `scribe-pg` sits on PostgreSQL 18 because scribe's `psycopg >=3.3.4` needs libpq ≥18.3, and #1564's compose would have left the SBOM on linux-64 alone
+**When** this story lands
+**Then** `pixi lock` solves `pyforge-foundry-full` on linux-64, osx-arm64 and win-64 with the three added features; the layer environment solves on every platform its features declare; every `postgresql` pin in `pixi.toml` is `>=17.11,<18` and no feature resolves libpq 18; `pixi run -e scribe-pg scribe-pg-up` then scribe's Postgres-backed tests pass on PG17; `pyforge-station-tests`, `llms-full-check` and `pixi-version-check` are green; `environment.yaml` is regenerated with `pixi project export conda-environment -e build`
+**And** neither `local-recipes` nor any `desktop-lab` feature is composed; `pixi.toml` is verified as the full manifest after every write; if scribe cannot run on psycopg 3.2.9, the story halts `blocked: intent gap` and Postgres is not bumped; the red `doctor-test` on #1564 is explained in the story's triage log
+**Status:** backlog
+
+### Story 67.2: One laptop gate proves the laptop needs nothing beyond the SBOM
+
+As the operator,
+I want a single task that runs, from the SBOM and its layer alone, everything a developer laptop has to do,
+So that "the SBOM is complete" is a verdict, and a missing dependency is a named gap rather than a reason to install `local-recipes`.
+
+**Type:** feature • **Effort:** M • **Deps:** S-67.1 • **FR/AD:** fnd:CAP-13 • Dream 2026-09-25 (campaign phase 2)
+**Surface:** `pixi.toml` (`[feature.guild-tasks.tasks.sbom-laptop-gate]`), `scripts/sbom_laptop_gate.py` (new), `tests/scripts/test_sbom_laptop_gate.py` (new).
+**Given** no check proves the laptop needs nothing beyond `pyforge-foundry-full`
+**When** this story lands
+**Then** `pixi run -e pyforge-foundry-full sbom-laptop-gate` runs `lint-types`, every station suite, the platform bring-up smoke from the layer environment, and a channel audit (every locked package comes from the declared channels; no PyPI-only entry) and exits 0 on `main`; exit codes follow `docs/reference/judgement-vocabulary.md`
+**And** a fixture that removes one dependency a station imports makes the gate exit non-zero and name that dependency as a gap; the gate never falls back to `-e local-recipes`
+**Status:** backlog
+
+### Story 67.3: Every gap and every fat-only pin has a disposition and an owner
+
+As the operator,
+I want a tracked list, derived from `pixi.toml`, of every residual solve gap and every package pinned only in the fat `local-recipes` feature,
+So that each one is promoted, dropped or sent upstream on purpose, and Mason's conda-forge work starts from a list instead of memory.
+
+**Type:** feature • **Effort:** M • **Deps:** S-67.1 • **FR/AD:** fnd:CAP-13 • Dream 2026-09-25 (campaign phase 3)
+**Surface:** `docs/foundry/sbom-gaps.md` (new), `scripts/sbom_gap_derive.py` (new), `tests/scripts/test_sbom_gap_derive.py` (new), `pixi.toml` (a read-only `sbom-gaps-check` task in `guild-tasks`).
+**Given** the residual solve gaps (`conda-smithy`: py-rattler / conda co-solve; `python-agent-platform`: langflow vs pandas / onnxruntime) and the fat-only pins exist only in #1564's PR text
+**When** this story lands
+**Then** `docs/foundry/sbom-gaps.md` lists every residual gap and every package declared in `[feature.local-recipes.dependencies]` and in no SBOM feature, each with a disposition — `promote`, `won't-do` or `upstream` — a one-line reason and an owner station
+**And** `sbom-gaps-check` reds when the derivation finds a row the file lacks, or the file keeps a row the derivation no longer finds; rows whose fix is conda-forge packaging name Mason as owner and become Mason stories in a later mint
+**Status:** backlog
+
+### Story 67.4: Upstream tickets for the gaps that need one
+
+As the operator,
+I want an upstream issue opened for each `upstream` row, and linked from it,
+So that a gap outside this estate has an owner outside it too.
+
+**Type:** chore • **Effort:** S • **Deps:** S-67.3 • **FR/AD:** fnd:CAP-13 • Dream 2026-09-25 (campaign phase 3)
+**Outward (AGENTS.md policy):** opens issues on repositories outside this estate — held `blocked`; dispatched only on the operator's explicit confirmation, per ticket target.
+**Surface:** `docs/foundry/sbom-gaps.md` (ticket links).
+**Given** 67.3's list has `upstream` rows
+**When** the operator flips this story and names each target tracker
+**Then** each `upstream` row links one open issue, and no issue is opened for a row the operator did not approve
+**Status:** blocked
+
+### Story 67.5: The estate points at the SBOM
+
+As a new contributor on day one,
+I want every install instruction to name `pixi install -e pyforge-foundry-full`,
+So that I never learn to install the 10 GB `local-recipes` environment for work that does not build recipes at scale.
+
+**Type:** docs • **Effort:** S • **Deps:** S-67.2 • **FR/AD:** fnd:CAP-12 • Dream 2026-09-25 (campaign phase 4)
+**Surface:** `docs/reference/developer-guide.md`, `AGENTS.md` (managed-block lines through `bmad-project-context`), `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md` (Rule 1: invoke `conda-forge-expert`; Rule 2: the CFE retro and `CHANGELOG.md` entry land with it), `.claude/skills/pyforge-steward/SKILL.md` if it names an install.
+**Given** the laptop gate is green on `main`
+**When** this story lands
+**Then** each surface names `pyforge-foundry-full` as the laptop install and `local-recipes` only for recipe-factory work at scale; `governance-currency` and scribe's parity meta-test stay green
+**Status:** backlog
+
+### Story 67.6: Index — herald's dossier states the cutover's control plane (herald 26.1)
+
+**Type:** index • **Effort:** S • **Deps:** cross-station: herald Story 26.1 (ledger `blocked` until it closes) • **FR/AD:** fnd:CAP-14
+**Surface:** this file only (the index row). Herald's artifacts are **named, never edited** by steward.
+**Given** herald owns `docsite/` (Epic 22, `spec-pyforge-pages`) and CAP-14's surface is the dossier
+**When** herald lands Story 26.1
+**Then** this row flips `done`
+**Status:** blocked
+
+### Story 67.7: Index — scribe's instruction surface names the estate first (scribe 21.1)
+
+**Type:** index • **Effort:** S • **Deps:** cross-station: scribe Story 21.1 (ledger `blocked` until it closes) • **FR/AD:** fnd:CAP-15
+**Surface:** this file only (the index row). Scribe's artifacts are **named, never edited** by steward.
+**Given** scribe owns the instruction surface (`spec-pyforge-scribe` CAP-27) and CAP-15's surface is `AGENTS.md` / `CLAUDE.md`
+**When** scribe lands Story 21.1
+**Then** this row flips `done`
+**Status:** blocked
+
+### Story 67.8: The cutover spine drops the archive
+
+As the architect of record for the cutover,
+I want the spine's decisions to stop describing `local-recipes` as a read-only archive,
+So that no later story implements a Phase 6 the operator retired.
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** fnd:CAP-7 (retired) • fnd:AD-1, fnd:AD-21 • Spec memlog 2026-09-25 (steps 3–4 note)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` and its `.memlog.md`, through `bmad-architecture` (fnd:AD-1's "read-only at a pinned SHA after Phase 6" rule, the three-roles table's Archive row, the Phase 6 diagram node, the `fnd:CAP-7` trace row, and fnd:AD-21's naming of the oracle).
+**Given** the operator retired `fnd:CAP-7` on 2026-09-25 and the spine still describes a Phase 6 archive
+**When** `bmad-architecture` re-renders the cutover section from a memlog entry naming the ruling
+**Then** no AD describes `local-recipes` as archived or read-only; fnd:AD-21's oracle is "the archived suite at a pinned source SHA", with no repository archive implied; the trace table maps no story to `fnd:CAP-7`
+**And** the spine re-stamp is scoped (`--spec` for each Spec the detector names)
+**Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
