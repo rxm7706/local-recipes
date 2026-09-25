@@ -1119,3 +1119,14 @@ deployment.
   severity: medium
   status: open
   raised: 2026-09-19 — Owner: herald. Found by the DW-FU-23-6 live proof.
+
+### DW-herald-59-6: `chain_currency_sweep_check` reds pyforge-herald's `spec→prd` feeds edge — a direct, unavoidable side effect of steward Story 59.6's mandated spec-surface memlog reconcile, not a real staleness
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-59-6-shape-hygiene-roster-s-n-n-commits-status-comments.md`
+  summary: `pixi run -e pyforge-guild detectors-ci` now reports `chain_currency_sweep_check` FAIL for pyforge-herald (`chain-audit-checkpoint-staleness`, `feeds` edge `spec→prd`, `staleBy: [{"stage":"spec","than":"prd","at":"2026-09-25T04:02","other":"2026-09-20"}]`). Cause: Story 59.6's own verification instructions required every co-governor `spec-surface` names for a governed-path edit to get a `.memlog.md` entry naming the path — `src/shared/packages/pyforge-herald/src/pyforge/herald/progress.py` (STATIONS re-export from `pyforge.core.roster`) is one such co-governed file, so `spec-pyforge-herald/.memlog.md` got a routine reconcile entry, which bumped its frontmatter `updated:` past the 2-day grace window against the PRD's `2026-09-20` date. Layers, coherence and orphan checkpoints all still pass; only staleness fails.
+  evidence: doctor-sources output — `pixi run -e pyforge-guild python -m pyforge.doctor.sources chain-completeness --layers --project pyforge-herald --json` — the single `feeds`/`spec`/`prd` entry under `staleBy`; `pr-preflight` re-run after the fix confirmed this was the only new finding beyond the two findings already present on `main` before this branch (a `pixi_version_check` `ModuleNotFoundError`, and an `ad_citation_check` bare-capability citation in pyforge-doctor's memlog).
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md; _bmad-output/projects/pyforge-herald/planning-artifacts/prd.md
+  origin: caused by steward Story 59.6's own mandatory spec-surface reconcile step, 2026-09-25
+  severity: low
+  status: open
+  note: The proper remedy per `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` is a full per-station cascade (brief→PRD→arch→epics, one commit) — explicitly its own separate, event-driven workflow with its own dispatch discipline ("one agent per station cascade"), not a Story 59.6 concern ("Scoped to Story 59.6 ONLY, not sibling stories in Epic 59"). Left open for a dedicated chain-currency-sweep dispatch against pyforge-herald rather than faked/stamped here — the runbook itself forbids a stamp without a genuine reconcile.
