@@ -562,13 +562,13 @@ def test_followup_review_budget_entry_is_also_excluded_not_promoted(tmp_path: Pa
     r = _run(promoter, repo, "--project", "doctor")
     assert r.returncode == 0, r.stdout
     assert "ABORTED" not in r.stdout
-    assert "promoted 1 orphan(s) -- DW-FU-1-8" in r.stdout
+    assert "promoted 1 orphan(s) -- DW-doctor-1-8" in r.stdout
 
     entries = classify_tier3_entries(
         repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
     )
     assert len(entries) == 1
-    assert entries[0].id == "DW-FU-1-8"  # only the orphan promoted; DW-1 excluded entirely
+    assert entries[0].id == "DW-doctor-1-8"  # only the orphan promoted; DW-1 excluded entirely
 
 
 def test_harvest_damping_entry_is_excluded_not_promoted_and_does_not_block_a_sibling_orphan(
@@ -588,13 +588,13 @@ def test_harvest_damping_entry_is_excluded_not_promoted_and_does_not_block_a_sib
     r = _run(promoter, repo, "--project", "doctor")
     assert r.returncode == 0, r.stdout
     assert "ABORTED" not in r.stdout
-    assert "promoted 1 orphan(s) -- DW-FU-1-8" in r.stdout
+    assert "promoted 1 orphan(s) -- DW-doctor-1-8" in r.stdout
 
     entries = classify_tier3_entries(
         repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
     )
     assert len(entries) == 1
-    assert entries[0].id == "DW-FU-1-8"  # only the orphan promoted; DW-6 excluded entirely
+    assert entries[0].id == "DW-doctor-1-8"  # only the orphan promoted; DW-6 excluded entirely
 
 
 # --- MEDIUM (2026-08-28, this story's own adversarial review): a bare id
@@ -1086,7 +1086,7 @@ def test_atomic_write_leaves_no_stray_temp_file_and_correct_content_on_success(
         repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
     )
     assert len(entries) == 1
-    assert entries[0].id == "DW-FU-1-8"
+    assert entries[0].id == "DW-doctor-1-8"
 
 
 # --- HIGH 3: content fidelity -- extra fields preserved, status never force-overwritten ---
