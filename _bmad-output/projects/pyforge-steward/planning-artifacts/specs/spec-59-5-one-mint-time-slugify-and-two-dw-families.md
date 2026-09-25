@@ -72,3 +72,22 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
 
+**Evidence (2026-09-25):** `mint_id_for_entry` rewritten to the unified
+`DW-{station}-{story}[-n]` grammar (drops the old mason-bare/`DW-FU` split,
+Ruling 14: every new id carries the real station token); new `mint_sweep_id`
+(sweep-scoped `DW-{station}-{slug}-{date}[-n]`) and `slugify_title` /
+`StoryIdentity` / `mint_story_identity` (Ruling 12: heading, ledger key, and
+spec filename all derive from one slugify) added to
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`.
+`tests/scripts/test_deferred_work_promote.py` updated for the new grammar
+(7 assertions: `DW-FU-1-8` → `DW-doctor-1-8`, mason's forced-suffix special
+case dropped). `pixi run --frozen -e pyforge-steward pyforge-steward-test`:
+**1692 passed, 5 skipped**. `pixi run --frozen -e pyforge-doctor
+pyforge-doctor-test`: **2444 passed, 1 skipped**.
+`pytest tests/scripts/test_deferred_work_promote.py -q`: **41 passed**.
+`python scripts/spec_surface_reconcile.py`: **OK, exit 0** (co-governors
+`spec-pyforge-doctor`, `spec-pyforge-marshal`, `spec-pyforge-core` each
+reconciled via their own `.memlog.md`, 2026-09-25). `pixi run -e pyforge-guild
+lint-types`: clean. The 1338 existing `DW-` ids and 53 divergent story slugs
+are untouched; no Epic 44 `blocked` key moved.
+
