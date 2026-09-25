@@ -16,6 +16,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
@@ -497,7 +498,13 @@ class FakeBuildHarness:
 
 
 class FakeProcess:
-    def __init__(self, *, alive: bool = True, alive_pids: frozenset[int] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        alive: bool = True,
+        alive_pids: frozenset[int] | None = None,
+        session_check_returncode: int = 0,
+    ) -> None:
         self.alive = alive
         # Story 50.1: per-pid liveness. ``None`` keeps the flat ``alive``
         # behaviour every pre-existing fixture relies on byte-identical --
@@ -505,6 +512,12 @@ class FakeProcess:
         # alongside a dead session pid in the SAME run.
         self.alive_pids = alive_pids
         self.spawned: list[list[str]] = []
+        # Story 63.4: dispatch_once shells `steward session check --json`
+        # right after repo_root resolves. Default 0 ("ok") keeps every
+        # pre-existing fixture behaviour byte-identical -- no unexpected
+        # MRS-DISP-049 finding unless a test opts in.
+        self.session_check_returncode = session_check_returncode
+        self.run_calls: list[list[str]] = []
 
     def is_alive(self, pid: int) -> bool:
         if self.alive_pids is None:
@@ -514,6 +527,10 @@ class FakeProcess:
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         self.spawned.append(list(argv))
         return 7071
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+        self.run_calls.append(list(argv))
+        return ProcessResult(returncode=self.session_check_returncode, stdout="", stderr="")
 
 
 class FakeHarness:

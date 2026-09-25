@@ -1,5 +1,5 @@
 {
   "$comment": "Cursor Cloud Agents environment (steward Story 63.2, spec-pyforge-steward CAP-5). The Guild's session environment is pyforge-guild -- ~860 MB, every detector, ledger sync, surface stamp, marshal dispatch/spin and the token-economy kit (headroom, node for `npx skills add`, gh, uv, tmux). local-recipes (10 GB) is Mason's recipe-factory environment; an agent doing recipe work installs it explicitly.",
-  "install": "command -v pixi >/dev/null 2>&1 || curl -fsSL https://pixi.sh/install.sh | bash; export PATH=\"$HOME/.pixi/bin:$PATH\"; pixi install -e pyforge-guild",
+  "install": "command -v pixi >/dev/null 2>&1 || curl -fsSL https://pixi.sh/install.sh | bash; export PATH=\"$HOME/.pixi/bin:$PATH\"; pixi install -e pyforge-guild; pixi run -e pyforge-guild steward session check || true",
   "terminals": []
 }

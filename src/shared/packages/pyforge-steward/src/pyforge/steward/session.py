@@ -41,7 +41,7 @@ from .interfaces import DutyResult
 _DEFAULT_PIXI_ENV = "pyforge-guild"
 _GUILD_ENV_RELATIVE_PATH = Path(".pixi/envs") / _DEFAULT_PIXI_ENV
 _ACTIVE_PROJECT_MARKER_RELATIVE_PATH = Path("_bmad/custom/.active-project")
-_SEED_CHECK_ARGV = ("pixi", "run", "-e", _DEFAULT_PIXI_ENV, "marshal", "seed", "check", "--json")
+_SEED_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", _DEFAULT_PIXI_ENV, "marshal", "seed", "check", "--json")
 _SEED_CHECK_TIMEOUT_S = 60.0
 _GH_TIMEOUT_S = 20.0
 _TIER3_FEED_REMEDY = "cp planning-artifacts/sprint-status-ledger.yaml implementation-artifacts/sprint-status.yaml"
@@ -149,42 +149,47 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
     try:
         payload = json.loads(result.stdout)
         kit = payload["kit"]
-    except (json.JSONDecodeError, KeyError, TypeError):
+    except json.JSONDecodeError, KeyError, TypeError:
         tail_lines = (result.stderr or result.stdout or "").strip().splitlines()
         tail = "; ".join(tail_lines[-3:]) if tail_lines else "no output"
         detail = f"{' '.join(_SEED_CHECK_ARGV)} returned unparseable output: {tail}"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 
-    non_ok = [item for item in kit if item.get("status") != "ok"]
-    if non_ok:
-        detail = "; ".join(f"{item.get('item')}: {item.get('status')}" for item in non_ok)
-        kit_finding = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
-    else:
-        detail = "; ".join(f"{item.get('item')}: ok" for item in kit) or "no kit items reported"
-        kit_finding = SessionFinding(name="token-kit", ok=True, detail=detail)
+    try:
+        non_ok = [item for item in kit if item.get("status") != "ok"]
+        if non_ok:
+            detail = "; ".join(f"{item.get('item')}: {item.get('status')}" for item in non_ok)
+            kit_finding = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
+        else:
+            detail = "; ".join(f"{item.get('item')}: ok" for item in kit) or "no kit items reported"
+            kit_finding = SessionFinding(name="token-kit", ok=True, detail=detail)
 
-    codegraph_item = next((item for item in kit if item.get("item") == "codegraph-index"), None)
-    if codegraph_item is None:
-        codegraph_finding = SessionFinding(
-            name="codegraph-index",
-            ok=False,
-            detail="marshal seed check --json reported no codegraph-index entry",
-            remedy=kit_remedy,
-        )
-    elif codegraph_item.get("status") != "ok":
-        codegraph_finding = SessionFinding(
-            name="codegraph-index",
-            ok=False,
-            detail=f"codegraph-index: {codegraph_item.get('status')} -- {codegraph_item.get('detail', '')}".strip(),
-            remedy=kit_remedy,
-        )
-    else:
-        codegraph_finding = SessionFinding(
-            name="codegraph-index",
-            ok=True,
-            detail=codegraph_item.get("detail") or "codegraph-index: ok",
-        )
+        codegraph_item = next((item for item in kit if item.get("item") == "codegraph-index"), None)
+        if codegraph_item is None:
+            codegraph_finding = SessionFinding(
+                name="codegraph-index",
+                ok=False,
+                detail="marshal seed check --json reported no codegraph-index entry",
+                remedy=kit_remedy,
+            )
+        elif codegraph_item.get("status") != "ok":
+            codegraph_finding = SessionFinding(
+                name="codegraph-index",
+                ok=False,
+                detail=f"codegraph-index: {codegraph_item.get('status')} -- {codegraph_item.get('detail', '')}".strip(),
+                remedy=kit_remedy,
+            )
+        else:
+            codegraph_finding = SessionFinding(
+                name="codegraph-index",
+                ok=True,
+                detail=codegraph_item.get("detail") or "codegraph-index: ok",
+            )
+    except AttributeError:
+        detail = f"{' '.join(_SEED_CHECK_ARGV)} returned a malformed kit entry"
+        unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
+        return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
     return kit_finding, codegraph_finding
 
 
@@ -256,7 +261,7 @@ def _active_project_slug(*, project: str | None, root: Path) -> str | None:
     marker = root / _ACTIVE_PROJECT_MARKER_RELATIVE_PATH
     try:
         text = marker.read_text(encoding="utf-8").strip()
-    except OSError:
+    except OSError, UnicodeDecodeError:
         return None
     return text or None
 

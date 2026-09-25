@@ -45,6 +45,15 @@ for env in $ENVS; do
   pixi install --frozen -e "$env"
 done
 
+# One verdict for the session preconditions (Story 63.4, spec-pyforge-steward
+# CAP-5): pixi/pyforge-guild, bmad-method drift, the token-economy kit +
+# codegraph index, gh auth/rate-limit, the Tier-3 sprint-status feed, scribe
+# reachability. Surfaced, never fatal -- `set -euo pipefail` means a non-ok
+# verdict must not abort the hook.
+if ! pixi run --frozen -e pyforge-guild steward session check; then
+  echo "[session-start] steward session check reported findings (see above)" >&2
+fi
+
 # Persist for the rest of the session so `pixi run …` works without re-export.
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   {

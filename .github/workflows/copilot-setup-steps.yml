@@ -28,3 +28,5 @@ jobs:
           frozen: true
       - name: Prove the Guild env
         run: pixi run --frozen -e pyforge-guild python -c "import pyforge.doctor, pyforge.marshal, pyforge.steward; print('pyforge-guild ready')"
+      - name: Session preconditions (Story 63.4)
+        run: pixi run --frozen -e pyforge-guild steward session check || true

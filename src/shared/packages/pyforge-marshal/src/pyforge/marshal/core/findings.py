@@ -1793,6 +1793,15 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # branch did not change -- foreign drift the landing refuses rather
         # than silently launder into a scoped stamp.
         "MRS-DISP-048",
+        # Story 63.4 (spec-pyforge-steward CAP-5): a pre-launch shell-out to
+        # `steward session check --json` reported a non-ok session-precondition
+        # verdict (pixi/pyforge-guild, bmad-method drift, the token-economy
+        # kit + codegraph index, gh auth/rate-limit, the Tier-3 sprint-status
+        # feed) -- WARN, non-blocking, mirroring MRS-DISP-036's worktree-WIP
+        # surfacing shape. Never escalated to ERROR: a session precondition
+        # gap is worth flagging before a dispatch launches, not worth
+        # refusing the launch over.
+        "MRS-DISP-049",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

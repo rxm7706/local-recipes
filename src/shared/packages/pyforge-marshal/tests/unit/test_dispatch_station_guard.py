@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessResult
 from scope_triangle import point_scope_triangle
 
 from pyforge.marshal.cli.dispatch import (
@@ -116,14 +117,24 @@ class FakeBuildHarness:
 
 
 class FakeProcess:
-    def __init__(self, *, alive: bool = True) -> None:
+    def __init__(self, *, alive: bool = True, session_check_returncode: int = 0) -> None:
         self.alive = alive
+        # Story 63.4: dispatch_once shells `steward session check --json`
+        # right after repo_root resolves. Default 0 ("ok") keeps every
+        # pre-existing fixture behaviour byte-identical -- no unexpected
+        # MRS-DISP-049 finding unless a test opts in.
+        self.session_check_returncode = session_check_returncode
+        self.run_calls: list[list[str]] = []
 
     def is_alive(self, _pid: int) -> bool:
         return self.alive
 
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         return 6061
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+        self.run_calls.append(list(argv))
+        return ProcessResult(returncode=self.session_check_returncode, stdout="", stderr="")
 
 
 def _seed_live_dispatch_journal(
