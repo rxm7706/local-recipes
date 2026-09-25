@@ -2,10 +2,10 @@
 title: '46.6: An interactive session whose layers lapse gets a persistence advisory'
 type: 'feature'
 created: '2026-09-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'ef925d35dbd188c4526075a994d8841a7afb6544'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -116,6 +116,41 @@ One entry per invocation naming every lapsed layer, not one entry per layer: the
 `kit_checks()`, not `kit_findings()`, is the reuse point for the 3 kit-covered layers: `kit_findings()`'s `seed.detect.findings.Finding` is a structurally separate dataclass (its own leaf-module docstring: "Nothing in this module imports from or references... any other `pyforge.marshal.*` module") from `core.model.Finding`, with a disjoint `FindingType`/`remedy` vocabulary never registered in `core/findings.py`. `KitCheck.status` is plain data, read directly to build native `core.model.Finding` instances in this module's own idiom -- exactly as `run_context_refresh` already does for its own degradation codes.
 
 A dedicated `session-advisories/` Tier-3 dirname (not `dispatch-runs/`) was chosen, rather than auditing every present and future `dispatch-runs/` reader for tolerance of a run with no `dispatch-launch` entry, because a provably-disjoint glob target eliminates the risk by construction instead of by exhaustive case analysis.
+
+## Auto Run Result
+
+**Summary:** Added `marshal context advisory` — a persistence advisory naming which declared-active `[context]` layers have lapsed. Reuses `seed/detect/kit.py::kit_checks` for the three kit-provisioned layers (`output`/`wire`/`structure-graph`, reading `KitCheck.status` as plain data, never `kit_findings()`) and `derived.layer_enabled`/`planning.layer_enabled` + `ScribeCli.resolve_binary` for the remaining two. Emits one `MRS-CTX-009` WARN finding per lapsed layer and appends exactly one `Phase.OBSERVATION` journal entry naming every lapsed layer, under a fresh `implementation-artifacts/session-advisories/<run_id>/` directory — a sibling of, never inside, `dispatch-runs/`, so no existing dispatch-run reader is affected. A review pass found and fixed one high- and several medium-severity defects (below); one deferred doc-wiring gap remains.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py` — the `advisory` CLI action, `run_context_advisory`, `_lapsed_layer_findings`, the journal-write helpers (`_write_advisory_journal_entry` and its id/timestamp/token helpers), `_emit_advisory`/`_print_advisory_text`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` — registers `MRS-CTX-009` in `REGISTERED_CODES`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py` — classifies `MRS-CTX-009` at `Verdict.WARN`, the never-blocking tier.
+- `src/shared/packages/pyforge-marshal/tests/meta/test_derived_context_skill_contract.py` — extends the code-inventory contract to include the new `advisory` code set.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_cli_context.py` — new `TestContextAdvisory` class (13 tests) covering every lapse path, the multi-layer case, the no-active-project skip-reason path, and the `FsError`-degrade path.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py` — asserts `MRS-CTX-009` is a registered code.
+- This spec file — Review Triage Log, `deferred` frontmatter entry, this section.
+
+**Review findings breakdown** (full detail in `## Review Triage Log` above):
+- **Patched (5 entries, entry verdicts: 1 high, 4 medium):**
+  1. *(medium)* `KitStatus.UNAVAILABLE` was treated identically to `MISSING`/`STALE`, which would emit a persistent, unfixable WARN on a platform where the instrument can never exist. Fixed: `UNAVAILABLE` excluded from the triggering set.
+  2. *(high)* An invalid project slug silently dropped the journal write even when `findings` was genuinely non-empty (the common no-`--project` case), contradicting AC1. Fixed: a `journal_skipped_reason` marker now surfaces instead of a silent drop.
+  3. *(medium, merged with a duplicate Edge Case Hunter finding)* The `FsError` guard covered only `ensure_dir`/`create_dir_exclusive`, not the later `write_text_atomic`/`append_line` calls — an `FsError` there would crash the command uncaught. Fixed: the guard now wraps the whole write sequence; added a regression test with a fake `FsPort` that raises from `append_line`.
+  4. *(medium)* No test exercised `planning-graph` (only `derived-context`) despite Tasks & Acceptance naming both. Fixed: added a mirroring test.
+  5. *(medium)* No test proved the "one entry naming every lapsed layer" AC for 2+ simultaneously-lapsed layers. Fixed: added a two-layers-lapsed regression test asserting a single journal line naming both.
+- **Deferred (1):** Nothing yet documents running `marshal context advisory` as part of session close (medium) — see `deferred` frontmatter; the fix is a doc-only `AGENTS.md` addition and naturally overlaps sibling Story 46.8.
+- **Rejected (8):** 2 `false` (a `.get()` vs `[...]` claim refuted by `resolve_context_layers`'s unconditional 5-key composition; an unverified-method-existence claim refuted by direct read of `FsPort`/`LocalFs`), 6 `low` (sidecar-offload coverage gap, hand-rolled glob-exclusion assertion, a pre-existing 6-way timestamp-helper duplication, unbounded `resolve_binary` call count, a diagnostic-detail omission, a latent-but-unreached test-helper double-declare bug) — each judged unlikely to be met in everyday use with a fix beyond a direct correction. Full reasoning per finding in the Review Triage Log.
+
+**Follow-up review recommendation:** `true` (first pass; a `high`-verdict entry was patched — #2 above). Named unverified risk: the fix for #2 is exercised by exactly one new unit test and has not been re-reviewed by a fresh multi-layer pass; a follow-up should specifically confirm no call site or future consumer of `context advisory --format json` (there are none yet) ever treats an absent `journal_skipped_reason` as proof that nothing lapsed, since this is a brand-new envelope field with no existing consumers to validate the contract against. Patched-entry counts by verdict: high=1, medium=4, low=0.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 8653 passed, 1 skipped, 12 deselected. Run independently by the reviewing session (not only self-reported by the implementing subagent), exit code read from `$?`, never through a pipe.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped. Same independent-verification discipline.
+- `pixi run -e pyforge-guild lint-types` — ruff, `ruff format --check`, and mypy strict all clean across all ten `pyforge-*` packages, including after a follow-on consistency correction (below).
+- Full diff independently re-read end to end against the Review Triage Log's five patch entries; each fix confirmed present and correctly scoped (in particular, the `FsError` guard confirmed to now wrap the entire write sequence, not just its first two calls).
+- Matrix Test Audit: all 13 tests in the new `TestContextAdvisory` class read individually and confirmed to assert meaningful, scenario-specific outcomes (exit code, verdict, finding codes, journal presence/absence, journal line count and payload content for the multi-lapse case) rather than trivially passing assertions.
+- Own follow-on fix, beyond the subagent's patch pass: found two further stale docstring/help-text occurrences (`cli/context.py` module docstring and the `advisory` subparser's `description=`) still describing the pre-fix `MISSING`/`STALE`/`UNAVAILABLE` trigger set after fix #1 changed the actual behavior, plus the same staleness in `core/findings.py`'s and `core/verdict.py`'s registration comments. Corrected all four to accurately describe the `MISSING`/`STALE`-only behavior with `UNAVAILABLE` named as deliberately excluded; re-verified lint-types and both verification commands green afterward.
+
+**Residual risks:** The named follow-up-review risk above (fix #2's single-test coverage, no existing consumers to cross-check the new `journal_skipped_reason` field against). Separately, the deferred doc-wiring gap (finding #14) means `marshal context advisory` is not yet invoked automatically or referenced by any session-close documentation — an operator must know to run it — until Story 46.8 (or a direct `AGENTS.md` edit) closes that gap.
 
 ## Source
 
