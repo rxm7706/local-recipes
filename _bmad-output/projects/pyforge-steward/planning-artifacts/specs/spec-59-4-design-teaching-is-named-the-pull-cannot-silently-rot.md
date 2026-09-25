@@ -6,7 +6,31 @@ status: 'ready'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
-deferred: []
+deferred:
+  - summary: >-
+      The pulled deck does not yet state teaching-only except the two named
+      exceptions (method-vs-machinery, project-context-as-constitution) --
+      that is a Design-side content edit, and this session has no reachable
+      Claude Design MCP connection (claude-design: FIRST_PARTY_AUTH_REJECTED,
+      confirmed live this session) to make it.
+    evidence: |-
+      DW-VOCAB-2026-09-14-3's 2026-09-14 progress note: operator ruled
+      "pull only -- no Design-side edits this pass" for the prior pull:
+      (a), the Design-tier practice vocabulary entering no repo artifact
+      (four-phases/three-tracks teaching), is explicitly still open and
+      untouched by a pull.
+    location: presentations/agentic-sdlc/project/Agentic SDLC.dc.html
+    severity: medium
+  - summary: >-
+      Four unprefixed `quick-dev`/`dev-auto` mentions survived the 2026-09-14
+      Design-side rename pass (one body line on Quick flow, three speaker
+      notes on Quick flow / Workflow matrix); Paige and the four
+      `bmad`-prefixed retired skill names are already gone (0 hits each).
+    evidence: |-
+      DW-VOCAB-2026-09-14-3's 2026-09-14 progress note, verified against the
+      pulled deck rather than the entry's original claim.
+    location: presentations/agentic-sdlc/project/Agentic SDLC.dc.html
+    severity: low
 declared_low_risk: false
 ---
 
