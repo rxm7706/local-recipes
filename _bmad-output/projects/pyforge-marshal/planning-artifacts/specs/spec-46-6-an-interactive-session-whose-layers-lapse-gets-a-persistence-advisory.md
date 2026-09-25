@@ -2,7 +2,7 @@
 title: '46.6: An interactive session whose layers lapse gets a persistence advisory'
 type: 'feature'
 created: '2026-09-18'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'ef925d35dbd188c4526075a994d8841a7afb6544'
 review_loop_iteration: 0
 followup_review_recommended: false
