@@ -505,3 +505,176 @@ class TestContextBundle:
         out = capsys.readouterr().out
         assert "digest=" in out
         assert "match=None" in out
+
+
+def _advisory_args(repo: Path, *, project: str | None = _SLUG, format: str = "json"):
+    return argparse.Namespace(project=project, root=str(repo), format=format)
+
+
+def _run_advisory(repo: Path, capsys, *, scribe=None, process=None, fs=None, **kwargs) -> dict:
+    code = context_cli.run_context_advisory(
+        _advisory_args(repo, **kwargs),
+        scribe=scribe,
+        process=process,
+        fs=fs,
+    )
+    envelope = json.loads(capsys.readouterr().out)
+    envelope["exit_code"] = code
+    return envelope
+
+
+def _declare(repo: Path, layer: str, *, enabled: bool) -> None:
+    """Declares one ``[context.<layer>]`` block, appending to (rather than
+    overwriting) any prior declaration in the same fixture -- so a test can
+    declare more than one layer active at once."""
+    policy_path = repo / (f"_bmad-output/projects/{_SLUG}/planning-artifacts/marshal-policy.toml")
+    existing = policy_path.read_text(encoding="utf-8") if policy_path.is_file() else ""
+    _write(policy_path, existing + f"\n[context.{layer}]\nenabled = {str(enabled).lower()}\n")
+
+
+class _ScribeBinaryDouble:
+    """A minimal ``ScribeCli`` double -- ``_lapsed_layer_findings`` only
+    ever calls ``resolve_binary``, so nothing else needs a real
+    implementation."""
+
+    def __init__(self, binary: str | None) -> None:
+        self._binary = binary
+
+    def resolve_binary(self, repo_root=None, *, fallback_bin_dirs=None):
+        return self._binary
+
+
+class _FakeGitLogProcess:
+    """Answers ``git log -1 --format=%ct`` with a fixed HEAD timestamp, so
+    a codegraph-index staleness comparison is deterministic without a real
+    git history in the fixture tree."""
+
+    def __init__(self, head_ts: int) -> None:
+        self._head_ts = head_ts
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        return ProcessResult(returncode=0, stdout=f"{self._head_ts}\n", stderr="")
+
+
+class TestContextAdvisory:
+    """Story 46.6 (spec-pyforge-marshal CAP-193, fold-remint of
+    spec-marshal-token-economy CAP-20) -- ``marshal context advisory``: a
+    persistence advisory naming which declared-active [context] layers have
+    lapsed, journaled once per invocation under a sibling
+    ``session-advisories/`` Tier-3 run directory -- never ``dispatch-runs/``,
+    so no existing dispatch-run reader is ever affected."""
+
+    def test_every_layer_off_emits_no_findings_and_writes_no_journal(self, repo, capsys):
+        envelope = _run_advisory(repo, capsys)
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "clean"
+        assert envelope["findings"] == []
+        assert envelope["data"]["journal"] is None
+
+    def test_a_missing_kit_item_emits_one_finding_and_writes_the_journal(self, repo, capsys, monkeypatch):
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        _declare(repo, "structure-graph", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: "/usr/bin/codegraph")
+        # No .codegraph/codegraph.db written under repo -> MISSING.
+        envelope = _run_advisory(repo, capsys)
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "warn"
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
+        assert envelope["data"]["journal"] is not None
+        journal = Path(envelope["data"]["journal"])
+        assert journal.is_file()
+        assert "session-advisories" in str(journal)
+        assert "dispatch-runs" not in str(journal)
+
+    def test_a_stale_kit_item_emits_one_finding(self, repo, capsys, monkeypatch):
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        _declare(repo, "structure-graph", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: "/usr/bin/codegraph")
+        index = repo / ".codegraph" / "codegraph.db"
+        index.parent.mkdir(parents=True, exist_ok=True)
+        index.write_bytes(b"stale")
+        envelope = _run_advisory(repo, capsys, process=_FakeGitLogProcess(9999999999))
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "warn"
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
+        assert envelope["data"]["journal"] is not None
+
+    def test_layer_enabled_but_instrument_unavailable_emits_one_finding(self, repo, capsys, monkeypatch):
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        _declare(repo, "wire", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: None)
+        envelope = _run_advisory(repo, capsys)
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "warn"
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
+        assert envelope["data"]["journal"] is not None
+
+    def test_an_enabled_scribe_backed_layer_with_no_resolvable_binary_emits_one_finding(self, repo, capsys):
+        _declare(repo, "derived-context", enabled=True)
+        envelope = _run_advisory(repo, capsys, scribe=_ScribeBinaryDouble(None))
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "warn"
+        assert [f["code"] for f in envelope["findings"]] == ["MRS-CTX-009"]
+        assert envelope["data"]["journal"] is not None
+
+    def test_every_declared_active_layer_still_resolving_emits_nothing(self, repo, capsys, monkeypatch):
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        _declare(repo, "wire", enabled=True)
+        _declare(repo, "derived-context", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: "/usr/bin/headroom")
+        (repo / ".marshal" / "wire").mkdir(parents=True, exist_ok=True)
+        envelope = _run_advisory(repo, capsys, scribe=_ScribeBinaryDouble("/usr/bin/scribe"))
+        assert envelope["exit_code"] == EXIT_OK
+        assert envelope["verdict"] == "clean"
+        assert envelope["findings"] == []
+        assert envelope["data"]["journal"] is None
+
+    def test_the_journal_entry_is_a_single_valid_observation_never_matched_by_the_dispatch_runs_glob(
+        self, repo, capsys, monkeypatch
+    ):
+        from pyforge.marshal.seed.detect import kit as kit_module
+
+        _declare(repo, "wire", enabled=True)
+        monkeypatch.setattr(kit_module.shutil, "which", lambda _n: None)
+        envelope = _run_advisory(repo, capsys)
+        journal = Path(envelope["data"]["journal"])
+        lines = journal.read_text(encoding="utf-8").splitlines()
+        assert len(lines) == 1
+        record = json.loads(lines[0])
+        assert record["phase"] == "observation"
+        assert "intent_id" not in record
+        assert record["kind"] == "context-advisory"
+        assert record["payload"]["lapsed"][0]["code"] == "MRS-CTX-009"
+
+        implementation_dir = repo / f"_bmad-output/projects/{_SLUG}/implementation-artifacts"
+        dispatch_runs_dir = implementation_dir / "dispatch-runs"
+        matched = list(dispatch_runs_dir.glob("*/journal.jsonl")) if dispatch_runs_dir.is_dir() else []
+        assert matched == []
+        assert journal.relative_to(implementation_dir).parts[0] == "session-advisories"
+
+    def test_runs_end_to_end_through_main_with_every_layer_off(self, repo, capsys):
+        code = main(
+            [
+                "context",
+                "advisory",
+                "--project",
+                _SLUG,
+                "--root",
+                str(repo),
+                "--format",
+                "json",
+            ]
+        )
+        envelope = json.loads(capsys.readouterr().out)
+        assert code == EXIT_OK
+        assert envelope["data"]["journal"] is None
+
+    def test_text_rendering_names_the_project_and_the_journal(self, repo, capsys):
+        context_cli.run_context_advisory(_advisory_args(repo, format="text"))
+        out = capsys.readouterr().out
+        assert f"project={_SLUG}" in out
+        assert "journal=None" in out
