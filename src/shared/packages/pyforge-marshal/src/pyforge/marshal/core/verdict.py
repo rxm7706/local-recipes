@@ -398,6 +398,13 @@ Story 46.2 (``spec-pyforge-marshal`` CAP-192) adds ``MRS-CTX-008`` at
 the same never-blocking tier as ``-002``/``-003``/``-005``/``-006``, since a
 digest mismatch means the two harnesses disagree on what to open with, not
 that either one failed to run.
+Story 46.6 (``spec-pyforge-marshal`` CAP-193, fold-remint of ``spec-marshal-
+token-economy`` CAP-20) adds ``MRS-CTX-009`` at ``Verdict.WARN`` for
+``marshal context advisory``: a declared-active ``[context]`` layer's kit
+item (a kit-provisioned layer gone ``MISSING``/``STALE``/``UNAVAILABLE``) or
+scribe binary no longer resolves -- the same never-blocking tier as the rest
+of this area, since the layer's savings silently stop but nothing about the
+session itself failed.
 
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
@@ -1218,6 +1225,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # same never-blocking tier as the rest of this area: the two harnesses
     # disagree on what to open with, but the bundle itself still assembled.
     "MRS-CTX-008": Verdict.WARN,
+    # Story 46.6 (a persistence advisory for a lapsed [context] layer,
+    # spec-pyforge-marshal CAP-193, fold-remint of spec-marshal-token-economy
+    # CAP-20). WARN, the same never-blocking tier as the rest of this area:
+    # a declared-active layer's kit item or scribe binary no longer
+    # resolves, but the session/iteration itself is otherwise unaffected.
+    "MRS-CTX-009": Verdict.WARN,
     "MRS-PLAN-001": Verdict.WARN,
     # Story 28.7 (index freshness is an advisory finding,
     # SPEC-marshal-token-economy CAP-10): all four staleness codes are
