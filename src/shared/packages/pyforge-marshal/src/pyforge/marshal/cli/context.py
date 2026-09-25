@@ -51,10 +51,11 @@ bundles deterministically.
 
 Story 46.6 (spec-pyforge-marshal CAP-193, fold-remint of spec-marshal-
 token-economy CAP-20) adds ``advisory`` -- a persistence advisory naming
-which declared-active ``[context]`` layers have lapsed (a kit item
-``MISSING``/``STALE``/``UNAVAILABLE``, or an enabled derived-context/
-planning-graph layer whose ``scribe`` binary no longer resolves on PATH),
-so an interactive session's silent savings do not silently stop. Never
+which declared-active ``[context]`` layers have lapsed (a kit item gone
+``MISSING``/``STALE`` -- ``UNAVAILABLE`` is deliberately excluded, see
+``_lapsed_layer_findings`` -- or an enabled derived-context/planning-graph
+layer whose ``scribe`` binary no longer resolves on PATH), so an
+interactive session's silent savings do not silently stop. Never
 blocks: an unresolvable session, or a session where every declared-active
 layer still resolves, both emit no findings and write no journal entry.
 When something has lapsed, exactly one ``Phase.OBSERVATION`` journal entry
@@ -290,8 +291,9 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         description=(
             "Scans every declared-active [context] layer for whether it is "
             "still resolvable -- a kit item (output/wire/structure-graph) "
-            "gone MISSING/STALE/UNAVAILABLE, or an enabled derived-context/"
-            "planning-graph layer whose scribe binary no longer resolves on "
+            "gone MISSING/STALE (UNAVAILABLE is deliberately excluded), or "
+            "an enabled derived-context/planning-graph layer whose scribe "
+            "binary no longer resolves on "
             "PATH. Emits one MRS-CTX-009 WARN finding per lapsed layer and "
             "appends exactly one Phase.OBSERVATION journal entry naming "
             "every lapsed layer, so a session's silent savings do not "
