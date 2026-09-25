@@ -10,7 +10,11 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
 warnings: []
-deferred: []
+deferred:
+  - summary: 'Nothing yet documents running `marshal context advisory` as part of session close, so the AC''s "session ends" trigger and epics.md''s "session-close output" Surface are realized only as an on-demand capability, not as a close-time ritual (the repo''s one precedent, `scribe capture`, ties in by documented convention, not a hook).'
+    evidence: 'Review Triage Log 2026-09-25, finding #14. `run_context_advisory` produces correct output when invoked, but no doc names it as part of the session-close ritual the way AGENTS.md names `scribe capture`.'
+    location: 'AGENTS.md'
+    severity: 'medium'
 declared_low_risk: false
 ---
 
@@ -80,6 +84,28 @@ Type / Effort / Deps: feature / S / S-46.4.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-25 — Review pass
+
+Verdicts: high=1, medium=5, low=6, false=2. Routes: patch=5 (groups), defer=1, reject=8.
+
+| # | Finding (source) | Verdict | Route | Evidence |
+|---|---|---|---|---|
+| 1 | `_lapsed_layer_findings` treats `KitStatus.UNAVAILABLE` identically to `MISSING`/`STALE`, both mapped to `MRS-CTX-009` WARN (Blind Hunter) | medium | patch | `seed/detect/kit.py:490-503` (`_FINDING_FOR_STATUS`) maps `UNAVAILABLE` to `Severity.INFO` and `kit_findings`'s own docstring states "not even `--strict` fails on" it — a platform-unavailable instrument (e.g. a linux-64-only tool on macOS) would get a persistent, unfixable WARN advisory every invocation. Fixed: exclude `UNAVAILABLE` from the triggering set. |
+| 2 | `_write_advisory_journal_entry` silently returns `None` (drops the journal write) when `slug` is invalid even though `findings` is non-empty, with no distinguishing signal (Blind Hunter) | high | patch | Verified `cli/seed.py::resolve_context_layers` composes real repo-default layers even when `slug == ""` (the common "no active project" case), so `findings` can be genuinely non-empty while `slug` is invalid — silently contradicts AC1's "the command emits ... AND appends exactly one ... journal entry" for what is plausibly the most common invocation context. Fixed: surface a `journal_skipped_reason` marker instead of silent drop. |
+| 3 | `write_text_atomic`/`append_line` calls in `_write_advisory_journal_entry` (context.py:937-949) are not wrapped in `try/except FsError`, unlike the preceding `ensure_dir`/`create_dir_exclusive` calls (Edge Case Hunter, Verification Gap Reviewer — same finding, independently surfaced); no test exercises this path (Blind Hunter) | medium | patch | Confirmed both methods `Raises FsError on failure` (`ports/fs.py:106-110`, `:195-212`) and `cli/main.py`'s `run()` catches only `SystemExit`/`KeyboardInterrupt` — an `FsError` here propagates uncaught, crashing the command and breaking its own "never blocks" docstring guarantee. Fixed: extend the existing guard to cover the full write sequence; added a regression test forcing `FsError` via a fake `FsPort`. |
+| 4 | No test declares `planning-graph` active with an unresolvable scribe binary — only `derived-context` is exercised, though Tasks & Acceptance names both layers (Edge Case Hunter) | medium | patch | `grep` of `tests/unit/test_cli_context.py` confirms zero `_declare(repo, "planning-graph", ...)` calls. Fixed: added a mirroring test. |
+| 5 | No test proves the AC's "one entry naming every lapsed layer" for 2+ simultaneously-lapsed layers — every existing "something lapsed" test declares exactly one active layer (Verification Gap Reviewer, pre-filed `patch`) | medium | patch | Reviewer's own filed evidence accepted; code structurally supports it (`_lapsed_layer_findings` accumulates one list across both loops, `_write_advisory_journal_entry` called once) but no regression proves it. Fixed: added a two-layers-lapsed test. |
+| 6 | `layers.get(layer_name)` rather than `layers[layer_name]` silently degrades instead of failing loud (Blind Hunter) | false | reject | Refuted: `core/policy.py::resolve_context_layers` (the sole function `cli/seed.py::resolve_context_layers` composes through, on every code path including the invalid-slug branch) unconditionally populates all 5 `CONTEXT_LAYER_NAMES` keys, including `"derived-context"`/`"planning-graph"` — `.get()` returning `None` cannot occur via this call chain. |
+| 7 | `write_text_atomic`'s existence on `FsPort`/`LocalFs` is unverified — potential `AttributeError` (Edge Case Hunter) | false | reject | Refuted: confirmed present on both `ports/fs.py::FsPort` (line 106) and `adapters/fs_local.py::LocalFs` (line 131). |
+| 8 | Sidecar-offload branch (`prepared.sidecar_relative_path`/`sidecar_content`) never exercised by any test (Blind Hunter) | low | reject | Real gap, but the sidecar mechanism is pre-existing plumbing from `core/journal.py` already covered at its origin; forcing an offload here requires deliberately constructing an oversized payload — more than a direct correction for a coverage-only concern on unmodified shared machinery. |
+| 9 | AC3 regression test hand-rolls the glob-exclusion check rather than calling `layer_savings_sources.py`'s/`status.py`'s real scan functions (Blind Hunter) | low | reject | Real test-robustness concern, not a shipped defect; wiring the actual scan functions into the test is more than a direct correction. |
+| 10 | `_now_utc`/`_format_utc_compact`/`_format_entry_ts`/`_random_token` duplicated verbatim from `cli/dispatch.py` (and 4 other files), growing an existing 5-way duplication to 6-way (Blind Hunter) | low | reject | Real DRY concern but pre-existing repo-wide pattern this diff only continues; the fix (factor into `core/journal.py`, touch 6 call sites) is well beyond a direct correction for this story's surface. |
+| 11 | `scribe.resolve_binary(root)` called once per enabled layer (up to twice) with no caching (Blind Hunter) | low | reject | Negligible real-world cost (≤2 PATH lookups); unlikely to be met as a practical problem. |
+| 12 | Diagnostic message for the derived-context/planning-graph branch omits `fallback_bin_dirs` detail that kit-derived findings get via `check.detail` (Blind Hunter) | low | reject | Minor UX nicety, not everyday-use pain; not required by any AC. |
+| 13 | Test helper `_declare()` string-concatenates TOML and would emit a duplicate `[context.<layer>]` table if called twice for the same layer in one test (Edge Case Hunter) | low | reject | Confirmed real if triggered, but `grep` shows no current test calls `_declare` twice for the same layer — a latent, currently-unreached test-helper issue, easily avoided by test authors. |
+| 14 | Diff implements only the on-demand "layers lapse" disjunct of the AC's "session ends or the layers lapse" trigger; no automatic session-end firing and no doc ties this command to session close, so the epics.md Surface's "session-close output" half is not realized as a ritual, only as a capability (Intent Alignment Auditor) | medium | defer | Verified: no automatic hook mechanism exists in this repo for plain interactive sessions (session-end hooks are bmad-loop-specific); the repo's one precedent for a "session-close ritual" (`scribe capture`, per `AGENTS.md`) is itself doc-convention-driven, not hook-driven, so on-demand-CLI is the consistent pattern here — but nothing yet documents running `marshal context advisory` as part of that ritual. Fix is a doc-only addition to `AGENTS.md`'s close-ritual text, which per this workflow's own routing rule for agent-context files routes to `defer`; also naturally overlaps Story 46.8 ("the interactive Claude session path is one documented invocation"), a sibling story in this same epic not yet started. |
+| 15 | Sidecar `write_text_atomic` argument order / path construction at context.py:948 (Edge Case Hunter, folded into #3 above) | — | merged | Same location and same underlying guard gap as #3; addressed by the same fix. |
 
 ## Design Notes
 
