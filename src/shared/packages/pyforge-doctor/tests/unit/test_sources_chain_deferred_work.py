@@ -2010,13 +2010,17 @@ def test_mint_id_for_entry_mason_bare_legacy_id_already_collected_real_excerpt(
     """Review Triage Log 2026-08-15, item 9: no end-to-end test previously
     exercised mason's BARE (non-suffixed) legacy id already-collected case
     through `mint_id_for_entry` itself -- only unit-tested directly against
-    `_next_free_suffix`. A bare `DW-<story>` legacy id counts as suffix `1`,
-    so mason's next mint for the same story continues from `2`."""
+    `_next_free_suffix`. Post-Ruling-14, that pre-existing bare legacy id
+    (`DW-1-1`, no station token, untouched on disk) shares no prefix with
+    the new-grammar base (`DW-mason-1-1`), so it cannot suffix-collide with
+    a fresh mint for the same story: the new mint comes out bare too,
+    exactly as it would for any other story with nothing collected under
+    the new shape."""
     tracked = tmp_path / "deferred-work-ledger.md"
     tracked.write_text("### DW-1-1\n\n- status: open\n", encoding="utf-8")
     entry = _entry_with_source_spec("`spec-1-1-something-else.md`")
     result = chain.mint_id_for_entry(entry, "mason", tmp_path / "no-tier3.md", tracked)
-    assert result == "DW-1-1-2"
+    assert result == "DW-mason-1-1"
 
 
 # Review Triage Log 2026-08-15, item 4 (medium): guard against re-minting ---------
@@ -2128,8 +2132,12 @@ def test_mint_id_for_entry_batch_minting_without_accumulator_collides_real_data(
     """Regression proof for the ORIGINAL bug, against real data: minting
     repeatedly for entries that share a derived story key, with no
     accumulator threaded through, collides every time -- confirming the
-    defect the companion test below then fixes. Every one of the 24 real
-    orphans mints the identical `DW-FU-6-4-2` without an accumulator."""
+    defect the companion test below then fixes. The tracked heading still
+    carries the real pre-ruling `DW-FU-6-4` id (untouched on disk); under
+    the new grammar it shares no prefix with the fresh `DW-doctor-6-4`
+    base, so nothing is collected for it and every one of the 24 real
+    orphans mints the identical bare `DW-doctor-6-4` without an
+    accumulator."""
     tier3 = tmp_path / "deferred-work.md"
     tier3.write_text("# Deferred Work\n\n" + _REAL_6_4_ORPHAN_BULLET * 24, encoding="utf-8")
     tracked = tmp_path / "deferred-work-ledger.md"
@@ -2140,7 +2148,7 @@ def test_mint_id_for_entry_batch_minting_without_accumulator_collides_real_data(
     assert len(orphans) == 24
 
     results = [chain.mint_id_for_entry(e, "doctor", tier3, tracked) for e in orphans]
-    assert results == ["DW-FU-6-4-2"] * 24
+    assert results == ["DW-doctor-6-4"] * 24
 
 
 def test_mint_id_for_entry_batch_minting_with_accumulator_no_collisions_real_data(
@@ -2151,7 +2159,7 @@ def test_mint_id_for_entry_batch_minting_with_accumulator_no_collisions_real_dat
     every returned id to it immediately, matching the source prose's own
     "mint one at a time, write before minting next" discipline -- produces
     24 UNIQUE ids with zero duplicates, where the unfixed code minted
-    `DW-FU-6-4-2` 24 times over."""
+    bare `DW-doctor-6-4` 24 times over."""
     tier3 = tmp_path / "deferred-work.md"
     tier3.write_text("# Deferred Work\n\n" + _REAL_6_4_ORPHAN_BULLET * 24, encoding="utf-8")
     tracked = tmp_path / "deferred-work-ledger.md"
@@ -2170,7 +2178,7 @@ def test_mint_id_for_entry_batch_minting_with_accumulator_no_collisions_real_dat
 
     assert len(results) == 24
     assert len(set(results)) == 24, "batch minting must not collide within one batch"
-    assert results == [f"DW-FU-6-4-{n}" for n in range(2, 26)]
+    assert results == ["DW-doctor-6-4"] + [f"DW-doctor-6-4-{n}" for n in range(2, 25)]
 
 
 def test_mint_id_for_entry_accumulator_folds_in_like_a_collected_ledger_id(
@@ -2183,11 +2191,11 @@ def test_mint_id_for_entry_accumulator_folds_in_like_a_collected_ledger_id(
     no_tier3, no_tracked = tmp_path / "no-tier3.md", tmp_path / "no-tracked.md"
 
     first = chain.mint_id_for_entry(entry, "doctor", no_tier3, no_tracked)
-    assert first == "DW-FU-4-1"
+    assert first == "DW-doctor-4-1"
 
     already_minted = {first}
     second = chain.mint_id_for_entry(entry, "doctor", no_tier3, no_tracked, already_minted)
-    assert second == "DW-FU-4-1-2"
+    assert second == "DW-doctor-4-1-2"
 
 
 # --- Story 25.6: spec-frontmatter deferred intake --------------------------------
