@@ -1168,6 +1168,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # (both fire immediately before the merge and both stop the land
     # attempt cold).
     "MRS-DISP-048": Verdict.ERROR,
+    # Story 63.4 (spec-pyforge-steward CAP-5): a non-ok `steward session
+    # check` verdict (or the check itself failing to run) folded into a
+    # dispatch-launch finding. Deliberately WARN, never escalated -- the
+    # docstring on `_surface_session_precondition_findings` is explicit that
+    # a session-precondition gap is worth flagging before a dispatch
+    # launches, not worth refusing the launch over.
+    "MRS-DISP-049": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
