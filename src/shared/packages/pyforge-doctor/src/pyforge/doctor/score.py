@@ -45,10 +45,9 @@ from .models import DoctorStatus, Finding, Source
 # default ``check`` parameter -- AD-7 forbids ``doctor.score`` from importing
 # ``sources.atlas`` (that would pull a subprocess/MCP-capable module into a
 # pure-function guard's own import surface), so this is a deliberate
-# duplicated literal, not a shared import, mirroring ``prescribe.py``'s own
-# ``_UNKNOWN_FEEDSTOCK_CHECK`` precedent for the identical reason. It is the
-# one marker that distinguishes "this axis's OWN gather failed" from an
-# ordinary FAIL Finding about a real package problem.
+# duplicated literal, not a shared import. It is the one marker that
+# distinguishes "this axis's OWN gather failed" from an ordinary FAIL
+# Finding about a real package problem.
 _GATHER_FAILURE_CHECK = "doctor.sources.atlas"
 
 

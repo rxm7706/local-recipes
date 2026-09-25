@@ -14,14 +14,14 @@ def _finding(source, check, status=DoctorStatus.WARN, evidence=None, message="st
 def test_cve_traced_to_staleness_names_the_lag_not_only_the_cve():
     cve = _finding(
         Source.CVE_WATCHER,
-        "some-package",
+        "atlas-cve",
         status=DoctorStatus.FAIL,
-        evidence={"severity": "C", "delta": 2, "now_v": 3},
+        evidence={"conda_name": "some-package", "severity": "C", "delta": 2, "now_v": 3},
     )
     staleness = _finding(
         Source.STALENESS_REPORT,
-        "some-package",
-        evidence={"age_days": 400, "latest_conda_version": "1.2.3"},
+        "atlas-staleness",
+        evidence={"conda_name": "some-package", "age_days": 400, "latest_conda_version": "1.2.3"},
     )
     root_cause = name_root_cause(cve, [cve, staleness])
     assert "staleness" in root_cause.lower()
@@ -34,9 +34,9 @@ def test_cve_traced_to_staleness_names_the_lag_not_only_the_cve():
 def test_cve_without_correlated_staleness_still_names_a_cause():
     cve = _finding(
         Source.CVE_WATCHER,
-        "other-package",
+        "atlas-cve",
         status=DoctorStatus.FAIL,
-        evidence={"severity": "C", "delta": 1, "now_v": 1},
+        evidence={"conda_name": "other-package", "severity": "C", "delta": 1, "now_v": 1},
     )
     root_cause = name_root_cause(cve, [cve])
     assert "other-package" in root_cause
@@ -46,11 +46,13 @@ def test_cve_without_correlated_staleness_still_names_a_cause():
 def test_cve_correlation_ignores_a_different_package_staleness_finding():
     cve = _finding(
         Source.CVE_WATCHER,
-        "pkg-a",
+        "atlas-cve",
         status=DoctorStatus.FAIL,
-        evidence={"severity": "C", "delta": 1, "now_v": 1},
+        evidence={"conda_name": "pkg-a", "severity": "C", "delta": 1, "now_v": 1},
     )
-    unrelated_staleness = _finding(Source.STALENESS_REPORT, "pkg-b", evidence={"age_days": 999})
+    unrelated_staleness = _finding(
+        Source.STALENESS_REPORT, "atlas-staleness", evidence={"conda_name": "pkg-b", "age_days": 999}
+    )
     root_cause = name_root_cause(cve, [cve, unrelated_staleness])
     assert "999" not in root_cause
 
@@ -88,22 +90,21 @@ def test_root_cause_is_never_empty():
         assert name_root_cause(finding, [finding])
 
 
-def test_does_not_correlate_two_unrelated_findings_both_missing_a_feedstock_name():
-    """Review finding: `sources/atlas.py::_row_check_name` normalizes ANY
-    row missing every name field to the same placeholder,
-    `"<unknown feedstock>"`. Before this fix, two rows from DIFFERENT,
-    unrelated packages that both hit that fallback would match on
-    `check == check` and be reported as correlated -- a confidently wrong
-    root cause, not an honest "no correlated staleness signal"."""
+def test_does_not_correlate_two_unrelated_findings_both_missing_a_conda_name():
+    """Review finding (pre-Story-59.7 precedent, now keyed on
+    ``evidence["conda_name"]`` instead of ``check``): two Findings that both
+    happen to be missing an identity key must never be reported as
+    correlated with each other -- "both unidentified" is not evidence of
+    correlation, only an honest "no correlated staleness signal"."""
     cve = _finding(
         Source.CVE_WATCHER,
-        "<unknown feedstock>",
+        "atlas-cve",
         status=DoctorStatus.FAIL,
         evidence={"severity": "C", "delta": 1, "now_v": 1},
     )
     unrelated_staleness = _finding(
         Source.STALENESS_REPORT,
-        "<unknown feedstock>",
+        "atlas-staleness",
         evidence={"age_days": 999, "latest_conda_version": "9.9.9"},
     )
     root_cause = name_root_cause(cve, [cve, unrelated_staleness])
@@ -116,9 +117,9 @@ def test_does_not_correlate_a_finding_with_itself():
     # happened to also carry Source.STALENESS_REPORT-shaped evidence keys.
     cve = _finding(
         Source.CVE_WATCHER,
-        "pkg-a",
+        "atlas-cve",
         status=DoctorStatus.FAIL,
-        evidence={"severity": "C", "delta": 1, "now_v": 1, "age_days": 1},
+        evidence={"conda_name": "pkg-a", "severity": "C", "delta": 1, "now_v": 1, "age_days": 1},
     )
     root_cause = name_root_cause(cve, [cve])
     assert "no correlated staleness" in root_cause.lower()
