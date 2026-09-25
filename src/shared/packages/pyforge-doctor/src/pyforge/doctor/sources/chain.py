@@ -75,6 +75,10 @@ __all__ = (
     "SpecDeferredFinding",
     "classify_tier3_entries",
     "mint_id_for_entry",
+    "mint_sweep_id",
+    "StoryIdentity",
+    "slugify_title",
+    "mint_story_identity",
     "parse_spec_frontmatter_deferrals",
     "discover_spec_frontmatter_deferrals",
     "frontmatter_deferral_in_tracked",
@@ -3174,14 +3178,20 @@ def mint_id_for_entry(
     with an empty story segment would be exactly the anonymous-entry
     failure this whole mechanism exists to eliminate.
 
-    ``station`` is normalized/validated via ``_normalize_station`` before
-    the mason/non-mason branch below (Review Triage Log 2026-08-15, item 3).
-    ``station == "mason"`` (after normalization) always mints a suffixed
-    ``DW-{story}-<n>`` (never bare, mason's own real convention -- see
-    ``DW-1-10-1``'s ``promoted:`` note in its tracked ledger). Every other
-    known station mints bare ``DW-FU-{story}`` unless that bare id or a
-    ``DW-FU-{story}-...`` id was already collected, in which case
-    ``DW-FU-{story}-<n>`` one past the highest counting suffix.
+    ``station`` is normalized/validated via ``_normalize_station`` (Review
+    Triage Log 2026-08-15, item 3) and always appears in the minted id
+    (vocabulary Dream, Ruling 14 -- every NEW ``DW-`` id includes the short
+    station token; bare ``DW-1``...``DW-10`` collide across ledgers by
+    construction, and this Dream's own ``DW-VOCAB`` sequence split silently
+    across steward and marshal for exactly that reason). This replaces the
+    former mason/non-mason branch, which minted mason bare (``DW-{story}-
+    <n>``, no token at all) and every other station under the generic ``FU``
+    placeholder (``DW-FU-{story}...``) instead of its own real station name
+    -- both are pre-ruling shapes and are never minted again; the 1338
+    existing ids already on disk are untouched (no retro-rename). Mints
+    bare ``DW-{station}-{story}`` unless that bare id or a
+    ``DW-{station}-{story}-...`` id was already collected, in which case
+    ``DW-{station}-{story}-<n>`` one past the highest counting suffix.
 
     ``already_minted`` is an optional accumulator of ids minted earlier in
     the SAME in-progress batch that have not yet been written to either
