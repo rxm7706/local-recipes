@@ -11,7 +11,7 @@ schema_version: 1
 context:
   name: bmad-suite
   # CalVer refresh stamp (unpadded) — bumped by generate-bmad-suite when pins change.
-  version: "2026.9.11"
+  version: "2026.9.26"
 
 package:
   name: ${{ name }}
@@ -29,12 +29,12 @@ requirements:
   # GENERATED-BEGIN: suite-run-requirements (bmad_suite_metapackage.py — do not edit by hand)
   run:
     - bmad-method >=6.12.0                               # "Build More Architect Dreams" - Agile Ai Driven Development — Turn an idea or change request into working software without giving up the thinking. # https://github.com/bmad-code-org/BMAD-METHOD # https://bmadcode.com/ # https://docs.bmad-method.org/
-    - bmad-loop >=0.11.1                                 # Deterministic ralph-loop orchestrator that drives the BMAD implementation phase unattended. # https://github.com/bmad-code-org/bmad-loop # https://github.com/bmad-code-org/bmad-loop#readme
-    - bmad-method-test-architecture-enterprise >=1.26.0  # TEA (Murat) — risk-based test strategy, test automation and release-gate decisions. # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise # https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/
+    - bmad-loop >=0.12.0                                 # Deterministic ralph-loop orchestrator that drives the BMAD implementation phase unattended. # https://github.com/bmad-code-org/bmad-loop # https://github.com/bmad-code-org/bmad-loop#readme
+    - bmad-method-test-architecture-enterprise >=1.27.2  # TEA (Murat) — risk-based test strategy, test automation and release-gate decisions. # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise # https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/
     - bmad-builder >=2.2.2                               # BMad Core expansion module for creating, sharing and discovering AI modules and agents. # https://github.com/bmad-code-org/bmad-builder # https://bmad-builder-docs.bmad-method.org
     - bmad-creative-intelligence-suite >=0.3.2           # Creative agent suite for innovation, design thinking, storytelling and presentations. # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite # http://cis-docs.bmad-method.org
-    - bmad-module-skill-forge >=2.1.0                    # Turns code and docs into instructions AI agents can actually follow (Quick/Forge/Forge+/Deep tiers). # https://github.com/armelhbobdad/bmad-module-skill-forge
-    - bmad-eval-quality >=3.0.0                          # Compiles, seals, preflights and scores Behavioral Evaluation Contracts via a clean-vs-planted-defect twin run. # https://github.com/bmad-code-org/bmad-eval-quality
+    - bmad-module-skill-forge >=2.2.0                    # Turns code and docs into instructions AI agents can actually follow (Quick/Forge/Forge+/Deep tiers). # https://github.com/armelhbobdad/bmad-module-skill-forge
+    - bmad-eval-quality >=4.3.0                          # Compiles, seals, preflights and scores Behavioral Evaluation Contracts via a clean-vs-planted-defect twin run. # https://github.com/bmad-code-org/bmad-eval-quality
     - bmad-utility-skills >=2.0.0                        # Utility skills for BMad Method contributors — PR review, triage, changelog, root-cause analysis. # https://github.com/bmad-code-org/bmad-utility-skills
     - bmad-labs-skills >=1.0.0.dev0                      # Community BMAD skills marketplace for Claude Code (22 general-purpose skills). # https://github.com/bmad-labs/skills
     - bmad-module-template >=0.1.0                       # Scaffolding template for authoring a new installable BMad Method module. # https://github.com/bmad-code-org/bmad-module-template

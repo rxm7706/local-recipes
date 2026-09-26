@@ -6743,3 +6743,13 @@ status: open
   severity: low
   fix: when composing `landing_findings`, drop (or render as "reconciled") a refusal whose story key reads `done` in the tracked ledger and whose PR is merged; alternatively have `sprint-ledger-sync` append a `dispatch-land` reconciliation OUTCOME to the run journal when it promotes the key, so the journal itself stops lying.
   status: open
+
+## DW-marshal-bmad-loop-0-12-cap-2026-09-26 — pyforge-marshal caps `bmad-loop <0.12` while the channel now serves bmad-loop 0.12.0; the pixi floor cannot follow the published build until marshal is re-verified against 0.12.x
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (Story 1.7 / AD-19: bmad-loop is a declared runtime dependency, `src/shared/packages/pyforge-marshal/pyproject.toml` `bmad-loop>=0.11.0,<0.12`)
+  summary: the 2026-09-25 bmad-suite advance published bmad-loop 0.12.0 to SelfExplainML (PR #1607). `pixi.toml`'s `local-recipes` floor stays `bmad-loop >=0.11.1` because marshal's own pyproject deliberately caps `<0.12` (pre-1.0 minor bumps may rename or remove the `bmad_loop.adapters.multiplexer/profile`, `bmad_loop.bmadconfig` and `bmad_loop.sprintstatus` modules `harness_bmadloop.py` lazily imports); raising the floor would make the `local-recipes` / `pyforge-guild` envs unsolvable against that cap. Upstream 0.12.0's pyproject diff against 0.11.1 is version + a pytest `addopts` only (no dependency or module change visible from the manifest), but the cap is about module surface, which only marshal's own suite can prove.
+  evidence: `recipes/bmad-loop/recipe.yaml` at 0.12.0 built and published 2026-09-25/26; `grep -n bmad-loop src/shared/packages/pyforge-marshal/pyproject.toml` → `"bmad-loop>=0.11.0,<0.12"`; the suite metapackage (`recipes/bmad-suite`, 2026.9.26) already pins `bmad-loop >=0.12.0`, so bmad-suite and the marshal env now disagree on the floor.
+  location: src/shared/packages/pyforge-marshal/pyproject.toml
+  severity: medium
+  fix: run marshal's suite (`pixi run -e pyforge-marshal pyforge-marshal-test`) with bmad-loop 0.12.0 installed, confirm the three lazily-imported module paths still resolve, then widen the cap to `<0.13` in the pyproject and raise the `pixi.toml` floors to `>=0.12.0` in the same PR (re-lock; `environment.yaml` re-export; `llms-full-check`). Loop homes install bmad-loop from these envs, so until then they stay on 0.11.1.
+  status: open

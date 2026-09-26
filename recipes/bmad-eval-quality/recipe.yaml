@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.2.0"
+  version: "4.3.0"
 
 package:
   name: bmad-eval-quality
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-eval-quality/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: d09e80f49fcaf48f77e2667d864cf3cb4aad7443c01e02513db2bba6e1cd0375
+  sha256: 391944c1e8d0fea1c2e1b1cb717a1e9866f2ee50191cac570be1af3a0a565049
 
 build:
   number: 0
@@ -84,11 +84,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-09-26T00:18:05Z"
+  cfe-last-checked: "2026-09-26T05:43:26Z"
   cfe-generated-by-version: 8.85.2
   cfe-generated-at-datetime: "2026-09-05T13:29:57Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-09-26T00:18:05Z"
+  cfe-local-build-datetime: "2026-09-26T05:43:26Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -132,6 +132,13 @@ extra:
 #    # typescript >=5.7.0 is NOT vendored (`npm ci --omit=dev` never installs
 #    # optional peers) — the TypeScript-scanning gates need it on the
 #    # consumer's own path. Version moved, so build.number resets to 0 (G113).
+#    # 2026-09-26: 4.2.0 -> 4.3.0 the same night — upstream cut v4.3.0 at 03:44Z,
+#    # about three hours after the 4.2.0 bump was built and published (a live
+#    # G109 recurrence: the version of record moved mid-effort; caught by the
+#    # bmad-suite regen, whose upstream-latest resolution pinned >=4.3.0).
+#    # G110 re-read: package.json bin / engines / dependencies / files /
+#    # peerDependencies / build script are byte-identical to 4.2.0, so only
+#    # version + sha256 moved; wrappers and tests unchanged; build.number 0.
 # build:
 #    # dist/ is gitignored upstream; prepack runs tsc, so the build does
 #    # npm ci (devDependencies) + npm run build, then a clean

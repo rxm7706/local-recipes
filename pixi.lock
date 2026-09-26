@@ -2053,7 +2053,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -2294,7 +2294,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -2531,7 +2531,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -4465,7 +4465,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.3-pyhf3c603f_0.conda
@@ -5636,7 +5636,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.3-pyhf3c603f_0.conda
@@ -6723,7 +6723,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.3-pyhf3c603f_0.conda
@@ -13614,7 +13614,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -14293,7 +14293,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -14940,7 +14940,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -15579,7 +15579,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -15820,7 +15820,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -16057,7 +16057,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -21567,6 +21567,15 @@ packages:
   license: MIT
   size: 2712341
   timestamp: 1789122072685
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
+  sha256: d274cd666eaf4ab44f822b54c58785c04f4b5d4a608420512af2ea9b7024cc67
+  md5: e692330c08174991164814a13e7bbf5b
+  depends:
+  - python >=3.10
+  - nodejs >=22.20.0
+  license: MIT
+  size: 2805209
+  timestamp: 1790381735919
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
   sha256: ca3a2a086fed7831fbe6346f584adf4be7a48726d8ed6273def48c5266a28fdf
   md5: 76e7b09253ec3ddd9e1033bb45c3d6fc

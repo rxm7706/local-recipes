@@ -854,7 +854,7 @@ bmad-builder = ">=2.2.2"
 bmad-creative-intelligence-suite = ">=0.3.2"
 bmad-dashboard = ">=1.2.2.dev0"
 bmad-eval-quality = ">=1.4.1"
-bmad-method-test-architecture-enterprise = ">=1.26.0"
+bmad-method-test-architecture-enterprise = ">=1.27.2"
 bmad-module-template = ">=0.1.0"
 bmad-utility-skills = ">=2.0.0"
 bmad-labs-skills = ">=1.0.0.dev0"
@@ -2029,9 +2029,9 @@ bmad-method = ">=6.12.0"          # BMAD Method installer/CLI (upgrade from the 
 bmad-builder = ">=2.2.2"          # BMAD module builder (2.2.x: uv-run resolver + bmad-eval-runner skill) # PR #33123 # https://github.com/bmad-code-org/bmad-builder
 bmad-creative-intelligence-suite = ">=0.3.2"  # CIS module (0.3.x: uv-run resolver, 6.11-era persistent_facts) # PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
 bmad-dashboard = ">=1.2.2.dev0"   # VS Code extension installer # PR #33513 # https://github.com/bmad-code-org/bmad-method-ui
-bmad-eval-quality = ">=1.4.1"     # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading) # Story 45.1 / mason 14.1 # https://github.com/bmad-code-org/bmad-eval-quality # G115: recipe bumped to 3.0.0 (__unix built+published to SelfExplainML) but the __win variant is unbuilt — the windows-2022 dispatch (.github/workflows/test-windows.yml) that would produce it is blocked by the ongoing GH Actions billing outage (2026-09-11). Floor stays at the last version with both variants published; raise it once __win for 3.0.0 lands.
+bmad-eval-quality = ">=1.4.1"     # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading) # Story 45.1 / mason 14.1 # https://github.com/bmad-code-org/bmad-eval-quality # G115: recipe bumped to 4.3.0 (2026-09-26; __unix built, 4.2.0 published to SelfExplainML) but the __win variant is unbuilt — the windows-2022 dispatch (.github/workflows/test-windows.yml) that would produce it is blocked by the ongoing GH Actions billing outage (2026-09-11). Floor stays at the last version with both variants published; raise it once __win for 3.0.0 lands.
 bmad-loop = ">=0.11.1"            # deterministic ralph-loop orchestrator (+TUI); 0.9.0 hardcodes /bmad-dev-auto and stalls unattended on BMAD >=6.11 # https://github.com/bmad-code-org/bmad-loop
-bmad-method-test-architecture-enterprise = ">=1.26.0"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run; 1.25.0 ships review-provenance.js, which needs package.json copied into SHARE) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+bmad-method-test-architecture-enterprise = ">=1.27.2"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run; 1.25.0 ships review-provenance.js, which needs package.json copied into SHARE; 1.27.2 ships ten tea-* CLIs) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 bmad-module-template = ">=0.1.0"  # module scaffold # PR #33127 # https://github.com/bmad-code-org/bmad-module-template
 bmad-utility-skills = ">=2.0.0"   # 10 maintainer skills  bumped + v2.0.0 restructure fixes # PR #33129 # https://github.com/bmad-code-org/bmad-utility-skills
 #mybmad-dashboard = ">=0.1.0.dev0" # Next.js web dashboard + Postgres launcher # mirror of PR #33513 # linux/osx only #  https://github.com/bmad-code-org/bmad-method-ui/tree/main/web

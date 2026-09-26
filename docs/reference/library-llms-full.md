@@ -701,7 +701,7 @@ in `CLAUDE.md` and `_bmad-output/`.
 - **bmad-module-template** (>=0.1.0) — scaffold for new BMAD modules.
 - **bmad-creative-intelligence-suite** (>=0.3.2) — CIS expansion module (creative /
   ideation workflows).
-- **bmad-method-test-architecture-enterprise** (>=1.26.0) — TEA module: enterprise
+- **bmad-method-test-architecture-enterprise** (>=1.27.2) — TEA module: enterprise
   test-architecture workflows.
 - **bmad-eval-quality** (>=1.4.1) — `eval-quality` CLI: compile / seal / preflight /
   score Behavioral Evaluation Contracts (twin-run grading: clean vs planted-defect). Commit-pinned
