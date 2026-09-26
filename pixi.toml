@@ -244,16 +244,20 @@ openfeature-flagd-core = ">=1.0.0"  #
 openfeature-provider-flagd = ">=0.5.2"  #
 cachebox = ">=5.2.3,<6"           #
 # Story 27.1 (FR-21, canopy AD-16): Liquibase on the env the platform
-# image consumes. Do not author recipes — the SelfExplainML package named
-# liquibase-postgresql 42.7.13 is the PostgreSQL JDBC driver (pgjdbc
-# postgresql.jar, vendored for air-gap). conda-forge's liquibase-postgresql
-# 5.0.4 is a different artifact under the same name -- Liquibase's PostgreSQL
-# dialect extension, no driver -- and conda-forge ships no pgjdbc package, while
-# liquibase 5 bundles only h2. Enforced by
-# src/platform/tests/policy/test_liquibase_channel_policy.py (steward 27.1).
+# image consumes. Story 27.5: the PostgreSQL JDBC driver is `pgjdbc`
+# (postgresql.jar in share/liquibase/lib, vendored for air-gap; liquibase 5
+# bundles only h2) -- SelfExplainML until conda-forge publishes it
+# (staged-recipes #34956), then conda-forge on the next lock refresh.
+# `liquibase-postgresql` is Liquibase's PostgreSQL dialect extension (5.x, it
+# tracks liquibase), pinned to conda-forge. `<42` excludes SelfExplainML's
+# liquibase-postgresql 42.7.13, the retired driver build under the colliding
+# name: `pixi lock` keeps a locked record that satisfies the version even when
+# its channel no longer matches. Enforced by
+# src/platform/tests/policy/test_liquibase_channel_policy.py.
 # Helm Job / DML role is Story 27.2.
 liquibase = ">=5.0.4"             #
-liquibase-postgresql = ">=42.7.13"  #
+liquibase-postgresql = { version = ">=5.0.4,<42", channel = "conda-forge" }  #
+pgjdbc = ">=42.7.13"              #
 # Host extras formerly pip / pypi-dependencies (spec-platform-image-one-pixi-env).
 # All of these have conda-forge feedstocks; overlap with Langflow fails at lock.
 # Not folded: mcp-types / httpx2 (would pull mcp 2.x; FastMCP 3.x still mcp<2).

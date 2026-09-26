@@ -928,7 +928,8 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **httptools** (>=0.8.0) — fast HTTP parser (uvicorn[standard]).
 - **ipdb** (>=0.13.13) — IPython debugger.
 - **liquibase** (>=5.0.4) — DB changelog runner (`python-agent-platform`).
-- **liquibase-postgresql** (>=42.7.13) — the PostgreSQL JDBC driver (pgjdbc `postgresql.jar`) vendored for Liquibase (**SelfExplainML**). Not conda-forge's same-named 5.0.4 package, which is Liquibase's dialect extension with no driver; conda-forge ships no pgjdbc.
+- **liquibase-postgresql** (>=5.0.4,<42, `channel = "conda-forge"`) — Liquibase's PostgreSQL dialect extension (no driver). `<42` excludes SelfExplainML's retired 42.7.13 build, which was the JDBC driver under this name (Story 27.5).
+- **pgjdbc** (>=42.7.13) — the PostgreSQL JDBC driver (`postgresql.jar` in `share/liquibase/lib`, SCRAM shaded in), vendored for Liquibase. **SelfExplainML** until conda-forge publishes it (staged-recipes #34956); a lock refresh then takes conda-forge's.
 - **mcp-types** (>=2.2.0) — MCP protocol types (host/CI; no fastmcp).
 - **openfeature-flagd-api** (>=1.0.0) — OpenFeature flagd API types (conda-forge).
 - **openfeature-flagd-core** (>=1.0.0) — OpenFeature flagd core (**SelfExplainML**).
