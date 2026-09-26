@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-24"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-211 / CAP-265 (Epic 54). No AD amended. See § 22. Prior 2026-09-20
+updated: "2026-09-26"   # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
 # 2026-09-14  # currency reconciliation (§ 19): `spec-pyforge-marshal` moved to 2026-09-13 while this PRD sat at 2026-09-08. The Spec's 2026-09-09 OPERATOR ANSWERING PASS closed six items that this PRD still carried as open under its OWN numbering — Q-4 (fleet budgets), Q-5 (OTel), Q-6 (ACP trigger), Q-7 (idle threshold) — plus the trust-model declaration (Spec F-4) and the freeze-writer clause (Spec F-5). Those four § 13 entries are amended in place with dated ANSWERED text, § 8's fleet-budget Non-Goal is amended, and § 11 gains C-11 (the declared, advisory-in-v1 trust model). This is a CONTENT change, not a re-stamp.
@@ -2242,7 +2242,7 @@ leaving FR-193 solely the dispatch Spec's.
 
 Everything in §§ 4–6 citing `bmad-loop 0.9.0` and the `<0.10` pin is intake-era history —
 correct when written, superseded in the shipped tree. Live facts: the pin is
-**`bmad-loop >=0.11.0,<0.12`** (member `pyproject.toml`; 0.11.1 resolves;
+**`bmad-loop >=0.11.0,<0.13`** (member `pyproject.toml`; 0.12.0 resolves — cap widened 2026-09-26;
 `marshal --version` reports both). **Epic 25** (`spec-bmad-611-era-alignment`, Stories
 25.1–25.7, all done 2026-08-22) carried the era into the product: retired v6 skill ids
 purged from seed templates and guarded by meta-test (25.1); repo skills matched to the
@@ -2545,3 +2545,24 @@ human, unchanged. Fixture: doctor 24.2/24.3. Story 54.1.
 
 **Content changed:** § 22 added (FR-211 registered). No FR renumbered or removed. No AD amended —
 the fix lands on the existing `dispatch_land_finalize` design without a new architectural decision.
+
+## Currency reconciliation — 2026-09-26
+
+`spec→prd` edge (`spec-pyforge-marshal`'s `.memlog.md` moved 2026-09-26) and the `behind-code`
+edge (marshal's tree moved the same day) — both from one change: the `bmad-loop` runtime range
+widened from `>=0.11.0,<0.12` to `>=0.11.0,<0.13` after 0.12.0 was verified.
+
+**What moved, and why the FR delta is none.** FR-52 makes `adapters/harness_bmadloop.py` the one
+source of truth for the harness range; its three spellings (`_HARNESS_MIN_VERSION`,
+`_HARNESS_MAX_MINOR_EXCLUSIVE`, `HARNESS_VERSION_RANGE_TEXT`) moved together with the pyproject
+and package-manifest pins, and the sync tripwire (`test_manifest_sync.py`) held. Verification was
+the requirement's own procedure: the four `bmad_loop` modules the harness lazily imports ship in
+0.12.0, and the full suite (8652 tests) passes in an environment re-solved onto 0.12.0. The only
+behavioural difference 0.12.0 introduced is that `bmad_loop.bmadconfig` now validates a
+non-mapping `config.yaml` itself (`… must contain a top-level mapping`) before marshal's own
+"invalid bmad-config shape" guard can fire — the contract (never raise, report) is unchanged and
+one test accepts both wordings. Two facts recorded for the record, neither an FR: the estate's
+`pixi.toml` pins `bmad-loop` to the SelfExplainML channel because `conda-forge/bmad-loop-feedstock`
+(2026-09-20, not this repo's) ships `__unix`-gated builds that strict channel priority would
+otherwise prefer; and the § 22 Stack literal above is corrected in place, the same way the
+2026-08-26 reconcile corrected `<0.10` → `<0.12`. `updated:` bumped to record that the check ran.

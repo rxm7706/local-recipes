@@ -1966,7 +1966,7 @@ def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_b
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
-    harness.version = "0.12.2"
+    harness.version = "0.13.2"
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
@@ -1975,8 +1975,8 @@ def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_b
     assert "MRS-PREFLIGHT-011" in out
     assert "[warn]" in out
     assert "MRS-PREFLIGHT-002" not in out
-    assert "0.12.2" in out
-    assert ">=0.11.0,<0.12" in out
+    assert "0.13.2" in out
+    assert ">=0.11.0,<0.13" in out
 
 
 def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(repo_root, tmp_path, capsys):
@@ -1997,7 +1997,7 @@ def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(rep
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-002" in out
     assert "2.0.0" in out
-    assert ">=0.11.0,<0.12" in out
+    assert ">=0.11.0,<0.13" in out
     assert "MRS-PREFLIGHT-011" not in out
 
 

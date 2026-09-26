@@ -1,0 +1,8 @@
+---
+name: "2026-09-25-bmad-suite-advance-landed-as-pr-1607-branch-suite"
+description: "2026-09-25 bmad-suite advance landed as PR #1607 (branch suite-advance-2026-09-25, not merged): bmad-loop 0.12.0, bmad-…"
+metadata:
+  type: project
+---
+
+2026-09-25 bmad-suite advance landed as PR #1607 (branch suite-advance-2026-09-25, not merged): bmad-loop 0.12.0, bmad-method-test-architecture-enterprise 1.27.2, bmad-eval-quality 4.2.0 built green locally (linux-64, rattler-build 0.76.0) by the hand path through conda-forge-expert after the steward suite-advance chain could not complete live (DW-steward-suite-advance-gaps-2026-09-25). Only the operator can close: (1) publish the three .conda artifacts to the channel (anaconda -s https://api.anaconda.org upload), (2) THEN regenerate recipes/bmad-suite via generate-bmad-suite and raise the pixi.toml floors for bmad-loop / bmad-method-test-architecture-enterprise / bmad-eval-quality — floors follow published builds, never the recipe (CFE G117 rule); (3) decide whether bmad-module-skill-forge 2.1.0 -> 2.2.0 goes by the same hand path — CFE v8.90.6 made github_updater auto-detect it (dry-run says would update). Also from the 2026-09-25 fleet-picture pass: the two MRS-DISP-020 refusals and the three atlas baseline-drift defers are stale/superseded, recorded as DW-marshal-disp020-stale-refusal-2026-09-25 and DW-marshal-baseline-drift-supersession-2026-09-25; all 8 loop homes were fast-forwarded to 4df19fce2e. Earlier same-day capture still lists deck-carriage and the scribe_pg Story as open — both closed by PR #1606 (deck-carriage answered A-only; scribe CAP-31 / Story 22.1 minted).

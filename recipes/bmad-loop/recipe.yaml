@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.11.1"
+  version: "0.12.0"
 
 package:
   name: bmad-loop
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-loop/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 7aca4c5899b4409679cdbe44dc729f59aaf2a6071282b1521a43b51662ba88d8
+  sha256: 8a299a049aa1e276fd09a68e51b0c2ca3301e0df6f264c68cff32ca27ee6b41c
 
 build:
   noarch: python
@@ -80,20 +80,28 @@ extra:
   cfe-source-kind: github-tag
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bmad-loop-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-08-26T00:00:00Z"
+  cfe-last-checked: "2026-09-26T00:18:05Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-26T00:00:00Z"
+  cfe-local-build-datetime: "2026-09-26T00:18:05Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-09-26: conda-forge/bmad-loop-feedstock EXISTS (created 2026-09-20, not
+#    # by this repo) and ships 0.11.1 + 0.12.0 — the pending-submission status
+#    # above had gone stale (G78: cfe fields are hints; verify live). The feedstock
+#    # build is NOT this recipe: it gates `__unix` and adds tmux >=3.2, rich >=14.2,
+#    # httpx >=0.28 as hard run deps. This estate build stays ungated (psmux/tmux
+#    # are optional backends) so the workspace can solve win-64; pixi.toml pins
+#    # bmad-loop to the SelfExplainML channel for that reason — under strict
+#    # channel priority the conda-forge name would otherwise shadow this build.
 #    # Not published on PyPI (upstream distributes via GitHub releases only),
 #    # so the source is the GitHub tag archive, not a pypi.org sdist URL.
 # context:

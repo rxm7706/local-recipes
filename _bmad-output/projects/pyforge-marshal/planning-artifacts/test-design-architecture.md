@@ -336,7 +336,7 @@ to confirm no duplicate is being created.
 **Owner:** Marshal core. **Timeline:** next harness-era alignment pass.
 **Status:** Assumption stands, unverified.
 **Verification:** the derived-poll-interval test, green, against the currently pinned
-`bmad-loop>=0.11.0,<0.12`.
+`bmad-loop>=0.11.0,<0.13`.
 
 ---
 

@@ -22,6 +22,9 @@ authors = [{ name = "rxm7706" }]
 # preflight`'s harness/adapter/story-feed checks (AD-19). The range matches
 # AD-3/Story 1.9's planned conda pin -- pre-1.0, so the upper bound excludes
 # a minor bump that could rename/remove any of the modules this module reads.
+# 2026-09-26: cap widened <0.12 -> <0.13 after bmad-loop 0.12.0 was verified --
+# the four lazily-imported modules are still shipped and the marshal suite
+# passes against 0.12.0 (DW-marshal-bmad-loop-0-12-cap-2026-09-26).
 dependencies = [
     "PyYAML>=6.0",
     # <0.13.3 matches this repo's own environment cap (root pixi.toml pins
@@ -30,7 +33,7 @@ dependencies = [
     "tomlkit>=0.13,<0.13.3",
     "psutil>=7.2.2",
     "jsonschema>=4.25",
-    "bmad-loop>=0.11.0,<0.12",
+    "bmad-loop>=0.11.0,<0.13",
     "pyforge-core",
     # Story 10.1: Genesis's template engine (architecture Stack table,
     # AD-52). Imported nowhere but seed/engine/copier.py (P-02, proven by

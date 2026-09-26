@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-method-test-architecture-enterprise
-  version: "1.26.0"
+  version: "1.27.2"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: e387c0bad411437e6a12f8305b7f65136746e5d21b15dbefdd153165b42b1355
+  sha256: 0235734855cf2813776f99e847a2881642f2051545b02e4f235b2977b31c74c8
 
 build:
   number: 0
@@ -32,6 +32,13 @@ tests:
           - tea-test-review --help
           - tea-fragment-selection-runner --help
           - tea-trace-runner --help
+          - tea-atdd-red-check --help
+          - tea-atdd-runner --help
+          - tea-ci-runner --help
+          - tea-nfr-runner --help
+          - tea-routing-runner --help
+          - tea-test-design-runner --help
+          - tea-transcript-runner --help
           - test -d "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/agents/bmad-tea"
           - test -f "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/agents/bmad-tea/SKILL.md"
           - test -d "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/workflows"
@@ -43,6 +50,13 @@ tests:
           - tea-test-review.bat --help
           - tea-fragment-selection-runner.bat --help
           - tea-trace-runner.bat --help
+          - tea-atdd-red-check.bat --help
+          - tea-atdd-runner.bat --help
+          - tea-ci-runner.bat --help
+          - tea-nfr-runner.bat --help
+          - tea-routing-runner.bat --help
+          - tea-test-design-runner.bat --help
+          - tea-transcript-runner.bat --help
           - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\agents\bmad-tea" exit 1
           - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\cli\test-review.js" exit 1
           - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\.claude-plugin\marketplace.json" exit 1
@@ -88,11 +102,11 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33292
-  cfe-last-checked: "2026-09-09T07:55:00Z"
+  cfe-last-checked: "2026-09-26T00:18:05Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-09-09T07:55:00Z"
+  cfe-local-build-datetime: "2026-09-26T00:18:05Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -116,6 +130,18 @@ extra:
 #    #     moved with it (G103: mirror the FLOOR, never the ceiling).
 #    #   * csv-parse dropped from dependencies — no recipe change needed, the
 #    #     build vendors whatever `npm install --omit=dev` resolves.
+#    # 2026-09-25: bumped 1.26.0 -> 1.27.2 (bmad-suite advance, hand path via
+#    # CFE — the steward `suite advance` chain cannot complete live yet). The
+#    # G110 bin re-read caught bin growing 3 -> 10: tea-atdd-red-check,
+#    # tea-atdd-runner, tea-ci-runner, tea-nfr-runner, tea-routing-runner,
+#    # tea-test-design-runner, tea-transcript-runner (all cli/<name>.js). All
+#    # ten targets verified present in the tag archive and every one answers
+#    # --help with exit 0 (probed on the extracted archive before wiring), so
+#    # each gets a wrapper + .bat shim + --help smoke test. engines.node floor
+#    # (>=22.20.0) and the 12 prod dependencies are unchanged; upstream added a
+#    # package.json `files` array (src, cli, .claude-plugin, README.md, LICENSE)
+#    # that the build already mirrors. Version moved, so build.number resets to
+#    # 0 (G113).
 # build:
 #    # Since 1.20.0 upstream ships a WORKING `tea-test-review` bin entry
 #    # (package.json bin -> cli/test-review.js; it was EMPTY {} in 1.19.1) —
@@ -130,5 +156,5 @@ extra:
 #    # nodejs >=22.20.0 mirrors upstream engines.node floor only — no ceiling
 #    # (G103: never copy npm engines caps into conda run deps). build:
 #    # nodejs provides npm for the vendoring step; run: nodejs runs the
-#    # three tea-* CLIs.
+#    # ten tea-* CLIs.
 ####

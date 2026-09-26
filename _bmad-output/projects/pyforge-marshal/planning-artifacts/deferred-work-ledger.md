@@ -6723,3 +6723,34 @@ status: open
   severity: medium
   promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+## DW-marshal-baseline-drift-supersession-2026-09-25 — `baseline-drift-check` reports three atlas defers as unrecovered forever, because its recovery rule only recognises the literal story key reading `done`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift/SPEC.md` (CAP-1/CAP-2; the detector is `scripts/bmad_loop_baseline_drift_check.py`, surfaced by `fleet-picture`'s ATTENTION block)
+  summary: a baseline-drift defer counts as recovered only when `tracked_status(slug).get(story) == "done"` for the exact key the run journal recorded. A story that was retired (its key removed from the tracked ledger) or reminted under a new slug can therefore never clear, and the fleet picture carries it as "unrecovered" indefinitely — three such rows sat in the 2026-09-25 picture, none of them recoverable work.
+  evidence: `pixi run -e pyforge-guild python scripts/bmad_loop_baseline_drift_check.py --json` (2026-09-25) lists atlas `14-2-pluggable-widget-registry` and `14-3-bokeh-websocket-interactivity` (loop-home run 20260814-202328-e168) and `16-1-instance-deploy-definition` (run 20260815-112701-4285, no preserve refs). The atlas tracked ledger has no `14-2-*`/`14-3-*` key at all — the Epic-14 `views/` stories were retired by atlas 24.1 and the epic reminted at 2a63b00c27 — and `16-1` exists only as `16-1-the-from-scratch-run-is-a-chartered-capability: done`, a different slug under the same number.
+  location: scripts/bmad_loop_baseline_drift_check.py
+  severity: low
+  fix: add a supersession rule — when the exact key is absent, match on the `N-M` prefix (doctor's `_STORY_ID_RE` convention) and accept `done` there; treat a key absent from the tracked ledger whose epic is closed/retired (or named in a `rekey-*.md` note) as recovered; add fixtures for the reminted-slug and retired-key cases so the finding cannot become permanent again.
+  status: open
+
+## DW-marshal-disp020-stale-refusal-2026-09-25 — `fleet-picture` keeps showing an `MRS-DISP-020` landing refusal after the story has landed by hand, because it reads the run's last `dispatch-land` OUTCOME and never reconciles it against the ledger
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (dispatch landing; emitter `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py`, consumer `scripts/fleet_picture.py` via `landing_findings`)
+  summary: two refusals sat in the 2026-09-25 fleet picture — doctor 30.3 (PR #1585, merged 2026-09-24) and marshal 46.6 (PR #1597, merged by hand) — although both stories read `done` in their tracked ledgers and both PRs are merged. The refusal is the last OUTCOME entry of each dispatch run's `journal.jsonl`; a landing that happens outside `dispatch land` writes nothing after it, so the ATTENTION row stays until the next dispatch of that station replaces the run. It clears on its own, but until then it reads as an operator decision owed.
+  evidence: `pixi run -e pyforge-guild fleet-picture` after PR #1606 (2026-09-25) — ATTENTION block lists both; `gh pr view 1585` / `gh pr view 1597` → MERGED; the doctor and marshal ledgers carry the keys as `done`.
+  location: scripts/fleet_picture.py
+  severity: low
+  fix: when composing `landing_findings`, drop (or render as "reconciled") a refusal whose story key reads `done` in the tracked ledger and whose PR is merged; alternatively have `sprint-ledger-sync` append a `dispatch-land` reconciliation OUTCOME to the run journal when it promotes the key, so the journal itself stops lying.
+  status: open
+
+## DW-marshal-bmad-loop-0-12-cap-2026-09-26 — pyforge-marshal caps `bmad-loop <0.12` while the channel now serves bmad-loop 0.12.0; the pixi floor cannot follow the published build until marshal is re-verified against 0.12.x
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (Story 1.7 / AD-19: bmad-loop is a declared runtime dependency, `src/shared/packages/pyforge-marshal/pyproject.toml` `bmad-loop>=0.11.0,<0.12`)
+  summary: the 2026-09-25 bmad-suite advance published bmad-loop 0.12.0 to SelfExplainML (PR #1607). `pixi.toml`'s `local-recipes` floor stays `bmad-loop >=0.11.1` because marshal's own pyproject deliberately caps `<0.12` (pre-1.0 minor bumps may rename or remove the `bmad_loop.adapters.multiplexer/profile`, `bmad_loop.bmadconfig` and `bmad_loop.sprintstatus` modules `harness_bmadloop.py` lazily imports); raising the floor would make the `local-recipes` / `pyforge-guild` envs unsolvable against that cap. Upstream 0.12.0's pyproject diff against 0.11.1 is version + a pytest `addopts` only (no dependency or module change visible from the manifest), but the cap is about module surface, which only marshal's own suite can prove.
+  evidence: `recipes/bmad-loop/recipe.yaml` at 0.12.0 built and published 2026-09-25/26; `grep -n bmad-loop src/shared/packages/pyforge-marshal/pyproject.toml` → `"bmad-loop>=0.11.0,<0.12"`; the suite metapackage (`recipes/bmad-suite`, 2026.9.26) already pins `bmad-loop >=0.12.0`, so bmad-suite and the marshal env now disagree on the floor.
+  location: src/shared/packages/pyforge-marshal/pyproject.toml
+  severity: medium
+  fix: run marshal's suite (`pixi run -e pyforge-marshal pyforge-marshal-test`) with bmad-loop 0.12.0 installed, confirm the three lazily-imported module paths still resolve, then widen the cap to `<0.13` in the pyproject and raise the `pixi.toml` floors to `>=0.12.0` in the same PR (re-lock; `environment.yaml` re-export; `llms-full-check`). Loop homes install bmad-loop from these envs, so until then they stay on 0.11.1.
+  status: closed
+  resolved: 2026-09-26 (PR #1607, round three) — bmad-loop 0.12.0 verified: the four lazily-imported modules ship, the full marshal suite passes (8652 passed) in a re-solved env carrying 0.12.0; cap widened to `<0.13` in pyproject.toml, the package pixi.toml and the FR-52 range constants (+ 4 fixture tests moved to 0.13.2; one accepted 0.12.0's own `must contain a top-level mapping` config-shape wording). pixi.toml floors moved to `>=0.12.0`, channel-pinned to SelfExplainML because conda-forge/bmad-loop-feedstock (2026-09-20) gates `__unix` and strict priority shadowed the estate build on win-64.

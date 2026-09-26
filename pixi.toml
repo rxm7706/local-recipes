@@ -559,7 +559,7 @@ asgiref = ">=3.12.1,<4.0"         # Story 9.5: load-bearing, not transitive (AD-
 channels_redis = ">=4.3.0,<5.0"   # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 pyjwt = ">=2.13.0"                # Story 48.6: EventsStreamConsumer verifies RS256 assertions via django-pyforge (test-time + dashboard websocket face)
 redis-py = ">=8.1.0"              # Story 48.6: browser relay tail-read tests (imports as `redis`)
-bmad-eval-quality = ">=1.4.1"     # DW-OPS-2026-09-20-1 (2026-09-20): steward WIELDS eval-quality (suite.py's adoption-register live probe, Story 45.1) but the CLI was pinned only in local-recipes + pyforge-guild, so under `-e pyforge-steward` shutil.which never saw it and suite.py fell back to <repo>/.pixi/envs/local-recipes/bin -- present on the primary checkout, absent in every fresh worktree (test_wired_column_agrees_with_live_pipeline_truth failed there, 2026-09-20). Same floor as the Guild/local-recipes pins; keep the three in step.
+bmad-eval-quality = ">=4.3.0"     # DW-OPS-2026-09-20-1 (2026-09-20): steward WIELDS eval-quality (suite.py's adoption-register live probe, Story 45.1) but the CLI was pinned only in local-recipes + pyforge-guild, so under `-e pyforge-steward` shutil.which never saw it and suite.py fell back to <repo>/.pixi/envs/local-recipes/bin -- present on the primary checkout, absent in every fresh worktree (test_wired_column_agrees_with_live_pipeline_truth failed there, 2026-09-20). Same floor as the Guild/local-recipes pins; keep the three in step.
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
@@ -654,6 +654,7 @@ cmd = "bash scripts/guild_image_ci.sh"
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 19.2 / FR-130: seed source re-exports the shared kit (test-time only; not a package run-dep)
+bmad-loop = { version = ">=0.12.0", channel = "SelfExplainML" }  # marshal's declared runtime dep (pyproject: bmad-loop>=0.11.0,<0.13). Channel-pinned on purpose: conda-forge/bmad-loop-feedstock (2026-09-20) ships bmad-loop with a `__unix` gate (tmux dep), so under strict channel priority conda-forge shadows the estate's SelfExplainML build and every win-64 solve fails; the estate build has no platform gate. Keep in step with the local-recipes floor below.
 # Story 12.1 (NFR-C2): Genesis's template engine run-dep -- imported only in
 # seed/engine/copier.py (P-02). Mirrors the member's [package.run-dependencies]
 # and pyproject.toml pin; kept in sync by test_engine_version_range_sync.py.
@@ -823,6 +824,7 @@ pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }      # run-deps
 # jsonschema, pyyaml, mcp, pyforge-core) and degrades that seam to cannot-evaluate -- exactly how
 # detectors-ci has always run in local-recipes. The warden seam stays `-e pyforge-doctor` / `-e pyforge-warden`.
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }    # dispatch / spin / seed check; run-dep bmad-loop
+bmad-loop = { version = ">=0.12.0", channel = "SelfExplainML" }  # the harness every loop home runs from this env; floor follows the published build, channel-pinned for the same reason as the pyforge-marshal feature (conda-forge/bmad-loop-feedstock gates __unix). Keep in step with the pyforge-marshal + local-recipes sites.
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }    # workspace start/clean, frame-preflight; run-dep age
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 63.6 (spec-pyforge-steward CAP-152): deck-export / deck-trio import pyforge.herald.stamps; herald's deck pipeline shells those tasks under -e pyforge-guild (herald 25.1)
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }      # scribe capture / recall from the session default (scribe Story 19.2, spec-pyforge-scribe CAP-28, 2026-09-19): the CORE package only (run-deps typer + pydantic + pyforge-core); the heavy compile extras (graphifyy, cocoindex, psycopg) stay in -e pyforge-scribe, so `scribe graph compile` with an extra still runs there
@@ -853,8 +855,8 @@ pre-commit = ">=4.6.2"
 bmad-builder = ">=2.2.2"
 bmad-creative-intelligence-suite = ">=0.3.2"
 bmad-dashboard = ">=1.2.2.dev0"
-bmad-eval-quality = ">=1.4.1"
-bmad-method-test-architecture-enterprise = ">=1.26.0"
+bmad-eval-quality = ">=4.3.0"
+bmad-method-test-architecture-enterprise = ">=1.27.2"
 bmad-module-template = ">=0.1.0"
 bmad-utility-skills = ">=2.0.0"
 bmad-labs-skills = ">=1.0.0.dev0"
@@ -2029,9 +2031,9 @@ bmad-method = ">=6.12.0"          # BMAD Method installer/CLI (upgrade from the 
 bmad-builder = ">=2.2.2"          # BMAD module builder (2.2.x: uv-run resolver + bmad-eval-runner skill) # PR #33123 # https://github.com/bmad-code-org/bmad-builder
 bmad-creative-intelligence-suite = ">=0.3.2"  # CIS module (0.3.x: uv-run resolver, 6.11-era persistent_facts) # PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
 bmad-dashboard = ">=1.2.2.dev0"   # VS Code extension installer # PR #33513 # https://github.com/bmad-code-org/bmad-method-ui
-bmad-eval-quality = ">=1.4.1"     # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading) # Story 45.1 / mason 14.1 # https://github.com/bmad-code-org/bmad-eval-quality # G115: recipe bumped to 3.0.0 (__unix built+published to SelfExplainML) but the __win variant is unbuilt — the windows-2022 dispatch (.github/workflows/test-windows.yml) that would produce it is blocked by the ongoing GH Actions billing outage (2026-09-11). Floor stays at the last version with both variants published; raise it once __win for 3.0.0 lands.
-bmad-loop = ">=0.11.1"            # deterministic ralph-loop orchestrator (+TUI); 0.9.0 hardcodes /bmad-dev-auto and stalls unattended on BMAD >=6.11 # https://github.com/bmad-code-org/bmad-loop
-bmad-method-test-architecture-enterprise = ">=1.26.0"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run; 1.25.0 ships review-provenance.js, which needs package.json copied into SHARE) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+bmad-eval-quality = ">=4.3.0"     # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading) # Story 45.1 / mason 14.1 # https://github.com/bmad-code-org/bmad-eval-quality # G115: both variants of 4.3.0 are on SelfExplainML (2026-09-26 — __unix from the local build, __win from the windows-2022 dispatch of .github/workflows/test-windows.yml, run 36222516048); the floor follows the last version with BOTH variants published — re-check before raising it again.
+bmad-loop = { version = ">=0.12.0", channel = "SelfExplainML" }  # deterministic ralph-loop orchestrator (+TUI); channel-pinned: conda-forge/bmad-loop-feedstock (2026-09-20) gates __unix (tmux dep) and strict priority would otherwise shadow the estate build on win-64; 0.9.0 hardcodes /bmad-dev-auto and stalls unattended on BMAD >=6.11 # https://github.com/bmad-code-org/bmad-loop
+bmad-method-test-architecture-enterprise = ">=1.27.2"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run; 1.25.0 ships review-provenance.js, which needs package.json copied into SHARE; 1.27.2 ships ten tea-* CLIs) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 bmad-module-template = ">=0.1.0"  # module scaffold # PR #33127 # https://github.com/bmad-code-org/bmad-module-template
 bmad-utility-skills = ">=2.0.0"   # 10 maintainer skills  bumped + v2.0.0 restructure fixes # PR #33129 # https://github.com/bmad-code-org/bmad-utility-skills
 #mybmad-dashboard = ">=0.1.0.dev0" # Next.js web dashboard + Postgres launcher # mirror of PR #33513 # linux/osx only #  https://github.com/bmad-code-org/bmad-method-ui/tree/main/web
@@ -2355,7 +2357,7 @@ channels = ["conda-forge", "SelfExplainML"]
 
 [feature.bmad-suite-full.dependencies]
 python = ">=3.14.7,3.14.*"        # minimal python floor so the lean proof env below solves standalone (no other feature composed)
-bmad-suite = ">=2026.9.9"         # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
+bmad-suite = ">=2026.9.26"        # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
 
 [feature.local-recipes.pypi-dependencies]
 #crewai = ">=1.14.7"               # Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.
