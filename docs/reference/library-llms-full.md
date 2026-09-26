@@ -28,8 +28,8 @@ requirement conflicts with `pyforge-foundry-full`'s libabseil pin as well
 as codegraph's) and 2026-09-26 (version-floor re-sync: 57 floors caught up to
 `pixi.toml` after a `pixi upgrade` pass, prose untouched except the channel moves:
 `bmad-loop`, `caveman-installer`, `codegraph`, `bmad-module-skill-forge`,
-`fastmcp`/`fastmcp-slim`, `kedro-mcp`, `silo`, `liquibase-postgresql` and
-`openfeature-flagd-api` now resolve from conda-forge and their SelfExplainML
+`fastmcp`/`fastmcp-slim`, `kedro-mcp`, `silo` and `openfeature-flagd-api`
+now resolve from conda-forge and their SelfExplainML
 channel pins are gone). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
@@ -928,11 +928,11 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **httptools** (>=0.8.0) — fast HTTP parser (uvicorn[standard]).
 - **ipdb** (>=0.13.13) — IPython debugger.
 - **liquibase** (>=5.0.4) — DB changelog runner (`python-agent-platform`).
-- **liquibase-postgresql** (>=5.0.4) — Liquibase PostgreSQL extension, from conda-forge (versioned with liquibase).
+- **liquibase-postgresql** (>=42.7.13) — the PostgreSQL JDBC driver (pgjdbc `postgresql.jar`) vendored for Liquibase (**SelfExplainML**). Not conda-forge's same-named 5.0.4 package, which is Liquibase's dialect extension with no driver; conda-forge ships no pgjdbc.
 - **mcp-types** (>=2.2.0) — MCP protocol types (host/CI; no fastmcp).
 - **openfeature-flagd-api** (>=1.0.0) — OpenFeature flagd API types (conda-forge).
 - **openfeature-flagd-core** (>=1.0.0) — OpenFeature flagd core (**SelfExplainML**).
-- **openfeature-provider-flagd** (>=0.5.2) — OpenFeature flagd provider (**SelfExplainML**); 0.5.2 needs protobuf 7.
+- **openfeature-provider-flagd** (>=0.5.2) — OpenFeature flagd provider (**SelfExplainML**); 0.5.2 is protobuf 7, which langflow >=1.12.3 requires (steward 26.5).
 - **openfeature-sdk** (>=0.10.0) — OpenFeature Python SDK (conda-forge).
 - **opentelemetry-exporter-otlp-proto-http** (>=1.44.0) — OTLP HTTP exporter.
 - **opentelemetry-instrumentation-asgi** (>=0.65b0) — OTel ASGI instrumentation.

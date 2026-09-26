@@ -1,8 +1,12 @@
-"""OpenFeature + cachebox 5.x on the platform channel (steward 26.3 / FR-33).
+"""OpenFeature + cachebox 5.x on the platform channel (steward 26.3 / 26.5, FR-33).
 
 Pins belong on ``[feature.python-agent-platform]`` (the env the platform
 image solves). ``platform-dev`` composes that feature. FILE provider /
 ``flags.json`` is Story 26.4 and is out of scope here.
+
+Story 26.5 (2026-09-26) moved the provider from 0.5.0 to >=0.5.2: langflow >=1.12.3's
+closure (openlayer -> pyarrow -> libabseil 20260526) is protobuf-7-only, and 0.5.0 is
+the protobuf-6 build, so the platform env now needs 0.5.2.
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ OPENFEATURE_PACKAGES = (
     "openfeature-provider-flagd",
 )
 CACHEBOX_SPEC = ">=5.2.3,<6"
-PROVIDER_SPEC = ">=0.5.0,<0.5.1"
+PROVIDER_SPEC = ">=0.5.2"
 PLATFORM_ENV = "python-agent-platform"
 _CONDA_VERSION_RE = re.compile(
     r"/(?P<name>[^/]+)-(?P<version>\d+(?:\.\d+)*)-[^/]+\.conda(?:\.bz2)?$",
@@ -50,7 +54,7 @@ def _assert_openfeature_and_cachebox_pins(deps: dict[str, Any]) -> None:
     )
     assert deps.get("openfeature-provider-flagd") == PROVIDER_SPEC, (
         "openfeature-provider-flagd must be pinned "
-        f"{PROVIDER_SPEC!r} so SelfExplainML 0.5.2 (protobuf 7) is not selected "
+        f"{PROVIDER_SPEC!r} so the protobuf-6 0.5.0 build is not selected "
         f"(got {deps.get('openfeature-provider-flagd')!r})"
     )
 
@@ -95,17 +99,17 @@ def _assert_lock_openfeature_present(urls: list[str]) -> None:
         )
 
 
-def _assert_lock_provider_is_050(urls: list[str]) -> None:
+def _assert_lock_provider_is_052_or_later(urls: list[str]) -> None:
     versions = _versions_for_package(urls, "openfeature-provider-flagd")
     assert versions, (
         f"pixi.lock {PLATFORM_ENV} must select openfeature-provider-flagd "
-        f"{PROVIDER_SPEC} (SelfExplainML 0.5.0; 0.5.2 is protobuf 7)"
+        f"{PROVIDER_SPEC} (SelfExplainML 0.5.2+, protobuf 7)"
     )
     for raw in versions:
         version = Version(raw)
-        assert version >= Version("0.5.0") and version < Version("0.5.1"), (
+        assert version >= Version("0.5.2"), (
             f"openfeature-provider-flagd {raw} is outside {PROVIDER_SPEC}; "
-            "do not select 0.5.2"
+            "do not select the protobuf-6 0.5.0 build"
         )
 
 
@@ -130,21 +134,21 @@ def test_cachebox_spec_allowing_6_reds() -> None:
         _assert_openfeature_and_cachebox_pins(drifted)
 
 
-def test_provider_spec_allowing_052_reds() -> None:
-    """Drift: a provider spec that admits 0.5.2 must fail."""
+def test_provider_spec_admitting_050_reds() -> None:
+    """Drift: a provider spec that admits the protobuf-6 0.5.0 build must fail."""
     drifted = dict(_platform_deps())
-    drifted["openfeature-provider-flagd"] = ">=0.5.2"
+    drifted["openfeature-provider-flagd"] = ">=0.5.0"
     with pytest.raises(AssertionError, match="openfeature-provider-flagd"):
         _assert_openfeature_and_cachebox_pins(drifted)
 
 
 def test_lock_selects_openfeature_and_cachebox_5() -> None:
-    """Happy path: lock URLs include OpenFeature 0.5.0 and cachebox 5.x only."""
+    """Happy path: lock has OpenFeature (provider 0.5.2+) and cachebox 5.x only."""
     urls = readers.pixi_env_conda_urls(PLATFORM_ENV)
     assert urls, f"pixi.lock {PLATFORM_ENV} package list is empty"
     _assert_lock_openfeature_present(urls)
     _assert_lock_cachebox_is_5x(urls)
-    _assert_lock_provider_is_050(urls)
+    _assert_lock_provider_is_052_or_later(urls)
 
 
 def test_lock_selecting_cachebox_6_reds() -> None:
@@ -156,11 +160,11 @@ def test_lock_selecting_cachebox_6_reds() -> None:
         _assert_lock_cachebox_is_5x(urls)
 
 
-def test_lock_selecting_provider_052_reds() -> None:
-    """Drift: a locked provider 0.5.2 URL must fail."""
+def test_lock_selecting_provider_050_reds() -> None:
+    """Drift: a locked protobuf-6 provider 0.5.0 URL must fail."""
     urls = [
         "https://conda.anaconda.org/SelfExplainML/noarch/"
-        "openfeature-provider-flagd-0.5.2-pyh59285b8_1.conda",
+        "openfeature-provider-flagd-0.5.0-pyh76f217f_0.conda",
     ]
-    with pytest.raises(AssertionError, match="0.5.2"):
-        _assert_lock_provider_is_050(urls)
+    with pytest.raises(AssertionError, match="0.5.0"):
+        _assert_lock_provider_is_052_or_later(urls)

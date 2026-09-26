@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 417
+# stories: 418
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -92,6 +92,7 @@ development_status:
   26-2-manifests-carry-secret-references-only: done
   26-3-openfeature-packages-on-the-channel-operator-gate: done
   26-4-one-flag-flips-three-surfaces-without-a-redeploy: done
+  26-5-the-flag-provider-follows-langflow-onto-protobuf-7: done
   27-1-liquibase-on-the-channel-operator-gate: done
   27-2-pre-upgrade-job-and-dml-only-app-role: done
   27-3-stale-extraction-fails-ci: done

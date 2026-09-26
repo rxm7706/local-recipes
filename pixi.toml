@@ -232,10 +232,11 @@ wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on t
 # Story 26.3 (FR-33, canopy AD-16): flag libraries on the env the platform
 # image consumes (`pixi install --frozen -e python-agent-platform`). Do not
 # author recipes here — openfeature-flagd-core and -provider-flagd are on
-# SelfExplainML; openfeature-flagd-api and cachebox are on conda-forge. The
-# provider was held at 0.5.0 until 2026-09-26 (0.5.2 needs protobuf 7, which
-# langflow's a2a-sdk capped); langflow >=1.12.3 / a2a-sdk >=1.1.5 accept
-# protobuf 7, so 0.5.2 solves.
+# SelfExplainML; openfeature-flagd-api and cachebox are on conda-forge. Provider
+# >=0.5.2 (protobuf 7): langflow >=1.12.3's closure (openlayer -> pyarrow ->
+# libabseil 20260526) is protobuf-7-only, so 0.5.0 (protobuf 6) no longer
+# solves here (steward 26.5, 2026-09-26; was held at 0.5.0 by 26.3). Enforced by
+# src/platform/tests/policy/test_openfeature_channel_policy.py.
 # FILE provider / flags.json is Story 26.4.
 openfeature-sdk = ">=0.10.0"      #
 openfeature-flagd-api = ">=1.0.0"  #
@@ -243,12 +244,16 @@ openfeature-flagd-core = ">=1.0.0"  #
 openfeature-provider-flagd = ">=0.5.2"  #
 cachebox = ">=5.2.3,<6"           #
 # Story 27.1 (FR-21, canopy AD-16): Liquibase on the env the platform
-# image consumes. Do not author recipes — liquibase and liquibase-postgresql
-# (5.0.4, versioned in lockstep with liquibase) are on conda-forge; the
-# SelfExplainML 42.7.13 build (JDBC-driver versioning) is superseded.
+# image consumes. Do not author recipes — the SelfExplainML package named
+# liquibase-postgresql 42.7.13 is the PostgreSQL JDBC driver (pgjdbc
+# postgresql.jar, vendored for air-gap). conda-forge's liquibase-postgresql
+# 5.0.4 is a different artifact under the same name -- Liquibase's PostgreSQL
+# dialect extension, no driver -- and conda-forge ships no pgjdbc package, while
+# liquibase 5 bundles only h2. Enforced by
+# src/platform/tests/policy/test_liquibase_channel_policy.py (steward 27.1).
 # Helm Job / DML role is Story 27.2.
 liquibase = ">=5.0.4"             #
-liquibase-postgresql = ">=5.0.4"  #
+liquibase-postgresql = ">=42.7.13"  #
 # Host extras formerly pip / pypi-dependencies (spec-platform-image-one-pixi-env).
 # All of these have conda-forge feedstocks; overlap with Langflow fails at lock.
 # Not folded: mcp-types / httpx2 (would pull mcp 2.x; FastMCP 3.x still mcp<2).
