@@ -824,6 +824,7 @@ pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }      # run-deps
 # jsonschema, pyyaml, mcp, pyforge-core) and degrades that seam to cannot-evaluate -- exactly how
 # detectors-ci has always run in local-recipes. The warden seam stays `-e pyforge-doctor` / `-e pyforge-warden`.
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }    # dispatch / spin / seed check; run-dep bmad-loop
+bmad-loop = { version = ">=0.12.0", channel = "SelfExplainML" }  # the harness every loop home runs from this env; floor follows the published build, channel-pinned for the same reason as the pyforge-marshal feature (conda-forge/bmad-loop-feedstock gates __unix). Keep in step with the pyforge-marshal + local-recipes sites.
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }    # workspace start/clean, frame-preflight; run-dep age
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 63.6 (spec-pyforge-steward CAP-152): deck-export / deck-trio import pyforge.herald.stamps; herald's deck pipeline shells those tasks under -e pyforge-guild (herald 25.1)
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }      # scribe capture / recall from the session default (scribe Story 19.2, spec-pyforge-scribe CAP-28, 2026-09-19): the CORE package only (run-deps typer + pydantic + pyforge-core); the heavy compile extras (graphifyy, cocoindex, psycopg) stay in -e pyforge-scribe, so `scribe graph compile` with an extra still runs there
@@ -2356,7 +2357,7 @@ channels = ["conda-forge", "SelfExplainML"]
 
 [feature.bmad-suite-full.dependencies]
 python = ">=3.14.7,3.14.*"        # minimal python floor so the lean proof env below solves standalone (no other feature composed)
-bmad-suite = ">=2026.9.9"         # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
+bmad-suite = ">=2026.9.26"        # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
 
 [feature.local-recipes.pypi-dependencies]
 #crewai = ">=1.14.7"               # Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.

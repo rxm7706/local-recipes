@@ -23,20 +23,19 @@ environments:
     - url: https://conda.anaconda.org/SelfExplainML/
     packages:
       linux-64:
-      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/mybmad-dashboard-0.1.0.dev0-py312h2f0f82b_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-3.0.0-h42f10ed_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-suite-2026.9.9-h2a26889_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-suite-2026.9.26-h86027da_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/bmad-module-skill-forge-2.2.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.8-hebe6cf0_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cyrus-sasl-2.1.28-hac629b4_1.conda
@@ -50,6 +49,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libbrotlienc-1.2.0-h018ffa1_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libedit-3.1.20250104-pl5321h373387f_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libev-4.33-h280c20c_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libevent-2.1.12-h5348a74_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.1-hecca717_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_4.conda
@@ -83,11 +83,23 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/regex-2026.9.10-py314h89acca1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tmux-3.7c_-hd13ee6d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tzcode-2026c-h280c20c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.12.19-h841d291_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/yaml-0.2.5-hebe6cf0_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.15.1-pyh5ded981_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/bmad-loop-0.12.0-pyh9b1aab0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bmad-method-6.12.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/certifi-2026.7.22-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/h11-0.16.0-pyhcf101f3_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/h2-4.4.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.2.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/httpx-0.28.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/hyperframe-6.1.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/idna-3.20-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/linkify-it-py-2.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.6.1-pyhd8ed1ab_0.conda
@@ -97,6 +109,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyte-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-15.0.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/sniffio-1.3.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/textual-8.2.8-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
@@ -2051,7 +2064,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.12.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
@@ -2292,7 +2305,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.12.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
@@ -2529,7 +2542,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.12.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
@@ -15577,7 +15590,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.12.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
@@ -15818,7 +15831,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.12.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
@@ -16055,7 +16068,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.12.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
@@ -21509,15 +21522,6 @@ packages:
   license: MIT
   size: 4002813
   timestamp: 1784397641319
-- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-3.0.0-h42f10ed_0.conda
-  sha256: d841ba0acada993876261fc3c7f73a1d81f811396db7700f1c2c0b8d0c618cbd
-  md5: 2c18ad3292c437e95b48639e44698107
-  depends:
-  - nodejs >=22.20.0
-  - __unix
-  license: Apache-2.0 AND MIT
-  size: 827597
-  timestamp: 1789122006066
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
   sha256: cfc6dadd07641cf2d388de61ef887c10f8ab4af805aa7ace3b0f9df5092401d4
   md5: a4af768f4a76b815ffebce22f5b31cf8
@@ -21544,21 +21548,6 @@ packages:
   license: MIT
   size: 5032960
   timestamp: 1788615022760
-- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
-  sha256: a3d61a6feaed0779c254f18180a91c55ed4af886afc9a034d5d05099cbdbd12a
-  md5: 14e90251d16bd59ce26c481f681b30fe
-  depends:
-  - python >=3.11
-  - pyyaml >=6.0
-  - regex >=2024.11.6
-  - psutil >=7.2.2
-  - textual >=8.0,<9
-  - tomlkit >=0.13
-  - pyte >=0.8.2
-  - python
-  license: MIT
-  size: 851121
-  timestamp: 1787588918240
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.12.0-pyh5ded981_0.conda
   sha256: d9f8722c04cc4d93866da180787ab60e82635e5bd2c1fecc681dec696f03b9bd
   md5: 861904b2647e5d7bf10c3588afd06b17
@@ -21582,15 +21571,6 @@ packages:
   license: MIT
   size: 301107
   timestamp: 1787363420320
-- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.26.0-ha7a566d_0.conda
-  sha256: 4230bea4500fce48809d0de35d242f11c18d3f9cddd7f44fc8224f4e596d2fd7
-  md5: 99777a64986f54ecf6e3f75dfe25818f
-  depends:
-  - python >=3.10
-  - nodejs >=22.20.0
-  license: MIT
-  size: 2712341
-  timestamp: 1789122072685
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.27.2-hc364b38_0.conda
   sha256: d274cd666eaf4ab44f822b54c58785c04f4b5d4a608420512af2ea9b7024cc67
   md5: e692330c08174991164814a13e7bbf5b
@@ -21608,17 +21588,17 @@ packages:
   license: MIT
   size: 9980
   timestamp: 1783874319486
-- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-suite-2026.9.9-h2a26889_0.conda
-  sha256: 10cda83cdee4704ab82c5aaf1ef1f79c4691f82fd831d91e1f159fe02820c38a
-  md5: a381c7cb3329afe70dad34d739ceca18
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-suite-2026.9.26-h86027da_0.conda
+  sha256: 78061c0074276877e61f987a035527b9062bbb80f3d1f8731097a2d55b570ea7
+  md5: 190335064677004f084b0cdea7417d29
   depends:
   - bmad-method >=6.12.0
-  - bmad-loop >=0.11.1
-  - bmad-method-test-architecture-enterprise >=1.25.0
+  - bmad-loop >=0.12.0
+  - bmad-method-test-architecture-enterprise >=1.27.2
   - bmad-builder >=2.2.2
   - bmad-creative-intelligence-suite >=0.3.2
-  - bmad-module-skill-forge >=2.1.0
-  - bmad-eval-quality >=1.4.1
+  - bmad-module-skill-forge >=2.2.0
+  - bmad-eval-quality >=4.3.0
   - bmad-utility-skills >=2.0.0
   - bmad-labs-skills >=1.0.0.dev0
   - bmad-module-template >=0.1.0
@@ -21626,8 +21606,8 @@ packages:
   - bmad-dashboard >=1.2.2.dev0
   - mybmad-dashboard >=0.1.0.dev0
   license: MIT
-  size: 6170
-  timestamp: 1788967341448
+  size: 7210
+  timestamp: 1790401362276
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
   sha256: 3ef98c78ed83c86a384df86ca0ea154129b2bc1f1ff9f3c6d6417f1f0e29317a
   md5: 5bc6053b3a62419b25b91660227daca5
@@ -22532,6 +22512,19 @@ packages:
     - blosc >=1.21.6,<2.0a0
   size: 48427
   timestamp: 1733513201413
+- conda: https://conda.anaconda.org/conda-forge/linux-64/bmad-module-skill-forge-2.2.0-hfc2019e_0.conda
+  sha256: 3a7688c9be0c2779329502ebff7f9ed02f18f0e1b27ae0a7ead835c7e69b0356
+  md5: 58c34e6d80e11d2960b9975bd233444a
+  depends:
+  - nodejs >=22
+  - python
+  - uv
+  - nodejs >=26.8.2,<27.0a0
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 3273867
+  timestamp: 1790216666772
 - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-1.2.0-h505cf86_4.conda
   sha256: 61b78574f002390b6a7fc79834fc344beaab09550068a51100eea5a485dac741
   md5: 746aa619a1bcaf4da541101179d7c60e
@@ -31509,6 +31502,21 @@ packages:
   run_exports: {}
   size: 17779428
   timestamp: 1789739400024
+- conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.12.19-h841d291_0.conda
+  sha256: 032a2c37546d3d8e47cfd74ae46d988f9a6befcf770b8f2e130eddcdafb827e9
+  md5: 93d8d9ff6519484b67fd21038a562091
+  depends:
+  - libstdcxx >=15
+  - libgcc >=15
+  - __glibc >=2.17,<3.0.a0
+  - liblzma >=5.8.3,<6.0a0
+  - zstd >=1.5.7,<1.6.0a0
+  constrains:
+  - __glibc >=2.17
+  license: Apache-2.0 OR MIT
+  run_exports: {}
+  size: 17761989
+  timestamp: 1790333630212
 - conda: https://conda.anaconda.org/conda-forge/linux-64/uvloop-0.22.1-py314h5bd0f2a_1.conda
   sha256: ad3058ed67e1de5f9a73622a44a5c7a51af6a4527cf4881ae22b8bb6bd30bceb
   md5: 41f06d5cb2a80011c7da5a835721acdd
@@ -33370,6 +33378,29 @@ packages:
   run_exports: {}
   size: 13934
   timestamp: 1731096548765
+- conda: https://conda.anaconda.org/conda-forge/noarch/bmad-loop-0.12.0-pyh9b1aab0_0.conda
+  sha256: bcdd53d7b6ee54db43095163561a3ad232d1489f7e3bebb16612d88b2b8a70b8
+  md5: 8208d6f53973ed63f4a2ddbe87974bc2
+  depends:
+  - __unix
+  - python >=3.11
+  - pyyaml >=6.0
+  - regex >=2024.11.6
+  - psutil >=7.2.2
+  - tmux >=3.2
+  - textual >=8.0,<9
+  - tomlkit >=0.13
+  - pyte >=0.8.2
+  - rich >=14.2
+  - httpx >=0.28
+  - python
+  constrains:
+  - herdr
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 1242845
+  timestamp: 1789949004542
 - conda: https://conda.anaconda.org/conda-forge/noarch/bmad-method-6.12.0-h98f672e_0.conda
   sha256: 3abaae323ab28555060f6cb9fc5334ae890104db3853b9ee20be03fc04ac19ac
   md5: aaae28337d9732b91fc2568aabb4d7af
@@ -38881,6 +38912,17 @@ packages:
   run_exports: {}
   size: 177433
   timestamp: 1787059857580
+- conda: https://conda.anaconda.org/conda-forge/noarch/idna-3.20-pyh5ded981_0.conda
+  sha256: e044b1ec829e2e24f971fa3f3408eb26f1db836e521a58f08b0fd9a03fee47be
+  md5: ee73be987f9de9ea5c2fdaeefa7b6491
+  depends:
+  - python >=3.11
+  - python
+  license: BSD-3-Clause
+  license_family: BSD
+  run_exports: {}
+  size: 178572
+  timestamp: 1790020377150
 - conda: https://conda.anaconda.org/conda-forge/noarch/imagesize-2.0.1-pyhd8ed1ab_0.conda
   sha256: 4e787f9ccc31053ccea56d98ecd284a4f788988a3f9c4627db72fdd0b127529b
   md5: ebc56022e4ef7e74a829be94c53797ca

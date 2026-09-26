@@ -722,7 +722,7 @@ in `CLAUDE.md` and `_bmad-output/`.
 - **mybmad-dashboard** (>=0.1.0.dev0) — MyBMAD Next.js web dashboard + `mybmad`
   launcher (local PostgreSQL on :3002). **`bmad-ui` env only, linux-64 only** —
   commented out in `local-recipes` (line 681 of `pixi.toml`). Task: `mybmad`.
-- **bmad-suite** (>=2026.9.9) — `noarch: generic` metapackage (CAP-1–4,
+- **bmad-suite** (>=2026.9.26) — `noarch: generic` metapackage (CAP-1–4,
   `spec-bmad-suite-metapackage`) pinning all 13 active suite members
   (including `bmad-dashboard` + `mybmad-dashboard`) at upstream-aligned
   floors; one install surface for greenfield operators. **`bmad-suite-full`
