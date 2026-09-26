@@ -4,7 +4,7 @@ spec: python-foundry-cutover
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-09-04"
-updated: "2026-09-25"
+updated: "2026-09-26"
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-N outside it; Unifying CAP-1..19 and pap:CAP-1..6 are different sets — never collapse
 surface: []
@@ -151,15 +151,17 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     runtime default stays `pyforge-guild` (`spec-pyforge-steward:CAP-5`); the laptop installs
     the superset.
   - **success:** `pixi install -e pyforge-foundry-full` solves on linux-64,
-    osx-arm64 and win-64 and composes the `build`, `grayskull` and `crm` features
-    beside the station features, with `pnpm` in the `python` feature; the
-    platform-limited stack (`platform-dev`,
-    `platform-object-storage`) solves as a layer environment over it; every
-    `postgresql` pin in the estate is `>=17.11,<18`, with psycopg and pgvector capped
-    below the first builds that require libpq 18 (psycopg `<3.3` as measured in the lock
-    on 2026-09-25 — 3.2.10 already solves on libpq 17.11; Story 67.1 re-measures before it
-    pins); neither `local-recipes` nor a `desktop-lab` feature is composed; `AGENTS.md`
-    names it the laptop install.
+    osx-arm64 and win-64 and composes the `build` and `grayskull` features beside the
+    station features, with `pnpm` in the `python` feature. The `crm` feature
+    (conda-recipe-manager ≥0.8 and feedrattler) is a named SBOM gap on CAP-13's list;
+    grayskull's own dependency brings conda-recipe-manager in at 0.5.0. The
+    platform-limited stack (`platform-dev`, `platform-object-storage`) solves as a layer
+    environment over it on the platforms its features declare. Every `postgresql` pin in
+    the estate is `>=17.11,<18` and no environment resolves libpq 18: each driver is
+    capped at its last libpq-17 release (psycopg 3.2.10, psycopg2 2.9.10, pgvector
+    0.8.1, measured 2026-09-26), with a direct `libpq` pin beside it. Neither
+    `local-recipes` nor a `desktop-lab` feature is composed; `AGENTS.md` names it the
+    laptop install.
 
 - **CAP-13 — The SBOM is checkable.**
   - **intent:** The operator can prove the laptop needs nothing beyond the SBOM,
@@ -167,7 +169,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
   - **success:** One pixi task run from the SBOM (plus its layer) alone runs
     `lint-types`, the station suites, the platform bring-up smoke and a channel
     audit; a failure names a gap. A tracked `docs/foundry/` gap list, derived
-    from `pixi.toml`, gives every residual solve gap (`conda-smithy`,
+    from `pixi.toml`, gives every residual solve gap (`conda-smithy`, `crm`,
     `python-agent-platform`) and every fat-only `local-recipes` pin a disposition
     — promote, won't-do or upstream — with an owner. Upstream filing is outward and
     operator-flipped; closing conda-forge gaps is Mason work minted from that list.
@@ -215,7 +217,8 @@ laptop, the claim surface and the agents all describe the same two-root estate.
   CAP-7 is retired; Story 44.10 is never dispatched.
 - The SBOM never composes the fat `local-recipes` feature or a `desktop-lab`
   feature; inclusion is "used by PyForge code or needed by a PyForge developer or
-  operator workflow". PostgreSQL stays major 17: no Postgres bump and no dropping
+  operator workflow". PostgreSQL stays major 17, and libpq 17 in every environment
+  (operator 2026-09-26). No Postgres bump, no lifted driver cap and no dropping
   `platform-dev` to clear a solve; if a psycopg / pgvector cap breaks a station's
   suite, the story halts `blocked`. Never push a stub or placeholder `pixi.toml`;
   after any write, verify the full manifest and a `--frozen` re-solve.
@@ -293,12 +296,11 @@ case-list or CI evidence. Launch stories: 44.3 / 44.7 / 44.12 done; Epic 54 kern
   the file past 43.1's 400-line target by design.
 - Stock Windows developers (no WSL, no Developer Mode) are a real population; the estate
   is native for them and the host is remote (spine fnd:AD-19).
-- Scribe's code runs on the last psycopg below the libpq-18 boundary (3.2.10 as measured;
-  CAP-12); Story 67.1 proves it against scribe's Postgres suite or halts `blocked`.
-- `build`, `grayskull` and `crm` declare no platform restriction, and only
-  `platform-dev` and `platform-object-storage` are platform-limited (measured
-  2026-09-25); that the union co-solves on all three platforms is what Story 67.1
-  proves.
+- The layer environment is linux-64 only because `platform-object-storage`
+  declares linux-64 alone (verified live there only), not for lack of builds: every
+  backing service publishes osx-arm64 (measured 2026-09-26). A live macOS
+  object-storage check would extend the layer to Macs; Windows stays blocked by
+  `redis-server`, `garage` and pgvector's libpq-16-only win-64 builds.
 
 ## Open Questions
 
