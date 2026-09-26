@@ -2871,6 +2871,7 @@ pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 mcp = ">=2.2.0"                   # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
 httpx2 = ">=2.13.1"               # Story 6.4 evidence-link HTTP client (also a package run-dep; mirrors mcp's own transitive pin)
+pyyaml = ">=6.0.3"                # test-only: tests/unit/test_dossier_structure.py reads docsite/content/dossier.yml (Story 26.1); not a package run-dep
 hatchling = ">=1.32.4"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
