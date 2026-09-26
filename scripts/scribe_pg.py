@@ -6,7 +6,7 @@ real PostgreSQL with pgvector, and its `tests/unit/conftest.py` fails LOUDLY
 rather than skipping when it cannot reach one -- deliberately, so a missing
 server can never read as a green suite. But the `pyforge-scribe` environment
 shipped only the CLIENT (`psycopg`); nothing in the repo provisioned a server.
-CI supplies one as a `pgvector/pgvector:pg16` service container, so the gap was
+CI supplies one as a `pgvector/pgvector:pg17` service container, so the gap was
 invisible there and only bit locally: 18 tests fail with
 
     Failed: durable GraphStore requires PostgreSQL with pgvector at
@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -73,9 +74,51 @@ def _is_up() -> bool:
     return _run(["pg_isready", "-h", "127.0.0.1", "-p", PORT, "-q"]).returncode == 0
 
 
+def _server_major() -> str | None:
+    """Major version of the env's server binaries (`pg_ctl (PostgreSQL) 17.11` -> `17`)."""
+    m = re.search(r"\(PostgreSQL\)\s+(\d+)", _run(["pg_ctl", "--version"]).stdout)
+    return m.group(1) if m else None
+
+
+def _move_aside_other_major() -> int:
+    """A data dir from another major version cannot start under these binaries.
+
+    Story 67.1 moved `scribe-pg` from PostgreSQL 18 to 17, so every existing
+    PG18 cluster would otherwise fail `pg_ctl start` ("database files are
+    incompatible with server"). The cluster holds disposable test data, so it
+    is moved aside (never deleted) and `up` re-initialises.
+    """
+    version_file = CLUSTER / "PG_VERSION"
+    if not version_file.is_file():
+        return 0
+    data_major, server_major = version_file.read_text().strip(), _server_major()
+    if server_major is None or data_major == server_major:
+        return 0
+    if _is_up():
+        sys.stderr.write(
+            f"[scribe-pg] {CLUSTER.relative_to(ROOT)} is PostgreSQL {data_major} and a server is "
+            f"still listening on 127.0.0.1:{PORT}; stop it with the environment that started it "
+            f"(PostgreSQL {data_major}) before `scribe-pg-up` on {server_major}\n"
+        )
+        return 1
+    aside = CLUSTER.with_name(f"data.pg{data_major}")
+    n = 1
+    while aside.exists():
+        aside = CLUSTER.with_name(f"data.pg{data_major}.{n}")
+        n += 1
+    CLUSTER.rename(aside)
+    print(
+        f"[scribe-pg] data dir was PostgreSQL {data_major}, server is {server_major}: "
+        f"moved it to {aside.relative_to(ROOT)} and re-initialising (test data only)"
+    )
+    return 0
+
+
 def up() -> int:
     _need("initdb"), _need("pg_ctl"), _need("psql")
     CLUSTER.parent.mkdir(parents=True, exist_ok=True)
+    if _move_aside_other_major():
+        return 1
 
     if not (CLUSTER / "PG_VERSION").is_file():
         pwfile = CLUSTER.parent / ".initpw"

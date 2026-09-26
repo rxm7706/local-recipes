@@ -53,10 +53,13 @@ BASELINE_LOCAL_RECIPES_BMAD_PINS = {
 }
 
 # feature.bmad-ui's dependency table, byte-identical to the baseline this
-# story must not touch (spec's own AC).
+# story must not touch (spec's own AC). Steward Story 67.1 (2026-09-26) added
+# the postgresql pin: mybmad-dashboard's `postgresql >=14` floated to 18, and
+# the estate holds PostgreSQL 17 in every environment (fnd:CAP-12).
 BASELINE_BMAD_UI_DEPENDENCIES = {
     "bmad-dashboard": ">=1.2.2.dev0",
     "mybmad-dashboard": ">=0.1.0.dev0",
+    "postgresql": ">=17.11,<18",
 }
 
 
@@ -173,10 +176,12 @@ def test_eval_quality_pin_lives_in_the_shared_table() -> None:
     The floor tracks the newest PUBLISHED build, never the newest the recipe
     builds -- a floor above what the channel serves reds every solve. 1.4.1 was
     published (both ``__unix`` and ``__win``) in the same change that raised
-    this floor, so the two moved together.
+    this floor, so the two moved together. The bmad-suite advance (PR #1607,
+    2026-09-26) moved it to 4.3.0 by the same rule, once the ``__win`` 4.3.0
+    build was on the channel.
     """
     feat = _data()["feature"]["local-recipes"]
-    assert feat["dependencies"]["bmad-eval-quality"] == ">=1.4.1"
+    assert feat["dependencies"]["bmad-eval-quality"] == ">=4.3.0"
     assert "bmad-method-wds-expansion" not in feat["dependencies"]
     for plat in ("linux-64", "osx-arm64", "win-64"):
         deps = feat["target"].get(plat, {}).get("dependencies", {})

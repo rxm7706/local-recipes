@@ -281,7 +281,7 @@ jobs:
       # db match tests/unit/conftest.py's _DEFAULT_PG_DSN verbatim, so
       # SCRIBE_GRAPH_DSN does not need to be set.
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:pg17  # PostgreSQL 17, like every pin in the estate (steward Story 67.1)
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: scribe

@@ -6,7 +6,7 @@ It is intentionally tool-agnostic: **everything starts with a Dream; BMAD turns 
 spec; the spec drives the build — the agent/framework is interchangeable.**
 
 <!-- bmad:context -->
-<!-- Verified 2026-09-20 against 5e70a51cc1. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-09-26 against 6022314f3c. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## local-recipes (PyForge)
 
@@ -23,6 +23,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 - Never run a bare `spec_surface_check.py --write-baseline`; stamp scoped with `--spec <project>/<spec>` after `git add`, from a clean tree.
 - `src/platform/` never imports `pyforge.*`; reach station code through `pyforge.core.station_port`. No `services/` or `:800x` process tree.
 - Any PR touching a path outside `recipes/` gets the `maintenance` label. A `pixi.toml` change regenerates `environment.yaml` in the same PR (`pixi project export conda-environment -e build > environment.yaml`); that check ignores the label.
+- Never raise a `postgresql`/`libpq` pin to 18 or lift a psycopg/psycopg2/pgvector cap to clear a solve; the estate holds PostgreSQL 17 (fnd:CAP-12).
 - Merge with `gh pr merge --merge`, never `--rebase` (squash is disabled in the repository settings; a rebase merge leaves no merge subject for landing evidence either). Create with `gh pr create --repo rxm7706/local-recipes`.
 - Commit messages carry no `Co-Authored-By` line and no AI attribution; the `commit-msg` hook in `.pre-commit-config.yaml` refuses them (`steward setup` installs it; `precommit-config-check` reds the file going missing).
 - Never open a feedstock, staged-recipes or upstream PR without an explicit ask; a green local build ends the task.
@@ -52,7 +53,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 - Lint and types: `pixi run -e pyforge-guild lint-types` (ruff, `ruff format --check`, mypy over the ten `pyforge-*` packages, each from its own `[tool.ruff]` / `[tool.mypy]` on py314, mypy strict for `pyforge-core`; `target-version-check` reds a target drifting from the interpreter) — the same task `.github/workflows/lint-types.yml` and `pr-preflight`'s first leg run. The 2026-09-20 mypy baseline is disabled per module, per error code (`[[tool.mypy.overrides]]`), never `ignore_errors`; tighten the entry when you touch its module. `src/platform` keeps its own `platform-ci` lane (py312 target) and local twin `platform-ci-local -- --test`.
 - BMAD skill renders need `PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"` in this shell.
 - Pushes run `pr-preflight` through the `pre-push` hook (`.pre-commit-config.yaml`); `pyforge-station-tests` + `detectors-ci` alone miss the touched-module coverage floors (PR #1551 went red that way on 2026-09-20). `PYFORGE_PREFLIGHT_SKIP=1` is the one opt-out and is journaled to `.steward/preflight-skips.log`; `dispatch/*` branches are supervisor-gated and skip it, journaled.
-- Only `pyforge-guild` exists at runtime: station code, the tasks it shells to, and docs name `-e pyforge-guild`, never `-e local-recipes` (the 10 GB recipe factory) — steward's `test_no_station_assumes_local_recipes.py` reds a station `src/` that does. `pyforge-foundry-full` is the union of every station feature, for dependency closure only, never installed by default.
+- Only `pyforge-guild` exists at runtime: station code, the tasks it shells to, and docs name `-e pyforge-guild`, never `-e local-recipes` (the 10 GB recipe factory) — steward's `test_no_station_assumes_local_recipes.py` reds a station `src/` that does. On a laptop install `pyforge-foundry-full`, the SBOM and default laptop install (fnd:CAP-12): every station feature plus `build`/`grayskull`, on linux-64, osx-arm64 and win-64; add `pyforge-foundry-full-stack` for the platform's local stack (PostgreSQL 17, redis-server, object storage; linux-64). Its conda-recipe-manager resolves only to 0.5.0 and it has no feedrattler: run current crm/feedrattler with `-e grayskull`.
 
 ## Known pitfalls
 

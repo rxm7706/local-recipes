@@ -132,6 +132,9 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.2) — standard Python installer (prefer `uv` for speed).
+- **pnpm** (>=12.4.1) — fast, disk-efficient npm alternative (default for JS builds
+  here; in .bat scripts always `call pnpm`). In the `python` feature since Story 67.1
+  (moved from `local-recipes`, one declaration), so it reaches the laptop SBOM.
 - **uv** (>=0.12.19) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (>=24.19.0,<27.0,!=25.*; 24.x or 26.x LTS, 25.x excluded as Node's non-LTS release) — `node` / `npm` / `npx`; runtime for the JS tools below.
@@ -432,7 +435,7 @@ All in `local-recipes`.
 
 All in `local-recipes`.
 
-- **matplotlib** (>=3.11.2) — general-purpose static 2D plotting.
+- **matplotlib-base** (>=3.11.2) — general-purpose static 2D plotting (`import matplotlib`), without the Qt GUI backend. The `matplotlib` metapackage pulls `pyside6` → `qt6-main`, and every current `qt6-main` links libpq 18; Story 67.1 holds libpq 17 in every env. Agg and headless plotting are unchanged.
 - **plotly** (>=7.1.0) — interactive web-based charts (JSON-serializable figures).
 - **bokeh** (>=3.9.2) — interactive HTML/JS plots and apps from Python; server mode
   for streaming.
@@ -781,6 +784,13 @@ PROCESSES, not containers or managed services):
   binaries). The ONE database `public`/`langflow_schema`/`dbgpt_schema` all share.
 - **pgvector** (>=0.8.1) — PostgreSQL extension, same instance — no separate
   vector-store service (AD-1).
+- **libpq** (>=17.11,<18) — PostgreSQL 17's client library, pinned directly (Story 67.1) in the
+  features that reach it through `psycopg-c` / `psycopg2` without a `postgresql` pin
+  (`pyforge-scribe`, `mcp-host`, `platform-ci-test`, `dbgpt-sidecar`, `local-recipes`);
+  `python-agent-platform` holds it through its own `postgresql >=17.11,<18`. Those drivers ship libpq-18 builds of the
+  same version, which the solver would otherwise pick. The driver caps sit at the last releases with
+  libpq-17 builds: psycopg / psycopg-c 3.2.10, psycopg2 2.9.10 and pgvector 0.8.1, measured
+  2026-09-26.
 - **redis-server** (>=8.10.1) — per-user local Redis server (`redis-server` binary).
   Cache + Celery broker (AD-1). **No native win-64 build** — AD-16's native-Windows
   sub-posture note: `fakeredis` + eager-Celery stand in there, or WSL2/a remote.
@@ -862,9 +872,7 @@ Terminal & CLI building:
   syntax highlighting, tracebacks.
 - **typer** (>=0.27.2) — build CLIs from type-hinted functions (click-based).
 
-Node package managers:
-- **pnpm** (>=12.4.1) — fast, disk-efficient npm alternative (default for JS builds
-  here; in .bat scripts always `call pnpm`).
+Node package managers (`pnpm` is in § 1, the `python` feature, since Story 67.1):
 - **yarn** (>=4.18.1) — Yarn Berry.
 
 ---
