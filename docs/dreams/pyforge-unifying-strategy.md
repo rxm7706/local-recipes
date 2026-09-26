@@ -465,47 +465,48 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=019f1fcc471ad5fe -->
+<!-- pixi-env-matrix:begin lock-sha256=5064aa7248fe159e -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
 | Environment | Python | Conda records | Platforms |
 |---|---|---:|---|
-| ``bmad-suite-full`` | ``3.14.*`` | 80 | ``linux-64`` |
-| ``bmad-ui`` | ``3.14.*`` | 51 | ``linux-64`` |
-| ``build`` | ``3.14.*`` | 240 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``conda-smithy`` | ``3.14.*`` | 231 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``dbgpt-sidecar`` | ``3.14.*`` | 404 | ``linux-64`` |
-| ``default`` | ``3.14.*`` | 234 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``bmad-suite-full`` | ``3.14.*`` | 95 | ``linux-64`` |
+| ``bmad-ui`` | ``3.14.*`` | 50 | ``linux-64`` |
+| ``build`` | ``3.14.*`` | 242 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``conda-smithy`` | ``3.14.*`` | 233 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``dbgpt-sidecar`` | ``3.14.*`` | 405 | ``linux-64`` |
+| ``default`` | ``3.14.*`` | 236 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``detectors`` | ``3.14.*`` | 86 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``gcloud`` | ``3.14.*`` | 146 | ``linux-64``, ``osx-arm64-min`` |
-| ``grayskull`` | ``3.14.*`` | 245 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``linux`` | ``3.14.*`` | 145 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``local-recipes`` | ``3.14.*`` | 1,171 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``gcloud`` | ``3.14.*`` | 147 | ``linux-64``, ``osx-arm64-min`` |
+| ``grayskull`` | ``3.14.*`` | 248 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``linux`` | ``3.14.*`` | 146 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``local-recipes`` | ``3.14.*`` | 1,155 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``mcp-host`` | ``3.14.*`` | 83 | ``linux-64`` |
-| ``osx`` | ``3.14.*`` | 240 | ``osx-arm64-min`` |
-| ``platform-ci-test`` | ``3.14.*`` | 356 | ``linux-64`` |
-| ``platform-dev`` | ``3.14.*`` | 533 | ``linux-64``, ``osx-arm64-min`` |
+| ``osx`` | ``3.14.*`` | 242 | ``osx-arm64-min`` |
+| ``platform-ci-test`` | ``3.14.*`` | 357 | ``linux-64`` |
+| ``platform-dev`` | ``3.14.*`` | 606 | ``linux-64``, ``osx-arm64-min`` |
 | ``platform-object-storage`` | ``3.14.*`` | 27 | ``linux-64`` |
-| ``pyforge-atlas`` | ``3.14.*`` | 465 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-ci`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-atlas`` | ``3.14.*`` | 466 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-ci`` | ``3.14.*`` | 122 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-container`` | ``3.14.*`` | 632 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-core`` | ``3.14.*`` | 42 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-doctor`` | ``3.14.*`` | 98 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-foundry-full`` | ``3.14.*`` | 669 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-guild`` | ``3.14.*`` | 234 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-foundry-full`` | ``3.14.*`` | 709 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-foundry-full-stack`` | ``3.14.*`` | 720 | ``linux-64`` |
+| ``pyforge-guild`` | ``3.14.*`` | 236 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-herald`` | ``3.14.*`` | 141 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-marshal`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-marshal`` | ``3.14.*`` | 125 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-mason`` | ``3.14.*`` | 139 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe`` | ``3.14.*`` | 117 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-scribe-pg`` | ``3.14.*`` | 126 | ``linux-64``, ``osx-arm64-min`` |
+| ``pyforge-scribe-pg`` | ``3.14.*`` | 125 | ``linux-64``, ``osx-arm64-min`` |
 | ``pyforge-steward`` | ``3.14.*`` | 94 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-testing-kit`` | ``3.14.*`` | 52 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-warden`` | ``3.14.*`` | 166 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``python-agent-platform`` | ``3.14.*`` | 507 | ``linux-64``, ``osx-arm64-min`` |
+| ``pyforge-warden`` | ``3.14.*`` | 162 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``python-agent-platform`` | ``3.14.*`` | 580 | ``linux-64``, ``osx-arm64-min`` |
 | ``site`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``vuln-db`` | ``3.14.*`` | 244 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``win`` | ``3.14.*`` | 297 | ``win-64`` |
+| ``vuln-db`` | ``3.14.*`` | 245 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``win`` | ``3.14.*`` | 299 | ``win-64`` |
 
 <!-- pixi-env-matrix:end -->
 ## Fleet conventions (one vocabulary)

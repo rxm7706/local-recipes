@@ -130,7 +130,7 @@ jobs:
     # are job-level in a matrix, so every leg gets the container; only scribe uses it.
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:pg17  # PostgreSQL 17, like every pin in the estate (steward Story 67.1)
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: scribe
