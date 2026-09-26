@@ -4462,7 +4462,7 @@ So that I never learn to install the 10 GB `local-recipes` environment for work 
 **Given** herald owns `docsite/**` (`spec-pyforge-herald`'s surface; it absorbed `spec-pyforge-pages` on 2026-09-17) and CAP-14's surface is the dossier
 **When** herald lands Story 26.1
 **Then** this row flips `done`
-**Status:** blocked
+**Status:** done
 
 ### Story 67.7: Index — scribe's instruction surface names the estate first (scribe 21.1)
 
