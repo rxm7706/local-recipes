@@ -1885,6 +1885,17 @@ So that behaviour flips in an air gap without a rollout.
 **And** two trees is a review-blocking finding
 **And** CLI uses the same bytes (host fetch or local-dev file)
 
+### Story 26.5: The flag provider follows langflow onto protobuf 7
+
+As a platform operator,
+I want the OpenFeature flagd provider on the protobuf-7 build,
+So that the platform env solves with langflow 1.12.3.
+
+**Type:** chore • **Effort:** S • **Deps:** S-26.3 • **FR/AD:** canopy:FR-33 • canopy:AD-16
+**Given** langflow >=1.12.3 on `[feature.python-agent-platform]`, whose closure (openlayer -> pyarrow -> libabseil 20260526) is protobuf-7-only **When** the env solves **Then** it selects `openfeature-provider-flagd` >=0.5.2 (the protobuf-7 build) and the 26.3 policy test asserts `>=0.5.2` instead of `>=0.5.0,<0.5.1`
+**And** the lock selecting the protobuf-6 0.5.0 build, or a spec admitting it, fails the policy test
+**And** `cachebox` stays `>=5.2.3,<6` and the four OpenFeature pins stay required (26.3 unchanged otherwise)
+
 ## Epic 27: Schema change is governed
 
 **HARD:** S-19.1 (canopy:FR-9b) before any story here that revokes app-role DDL.

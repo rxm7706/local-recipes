@@ -7,11 +7,11 @@ dependencies:
 - python >=3.14.7,3.14.*
 - python 3.14.*
 - pixi >=0.80.0
-- gh >=2.100.0
+- gh >=2.101.0
 - gitpython >=3.1.62
 - nodejs >=24.19.0,<27.0,!=25.*
 - bmad-method >=6.12.0
-- spec-kit >=1.0.5
+- spec-kit >=1.0.12
 - truststore >=0.10.4
 - conda >=26.5.0
 - conda-libmamba-solver >=24.9.0
@@ -23,5 +23,5 @@ dependencies:
 - networkx >=3.0
 - rattler-build-conda-compat >=1.2.0,<2.0.0a0
 - pip >=26.2.1
-- uv >=0.12.13
+- uv >=0.12.19
 
