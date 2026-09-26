@@ -3678,9 +3678,9 @@
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081",
    "docs/dreams/bmad-loop-baseline-drift.md": "15a1e7e4f9d97e3d8acc856de8490bcf36bcc914",
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
-   "docs/reference/library-llms-full.md": "b6b1967625b304ecac7ac7930fd5fee97269f90d",
-   "environment.yaml": "36ba2f5b26a8152b3cddf3bd013336052b611df1",
-   "pixi.toml": "822abbf320372b3888f3186d2cd78474d8956309",
+   "docs/reference/library-llms-full.md": "88206a00cf32457daf2639e0a138730613e2b574",
+   "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
+   "pixi.toml": "de5a9c92bf0f03cb3e07f9226963c0ac0cf9e226",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "77fa15c301ea17b4452638923a67c99811989f92",
@@ -4080,7 +4080,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "2e75342b2222a509fc515a8cfa254c9caeae8707"
+  "memlog": "bfc5932630cc8e3dc3b76f83929d284a50023562"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -5111,14 +5111,14 @@
   "files": {
    ".cursor/rules/scribe-recall.mdc": "1e4a5b170a908e09cfa0fab8bde2bcc33cc5f023",
    ".gemini/settings.json": "0e37d00cae3c091c91cd7a53792762eb300fa527",
-   ".github/copilot-instructions.md": "179e96c790f8a5ad6d9bea477bf2a787a12628c8",
-   "AGENTS.md": "29fad075c6c309786fe35b314a1a4590ba2ff10f",
-   "GEMINI.md": "8e3e7554295eb49b88070b9d9e9f3fa54bafd860",
+   ".github/copilot-instructions.md": "9b6735392a0561c1b34d4c8c025998ff179bb71f",
+   "AGENTS.md": "3697954cf617b8e59afea05d30237f780c0b4960",
+   "GEMINI.md": "c4766a51e9cadecf25618732601e4374c27bf1b3",
    "scripts/claude_instruction_mode_check.py": "aee2622cf3462c89aef671fb1363079f608051b4",
    "scripts/scribe_graph_freshness_check.py": "992380215b7243a111a4e968a6fd50ea7f8b5dae",
    "scripts/scribe_install_nightly_trigger.py": "a4a0daff11a85afb65b75a2294d3e311398e9e92",
    "scripts/scribe_nightly_trigger.py": "9f95036d8b5ee494aa49ff5d708bb725328840e6",
-   "scripts/scribe_pg.py": "5a4b3203e0c2532d9b3362a3adc991553ef0e3f3",
+   "scripts/scribe_pg.py": "1e111ab8974ddbacc1928de225e35cf7ec1873a7",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "369bce620626332ee9e297a5d87ce91060e4e1c0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "2a8070b1ec3515e4e992a008fb47edc40b549c9c",
    "src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py": "029708b7dbc9a38e4846a32d5e10c1157c64c6e9",
@@ -5149,7 +5149,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "e2657b8ce1e89fd7bc6e8f6ae7fbb0cdea0969ac",
    "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "ecffcdeb2552ce079072f519c24ab04876def757",
    "src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py": "4f2c2820ba307539a6771be358a3c4f3e847608f",
-   "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "7a28bf5c730ce1e108271dca81d2a4f9f5eeb8f5",
+   "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "43db15da03fb242ddf8666c2d149a4341aeea04d",
    "src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py": "0f58ab596067bd6cfc9bee500795adfd4b3165bd",
    "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": "89957a8499d8f571cd40233ec8db77ca930a330d",
    "src/shared/packages/pyforge-scribe/tests/unit/conftest.py": "996c086b83ae601744e5eebd170ad537f5bfc6c9",
@@ -5171,7 +5171,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "db3c2dd2081c0d17d38bc03471903b2967edc18b"
+  "memlog": "0739adab41c092b8a3b14421855852c4dbf4a494"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
@@ -5636,8 +5636,8 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/metadata.json": "6471017a03b26b60cb1c32bdc2237e37e78a6ee1",
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
-   "environment.yaml": "36ba2f5b26a8152b3cddf3bd013336052b611df1",
-   "pixi.toml": "822abbf320372b3888f3186d2cd78474d8956309",
+   "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
+   "pixi.toml": "de5a9c92bf0f03cb3e07f9226963c0ac0cf9e226",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -6620,7 +6620,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "fb9b27a23432125af83f73ac3a032f3668441b84"
+  "memlog": "311fc1b2bedc55e916bbf40bb9c8001a86783d87"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
