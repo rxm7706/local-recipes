@@ -1942,6 +1942,17 @@ So that governed production DDL does not capture ephemeral DBs.
 **Given** the test runner **When** it creates a test database **Then** it still runs Django `migrate`
 **And** no test-suite rewrite is required by this epic
 
+### Story 27.5: The JDBC driver ships under its own name
+
+As a platform operator,
+I want the PostgreSQL JDBC driver from `pgjdbc` and `liquibase-postgresql` from conda-forge,
+So that each package name means what conda-forge means by it.
+
+**Type:** chore • **Effort:** S • **Deps:** S-27.1 • **FR/AD:** canopy:FR-21 • canopy:AD-16
+**Given** `[feature.python-agent-platform]` **When** the env solves **Then** it selects `pgjdbc` >=42.7.13 (`postgresql.jar` in `share/liquibase/lib`) and conda-forge's `liquibase-postgresql` dialect extension (`>=5.0.4,<42`), and the 27.1 policy test asserts both
+**And** a spec or lock selecting SelfExplainML's `liquibase-postgresql` 42.7.13 (the retired driver build under the colliding name) fails the policy test
+**And** `liquibase` stays `>=5.0.4`; `pgjdbc` comes from SelfExplainML until conda-forge publishes it (staged-recipes #34956), then from conda-forge on the next lock refresh
+
 ## Epic 28: Scribe's graph outlives a file
 
 ### Story 28.1: PostgreSQL driver behind the existing port
