@@ -5424,7 +5424,7 @@
    "src/shared/packages/pyforge-steward/.gitignore": "be289b476d44528c782051711aa069c09adb1255",
    "src/shared/packages/pyforge-steward/README.md": "d702ea0702eb166569c183596c0975ee94c447b6",
    "src/shared/packages/pyforge-steward/catalog/.agents/plugins/marketplace.json": "8afa5a7548808b906cb48baa4ba5f04f675192d4",
-   "src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json": "93019a49a0898366b65ada30c724322a19939af2",
+   "src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json": "2ebff9d94176ecce60665d61f3bf4e78841f69a8",
    "src/shared/packages/pyforge-steward/catalog/catalog.yaml": "751145f3f59ec1d80778bfab1f9ae44a9cfb6d8a",
    "src/shared/packages/pyforge-steward/catalog/registry/estate.yaml": "efef29826628ab2364375ef21cf5be262a18ea5b",
    "src/shared/packages/pyforge-steward/corridor/corridor.yaml": "16661e1e8b980c2e7dff8fcff3403ad610203557",
@@ -5585,7 +5585,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "0234f9f1c32c32a2bc784ad028d3cb1cca523a30",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "b06cc85edeb5f0c9f924919c94d57b98849b0ccc"
   },
-  "memlog": "9369c2185248a469d42679e01e113783c03e20f2"
+  "memlog": "98a30e6303e29636e1b23359b0d592a207cfe95c"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

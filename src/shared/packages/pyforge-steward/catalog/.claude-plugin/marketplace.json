@@ -10,7 +10,7 @@
     {
       "name": "bmad-method-test-architecture-enterprise",
       "description": "BMad Method TEA agent for quality strategy, test automation, and release gates",
-      "version": "1.26.0",
+      "version": "1.27.2",
       "source": {
         "source": "github",
         "repo": "bmad-code-org/bmad-method-test-architecture-enterprise"
