@@ -9,51 +9,116 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/liquibase/liquibase/releases/download/v${{ version }}/liquibase-${{ version }}.tar.gz
-  sha256: bb08638d70dddd6af8cca6e033148576f8214b5996831b1f8864eb3528f4cfce
+  - url: https://github.com/liquibase/liquibase/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 9823dbe9258ac1ab6e3dba5c24a219cca0f164f580ea4a26aedc513861bf5fa4
+    patches:
+      - windows-find.patch
 
 build:
   number: 0
   noarch: generic
   script:
-    - if: unix
-      then:
-        - mkdir -p ${PREFIX}/share/liquibase ${PREFIX}/bin
-        - cp -a ${SRC_DIR}/. ${PREFIX}/share/liquibase/
-        - chmod +x ${PREFIX}/share/liquibase/liquibase
-        - install -m 0755 ${RECIPE_DIR}/liquibase.sh ${PREFIX}/bin/liquibase
-      else:
-        - mkdir %PREFIX%\share\liquibase
-        - mkdir %PREFIX%\Scripts
-        - xcopy /E /I /Y %SRC_DIR% %PREFIX%\share\liquibase
-        - copy %RECIPE_DIR%\liquibase.bat %PREFIX%\Scripts\liquibase.bat
+    interpreter: brush
+    file: build.sh
 
 requirements:
+  build:
+    - brush
+    - maven
+    - openjdk 17.*
+    - uutils-coreutils
   run:
     - openjdk >=17
 
 tests:
-  - script:
-      - if: unix
-        then:
-          - test -x ${PREFIX}/bin/liquibase
-          - test -f ${PREFIX}/share/liquibase/internal/lib/liquibase-core.jar
-          - liquibase --version
-        else:
-          - if not exist %PREFIX%\share\liquibase\internal\lib\liquibase-core.jar exit 1
+  - package_contents:
+      files:
+        exists:
+          - bin/liquibase
+          - Scripts/liquibase.bat
+          - share/liquibase/internal/lib/liquibase-core.jar
+          - share/liquibase/internal/lib/h2.jar
+          - share/liquibase/LICENSE.txt
+        not_exists:
+          - share/liquibase/internal/**/liquibase-commercial*.jar
+          - share/liquibase/internal/**/liquibase-checks.jar
+  - requirements:
+      run:
+        - openjdk 17.*
+        - ripgrep
+    files:
+      recipe:
+        - test-changelog.sql
+    script:
+      env:
+        LIQUIBASE_ANALYTICS_ENABLED: "false"
+      content:
+        - 'liquibase --version | rg --crlf --fixed-strings --line-regexp "Liquibase Version: ${{ version }}"'
+        - 'liquibase --help | rg --fixed-strings "Usage: liquibase"'
+        - >-
+          liquibase --url="jdbc:h2:./testdb" --username=sa --password= --changelog-file=test-changelog.sql validate 2>&1
+          | rg --crlf --fixed-strings --line-regexp "No validation errors found."
+        - >-
+          liquibase --url="jdbc:h2:./testdb" --username=sa --password= --changelog-file=test-changelog.sql update 2>&1
+          | rg --fixed-strings "Liquibase: Update has been successful."
+        - >-
+          liquibase --url="jdbc:h2:./testdb" --username=sa --password= --changelog-file=test-changelog.sql update 2>&1
+          | rg --crlf --fixed-strings --line-regexp "Database is up to date, no changesets to execute"
 
 about:
   homepage: https://www.liquibase.org/
-  license: Apache-2.0
-  license_file: LICENSE.txt
-  summary: Database schema change management CLI (Community)
+  summary: Database schema change management and migration tool
   description: |
-    Liquibase Community 5.x CLI distribution. PostgreSQL JDBC is not bundled
-    (Community 5.0 stopped shipping JDBC drivers). Install liquibase-postgresql
-    to vendor org.postgresql:postgresql into LIQUIBASE_HOME/lib.
-  repository: https://github.com/liquibase/liquibase
+    Liquibase tracks, versions, and deploys database changes using SQL, XML,
+    YAML, or JSON changelogs. This package provides the community CLI and
+    requires Java 17 or newer. Liquibase 5 is licensed under the Functional
+    Source License, which restricts competing uses.
+  license: FSL-1.1-ALv2
+  license_file:
+    - LICENSE.txt
+    - liquibase-dist/src/main/archive/licenses/oss/
   documentation: https://docs.liquibase.com/
+  repository: https://github.com/liquibase/liquibase
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - dhirschfeld
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: liquibase
+  cfe-upstream-registry: github
+  cfe-upstream-name: liquibase/liquibase
+  cfe-purls:
+    - pkg:conda/liquibase@${{ version }}?channel=conda-forge
+    - pkg:github/liquibase/liquibase@v${{ version }}
+  cfe-upstream-repo: https://github.com/liquibase/liquibase
+  cfe-upstream-homepage: https://www.liquibase.org/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/liquibase-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-09-26T17:20:00Z"
+  cfe-generated-by-version: 8.90.6
+  cfe-generated-at-datetime: "2026-09-26T17:20:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-09-26T17:34:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-09-26: this local recipe now MIRRORS conda-forge/liquibase-feedstock
+#    # (recipe body + every recipe/ file + conda-forge.yml, verbatim). It
+#    # replaces the earlier SelfExplainML shape, which repackaged the release
+#    # tarball and mislabelled the license Apache-2.0 -- Liquibase 5 is
+#    # FSL-1.1-ALv2 (Functional Source License, restricts competing uses;
+#    # converts to Apache-2.0 after two years), as the feedstock states. The
+#    # platform consumes liquibase from conda-forge; the SelfExplainML 5.0.4
+#    # build is superseded (same version, so strict channel priority already
+#    # selects conda-forge's).
+####
