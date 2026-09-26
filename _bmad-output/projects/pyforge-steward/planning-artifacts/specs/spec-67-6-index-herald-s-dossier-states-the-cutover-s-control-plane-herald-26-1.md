@@ -2,7 +2,7 @@
 title: '67.6: Index — herald''s dossier states the cutover''s control plane (herald 26.1)'
 type: 'docs'
 created: '2026-09-25'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -63,3 +63,12 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Manual checks:**
 - herald ledger shows `26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact: done`.
+
+## Outcome
+
+Flipped `done` 2026-09-26, on operator confirmation. AGENTS.md requires that confirmation before a `blocked` key moves.
+- Herald Story 26.1 landed through PR #1619, merge `df7a651aa9` ("Merge pyforge-herald/26-1 into main").
+  - `git merge-base --is-ancestor` confirms its commits are on `main`.
+  - Herald's tracked ledger on `main` reads `26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact: done` and `epic-26: done`.
+- Steward changed only its own index row: this spec, the Story 67.6 status line in `epics.md`, and the ledger row through `sprint-ledger-sync`. No herald artifact was edited.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: 1695 passed, 2 skipped.
