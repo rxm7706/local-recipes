@@ -292,6 +292,14 @@ fido2 = ">=2.2.1"                 #
 qrcode = ">=8.2"                  #
 uvicorn-worker = ">=0.4.0"        #
 
+[feature.python-agent-platform.activation.env]
+# Story 27.6: Liquibase 5 reports usage analytics (commands run, timestamps,
+# version, database type) and, when unset, fetches its reporting config from
+# config.liquibase.com first. Off for every invocation: the platform image
+# sources this env's `pixi shell-hook`, and platform-dev composes the feature.
+# Enforced by src/platform/tests/policy/test_liquibase_channel_policy.py.
+LIQUIBASE_ANALYTICS_ENABLED = "false"
+
 [feature.platform-dev]
 # --- platform-dev (AD-16, spec-python-agent-platform, Story 11.1) ---
 # The per-user local-process dev baseline Epic 11's schema-isolation work needs:

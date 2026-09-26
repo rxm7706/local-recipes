@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 419
+# stories: 420
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -98,6 +98,7 @@ development_status:
   27-3-stale-extraction-fails-ci: done
   27-4-test-databases-still-migrate: done
   27-5-the-jdbc-driver-ships-under-its-own-name: done
+  27-6-the-liquibase-job-runs-on-an-empty-database-and-reports-nothing-home: done
   28-1-postgresql-driver-behind-the-existing-port: done
   28-2-semantic-recall: done
   29-1-skf-domain-skills-from-station-packages: done

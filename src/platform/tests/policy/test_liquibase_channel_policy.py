@@ -8,6 +8,9 @@ Story 27.5: the PostgreSQL JDBC driver is ``pgjdbc``; ``liquibase-postgresql``
 is Liquibase's dialect extension from conda-forge. SelfExplainML's
 ``liquibase-postgresql`` 42.7.13 was the driver under that colliding name and
 must never be locked again.
+
+Story 27.6: the feature's activation env turns Liquibase's usage analytics off
+(``LIQUIBASE_ANALYTICS_ENABLED=false``); the image sources that env's shell-hook.
 """
 
 from __future__ import annotations
@@ -35,6 +38,23 @@ def _platform_deps(manifest: dict[str, Any] | None = None) -> dict[str, Any]:
     deps = feature.get("dependencies", {})
     assert isinstance(deps, dict), "python-agent-platform.dependencies must be a table"
     return deps
+
+
+def _platform_activation_env(manifest: dict[str, Any] | None = None) -> dict[str, Any]:
+    pixi = manifest if manifest is not None else readers.pixi_manifest()
+    feature = pixi.get("feature", {}).get("python-agent-platform", {})
+    env = feature.get("activation", {}).get("env", {})
+    assert isinstance(env, dict), "python-agent-platform.activation.env must be a table"
+    return env
+
+
+def _assert_analytics_disabled(env: dict[str, Any]) -> None:
+    value = env.get("LIQUIBASE_ANALYTICS_ENABLED")
+    assert value == "false", (
+        "pixi.toml [feature.python-agent-platform.activation.env] must set "
+        'LIQUIBASE_ANALYTICS_ENABLED = "false" (Story 27.6); otherwise Liquibase '
+        f"fetches config.liquibase.com and reports usage (got {value!r})"
+    )
 
 
 def _assert_liquibase_pins(deps: dict[str, Any]) -> None:
@@ -184,3 +204,19 @@ def test_lock_selecting_the_retired_driver_build_reds() -> None:
     ]
     with pytest.raises(AssertionError, match="42.7.13"):
         _assert_lock_extension_from_conda_forge(urls)
+
+
+def test_liquibase_analytics_is_disabled_in_the_platform_env() -> None:
+    """Happy path: the platform env's activation turns Liquibase analytics off."""
+    _assert_analytics_disabled(_platform_activation_env())
+
+
+def test_removing_the_analytics_switch_reds() -> None:
+    """Drift: dropping or flipping LIQUIBASE_ANALYTICS_ENABLED must fail."""
+    drifted = dict(_platform_activation_env())
+    del drifted["LIQUIBASE_ANALYTICS_ENABLED"]
+    with pytest.raises(AssertionError, match="LIQUIBASE_ANALYTICS_ENABLED"):
+        _assert_analytics_disabled(drifted)
+    drifted["LIQUIBASE_ANALYTICS_ENABLED"] = "true"
+    with pytest.raises(AssertionError, match="LIQUIBASE_ANALYTICS_ENABLED"):
+        _assert_analytics_disabled(drifted)

@@ -130,8 +130,9 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # `/entrypoint.sh` alongside its code tree -- `pixi shell-hook` renders
 # activation-time environment variables into that file, which is exactly the
 # shape a build-host credential would take if one ever leaked into the
-# builder's environment. (Today it emits only `PATH`/`CONDA_*`/`PIXI_*`;
-# the gate is what keeps that true rather than assumed.)
+# builder's environment. (Today it emits only `PATH`/`CONDA_*`/`PIXI_*` and
+# Story 27.6's `LIQUIBASE_ANALYTICS_ENABLED=false`; the gate is what keeps
+# that true rather than assumed.)
 # NOT scanned, deliberately: the rest of the `/app` monorepo checkout (never
 # copied into the runtime stage -- scanning it would just re-run Story 7.3's
 # already-proven-clean gate over content this image never ships) and the

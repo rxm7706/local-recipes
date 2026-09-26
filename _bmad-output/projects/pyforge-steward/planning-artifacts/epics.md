@@ -1953,6 +1953,17 @@ So that each package name means what conda-forge means by it.
 **And** a spec or lock selecting SelfExplainML's `liquibase-postgresql` 42.7.13 (the retired driver build under the colliding name) fails the policy test
 **And** `liquibase` stays `>=5.0.4`; `pgjdbc` comes from SelfExplainML until conda-forge publishes it (staged-recipes #34956), then from conda-forge on the next lock refresh
 
+### Story 27.6: The Liquibase Job runs on an empty database and reports nothing home
+
+As a platform operator,
+I want the pre-upgrade Liquibase Job to succeed on a fresh install without contacting Liquibase,
+So that a new cluster migrates in an air gap and no usage data leaves any environment.
+
+**Type:** fix • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** canopy:FR-21a, canopy:FR-24 • canopy:AD-9
+**Given** an empty PostgreSQL database **When** the Job runs `liquibase update` **Then** every changeset applies: no include references a table that a later include creates (the `sites` includes run before `third-party-0001`), and a policy test fails on any such foreign key
+**And** `[feature.python-agent-platform.activation.env]` sets `LIQUIBASE_ANALYTICS_ENABLED = "false"`, so the image (which sources that env's shell-hook) and `platform-dev` never fetch `config.liquibase.com` or report usage; a policy test fails if the switch is dropped or flipped
+**And** databases that already migrated are unaffected (applied changesets are skipped by id)
+
 ## Epic 28: Scribe's graph outlives a file
 
 ### Story 28.1: PostgreSQL driver behind the existing port

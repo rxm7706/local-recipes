@@ -39,18 +39,10 @@ databaseChangeLog:
   - include:
       file: changes/python-agent-platform-17-django-celery-beat.sql
       relativeToChangelogFile: true
-  - include:
-      file: changes/python-agent-platform-18-third-party-0001.sql
-      relativeToChangelogFile: true
-  - include:
-      file: changes/python-agent-platform-19-wagtail-7-4-catchup.sql
-      relativeToChangelogFile: true
-  - include:
-      file: changes/python-agent-platform-8-front-door-0001-homepage.sql
-      relativeToChangelogFile: true
-  - include:
-      file: changes/python-agent-platform-9-front-door-0002-console-parity.sql
-      relativeToChangelogFile: true
+  # Story 27.6: django.contrib.sites before :18 -- allauth's
+  # socialaccount_socialapp_sites has a foreign key to django_site, so on an
+  # empty database :18 fails unless :10-:13 have already run. Applied
+  # changesets are skipped by id, so existing databases are unaffected.
   - include:
       file: changes/python-agent-platform-10-sites-0001-initial.sql
       relativeToChangelogFile: true
@@ -62,6 +54,18 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changes/python-agent-platform-13-sites-0004-ordering.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-18-third-party-0001.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-19-wagtail-7-4-catchup.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-8-front-door-0001-homepage.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-9-front-door-0002-console-parity.sql
       relativeToChangelogFile: true
   - include:
       file: changes/python-agent-platform-14-warden-fabric-0001-initial.sql
