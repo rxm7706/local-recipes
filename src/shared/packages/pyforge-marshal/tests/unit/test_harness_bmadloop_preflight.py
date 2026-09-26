@@ -362,7 +362,11 @@ def test_story_feed_error_never_raises_when_bmad_config_top_level_is_a_list(harn
 
     error = harness.story_feed_error(tmp_path)
     assert error is not None
-    assert "shape" in error or "bmad-config" in error
+    # bmad-loop <0.12 raised AttributeError here and marshal's guard reported
+    # "invalid bmad-config shape"; 0.12.0 validates the shape itself and raises
+    # BmadConfigError("... must contain a top-level mapping"), which the harness
+    # passes through verbatim. The contract under test is "never raises, reports".
+    assert "shape" in error or "bmad-config" in error or "top-level mapping" in error
 
 
 def test_story_feed_error_never_raises_when_sprint_status_is_not_utf8(harness, tmp_path):
@@ -430,7 +434,7 @@ def test_harness_version_in_range_true_for_in_range_but_not_exact():
 
 
 def test_harness_version_in_range_false_for_same_major_out_of_minor_range():
-    assert harness_version_in_range("0.12.2") is False
+    assert harness_version_in_range("0.13.2") is False
 
 
 def test_harness_version_in_range_false_for_a_different_major():

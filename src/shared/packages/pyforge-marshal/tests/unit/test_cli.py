@@ -170,13 +170,13 @@ def test_version_harness_in_range_prints_both_versions_no_warning(monkeypatch, c
 
 
 def test_version_harness_same_major_out_of_range_shows_warning(monkeypatch, capsys):
-    _patch_harness_version(monkeypatch, "0.12.2")
+    _patch_harness_version(monkeypatch, "0.13.2")
     exit_code = main(["--version"])
     assert exit_code == 0
     out = capsys.readouterr().out
-    assert "bmad-loop 0.12.2" in out
+    assert "bmad-loop 0.13.2" in out
     assert "WARNING" in out
-    assert ">=0.11.0,<0.12" in out
+    assert ">=0.11.0,<0.13" in out
 
 
 def test_version_harness_major_mismatch_shows_warning(monkeypatch, capsys):

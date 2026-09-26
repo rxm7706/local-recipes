@@ -6752,4 +6752,5 @@ status: open
   location: src/shared/packages/pyforge-marshal/pyproject.toml
   severity: medium
   fix: run marshal's suite (`pixi run -e pyforge-marshal pyforge-marshal-test`) with bmad-loop 0.12.0 installed, confirm the three lazily-imported module paths still resolve, then widen the cap to `<0.13` in the pyproject and raise the `pixi.toml` floors to `>=0.12.0` in the same PR (re-lock; `environment.yaml` re-export; `llms-full-check`). Loop homes install bmad-loop from these envs, so until then they stay on 0.11.1.
-  status: open
+  status: closed
+  resolved: 2026-09-26 (PR #1607, round three) — bmad-loop 0.12.0 verified: the four lazily-imported modules ship, the full marshal suite passes (8652 passed) in a re-solved env carrying 0.12.0; cap widened to `<0.13` in pyproject.toml, the package pixi.toml and the FR-52 range constants (+ 4 fixture tests moved to 0.13.2; one accepted 0.12.0's own `must contain a top-level mapping` config-shape wording). pixi.toml floors moved to `>=0.12.0`, channel-pinned to SelfExplainML because conda-forge/bmad-loop-feedstock (2026-09-20) gates `__unix` and strict priority shadowed the estate build on win-64.

@@ -695,7 +695,7 @@ in `CLAUDE.md` and `_bmad-output/`.
   <!-- governance-currency:ignore-start (bmad-dev-auto is the pre-6.11 name of bmad-build-auto, cited historically for what 6.10 added) -->
   gains `bmad-dev-auto`.
   <!-- governance-currency:ignore-end -->
-- **bmad-loop** (>=0.11.1) — deterministic "ralph-loop" orchestrator with TUI; spawns
+- **bmad-loop** (>=0.12.0) — deterministic "ralph-loop" orchestrator with TUI; spawns
   coding-agent sessions in tmux (hence tmux below; Linux/macOS only, Windows via WSL).
 - **bmad-builder** (>=2.2.2) — build custom BMAD modules.
 - **bmad-module-template** (>=0.1.0) — scaffold for new BMAD modules.
@@ -703,7 +703,7 @@ in `CLAUDE.md` and `_bmad-output/`.
   ideation workflows).
 - **bmad-method-test-architecture-enterprise** (>=1.27.2) — TEA module: enterprise
   test-architecture workflows.
-- **bmad-eval-quality** (>=1.4.1) — `eval-quality` CLI: compile / seal / preflight /
+- **bmad-eval-quality** (>=4.3.0) — `eval-quality` CLI: compile / seal / preflight /
   score Behavioral Evaluation Contracts (twin-run grading: clean vs planted-defect). Commit-pinned
   0.2.0 line from `main` — npm/tag 0.1.0 lack `score`. Bin is `eval-quality`, not `bmad-eval-quality`.
   Pinned in the linux-64 / osx-arm64 target tables only: SelfExplainML has just the `__unix`

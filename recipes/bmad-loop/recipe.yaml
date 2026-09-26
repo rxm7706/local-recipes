@@ -80,8 +80,8 @@ extra:
   cfe-source-kind: github-tag
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bmad-loop-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-last-checked: "2026-09-26T00:18:05Z"
@@ -94,6 +94,14 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-09-26: conda-forge/bmad-loop-feedstock EXISTS (created 2026-09-20, not
+#    # by this repo) and ships 0.11.1 + 0.12.0 — the pending-submission status
+#    # above had gone stale (G78: cfe fields are hints; verify live). The feedstock
+#    # build is NOT this recipe: it gates `__unix` and adds tmux >=3.2, rich >=14.2,
+#    # httpx >=0.28 as hard run deps. This estate build stays ungated (psmux/tmux
+#    # are optional backends) so the workspace can solve win-64; pixi.toml pins
+#    # bmad-loop to the SelfExplainML channel for that reason — under strict
+#    # channel priority the conda-forge name would otherwise shadow this build.
 #    # Not published on PyPI (upstream distributes via GitHub releases only),
 #    # so the source is the GitHub tag archive, not a pypi.org sdist URL.
 # context:
