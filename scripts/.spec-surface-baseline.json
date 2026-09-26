@@ -1578,7 +1578,7 @@
    "docsite/assets/_dossier.css": "04423f3ad5f8b80b61939908a70806b8e0ede466",
    "docsite/assets/_site-chrome.css": "202b6664975429843f739e3e7d15e0ee72348827",
    "docsite/build.py": "9840a8c6169886a27996365fd4a769e5cdb0bd0d",
-   "docsite/content/dossier.yml": "793a45ab7808671e2f467abeafeeb854bf5f72a1",
+   "docsite/content/dossier.yml": "91277f01c701c09b34665003379ec8f4862fb41a",
    "docsite/content/site.yml": "23aa44b3407f12d4b03e5adbf8721ae3c4cb27ee",
    "docsite/templates/blocks.html.j2": "ff6e813e0c648df53e0372d39afe2cc85c4cf099",
    "docsite/templates/dossier_body.html.j2": "72cc4bf26890af13c93f1b240b61f469a149a73d",
@@ -2533,7 +2533,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/locking.py": "93d04bc0b4c317dca4864be2465c4028030ddea8",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/notices.py": "b94c25b55ef45547e2b8576b53fce992bf304999",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py": "71316e8843f3ecc6d90eff43bfaac4a822682127",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/progress.py": "87971c8ff9e9517844dbb23a4e1e1b25b2e645ab",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/progress.py": "c274826042dd0373a7a0da22c8dc7273f3290a95",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/registry.py": "9cf046b1cc84e1b6d2636e931f1b42b0c7e918c2",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/scheduler.py": "35afd5a5120dce7cada12528035d4ece24b71592",
@@ -2577,6 +2577,7 @@
    "src/shared/packages/pyforge-herald/tests/unit/test_deck_pipeline.py": "f1b9505444c6cfcadd0891de1330e88cf039b4ff",
    "src/shared/packages/pyforge-herald/tests/unit/test_deck_qa.py": "41a8188f1f76c6796e59bb7f0eed48853b4bfe3e",
    "src/shared/packages/pyforge-herald/tests/unit/test_deck_status.py": "1542ec7db87d4caf8d70687b7db61d9d605746f6",
+   "src/shared/packages/pyforge-herald/tests/unit/test_dossier_structure.py": "fc63bba1bf609167ea020691a4897a873603f1b0",
    "src/shared/packages/pyforge-herald/tests/unit/test_errors.py": "25bbfc9a6c8bba50c777e4e7b107ab331edc7114",
    "src/shared/packages/pyforge-herald/tests/unit/test_evidence.py": "8d7ce646c74888559b92918e3232c60f774b3fa7",
    "src/shared/packages/pyforge-herald/tests/unit/test_export_plugins.py": "be05b2208cd6f56e0361c03c3b2aa32604ab9efd",
@@ -2634,7 +2635,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "dd6323691d119524567a5cd4028e8eb62d0c7825"
+  "memlog": "264034550c1b7f06623a80b45f58fc4b42967bf9"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {

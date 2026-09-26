@@ -5,11 +5,12 @@
 # A stat carrying `check:` is machine-verified against the source tree.
 
 title: The PyForge Dossier
-eyebrow: INTERNAL DOSSIER — FULL FLEET — REVERIFIED 2026-09-13
+eyebrow: INTERNAL CONTROL PLANE — A→B CUTOVER — 2026-09-26
 heading: PyForge
-summary: 'A full-source investigation of every station in this repository''s own factory: the shared foundation
-  they all build on, and what each of the eight — Atlas, Doctor, Herald, Marshal, Mason, Scribe, Steward,
-  Warden — actually does, verified directly from code.'
+summary: 'Where the A→B cutover stands, and the evidence for it: **A** (`local-recipes`) is the control plane
+  and oracle until `pyforge.cutover_root` flips; **B** (`python-foundry`) is the lasting root, rebuilt from
+  Frame + Spec. The station sections are A-side evidence — a full-source investigation of the shared
+  foundation and each of the eight stations, verified directly from code on 2026-09-13.'
 stats:
 - value: '8'
   label: Stations
@@ -22,6 +23,10 @@ stats:
 - value: '10'
   label: Claims this pass found stale
 toc:
+- id: estate
+  label: A→B cutover
+  accent: --ink
+  group_start: false
 - id: foundation
   label: The shared spine
   accent: --amber
@@ -67,6 +72,122 @@ toc:
   accent: --rail
   group_start: false
 sections:
+- id: estate
+  num: A→B
+  title: The A→B cutover — control plane
+  kind: section
+  blocks:
+  - type: lede
+    md: '**A** (`local-recipes`, this repository) is the control plane and the oracle, and the root of
+      record until `pyforge.cutover_root` flips; it is never archived. **B**
+      ([`python-foundry`](https://github.com/rxm7706/python-foundry)) is the lasting root: its engines are
+      rebuilt from Frame + Spec, never moved over from A. The station sections below are A-side evidence;
+      § 10 lists only what the case list, the capability ledger and CI prove.'
+  - type: h3
+    num: A→B.1
+    text: Roles
+  - type: table
+    headers:
+    - Axis
+    - A — local-recipes
+    - B — python-foundry
+    rows:
+    - cells:
+      - Role
+      - Control plane and oracle; root of record until the flip; never archived
+      - Lasting root, opened 2026-09-13 (Story 44.3); engines rebuilt from Frame + Spec
+      mono:
+      - false
+      - false
+      - false
+    - cells:
+      - Packages
+      - '`src/shared/packages/pyforge-*` — the oracle'
+      - '`src/packages/` — rebuilt, never folded from A'
+      mono:
+      - false
+      - false
+      - false
+    - cells:
+      - '`pyforge.cutover_root`'
+      - '`local-recipes` — the flag''s default today'
+      - '`foundry` — only after the case list passes and an operator flips it'
+      mono:
+      - false
+      - false
+      - false
+  - type: h3
+    num: A→B.2
+    text: Modes — never `move`
+  - type: callout
+    tone: amber
+    label: Every capability carries exactly one mode (`docs/foundry/capability-ledger.yaml`)
+    body:
+    - '`rebuild` — B re-derives it from Frame + Spec; A stays the oracle until the row claims `verified-in-foundry`.'
+    - '`retire` — it never appears on B.'
+    - '`A-only` — it stays on A, with an expiry (a story or a date).'
+    - '`B-only` — named on a Spec before it is done.'
+    - There is no `move` mode. B never mirrors A; nothing is copied across, and a long-lived copy of A on
+      B is out of contract.
+  - type: h3
+    num: A→B.3
+    text: The four campaign verbs
+  - type: table
+    headers:
+    - Verb
+    - Done means
+    - State, 2026-09-26
+    rows:
+    - cells:
+      - Launch the Foundry
+      - the regenerated kernel runs on B — not "A's tree arrived"
+      - '**Not done.** B is open (44.3) and its kernel passes the core, steward and marshal slices of the case
+        list (Epic 54); the estate move (44.4–44.6) is backlog and the flag has not flipped.'
+      mono:
+      - false
+      - false
+      - false
+    - cells:
+      - Adopt Frames
+      - the company and eight station Frames pass preflight
+      - '**Done.** Story 53.2; upstream''s reference validator passes all nine Frames (Epic 64).'
+      mono:
+      - false
+      - false
+      - false
+    - cells:
+      - Build the Intelligence Hub
+      - its objects are invented on A first
+      - '**Done on A** (Epic 53); B adopts them as `rebuild` rows.'
+      mono:
+      - false
+      - false
+      - false
+    - cells:
+      - Wire the BMAD-suite
+      - it is re-provisioned from the adoption register
+      - '**Not done.** Epic 60: 60.1 is done, 60.2–60.4 are backlog.'
+      mono:
+      - false
+      - false
+      - false
+  - type: h3
+    num: A→B.4
+    text: The laptop SBOM — A-side
+  - type: prose
+    body:
+    - '`pyforge-foundry-full` is the laptop bill of materials **on A** (Story 67.1): the eight stations plus
+      the recipe tooling, on linux-64, osx-arm64 and win-64, with `pyforge-foundry-full-stack` layering the
+      platform''s backing services on linux-64. PostgreSQL and libpq are held at 17 in every environment. It
+      is not evidence that B has the same closure.'
+  - type: callout
+    tone: amber
+    label: Operator watch
+    body:
+    - Epic 44 is in progress. Its Launch stories 44.3, 44.7, 44.12 and 44.13 are done; 44.4–44.6 are backlog,
+      and eight rows stay `blocked` until an operator flips each one.
+    - Shipped on A is not in effect on B. A capability is done on B only when its ledger row claims
+      `verified-in-foundry`, and no row does yet.
 - id: foundation
   num: '00'
   title: The shared spine
@@ -77,7 +198,8 @@ sections:
       pure-stdlib leaf. It doesn''t do any station''s job — it owns the mechanisms every station kept
       reinventing separately, until seven of them were consolidated into one place each. The leaf rule
       still holds exactly: `dependencies = []`, with an AST meta-test scanning every module for a non-stdlib
-      import and proving itself against synthetic violations.'
+      import and proving itself against synthetic violations. This is A''s kernel and the oracle: B rebuilds
+      its own from Frame + Spec, and the case list checks the two against each other (§ A→B).'
   - type: h3
     num: '00.1'
     text: One CLI, discovered at runtime
@@ -892,7 +1014,8 @@ sections:
   blocks:
   - type: lede
     md: Investigating all eight stations in one pass surfaces things no single-station read would — patterns
-      that only show up as repetition, or as a system quietly checking itself.
+      that only show up as repetition, or as a system quietly checking itself. These patterns are A-side
+      evidence for the rebuild on B; where they conflict with a capability's ledger mode, the mode decides.
   - type: h3
     num: '09.1'
     text: Who judges whom
@@ -1224,12 +1347,77 @@ sections:
   kind: section
   blocks:
   - type: lede
-    md: Every claim above traces to a file, docstring, or dataclass read directly from source across eight
-      independent, parallel investigations, re-run in full on 2026-09-13. Each station section's own caveats
-      are noted inline; the pattern worth naming here is what recurs across all eight.
+    md: Only what the case list, the capability ledger and CI prove is listed here; each row names its
+      evidence (`source`). The station sections are forensic reads of A's source, re-run in full on
+      2026-09-13; the caveat below names what those reads did not establish.
+  - type: table
+    headers:
+    - Claim
+    - Evidence
+    rows:
+    - cells:
+      - '`pyforge.cutover_root` defaults to `local-recipes`: the cutover has not flipped.'
+      - case `k-cutover-flag`
+      mono:
+      - false
+      - false
+      source: k-cutover-flag
+    - cells:
+      - B's regenerated `pyforge-core` passes the core slice of the case list, from the cutover-flag
+        default to CLI parity (Story 54.2).
+      - case `k-core-cutover-default`
+      mono:
+      - false
+      - false
+      source: k-core-cutover-default
+    - cells:
+      - B's regenerated steward CLI passes the steward slice (Story 54.3).
+      - case `k-steward-version`
+      mono:
+      - false
+      - false
+      source: k-steward-version
+    - cells:
+      - B's regenerated marshal CLI passes the marshal slice (Story 54.4).
+      - case `k-marshal-version`
+      mono:
+      - false
+      - false
+      source: k-marshal-version
+    - cells:
+      - Every capability carries exactly one mode — `rebuild`, `retire`, `A-only` or `B-only` — and none
+        is `move`.
+      - ledger `fcl:CAP-1`
+      mono:
+      - false
+      - false
+      source: fcl:CAP-1
+    - cells:
+      - No capability claims `verified-in-foundry` yet, so nothing is in effect on B.
+      - ledger `fcl:CAP-1`
+      mono:
+      - false
+      - false
+      source: fcl:CAP-1
+    - cells:
+      - The laptop SBOM (`pyforge-foundry-full`) solves on linux-64, osx-arm64 and win-64 — **A-side**; it
+        says nothing about B's closure.
+      - ledger `fnd:CAP-12`
+      mono:
+      - false
+      - false
+      source: fnd:CAP-12
+    - cells:
+      - This dossier's figures are checked against the source tree by `docsite/tools/verify_claims.py` on
+        every push to `main`; the latest run passed. It is advisory — it annotates, never blocks a deploy.
+      - '[CI run 36277374647](https://github.com/rxm7706/local-recipes/actions/runs/36277374647)'
+      mono:
+      - false
+      - false
+      source: https://github.com/rxm7706/local-recipes/actions/runs/36277374647
   - type: callout
     tone: amber
-    label: Consistent gaps across every investigation
+    label: What the station reads did not establish
     body:
     - No investigation fully read every module in its station — each prioritized the CLI surface, the
       core domain model, and cross-station coupling, and named the modules it left unread rather than
@@ -1238,18 +1426,9 @@ sections:
       safely). And several cross-station claims — Atlas→Mason's trending handoff, the exact shared meaning
       of "Lane" boundaries, whether Atlas's dashboard reads the same BMAD status source Marshal and Steward
       do — were named from one side only and not independently confirmed from the other.
-  - type: callout
-    tone: green
-    label: What is now checked mechanically
-    body:
-    - Line counts, file counts, test ratios and Python floors in this dossier are no longer hand-maintained
-      prose. `site/tools/verify_claims.py` measures the source tree, compares it against the stat rows
-      in this document's own content model, and reports anything that has drifted past a 5% tolerance.
-      It runs on every push. It is advisory — it annotates and never blocks a deploy — because deciding
-      what a number should *say* is editorial, but noticing that it is wrong no longer depends on anyone
-      remembering to look.
 footer:
-  note: Compiled from direct, parallel source investigation of all 8 `src/shared/packages/pyforge-*` stations
-    plus `pyforge-core` — local-recipes repository. Every figure re-verified against the working tree
-    on the date shown.
+  note: Station sections compiled from direct, parallel source investigation of all 8
+    `src/shared/packages/pyforge-*` stations plus `pyforge-core` — local-recipes repository — with every
+    figure re-verified against the working tree on the date shown. The A→B control plane and § 10 state the
+    cutover as of 2026-09-26.
   date: '2026-09-13'
