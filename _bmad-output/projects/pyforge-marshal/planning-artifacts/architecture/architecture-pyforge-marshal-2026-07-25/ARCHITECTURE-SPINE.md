@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-24"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-211 / CAP-265 (Epic 54). No AD amended. Prior 2026-09-20
+updated: "2026-09-26"   # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
 # 2026-09-18  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-196..FR-200 / CAP-244..248 (Epic 50). AD-24 amended in place: default merge-subject form gains {slug}. Four FRs land on AD-5/26/28, the harness seam, AD-16 and AD-13 -- no AD added or removed. See § Currency reconciliation — 2026-09-18.
 # 2026-09-14  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine). The PRD gained C-11/C-12 (the declared advisory-in-v1 trust model; no unattended mid-run freeze writer) from the Spec's 2026-09-09 operator answering pass. As-built check appended as § Currency reconciliation — 2026-09-14: both land ON the existing AD-5/AD-26/AD-28/AD-30 journal spine; no AD added, changed or removed.
@@ -532,7 +532,7 @@ Seed — verified against this repository's own environment and package metadata
 | --- | --- | --- |
 | Python | `>=3.12` | matches the sibling `pyforge-warden` floor. Note the other sibling `pyforge-atlas` requires `>=3.14`, and the `local-recipes` / `pyforge-*` pixi envs run `python 3.14.*` |
 | hatchling | `>=1.30` | build backend, matching the harness's own build-system floor. The sibling packages declare `hatchling` unversioned; the repo's pixi envs use `>=1.31.0` (current release) |
-| bmad-loop | `>=0.11.0,<0.12` | **run dependency, never vendored** (AD-2, AD-3). Verified: MIT, `noarch: python`, entry point `bmad-loop`, packaged in this repo at `recipes/bmad-loop/`. *(Row re-verified 2026-08-26 — the seed read `>=0.9.0,<0.10` against 0.9.0 (2026-07-21) and predicted the one-minor window would need bumping; it did, twice. The shipped `pyproject.toml` pins `>=0.11.0,<0.12` and `marshal --version` resolves 0.11.1. Epic 25 / `spec-bmad-611-era-alignment` carried the 0.10/0.11 era into policy render, status parsing, and installed-package vocabulary pin tests — see AD-78.)* |
+| bmad-loop | `>=0.11.0,<0.13` | **run dependency, never vendored** (AD-2, AD-3). *(Range widened 2026-09-26 — see § Currency reconciliation — 2026-09-26.)* Verified: MIT, `noarch: python`, entry point `bmad-loop`, packaged in this repo at `recipes/bmad-loop/`. *(Row re-verified 2026-08-26 — the seed read `>=0.9.0,<0.10` against 0.9.0 (2026-07-21) and predicted the one-minor window would need bumping; it did, twice. The shipped `pyproject.toml` pins `>=0.11.0,<0.12` and `marshal --version` resolves 0.11.1. Epic 25 / `spec-bmad-611-era-alignment` carried the 0.10/0.11 era into policy render, status parsing, and installed-package vocabulary pin tests — see AD-78.)* |
 | PyYAML | `>=6.0` | sprint feeds and BMAD artifacts. The **only** unconditional upstream harness dependency |
 | tomlkit | `>=0.13,<0.13.3` | comment-preserving policy writes. Upstream carries it in the optional `[tui]` extra, not core; it is present in-environment only because this repo's recipe flattens extras for `noarch`. The `local-recipes` env caps it at `<0.13.3` — do not assume ≥0.13.3 features |
 | psutil | `>=7.2.2` | supervisor process liveness. **Not** an upstream harness core dep on linux/osx (upstream marks it `sys_platform == 'win32'` plus a `non-linux` extra); unconditional here only via the same recipe flattening. Treat as new resolution surface on the stated install targets |
@@ -1768,3 +1768,16 @@ feed drift from the tracked twin before giving up — with no new port, adapter,
 boundary.*
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-26
+
+`prd→arch` edge after the PRD re-stamp of 2026-09-26, plus `behind-code` (the harness range
+widening landed in marshal's tree the same day).
+
+**Content changed:** the Stack table's `bmad-loop` row now reads `>=0.11.0,<0.13` — a pin value
+corrected in place, exactly as the 2026-08-26 reconcile moved it from `<0.10` to `<0.12`. AD-2 /
+AD-3 (bmad-loop is a run dependency, never vendored; the range is declared, pre-1.0, minor-capped)
+are unchanged in substance: the cap is still one minor above the verified release, and the
+verification that justifies moving it (the lazily-imported module set still resolves; suite green
+on the new release) is the procedure AD-19 already implies. No AD added, amended or removed.
+`updated:` bumped.
