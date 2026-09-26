@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.11.1"
+  version: "0.12.0"
 
 package:
   name: bmad-loop
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-loop/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 7aca4c5899b4409679cdbe44dc729f59aaf2a6071282b1521a43b51662ba88d8
+  sha256: 8a299a049aa1e276fd09a68e51b0c2ca3301e0df6f264c68cff32ca27ee6b41c
 
 build:
   noarch: python
@@ -84,11 +84,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-08-26T00:00:00Z"
+  cfe-last-checked: "2026-09-26T00:18:05Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-26T00:00:00Z"
+  cfe-local-build-datetime: "2026-09-26T00:18:05Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

@@ -27,7 +27,9 @@ copy README.md "%SHARE%\"
 if errorlevel 1 exit /b 1
 
 rem Node CLIs (upstream package.json "bin"). 1.20.0 first shipped a working
-rem tea-test-review; 1.25.0 added tea-fragment-selection-runner + tea-trace-runner.
+rem tea-test-review; 1.25.0 added tea-fragment-selection-runner + tea-trace-runner;
+rem 1.27.2 added seven more (atdd-red-check, atdd-runner, ci-runner, nfr-runner,
+rem routing-runner, test-design-runner, transcript-runner).
 rem Vendor cli/ + production node_modules next to it so require() resolves.
 call npm install --omit=dev --ignore-scripts --no-audit --no-fund
 if errorlevel 1 exit /b 1
@@ -59,6 +61,27 @@ rem "bin" on every version bump (CFE G110).
 (
   echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\trace-runner.js" %%*
 ) > "%PREFIX%\Scripts\tea-trace-runner.bat"
+(
+  echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\atdd-red-check.js" %%*
+) > "%PREFIX%\Scripts\tea-atdd-red-check.bat"
+(
+  echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\atdd-runner.js" %%*
+) > "%PREFIX%\Scripts\tea-atdd-runner.bat"
+(
+  echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\ci-runner.js" %%*
+) > "%PREFIX%\Scripts\tea-ci-runner.bat"
+(
+  echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\nfr-runner.js" %%*
+) > "%PREFIX%\Scripts\tea-nfr-runner.bat"
+(
+  echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\routing-runner.js" %%*
+) > "%PREFIX%\Scripts\tea-routing-runner.bat"
+(
+  echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\test-design-runner.js" %%*
+) > "%PREFIX%\Scripts\tea-test-design-runner.bat"
+(
+  echo @node "%PREFIX%\share\bmad-method-test-architecture-enterprise\cli\transcript-runner.js" %%*
+) > "%PREFIX%\Scripts\tea-transcript-runner.bat"
 
 rem xcopy/robocopy-style tools can leave a non-zero errorlevel; exit explicitly.
 exit /b 0

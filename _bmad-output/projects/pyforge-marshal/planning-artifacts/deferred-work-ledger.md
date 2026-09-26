@@ -6723,3 +6723,23 @@ status: open
   severity: medium
   promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+## DW-marshal-baseline-drift-supersession-2026-09-25 — `baseline-drift-check` reports three atlas defers as unrecovered forever, because its recovery rule only recognises the literal story key reading `done`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift/SPEC.md` (CAP-1/CAP-2; the detector is `scripts/bmad_loop_baseline_drift_check.py`, surfaced by `fleet-picture`'s ATTENTION block)
+  summary: a baseline-drift defer counts as recovered only when `tracked_status(slug).get(story) == "done"` for the exact key the run journal recorded. A story that was retired (its key removed from the tracked ledger) or reminted under a new slug can therefore never clear, and the fleet picture carries it as "unrecovered" indefinitely — three such rows sat in the 2026-09-25 picture, none of them recoverable work.
+  evidence: `pixi run -e pyforge-guild python scripts/bmad_loop_baseline_drift_check.py --json` (2026-09-25) lists atlas `14-2-pluggable-widget-registry` and `14-3-bokeh-websocket-interactivity` (loop-home run 20260814-202328-e168) and `16-1-instance-deploy-definition` (run 20260815-112701-4285, no preserve refs). The atlas tracked ledger has no `14-2-*`/`14-3-*` key at all — the Epic-14 `views/` stories were retired by atlas 24.1 and the epic reminted at 2a63b00c27 — and `16-1` exists only as `16-1-the-from-scratch-run-is-a-chartered-capability: done`, a different slug under the same number.
+  location: scripts/bmad_loop_baseline_drift_check.py
+  severity: low
+  fix: add a supersession rule — when the exact key is absent, match on the `N-M` prefix (doctor's `_STORY_ID_RE` convention) and accept `done` there; treat a key absent from the tracked ledger whose epic is closed/retired (or named in a `rekey-*.md` note) as recovered; add fixtures for the reminted-slug and retired-key cases so the finding cannot become permanent again.
+  status: open
+
+## DW-marshal-disp020-stale-refusal-2026-09-25 — `fleet-picture` keeps showing an `MRS-DISP-020` landing refusal after the story has landed by hand, because it reads the run's last `dispatch-land` OUTCOME and never reconciles it against the ledger
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (dispatch landing; emitter `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py`, consumer `scripts/fleet_picture.py` via `landing_findings`)
+  summary: two refusals sat in the 2026-09-25 fleet picture — doctor 30.3 (PR #1585, merged 2026-09-24) and marshal 46.6 (PR #1597, merged by hand) — although both stories read `done` in their tracked ledgers and both PRs are merged. The refusal is the last OUTCOME entry of each dispatch run's `journal.jsonl`; a landing that happens outside `dispatch land` writes nothing after it, so the ATTENTION row stays until the next dispatch of that station replaces the run. It clears on its own, but until then it reads as an operator decision owed.
+  evidence: `pixi run -e pyforge-guild fleet-picture` after PR #1606 (2026-09-25) — ATTENTION block lists both; `gh pr view 1585` / `gh pr view 1597` → MERGED; the doctor and marshal ledgers carry the keys as `done`.
+  location: scripts/fleet_picture.py
+  severity: low
+  fix: when composing `landing_findings`, drop (or render as "reconciled") a refusal whose story key reads `done` in the tracked ledger and whose PR is merged; alternatively have `sprint-ledger-sync` append a `dispatch-land` reconciliation OUTCOME to the run journal when it promotes the key, so the journal itself stops lying.
+  status: open
