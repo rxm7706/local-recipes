@@ -2,7 +2,7 @@
 title: '26.1: The dossier reads the A→B cutover as control-plane fact'
 type: 'docs'
 created: '2026-09-25'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -70,3 +70,26 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 **Manual checks:**
 - `pixi run -e site site-check` — expected: exit 0.
 - `test_dossier_structure.py` runs inside `pyforge-herald-test` and reds on a planted Verified item without a `source`.
+
+## Review Triage Log
+
+Implemented 2026-09-26 in an interactive session. PR #1576's `dossier.yml` diff was ported by hand, never merged, and extended in five ways:
+
+- **Estate placement.** It opens the dossier, numbered `A→B`. The stations carry letter marks, not numbers, and synthesis is `09`, so #1576's `01` would have implied a station slot.
+- **The four campaign verbs** each get a done / not-done line, from the steward ledger and Epics 44 / 53 / 54 / 60 / 64. #1576 listed the verbs without a state.
+- **The Verified section is rebuilt as sourced claim rows.** A `table` block keeps a machine-readable `source` key beside the rendered cells, and the templates are unchanged. The former green callout "What is now checked mechanically" had no source, so it became a row citing the `dashboard.yml` run whose `verify_claims.py` step passed on `main` (run 36277374647). That callout also named a stale path, `site/tools/`, now corrected to `docsite/tools/`.
+- **Two claims were checked before they were written.**
+  - `verify_claims.py` runs in `dashboard.yml`, not in docsite-check.
+  - Epic 44's rows (four done, three backlog, eight blocked) match the tracked ledger.
+- **`pyyaml` joins the `pyforge-herald` feature** as a test-only dependency, because the story requires the oracle to run in `pyforge-herald-test` and that env had no YAML parser. The lock adds `pyyaml` and `yaml` to that env only; `environment.yaml` is unchanged.
+
+**Cross-station:** steward's index row `67-6-index-herald-s-dossier-states-the-cutover-s-control-plane-herald-26-1` is `blocked` in steward's ledger. It is left for the operator to flip; AGENTS.md: never flip a ledger `blocked` key without operator confirmation.
+
+## Outcome
+
+Verified 2026-09-26:
+- `pixi run -e site site-check`: exit 0 (7 required outputs, 10 infographics, 10 deck families).
+- The rendered dossier page contains the Estate section, the verb table and all eight sourced rows. Screenshots of both sections were read.
+- `test_dossier_structure.py`: 8 passed. Three of them plant a violation and red: a row with no source, a source that resolves nowhere, and affirmative "archived" / "flipped" / "mirrors" claims.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test`: 1496 passed, 4 skipped.
+- ruff and ruff format are clean; `llms-full-check` and `pixi-version-check` exit 0.
