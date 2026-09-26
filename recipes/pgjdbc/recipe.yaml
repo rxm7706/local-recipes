@@ -85,11 +85,12 @@ extra:
   cfe-source-kind: maven-jdbc-src
   cfe-noarch: generic
   cfe-pip-check: "false:not-a-python-package"
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-09-26T16:30:00Z"
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34956
+  cfe-last-checked: "2026-09-26T17:05:00Z"
   cfe-generated-by-version: 8.90.6
   cfe-generated-at-datetime: "2026-09-26T16:30:00Z"
   cfe-local-build-status: success
