@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "42.7.13"
+
+package:
+  name: pgjdbc
+  version: ${{ version }}
+
+source:
+  url: https://repo1.maven.org/maven2/org/postgresql/postgresql/${{ version }}/postgresql-${{ version }}-jdbc-src.tar.gz
+  sha256: 4537ba157c6eab9022d0a48bb6e6ca5a736ced8cc7121e1276322fb104dd3718
+  patches:
+    - 0001-shade-scram-into-the-driver-jar.patch
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+    - maven
+    - openjdk 17.*
+  run:
+    - openjdk >=8
+
+tests:
+  - package_contents:
+      strict: true
+      files:
+        exists:
+          - share/liquibase/lib/postgresql.jar
+  - requirements:
+      run:
+        - openjdk 17.*
+        - liquibase
+        - ripgrep
+    script:
+      env:
+        LIQUIBASE_ANALYTICS_ENABLED: "false"
+      content:
+        - if: unix
+          then:
+            - java -jar "${PREFIX}/share/liquibase/lib/postgresql.jar" | rg --fixed-strings "${{ version }}"
+            - jar tf "${PREFIX}/share/liquibase/lib/postgresql.jar" | rg --fixed-strings "org/postgresql/shaded/com/ongres/scram/client/ScramClient.class"
+          else:
+            - java -jar "%PREFIX%\share\liquibase\lib\postgresql.jar" | rg --fixed-strings "${{ version }}"
+            - jar tf "%PREFIX%\share\liquibase\lib\postgresql.jar" | rg --fixed-strings "org/postgresql/shaded/com/ongres/scram/client/ScramClient.class"
+        - liquibase --version | rg --fixed-strings "postgresql.jar"
+
+about:
+  homepage: https://jdbc.postgresql.org/
+  repository: https://github.com/pgjdbc/pgjdbc
+  documentation: https://jdbc.postgresql.org/documentation/
+  summary: PostgreSQL JDBC driver (pgjdbc)
+  description: |
+    PgJDBC is the official PostgreSQL JDBC driver: a pure-Java (Type 4) driver
+    that lets Java programs connect to PostgreSQL using standard, database
+    independent Java code. This build bundles the SCRAM client (relocated under
+    org.postgresql.shaded, as in the published jar) so SCRAM-SHA-256
+    authentication works out of the box. The jar is installed to
+    share/liquibase/lib, which Liquibase auto-loads; other Java tools can add
+    $CONDA_PREFIX/share/liquibase/lib/postgresql.jar to their classpath.
+  license: BSD-2-Clause
+  license_file:
+    - LICENSE
+    - third-party-licenses/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pgjdbc
+  cfe-upstream-registry: maven
+  cfe-upstream-name: org.postgresql/postgresql
+  cfe-purls:
+    - pkg:conda/pgjdbc@${{ version }}?channel=conda-forge
+    - pkg:maven/org.postgresql/postgresql@${{ version }}
+  cfe-upstream-repo: https://github.com/pgjdbc/pgjdbc
+  cfe-upstream-homepage: https://jdbc.postgresql.org/
+  cfe-import-names: []
+  cfe-source-kind: maven-jdbc-src
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-09-26T16:30:00Z"
+  cfe-generated-by-version: 8.90.6
+  cfe-generated-at-datetime: "2026-09-26T16:30:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-09-26T16:50:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Why this package exists (2026-09-26): conda-forge has no PostgreSQL JDBC
+#    # driver. conda-forge's `liquibase-postgresql` 5.0.4 is Liquibase's dialect
+#    # EXTENSION (liquibase-postgresql-5.0.4.jar, 14 KiB, FSL-1.1-ALv2), not a
+#    # driver, and liquibase 5 bundles only h2. The SelfExplainML package named
+#    # `liquibase-postgresql` 42.7.13 (recipes/liquibase-postgresql) IS this
+#    # driver under a colliding name; pgjdbc is its conda-forge replacement.
+#    # Name: upstream project name (github.com/pgjdbc/pgjdbc, "PgJDBC").
+# source:
+#    # Built from the distro source release on Maven Central
+#    # (postgresql-<v>-jdbc-src.tar.gz, Maven pom.xml + LICENSE) -- the same
+#    # source Fedora's postgresql-jdbc builds from; the GitHub tag needs pgjdbc's
+#    # Gradle build. Maven fetches plugins/deps at build time (build-time
+#    # network is allowed on conda-forge; the offline phase is the test), the same
+#    # as conda-forge's liquibase and liquibase-postgresql feedstocks.
+#    # The jdbc-src pom declares com.ongres.scram:scram-client as a plain
+#    # dependency and has no shade step, so a bare build would NOT carry the SCRAM
+#    # client (PostgreSQL's default auth since 14). The patch adds maven-shade
+#    # relocating com.ongres -> org.postgresql.shaded.com.ongres, matching the
+#    # published postgresql-<v>.jar (scram-client/scram-common 3.2,
+#    # saslprep/stringprep 2.2).
+# build:
+#    # Installs to share/liquibase/lib/postgresql.jar (operator decision
+#    # 2026-09-26): a drop-in for Liquibase's auto-load directory, the same layout
+#    # the SelfExplainML build uses, so the platform env can switch with no code
+#    # change. build.bat mirrors build.sh because staged-recipes builds noarch
+#    # recipes on the win-64 leg too (G102).
+# about:
+#    # license: pgjdbc and all four shaded OnGres libraries are BSD-2-Clause;
+#    # their LICENSE texts are unpacked from the dependency jars into
+#    # third-party-licenses/<artifactId>/META-INF/LICENSE.
+# tests:
+#    # `java -jar` runs org.postgresql.util.PGJDBCMain (prints the version);
+#    # `jar tf` proves the SCRAM client is shaded in; `liquibase --version` lists
+#    # the jars it loaded from its lib directory, proving the drop-in works.
+#    # Verified 2026-09-26 against upstream's published postgresql-42.7.13.jar:
+#    # same 55 shaded org/postgresql/shaded/com/ongres classes, same
+#    # java.sql.Driver service. Upstream-only: org.postgresql.osgi.* (OSGi
+#    # bundle activator) and org.postgresql.sspi.* (Windows SSPI SSO), which the
+#    # jdbc-src release omits (optional osgi/waffle-jna deps); its manifest
+#    # carries no Bundle-Activator, so nothing dangles.
+####
