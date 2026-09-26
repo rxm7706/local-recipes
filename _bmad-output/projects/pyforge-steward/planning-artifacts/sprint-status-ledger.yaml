@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 420
+# stories: 421
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -145,6 +145,7 @@ development_status:
   42-3-bus-delivery-semantics-and-a-deployed-consumer: done
   42-4-celery-hardening-and-the-builds-pool: done
   42-5-role-namespaces-and-the-tenant-claim: done
+  42-6-the-real-redis-backoff-test-accepts-the-server-s-millisecond-clock: done
   43-1-split-the-dream-into-living-and-archive: done
   43-2-station-api-contract-and-the-api-v1-collision: done
   43-3-in-process-station-port-no-self-call: done
