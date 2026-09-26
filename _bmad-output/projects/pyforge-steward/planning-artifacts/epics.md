@@ -2530,6 +2530,16 @@ So that an IdP group that merely shares a station name cannot grant access.
 **Given** the story spec `spec-42-5-role-namespaces-and-the-tenant-claim.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a group `atlas` (bare), when reachability is computed, then it is refused unless `DJANGO_PYFORGE_LEGACY_BARE_ROLES=1`, which logs a deprecation.
 
+### Story 42.6: The real-Redis backoff test accepts the server's millisecond clock
+
+As a platform developer,
+I want the real-Redis retry test to accept the backoff Redis actually enforces,
+So that a correct event fabric does not fail the suite under CPU load.
+
+**Type:** fix • **Effort:** S • **Deps:** S-42.3 • **FR/AD:** CAP-8, canopy:FR-20 • canopy:AD-8
+**Given** `test_real_redis_retry_backoff_dlq_and_harvest`, which measures handler-call gaps on the client's monotonic clock while the fabric waits on Redis's whole-millisecond `XPENDING` idle time **When** the suite runs under CPU contention **Then** a 100 ms / 200 ms backoff Redis correctly enforced passes (5 ms slack)
+**And** the assertions still distinguish the 100 ms and 200 ms steps, and the fabric's backoff code is unchanged
+
 ## Epic 43: Contracts and the document (CAP-6 / CAP-10 / Dream)
 
 A readable Dream, a versioned station API, no self-call, CD by digest, one interpreter story. Red-team R-4, R-5, R-6, R-15, R-16.

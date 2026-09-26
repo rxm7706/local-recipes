@@ -1322,8 +1322,15 @@ def test_real_redis_retry_backoff_dlq_and_harvest(
             fabric.consume(GROUP, CONSUMER, handler)
             time.sleep(0.02)
         assert len(calls) == 3, calls
-        assert calls[1] - calls[0] >= 0.1
-        assert calls[2] - calls[1] >= 0.2
+        # Story 42.6: the fabric waits on Redis's XPENDING idle time, which the
+        # server computes as now_ms - delivery_ms in whole milliseconds, so a
+        # retry it counts as N ms idle can be up to 1 ms early in real time; the
+        # timestamps here are client reads taken after each reply, adding
+        # latency jitter. Under CPU contention a correct 200 ms backoff measured
+        # 199.5 ms. The slack is far below the 100 ms step it still proves.
+        slack = 0.005
+        assert calls[1] - calls[0] >= 0.1 - slack
+        assert calls[2] - calls[1] >= 0.2 - slack
         ((_qid, fields),) = list_quarantined(client)
         assert json.loads(fields[EVENT_FIELD])["id"] == event_id
         assert fields[DLQ_REASON_FIELD] == DLQ_REASON_EXHAUSTED
