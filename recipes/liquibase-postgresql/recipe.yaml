@@ -2,52 +2,106 @@
 schema_version: 1
 
 context:
-  version: "42.7.13"
+  version: "5.0.4"
 
 package:
   name: liquibase-postgresql
   version: ${{ version }}
 
 source:
-  url: https://repo1.maven.org/maven2/org/postgresql/postgresql/${{ version }}/postgresql-${{ version }}.jar
-  sha256: 6e0e4cc2d8cae902084f8a2b18728b073a6fd9d1f87c9d8bff8f298c18185b93
-  file_name: postgresql-${{ version }}.jar
-  target_directory: jdbc
+  url: https://github.com/liquibase/liquibase-postgresql/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: cadba5a2cfa6a1ddd172d4801ef39ed9295154fa5634dd2a351b474de3e802e5
 
 build:
   number: 0
   noarch: generic
   script:
-    - if: unix
-      then:
-        - mkdir -p ${PREFIX}/share/liquibase/lib
-        - cp ${SRC_DIR}/jdbc/postgresql-${{ version }}.jar ${PREFIX}/share/liquibase/lib/postgresql.jar
-      else:
-        - mkdir %PREFIX%\share\liquibase\lib
-        - copy %SRC_DIR%\jdbc\postgresql-${{ version }}.jar %PREFIX%\share\liquibase\lib\postgresql.jar
+    file: build.sh
 
 requirements:
+  build:
+    - maven
+    - openjdk 17.*
+    - git
   run:
-    - liquibase >=5.0.4
     - openjdk >=17
+    # The extension jar is compiled against, and only supported with, the
+    # matching liquibase-core release (liquibase.version in pom.xml).
+    - liquibase ==${{ version }}
 
 tests:
-  - script:
-      - if: unix
-        then:
-          - test -f ${PREFIX}/share/liquibase/lib/postgresql.jar
-        else:
-          - if not exist %PREFIX%\share\liquibase\lib\postgresql.jar exit 1
+  - package_contents:
+      strict: true
+      files:
+        exists:
+          - share/liquibase/lib/liquibase-postgresql-${{ version }}.jar
+  - requirements:
+      run:
+        - ripgrep
+    script:
+      env:
+        LIQUIBASE_ANALYTICS_ENABLED: "false"
+      content:
+        # Match on the filename only: Java prints the library path with the
+        # platform separator, so "lib/..." would not match on Windows.
+        - liquibase --version | rg --fixed-strings "liquibase-postgresql-${{ version }}.jar"
 
 about:
-  homepage: https://jdbc.postgresql.org/
-  license: BSD-2-Clause
-  summary: PostgreSQL JDBC driver vendored for Liquibase Community CLI
+  homepage: https://github.com/liquibase/liquibase-postgresql
+  summary: Liquibase extension adding additional PostgreSQL-specific functionality
   description: |
-    Places postgresql.jar on Liquibase's extra classpath (LIQUIBASE_HOME/lib)
-    so Community 5.x can connect to PostgreSQL without LPM or Maven.
-  repository: https://github.com/pgjdbc/pgjdbc
+    liquibase-postgresql extends the Liquibase database schema change
+    management and migration tool with additional PostgreSQL-specific
+    change types (such as VACUUM and COPY). It ships as a single JAR that
+    Liquibase auto-loads from its global library directory, so installing
+    this package alongside `liquibase` is enough to enable it; no
+    additional configuration is required.
+  license: FSL-1.1-ALv2
+  license_file:
+    - LICENSE.txt
+    - aggregate-third-party-report.html
+  documentation: https://docs.liquibase.com
+  repository: https://github.com/liquibase/liquibase-postgresql
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: liquibase-postgresql
+  cfe-upstream-registry: github
+  cfe-upstream-name: liquibase/liquibase-postgresql
+  cfe-purls:
+    - pkg:conda/liquibase-postgresql@${{ version }}?channel=conda-forge
+    - pkg:github/liquibase/liquibase-postgresql@v${{ version }}
+  cfe-upstream-repo: https://github.com/liquibase/liquibase-postgresql
+  cfe-upstream-homepage: https://github.com/liquibase/liquibase-postgresql
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/liquibase-postgresql-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-09-26T17:20:00Z"
+  cfe-generated-by-version: 8.90.6
+  cfe-generated-at-datetime: "2026-09-26T17:20:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-09-26T17:34:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-09-26: this local recipe now MIRRORS
+#    # conda-forge/liquibase-postgresql-feedstock -- Liquibase's PostgreSQL
+#    # dialect EXTENSION (liquibase-postgresql-<v>.jar, FSL-1.1-ALv2). It
+#    # replaces the earlier SelfExplainML recipe of the same name, which was
+#    # really the pgjdbc JDBC driver (postgresql-42.7.13.jar) under a colliding
+#    # name; that role moved to recipes/pgjdbc (staged-recipes #34956; on
+#    # SelfExplainML until conda-forge publishes it). The SelfExplainML channel
+#    # still carries the old liquibase-postgresql 42.7.13 (driver) artifact,
+#    # whose higher version number sorts above conda-forge's 5.0.4.
+####
