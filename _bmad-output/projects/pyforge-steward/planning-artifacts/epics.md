@@ -4471,7 +4471,7 @@ So that I never learn to install the 10 GB `local-recipes` environment for work 
 **Given** scribe owns the instruction surface (`spec-pyforge-scribe:CAP-27`) and CAP-15's surface is `AGENTS.md` / `CLAUDE.md`
 **When** scribe lands Story 21.1
 **Then** this row flips `done`
-**Status:** blocked
+**Status:** done
 
 ### Story 67.8: The cutover spine drops the archive
 
