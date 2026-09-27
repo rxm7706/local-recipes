@@ -184,6 +184,30 @@ def test_a_push_reads_its_upstream_beside_a_local_origin_branch_shadow(repo) -> 
     assert _git(remote, "rev-parse", "refs/heads/loop/acme").stdout.strip() == tip
 
 
+@pytest.mark.parametrize("layout", ["custom-tracking-namespace", "remote-name-with-a-slash"])
+def test_a_push_takes_its_target_from_the_branch_config(repo, layout: str) -> None:
+    """Review 3: parsing the tracking ref's name refused a fetch refspec mapping outside
+    `refs/remotes/` (which `--abbrev-ref` had pushed fine), and split a remote named `foo/bar`
+    at its slash. The branch's own config names both exactly."""
+    remote, clone, _base, _landed = repo
+    name = "origin" if layout == "custom-tracking-namespace" else "foo/bar"
+    if layout == "custom-tracking-namespace":
+        _git(clone, "config", "remote.origin.fetch", "+refs/heads/*:refs/origin/*")
+    else:
+        _git(clone, "remote", "add", name, str(remote))
+    _git(clone, "fetch", "-q", name)
+    _git(clone, "checkout", "-q", "-b", "loop/acme")
+    _git(clone, "push", "-q", name, "refs/heads/loop/acme:refs/heads/loop/acme")
+    _git(clone, "fetch", "-q", name)
+    _git(clone, "config", "branch.loop/acme.remote", name)
+    _git(clone, "config", "branch.loop/acme.merge", "refs/heads/loop/acme")
+    tip = _commit(clone, "story.txt", "the story's work")
+
+    GitVcs().push(clone, "loop/acme")
+
+    assert _git(remote, "rev-parse", "refs/heads/loop/acme").stdout.strip() == tip
+
+
 # --- the landing heal, end to end ------------------------------------------------------------------
 
 

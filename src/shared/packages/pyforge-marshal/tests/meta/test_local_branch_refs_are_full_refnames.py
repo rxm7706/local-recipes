@@ -106,19 +106,6 @@ _MAX_ALTERNATIVES = 16
 _MAX_DEPTH = 3  # how many assignments deep a name is rendered through
 
 
-def _string_bindings(tree: ast.AST) -> dict[str, set[str]]:
-    """Every ``NAME = "literal"`` (or annotated) binding anywhere in ``tree``."""
-    bound: dict[str, set[str]] = {}
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Assign, ast.AnnAssign)) and isinstance(node.value, ast.Constant):
-            if isinstance(node.value.value, str):
-                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-                for target in targets:
-                    if isinstance(target, ast.Name):
-                        bound.setdefault(target.id, set()).add(node.value.value)
-    return bound
-
-
 def _module_constants(tree: ast.Module) -> dict[str, set[str]]:
     bound: dict[str, set[str]] = {}
     for node in tree.body:
@@ -142,7 +129,7 @@ def _package_constants() -> dict[str, set[str]]:
 
 @dataclass(frozen=True)
 class _Scope:
-    """What a name in one module can hold: string literals, and other expressions assigned to it."""
+    """What a name in one scope can hold: string literals, and other expressions assigned to it."""
 
     strings: dict[str, set[str]]
     exprs: dict[str, list[ast.expr]]
@@ -152,31 +139,76 @@ class _Scope:
         return _Scope(self.strings, self.exprs, self.depth + 1)
 
 
-def _bindings(tree: ast.Module, package: dict[str, set[str]]) -> _Scope:
-    """Local bindings (assignments anywhere, parameter defaults) plus names imported from sibling
-    marshal modules. A name assigned a non-literal expression is rendered through it (review 2:
-    `ref = head_branch`, `probe = probe_ref if ... else base`, `_A = _B`)."""
-    strings = _string_bindings(tree)
-    exprs: dict[str, list[ast.expr]] = {}
+_FUNCTION = (ast.FunctionDef, ast.AsyncFunctionDef)
+
+
+def _owners(tree: ast.Module) -> dict[ast.AST, ast.AST]:
+    """Every node -> the innermost function whose body holds it (the module for top-level code;
+    a function's own parameter defaults belong to that function)."""
+    owner: dict[ast.AST, ast.AST] = {}
+
+    def visit(node: ast.AST, current: ast.AST) -> None:
+        for child in ast.iter_child_nodes(node):
+            owner[child] = current
+            visit(child, child if isinstance(child, _FUNCTION) else current)
+
+    visit(tree, tree)
+    return owner
+
+
+def _bindings_by_owner(tree: ast.Module, package: dict[str, set[str]]) -> dict[ast.AST, _Scope]:
+    """Bindings per module / function: string literals assigned (and literal parameter defaults),
+    other expressions assigned (review 2: `ref = head_branch`, `probe = ... else base`, `_A = _B`),
+    and names imported from sibling marshal modules (module scope). Per function, not per module
+    (review 3): `ref = "main"` in one function says nothing about a `ref` in another."""
+    owner = _owners(tree)
+    scopes: dict[ast.AST, _Scope] = {}
+
+    def scope(node: ast.AST) -> _Scope:
+        return scopes.setdefault(node, _Scope({}, {}))
+
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.level > 0:
             for alias in node.names:
                 if alias.name in package:
-                    strings.setdefault(alias.asname or alias.name, set()).update(package[alias.name])
+                    scope(tree).strings.setdefault(alias.asname or alias.name, set()).update(package[alias.name])
         elif isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
-            if not (isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)):
-                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-                for target in targets:
-                    if isinstance(target, ast.Name):
-                        exprs.setdefault(target.id, []).append(node.value)
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            home = scope(owner.get(node, tree))
+            for target in targets:
+                if not isinstance(target, ast.Name):
+                    continue
+                if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                    home.strings.setdefault(target.id, set()).add(node.value.value)
+                else:
+                    home.exprs.setdefault(target.id, []).append(node.value)
+        elif isinstance(node, _FUNCTION):
             positional = [*node.args.posonlyargs, *node.args.args]
             pairs = [*zip(positional[len(positional) - len(node.args.defaults) :], node.args.defaults)]
             pairs += [(a, d) for a, d in zip(node.args.kwonlyargs, node.args.kw_defaults) if d is not None]
             for arg, default in pairs:
                 if isinstance(default, ast.Constant) and isinstance(default.value, str):
-                    strings.setdefault(arg.arg, set()).add(default.value)
-    return _Scope(strings, exprs)
+                    scope(node).strings.setdefault(arg.arg, set()).add(default.value)
+    return scopes
+
+
+def _scope_at(node: ast.AST, tree: ast.Module, owner: dict[ast.AST, ast.AST], scopes: dict[ast.AST, _Scope]) -> _Scope:
+    """The module's bindings plus every enclosing function's, innermost last."""
+    chain: list[ast.AST] = []
+    current = owner.get(node, tree)
+    while current is not tree:
+        chain.append(current)
+        current = owner.get(current, tree)
+    merged = _Scope({}, {})
+    for holder in [tree, *reversed(chain)]:
+        found = scopes.get(holder)
+        if found is None:
+            continue
+        for name, values in found.strings.items():
+            merged.strings.setdefault(name, set()).update(values)
+        for name, exprs in found.exprs.items():
+            merged.exprs.setdefault(name, []).extend(exprs)
+    return merged
 
 
 def _is_helper_call(expr: ast.expr) -> bool:
@@ -209,12 +241,16 @@ def _render(expr: ast.expr | None, bound: _Scope) -> list[str]:
         return [expr.value]
     if isinstance(expr, ast.IfExp):
         return (_render(expr.body, bound) + _render(expr.orelse, bound))[:_MAX_ALTERNATIVES]
+    if isinstance(expr, ast.BoolOp):  # review 3: `base or "main"`
+        return [t for value in expr.values for t in _render(value, bound)][:_MAX_ALTERNATIVES]
     if isinstance(expr, ast.Name) and (expr.id in bound.strings or expr.id in bound.exprs):
         alternatives = sorted(bound.strings.get(expr.id, ()))
         if bound.depth < _MAX_DEPTH:
             for value in bound.exprs.get(expr.id, ()):
                 alternatives += _render(value, bound.deeper())
-        elif expr.id in bound.exprs:
+        if expr.id in bound.exprs and (_branchy(expr) or bound.depth >= _MAX_DEPTH):
+            # Review 3: a name that reads like a branch stays one whatever it was reassigned
+            # (`head_branch = head_branch.strip()`); past the depth cap it is judged by name.
             alternatives.append(_BRANCH if _branchy(expr) else _VALUE)
         return alternatives[:_MAX_ALTERNATIVES]
     if isinstance(expr, (ast.Name, ast.Attribute)):
@@ -292,13 +328,17 @@ def _args_for(call: ast.Call, spec: tuple[tuple[int | None, str], ...]) -> list[
 
 def _findings(tree: ast.Module, rel: str, package: dict[str, set[str]] | None = None) -> tuple[list[int], list[int]]:
     """(lines where a read gets a bare branch name, lines where a name-taking method gets a ref)."""
-    bound = _bindings(tree, package or {})
+    owner = _owners(tree)
+    scopes = _bindings_by_owner(tree, package or {})
     bare, doubled = set(), set()
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
         method = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else ""
+        if method not in _REVISION_ARGS and method not in _NAME_ARGS:
+            continue
+        bound = _scope_at(node, tree, owner, scopes)
         for arg in _args_for(node, _REVISION_ARGS.get(method, ())):
             if isinstance(arg, ast.Name) and (rel, arg.id) in _PASS_THROUGH:
                 continue
@@ -434,3 +474,43 @@ def test_the_scan_follows_a_name_through_what_is_assigned_to_it() -> None:
     bare, doubled = _findings(ast.parse(source), "scratch.py")
     assert bare == [2, 5, 7, 13]
     assert doubled == [11]
+
+
+def test_a_reassigned_branch_stays_a_branch_and_bindings_stay_in_their_function() -> None:
+    """Review 3: the review-2 rendering dropped the name rule once a name was reassigned, and read
+    one function's bindings into another."""
+    source = "\n".join(
+        [
+            "def a(base):",  # 1
+            '    base = base or "main"',  # 2: the package's own default idiom
+            "    vcs.commit_subjects(root, base)",  # 3
+            "def b(effective):",  # 4
+            "    base = effective.landing_base_branch.value or _DEFAULT",  # 5
+            "    vcs.commit_subjects(root, base)",  # 6
+            "def c(head_branch):",  # 7
+            "    head_branch = head_branch.strip()",  # 8
+            "    vcs.commit_subjects(root, head_branch)",  # 9
+            "def d(args):",  # 10
+            "    branch = str(args.branch)",  # 11
+            "    vcs.commit_subjects(root, branch)",  # 12
+            "def e(cfg):",  # 13
+            '    into = cfg["into"]',  # 14
+            "    vcs.merge_base(root, sha, into)",  # 15
+            "def g(base):",  # 16
+            "    vcs.commit_subjects(root, base)",  # 17: h's `base = compute()` is not g's
+            "def h():",  # 18
+            "    base = compute()",  # 19
+            'def i(ref="HEAD"):',  # 20
+            "    vcs.commit_subjects(root, ref)",  # 21: j's default is j's
+            'def j(ref="main"):',  # 22
+            "    return ref",  # 23
+            "def k(sha):",  # 24
+            "    ref = sha",  # 25
+            "    vcs.commit_subjects(root, ref)",  # 26: l's `ref = head_branch` is l's
+            "def l(head_branch):",  # 27
+            "    ref = head_branch",  # 28
+            "    return ref",  # 29
+        ]
+    )
+    bare, _doubled = _findings(ast.parse(source), "scratch.py")
+    assert bare == [3, 6, 9, 12, 15, 17]

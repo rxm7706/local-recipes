@@ -540,10 +540,10 @@ class GitVcs:
     def push(self, repo_root: Path, branch: str, *, proven_on_main_sha: str | None = None) -> None:
         """Story 3.8 (AD-46): resolves whether ``branch`` already has a
         configured upstream via ``git rev-parse --symbolic-full-name
-        <branch>@{upstream}`` -- exit 0 means one exists
-        (``refs/remotes/origin/x``-shaped output, stripped of
-        ``refs/remotes/`` and split on the first ``/`` into the remote name
-        and the remote-side branch name, then pushed EXPLICITLY,
+        <branch>@{upstream}`` -- exit 0 means one exists, and the branch's
+        own config then names the remote and the remote-side branch
+        (``for-each-ref`` ``%(upstream:remotename)`` /
+        ``%(upstream:remoteref)``), pushed EXPLICITLY,
         ``git push <remote> refs/heads/<branch>:refs/heads/<remote_branch>``);
         a non-zero exit whose stderr carries git's own "no upstream configured
         for branch" wording (128, the ordinary case for a brand-new
@@ -551,8 +551,8 @@ class GitVcs:
         refs/heads/<branch>:refs/heads/<branch>``, the branch's first push
         (Story 61.1: full refnames on both sides, so a tag named like the
         branch -- local or remote -- never makes the push ambiguous, and the
-        full upstream name, so a local ``origin/<branch>`` cannot bend the
-        parse). Any OTHER non-zero exit (an ambiguous ref, "no such
+        target from config, so a local ``origin/<branch>`` cannot bend it).
+        Any OTHER non-zero exit (an ambiguous ref, "no such
         branch" because ``branch`` itself does not exist locally, a
         corrupted repo) is NOT treated as "no upstream" -- silently falling
         back there would push to a remote/branch the caller never intended
@@ -572,21 +572,35 @@ class GitVcs:
         ``_GIT_PUSH_TIMEOUT_S``, not ``_GIT_TIMEOUT_S``/
         ``_GIT_CHECKOUT_TIMEOUT_S`` -- a push is a network round-trip, not a
         local query or tree-populating checkout (review finding)."""
-        # `--symbolic-full-name`, not `--abbrev-ref` (Story 61.1 review 2): with a local tag or
-        # branch named `origin/<b>`, the abbreviation disambiguates to `remotes/origin/<b>` and
-        # the push went to a "remote" called `remotes`.
+        # Story 61.1 (reviews 2 and 3): whether an upstream exists is read from
+        # `<branch>@{upstream}`; WHERE it points is read from the branch's own config
+        # (`%(upstream:remotename)` / `%(upstream:remoteref)`), never parsed out of the tracking
+        # ref's name -- `--abbrev-ref` answered `remotes/origin/<b>` beside a local `origin/<b>`
+        # shadow (a push to a remote called `remotes`), and a tracking namespace outside
+        # `refs/remotes/` or a remote named with a `/` has no parseable name at all.
         upstream_check = _run(
             ["git", "-C", str(repo_root), "rev-parse", "--symbolic-full-name", f"{branch}@{{upstream}}"]
         )
         if upstream_check.returncode == 0:
             upstream = upstream_check.stdout.strip()
-            tracking = upstream.removeprefix("refs/remotes/")
-            remote, _, remote_branch = tracking.partition("/")
-            if tracking == upstream or not remote or not remote_branch:
-                # An upstream that is not a remote-tracking ref (a local branch
-                # tracking another local branch) or has no remote-side name is
-                # not something to push to -- refuse to guess rather than push
-                # to a malformed target.
+            head = local_branch_ref(branch)
+            target = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "for-each-ref",
+                    "--format=%(refname)%00%(upstream:remotename)%00%(upstream:remoteref)",
+                    head,
+                ]
+            )
+            fields = next((line.split("\0") for line in target.stdout.splitlines() if line.startswith(f"{head}\0")), [])
+            remote, remote_ref = (fields[1], fields[2]) if len(fields) == 3 else ("", "")
+            remote_branch = remote_ref.removeprefix("refs/heads/")
+            if target.returncode != 0 or remote in ("", ".") or remote_branch in ("", remote_ref):
+                # An upstream on a local branch (remote `.`) or with no remote-side
+                # branch is not something to push to -- refuse to guess rather than
+                # push to a malformed target.
                 raise VcsCommandError(f"cannot parse upstream {upstream!r} for {branch} into <remote>/<remote_branch>")
         elif "no upstream configured for branch" in upstream_check.stderr:
             remote, remote_branch = "origin", branch
@@ -1058,7 +1072,7 @@ class GitVcs:
             timeout_s=_GIT_FETCH_TIMEOUT_S,
         )
         if result.returncode != 0:
-            raise VcsCommandError(f"git fetch {remote} {ref} failed: {result.stderr.strip()}")
+            raise VcsCommandError(f"git fetch {remote} {local_branch_ref(ref)} failed: {result.stderr.strip()}")
 
     def fast_forward(self, worktree_path: Path, ref: str) -> str:
         """Story 4.12 (FR-173): ``git merge --ff-only <ref>`` run inside

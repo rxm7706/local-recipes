@@ -7086,10 +7086,11 @@ So that a tag named like a branch can never stand in for it, and a landing base 
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-271 (FR-217) • CAP-270 (60.1)
 **Surface:** `core/refs.py` (`local_branch_ref`), `core/policy.py` (`_valid_landing_base_branch`), `core/findings.py`,
-`schemas/policy.json`, `adapters/vcs_git.py` (`push`), `ports/vcs.py`, `dispatch_land.py`, `dispatch_land_heal.py`,
-`dispatch_supervisor/__main__.py`, `supervisor/__main__.py`, `cli/adapters.py`, `cli/deploy.py`, `cli/gate.py`, `cli/init.py`,
-`cli/land.py`, `cli/retire.py`, `cli/status.py` (all under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`),
-`scripts/fleet_scan.py`, `scripts/bmad-loop-worktree`, `scripts/fleet_picture.py`, `scripts/unpushed_work_check.py`, tests under
+`schemas/policy.json`, `adapters/vcs_git.py` (`push`, `fetch`), `ports/vcs.py`, `core/status.py`, `dispatch_land.py`,
+`dispatch_land_heal.py`, `dispatch_supervisor/__main__.py`, `supervisor/__main__.py`, `cli/adapters.py`, `cli/deploy.py`, `cli/gate.py`,
+`cli/init.py`, `cli/land.py`, `cli/retire.py`, `cli/status.py` (all under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`),
+`scripts/fleet_scan.py`, `scripts/bmad-loop-worktree`, `scripts/fleet_picture.py`, `scripts/unpushed_work_check.py`,
+`scripts/worktree_sweep.py`, tests under
 `src/shared/packages/pyforge-marshal/tests/{unit,meta}/` and `tests/scripts/test_local_branch_full_ref_scripts.py`.
 **Given** a repository with a tag named `main` on an older commit than the branch `main`
 **When** status, deploy, retire and dispatch land read the landing subjects, deploy and land compute their merge base and diff base, init mints a loop-home branch, the landing heal probes and merges the dispatch branch, marshal fetches and pushes, and the fleet scripts read `main`

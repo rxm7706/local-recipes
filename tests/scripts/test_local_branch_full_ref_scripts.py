@@ -131,6 +131,27 @@ def test_bmad_loop_worktree_mints_the_branch_when_only_a_tag_carries_its_name(cl
     assert _git(home, "rev-parse", "HEAD") == tip
 
 
+def test_worktree_sweep_never_reads_a_feature_as_merged_through_a_stray_tag_main(clone, tmp_path, monkeypatch) -> None:
+    """Review 3: a stray `git tag main` on a feature commit (a tag AHEAD of the branch) made the
+    feature an ancestor of "main" -- its worktree classified merged and its branch deleted."""
+    repo, _base, _landed = clone
+    home = tmp_path / "feature-home"
+    _git(repo, "worktree", "add", "-q", "-b", "feature", str(home), "refs/heads/main")
+    _git(home, "config", "user.email", "t@example.com")
+    feature = _commit(home, "feature.txt", "feature work, never merged")
+    _git(repo, "tag", "-f", "main", feature)  # the stray tag, ahead of the branch
+    sweep = _load("worktree_sweep_61_1", SCRIPTS / "worktree_sweep.py", monkeypatch)
+    monkeypatch.setattr(sweep, "REPO_ROOT", repo)
+
+    wt = sweep.gather(sweep.Worktree(path=str(home), branch="feature", category="scratch"), [], {}, set())
+    assert (wt.merged, wt.unmerged_commits) == (False, 1)
+    _git(repo, "worktree", "remove", "--force", str(home))
+    deleted, _kept = sweep.delete_merged_local_branches()
+
+    assert deleted == 0
+    assert _git(repo, "rev-parse", "refs/heads/feature") == feature
+
+
 def _unpushed(repo: Path) -> dict:
     (repo / "scripts").mkdir(exist_ok=True)
     shutil.copy2(SCRIPTS / "unpushed_work_check.py", repo / "scripts" / "unpushed_work_check.py")
