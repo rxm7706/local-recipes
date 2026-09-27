@@ -2476,7 +2476,8 @@ keep the short names people read. **FRs covered:** FR-18 (minted 2026-09-27 on t
 **When** the story-status, `ledger-direction`, `ledger-regression`, `frozen-path-changed` and `live-proof-surface` sources run
 **Then** each reaches the verdict it reaches without the stray ref
 **And** no Doctor module hands git a bare `main` or `origin/…`; findings still say `main` / `origin/main`; `pixi run -e pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
+**Outcome (2026-09-27):** landed with two independent reviews (FAIL, PASS with lows, both fixed); tracked spec `specs/spec-31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname.md`.
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

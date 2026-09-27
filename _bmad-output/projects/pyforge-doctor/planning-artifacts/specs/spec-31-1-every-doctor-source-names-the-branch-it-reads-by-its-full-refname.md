@@ -2,7 +2,7 @@
 title: '31.1: Every Doctor source names the branch it reads by its full refname'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 2
 followup_review_recommended: false
 context:
@@ -28,7 +28,7 @@ Every caller runs these sources with their defaults. With a stray ref, each judg
 **Approach:** a new pure module `pyforge/doctor/refs.py` — `local_branch_ref(branch)`, `remote_tracking_ref(branch, remote="origin")`, `MAIN = "refs/heads/main"`, `ORIGIN_MAIN = "refs/remotes/origin/main"`, and `display_ref(ref)` (the short name people read). Doctor imports no station's internals, so this is Doctor's own. The five sites read their refs from it; the source signatures keep their parameters, with full-ref defaults. Findings and evidence people read keep the short names; the `ledger-regression` remedy, a command handed to git, names the full ref. A meta test flags a bare `main` or `origin/…` reaching a git argument or a base-like parameter default anywhere in the package.
 
 Ledger key: `31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
