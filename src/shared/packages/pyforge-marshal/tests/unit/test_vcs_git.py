@@ -1747,6 +1747,84 @@ def test_worktree_unified_patch_raises_on_an_unresolvable_baseline(vcs, repo):
         vcs.worktree_unified_patch(repo, baseline_sha="0" * 40)
 
 
+def _conflicting_branch(repo: Path) -> None:
+    """`main` and `feature/conflict` both edit `README.md` and `b c.txt`, both add `e.txt`
+    with different content (add/add), and `main` deletes `d.txt`, which `feature/conflict`
+    modifies (modify/delete)."""
+    (repo / "b c.txt").write_text("b\n", encoding="utf-8")
+    (repo / "d.txt").write_text("d\n", encoding="utf-8")
+    _git(repo, "add", "b c.txt", "d.txt")
+    _git(repo, "commit", "-m", "base files")
+    base_sha = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / "README.md").write_text("main version\n", encoding="utf-8")
+    (repo / "b c.txt").write_text("main b\n", encoding="utf-8")
+    (repo / "e.txt").write_text("main e\n", encoding="utf-8")
+    _git(repo, "rm", "-q", "d.txt")
+    _git(repo, "add", "e.txt")
+    _git(repo, "commit", "-am", "main edits")
+    _git(repo, "checkout", "-q", "-b", "feature/conflict", base_sha)
+    (repo / "README.md").write_text("feature version\n", encoding="utf-8")
+    (repo / "b c.txt").write_text("feature b\n", encoding="utf-8")
+    (repo / "d.txt").write_text("feature d\n", encoding="utf-8")
+    (repo / "e.txt").write_text("feature e\n", encoding="utf-8")
+    _git(repo, "add", "e.txt")
+    _git(repo, "commit", "-am", "feature edits")
+    _git(repo, "checkout", "-q", "main")
+
+
+def test_merge_tree_conflict_paths_names_every_conflicted_file(vcs, repo):
+    """Story 58.1 (CAP-268): content, add/add and modify/delete conflicts alike, a space in
+    a name intact. The legacy three-arg merge-tree this replaced returned () here."""
+    _conflicting_branch(repo)
+
+    assert vcs.merge_tree_conflict_paths(repo, "main", "feature/conflict") == (
+        "README.md",
+        "b c.txt",
+        "d.txt",
+        "e.txt",
+    )
+
+
+def test_merge_tree_conflict_paths_refuses_a_conflict_that_names_no_file(vcs, repo):
+    """Story 58.1 review (low): git's manual -- "do NOT interpret an empty Conflicted file info
+    list as a clean merge". A directory-rename split (main scatters `a/`'s files into `b/` and
+    `c/`; the branch adds `a/new.txt`) exits 1 with a tree and no path; it must not read as clean."""
+    (repo / "a").mkdir()
+    for n in range(1, 5):
+        (repo / "a" / f"f{n}").write_text(f"{n}\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "base dir")
+    _git(repo, "checkout", "-q", "-b", "feature/new-in-a")
+    (repo / "a" / "new.txt").write_text("n\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a/new.txt")
+    _git(repo, "checkout", "-q", "main")
+    (repo / "b").mkdir()
+    (repo / "c").mkdir()
+    for n, dest in ((1, "b"), (2, "b"), (3, "c"), (4, "c")):
+        _git(repo, "mv", f"a/f{n}", f"{dest}/f{n}")
+    _git(repo, "commit", "-m", "split a/ into b/ and c/")
+
+    with pytest.raises(VcsCommandError, match="names no file"):
+        vcs.merge_tree_conflict_paths(repo, "main", "feature/new-in-a")
+
+
+def test_merge_tree_conflict_paths_never_touches_the_working_tree_or_refs(vcs, repo):
+    _conflicting_branch(repo)
+    before = _git(repo, "for-each-ref").stdout, _git(repo, "status", "--porcelain").stdout
+
+    vcs.merge_tree_conflict_paths(repo, "main", "feature/conflict")
+
+    assert (_git(repo, "for-each-ref").stdout, _git(repo, "status", "--porcelain").stdout) == before
+
+
+def test_merge_tree_conflict_paths_raises_on_an_unknown_branch(vcs, repo):
+    """An unknown ref also exits 1 -- the conflicted-merge code -- but prints no tree, so it
+    is an error, never an empty list that reads as a clean merge."""
+    with pytest.raises(VcsCommandError, match="merge-tree --write-tree"):
+        vcs.merge_tree_conflict_paths(repo, "main", "no-such-branch")
+
+
 def test_merge_tree_conflict_paths_is_empty_for_a_clean_merge(vcs, repo):
     _git(repo, "checkout", "-q", "-b", "feature/clean")
     (repo / "feature.txt").write_text("feature\n", encoding="utf-8")

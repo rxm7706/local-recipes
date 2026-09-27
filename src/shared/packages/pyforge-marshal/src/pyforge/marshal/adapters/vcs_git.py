@@ -70,6 +70,7 @@ path, conflict or CAS failure included."""
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import tempfile
@@ -120,6 +121,8 @@ _GIT_PUSH_TIMEOUT_S = 120.0
 #: The full refname of origin/main -- never the short name, which git resolves to a local
 #: branch or tag called `origin/main` first (Story 57.1 review 2).
 _ORIGIN_MAIN_REF = "refs/remotes/origin/main"
+#: A tree/object id as git prints it: 40 hex (SHA-1) or 64 hex (SHA-256 repositories).
+_TREE_OID = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 # `git fetch` is likewise a network round-trip, not a local query -- mirrors
 # `_GIT_PUSH_TIMEOUT_S`'s own reasoning exactly (Story 4.12, FR-173).
 _GIT_FETCH_TIMEOUT_S = 120.0
@@ -1070,30 +1073,33 @@ class GitVcs:
             raise VcsCommandError(f"git rev-list --count returned non-integer {raw!r} in {worktree_path}") from exc
 
     def merge_tree_conflict_paths(self, repo_root: Path, base: str, branch: str) -> tuple[str, ...]:
-        """Story 28.20: parse ``git merge-tree`` for conflict paths."""
-        merge_base = self.merge_base(repo_root, base, branch)
-        result = _run(
-            [
-                "git",
-                "-C",
-                str(repo_root),
-                "merge-tree",
-                merge_base,
-                base,
-                branch,
-            ],
-            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
-        )
-        if result.returncode != 0 and "CONFLICT" not in result.stdout:
+        """Story 28.20 / 58.1 (CAP-268): git's own conflicted-file list for merging ``branch``
+        into ``base``. ``--write-tree --name-only -z --no-messages`` prints the merged tree's oid
+        then one NUL-separated path per conflicted file -- content, modify/delete and add/add
+        alike. Exit 0 is a clean merge; exit 1 with a tree oid first is a conflicted one; any
+        other outcome (an unknown ref also exits 1, with no tree) is an error, never an empty
+        list. A conflict that names no file (git's manual: "do NOT interpret an empty
+        Conflicted file info list as a clean merge" -- some directory-rename splits) is an
+        error too, so it can never read as clean (Story 58.1 review). The legacy three-arg
+        form this replaced never prints a ``Merge conflict in`` line, so it read every real
+        conflict as clean (found 2026-09-27)."""
+        cmd = ["git", "-C", str(repo_root), "merge-tree", "--write-tree", "--name-only", "-z", "--no-messages"]
+        result = _run([*cmd, base, branch], timeout_s=_GIT_CHECKOUT_TIMEOUT_S)
+        fields = result.stdout.split("\0")
+        if result.returncode in (0, 1) and _TREE_OID.fullmatch(fields[0]):
+            if result.returncode == 0:
+                return ()
+            paths = tuple(sorted({path for path in fields[1:] if path}))
+            if paths:
+                return paths
             raise VcsCommandError(
-                f"git merge-tree {merge_base} {base} {branch} failed: {result.stderr.strip() or result.stdout.strip()}"
+                f"git merge-tree --write-tree {base} {branch}: a conflicted merge that names no file "
+                "(a directory-rename conflict) -- not clean, and no path to heal or escalate"
             )
-        paths: set[str] = set()
-        marker = "Merge conflict in "
-        for line in result.stdout.splitlines():
-            if marker in line:
-                paths.add(line.split(marker, 1)[1].strip())
-        return tuple(sorted(paths))
+        raise VcsCommandError(
+            f"git merge-tree --write-tree {base} {branch} failed (exit {result.returncode}): "
+            f"{result.stderr.strip() or result.stdout.strip()}"
+        )
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         """Story 28.20: ``git show ref:path`` read-only."""
@@ -1105,12 +1111,12 @@ class GitVcs:
         return result.stdout
 
     def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
-        """Story 51.1: mirrors ``merge_tree_conflict_paths``'s own
-        ``_run(... "merge-tree" ...)`` shape and ``"CONFLICT" in
-        result.stdout`` disambiguation, but drives the modern two-arg
-        ``--write-tree`` form (git computes the merge base itself -- no
-        separate ``merge_base`` call needed) and returns the resulting
-        tree's oid instead of parsing conflict paths. On a real conflict
+        """Story 51.1: the modern two-arg ``--write-tree`` form (git computes
+        the merge base itself), with the messages section left on so a
+        ``"CONFLICT"`` line tells a conflicted merge from a failed one; it
+        returns the resulting tree's oid, where ``merge_tree_conflict_paths``
+        (the same form with ``--name-only -z --no-messages``, Story 58.1)
+        returns the conflicted paths. On a real conflict
         git still exits with the toplevel tree's oid as its first output
         line (a tree carrying literal conflict markers) followed by
         ``"CONFLICT"`` sections -- that oid is not a clean merge result, so
