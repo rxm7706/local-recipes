@@ -1675,6 +1675,98 @@ def test_fast_forward_raises_on_an_unresolvable_ref(vcs, repo):
         vcs.fast_forward(repo, "origin/no-such-branch")
 
 
+# --- commits_behind (Story 15.1; Story 57.1 review 2 moved refresh to the full refname) ---
+
+
+def test_commits_behind_counts_against_the_full_remote_tracking_ref_not_a_shadowing_branch(vcs, repo, remote, tmp_path):
+    """`refs/remotes/origin/main` is what refresh counts against since review 2 -- a LOCAL
+    branch named `origin/main` (which the short name would resolve to first) is ignored."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "origin", "main")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/behind", base="main")
+    for n in (1, 2):
+        (repo / f"advance-{n}.txt").write_text(f"{n}\n", encoding="utf-8")
+        _git(repo, "add", f"advance-{n}.txt")
+        _git(repo, "commit", "-m", f"advance {n}")
+    _git(repo, "push", "origin", "main")
+    vcs.fetch(home, "origin", "main")
+    _git(home, "branch", "origin/main", "HEAD")  # the shadow: 0 behind if it were consulted
+
+    assert vcs.commits_behind(home, "refs/remotes/origin/main") == 2
+    assert vcs.commits_behind(home, "origin/main") == 0  # why refresh no longer passes the short name
+
+
+def test_commits_behind_raises_on_an_unresolvable_ref(vcs, repo):
+    with pytest.raises(VcsCommandError, match="rev-list --count"):
+        vcs.commits_behind(repo, "refs/remotes/origin/no-such-branch")
+
+
+def test_push_without_the_env_utility_goes_through_the_preflight(vcs, cloned_repo, remote, monkeypatch):
+    """Story 57.1 review 2 (L-D): where the POSIX `env` utility is absent (win-64), a proven
+    push still pushes the proven sha, but through the preflight -- no opt-out variables."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git
+
+    seen = _record_hook_env(cloned_repo)
+    real_which = vcs_git.shutil.which
+    monkeypatch.setattr(
+        vcs_git.shutil, "which", lambda name, *a, **k: None if name == "env" else real_which(name, *a, **k)
+    )
+    tip = _git(cloned_repo, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+    _git(cloned_repo, "branch", "loop/acme", tip)
+
+    vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=tip)
+
+    assert seen.read_text(encoding="utf-8").splitlines() == ["unset|unset"]
+    assert _git(remote, "rev-parse", "loop/acme").stdout.strip() == tip
+
+
+# --- worktree_unified_patch (Story 22.6) / merge_tree_conflict_paths + file_text_at_ref (Story 28.20) ---
+
+
+def test_worktree_unified_patch_carries_committed_and_dirty_changes(vcs, repo):
+    baseline = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / "committed.txt").write_text("committed\n", encoding="utf-8")
+    _git(repo, "add", "committed.txt")
+    _git(repo, "commit", "-m", "committed change")
+    (repo / "README.md").write_text("dirty edit\n", encoding="utf-8")
+
+    patch = vcs.worktree_unified_patch(repo, baseline_sha=baseline)
+
+    assert "+committed" in patch
+    assert "+dirty edit" in patch
+
+
+def test_worktree_unified_patch_is_empty_with_no_change(vcs, repo):
+    baseline = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert vcs.worktree_unified_patch(repo, baseline_sha=baseline) == ""
+
+
+def test_worktree_unified_patch_raises_on_an_unresolvable_baseline(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.worktree_unified_patch(repo, baseline_sha="0" * 40)
+
+
+def test_merge_tree_conflict_paths_is_empty_for_a_clean_merge(vcs, repo):
+    _git(repo, "checkout", "-q", "-b", "feature/clean")
+    (repo / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(repo, "add", "feature.txt")
+    _git(repo, "commit", "-m", "add feature.txt")
+    _git(repo, "checkout", "-q", "main")
+
+    assert vcs.merge_tree_conflict_paths(repo, "main", "feature/clean") == ()
+
+
+def test_file_text_at_ref_reads_a_path_and_returns_none_for_a_missing_one(vcs, repo):
+    assert vcs.file_text_at_ref(repo, "main", "README.md") == (repo / "README.md").read_text(encoding="utf-8")
+    assert vcs.file_text_at_ref(repo, "main", "no-such-file.txt") is None
+
+
+def test_file_text_at_ref_raises_on_an_unresolvable_ref(vcs, repo):
+    with pytest.raises(VcsCommandError, match="git show"):
+        vcs.file_text_at_ref(repo, "no-such-ref", "README.md")
+
+
 def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(vcs, repo, remote):
     """CAP-5: promote publishes on origin/main from a throwaway worktree.
     The operator checkout stays on its pre-promote HEAD, dirty files stay,

@@ -4074,7 +4074,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_token_economy_benchmark.py": "bc76163f06b3431c4a2fd9e640cc0233b678c44a",
    "src/shared/packages/pyforge-marshal/tests/unit/test_upstream.py": "ffeb958f77b9d441c32b8ce8715832e90c7573b0",
    "src/shared/packages/pyforge-marshal/tests/unit/test_upstream_cli.py": "2b78198379fe66b65dd8b2efd2d043bbd31a332e",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "d5aa7d8144a8897178e8e63c960643c871eaa5bb",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "a0bf8654d8ff5fb1b11caa9e1d1bbffccf743d68",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "2ccaa3be0119f610545dc3e64292083bb3ea9ba0",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verify_scope.py": "1596778d6c2fe9fe095fe46214b8e06227f85a78",
    "src/shared/packages/pyforge-marshal/tests/unit/test_watch.py": "f634543dff68e0509f8d426f53b29d10ed1b3c48",
@@ -4082,7 +4082,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "f0c1bf869093fb4722d44cc6dd2461812d556bbe"
+  "memlog": "cab19857a08f6a3211b62f6ef4f2c8899109c2d2"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
