@@ -74,11 +74,15 @@ from .hooks import PR_GATE_SCAN
 
 TEA_TEST_REVIEW_BINARY = "tea-test-review"
 
-# steward 46.3's own pixi task defaults ("tea-test-review --base origin/main
-# --min-score 80") -- this module never gates on --min-score (AD-4: the
-# advisory contributes a note, never a verdict), so it is deliberately not
-# passed here. --agent claude mirrors the CLI's own documented default.
-_DEFAULT_BASE_REF = "origin/main"
+# steward 46.3's own pixi task defaults ("tea-test-review --base
+# refs/remotes/origin/main --min-score 80") -- this module never gates on
+# --min-score (AD-4: the advisory contributes a note, never a verdict), so it
+# is deliberately not passed here. --agent claude mirrors the CLI's own
+# documented default. The base is the full refname, never the short
+# `origin/main`: TEA diffs `<base>...HEAD`, and a short name resolves to a
+# local branch or tag of that name first, so a stray `origin/main` at HEAD
+# emptied the review (warden Story 13.1, spec-pyforge-warden CAP-23).
+_DEFAULT_BASE_REF = "refs/remotes/origin/main"
 _DEFAULT_AGENT = "claude"
 _DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
 

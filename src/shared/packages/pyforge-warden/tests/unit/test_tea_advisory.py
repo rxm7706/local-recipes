@@ -641,3 +641,22 @@ def test_tea_roster_missing_error_is_a_pyforge_error_and_a_runtime_error():
             raise TeaRosterMissingError("roster lacks tea")
         except catch:
             pass
+
+
+# --- warden Story 13.1 (spec-pyforge-warden CAP-23): the base is the remote-tracking ref ----
+
+
+def test_the_default_runner_passes_the_remote_tracking_ref_as_the_base(tmp_path: Path, monkeypatch) -> None:
+    """TEA diffs ``<base>...HEAD``; a short ``origin/main`` would resolve to a local branch or tag of that name
+    first and empty the review. The real binary is never run: ``subprocess.run`` is replaced and the argv kept."""
+    seen: list[list[str]] = []
+
+    def fake_run(argv: list[str], **_: Any) -> subprocess.CompletedProcess[str]:
+        seen.append(list(argv))
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(tea_advisory.subprocess, "run", fake_run)
+    tea_advisory._default_runner("tea-test-review", tmp_path, tmp_path / "verdict.json")
+
+    (argv,) = seen
+    assert argv[argv.index("--base") + 1] == "refs/remotes/origin/main"

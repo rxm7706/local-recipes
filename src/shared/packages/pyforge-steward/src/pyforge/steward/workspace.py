@@ -38,7 +38,7 @@ _BOOKKEEPING_RELATIVE_PATH = Path(".steward/workspaces.yaml")
 _ARCHIVE_RELATIVE_PATH = Path(".steward/workspace-archive")
 _REPO_SETS_RELATIVE_PATH = Path(".steward/repo-sets.yaml")
 _CODE_WORKSPACE_RELATIVE_DIR = Path(".steward/workspaces")
-_DEFAULT_FROM = "origin/main"
+_DEFAULT_FROM = "origin/main"  # recorded as written; git reads it through _source_ref
 _FEATURE_BRANCH_PREFIX = "f-"
 _SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 
@@ -552,7 +552,7 @@ def start_workspace(
         raise WorkspaceError(f"scratch path already exists: {dest}")
 
     try:
-        _git("worktree", "add", str(dest), "-b", slug, from_ref, cwd=root)
+        _git("worktree", "add", str(dest), "-b", slug, _source_ref(from_ref), cwd=root)
     except subprocess.CalledProcessError as exc:
         detail = (exc.stderr or exc.stdout or str(exc)).strip()
         raise WorkspaceError(f"git worktree add failed: {detail}") from exc
@@ -595,13 +595,26 @@ def _worktree_dirty(wt: Path) -> bool:
     return bool((result.stdout or "").strip())
 
 
+def _source_ref(source: str) -> str:
+    """A recorded source as git must read it: ``origin/<b>`` as ``refs/remotes/origin/<b>``, anything else (a full
+    ref, a sha, a local branch) unchanged. Git resolves a short name to a local branch or tag of that name before
+    ``refs/remotes/<name>``; past a stray ``origin/main`` at an unmerged tip, ``clean --merged-only`` read the
+    branch as merged, removed the worktree and deleted the branch (Story 70.1, CAP-158)."""
+    return f"refs/remotes/{source}" if source.startswith("origin/") else source
+
+
+def _branch_ref(branch: str) -> str:
+    """A workspace branch as git must read it, ``refs/heads/<branch>``: a tag named like it never stands in."""
+    return branch if branch.startswith("refs/") else f"refs/heads/{branch}"
+
+
 def _ahead_behind(wt: Path, source: str, branch: str) -> tuple[int, int]:
     """Return (ahead, behind) of *branch* vs *source* via ``rev-list --left-right``.
 
     ``git rev-list --left-right --count <source>...<branch>``: left = behind,
-    right = ahead (commits on branch not in source).
+    right = ahead (commits on branch not in source). Both by full refname (Story 70.1).
     """
-    range_spec = f"{source}...{branch}"
+    range_spec = f"{_source_ref(source)}...{_branch_ref(branch)}"
     result = _git_ok("rev-list", "--left-right", "--count", range_spec, cwd=wt)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
@@ -691,8 +704,8 @@ def status_workspaces(
 
 
 def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
-    """True when ``branch`` is an ancestor of ``into`` (already merged)."""
-    result = _git_ok("merge-base", "--is-ancestor", branch, into, cwd=root)
+    """True when ``branch`` is an ancestor of ``into`` (already merged). Both by full refname (Story 70.1)."""
+    result = _git_ok("merge-base", "--is-ancestor", _branch_ref(branch), _source_ref(into), cwd=root)
     if result.returncode == 0:
         return True
     if result.returncode == 1:
@@ -751,8 +764,9 @@ def _source_commit(source: str, *, root: Path) -> str | None:
     A short name like ``origin/main`` resolves to a local branch or tag of that name first,
     with a warning that config can switch off and a locale can reword; so the proof asks git
     which ref won (``--symbolic-full-name``) -- only one under ``refs/remotes/`` is a landing
-    (Story 69.1 reviews 1 and 2)."""
-    full = _git_ok("rev-parse", "--verify", "--symbolic-full-name", "--end-of-options", source, cwd=root)
+    (Story 69.1 reviews 1 and 2). ``origin/<b>`` is asked for by its full refname, so a shadow
+    no longer turns a provable landing into a tarball (Story 70.1)."""
+    full = _git_ok("rev-parse", "--verify", "--symbolic-full-name", "--end-of-options", _source_ref(source), cwd=root)
     name = (full.stdout or "").strip()
     if full.returncode != 0 or not name.startswith("refs/remotes/") or "\n" in name:
         return None
@@ -915,7 +929,7 @@ def _archive_worktree(
         # holds files, never history), so it is kept (Story 69.1 review 1).
         branch_kept = False
         if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
-            source_sha = _commit_of(record.source, cwd=root)
+            source_sha = _commit_of(_source_ref(record.source), cwd=root)
             merged = source_sha is not None and (
                 _git_ok("merge-base", "--is-ancestor", f"refs/heads/{record.branch}", source_sha, cwd=root).returncode
                 == 0
