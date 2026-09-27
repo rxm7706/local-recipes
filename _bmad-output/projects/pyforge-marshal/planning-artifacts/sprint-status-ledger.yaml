@@ -323,7 +323,7 @@ development_status:
   6-7-entry-file-family-drift-check-detect-only: done
   6-8-upstream-contribution-register: done
   6-9-tool-surface-rendering-and-preflight-probe: done
-  60-1-every-remote-tracking-read-names-the-full-ref: backlog
+  60-1-every-remote-tracking-read-names-the-full-ref: done
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
@@ -446,7 +446,7 @@ development_status:
   epic-59: done
   epic-6: done
   epic-6-retrospective: optional
-  epic-60: backlog
+  epic-60: done
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

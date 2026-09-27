@@ -2,8 +2,8 @@
 title: '60.1: Every remote-tracking read names the full ref'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
-review_loop_iteration: 1
+status: 'done'
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -24,8 +24,9 @@ declared_low_risk: false
 - deploy's push-route subjects;
 - `spec_text_at_ref`'s default ref;
 - land's ledger read and loop-home fast-forward;
-- the sprint-ledger promotion publish, `commit_paths_onto_remote_tip` — a write: it builds a commit on the tip it resolves and pushes it (found by review 1);
-- `watch`'s loop-branch read (found by review 1).
+- the promotion publish, `commit_paths_onto_remote_tip` — the sprint ledger, the blocked-spec twin and the deferred-work intake; a write: it builds a commit on the tip it resolves and pushes it (found by review 1);
+- `watch`'s loop-branch read (found by review 1);
+- marshal's repo-root `scripts/unpushed_work_check.py`, which `marshal status` runs, and `scripts/fleet_picture.py` (found by review 2).
 
 A stray local `origin/main` would make each of these read, diff or fast-forward to a commit the remote never had.
 
@@ -37,7 +38,7 @@ A stray local `origin/main` would make each of these read, diff or fast-forward 
 Every call site above reads a ref from it. The two private copies, `adapters/vcs_git._ORIGIN_MAIN_REF` and `dispatch_land._ORIGIN_MAIN_REF`, become the shared constant. Human-facing finding messages keep saying `origin/main`.
 
 Ledger key: `60-1-every-remote-tracking-read-names-the-full-ref`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -98,3 +99,13 @@ Verified clean: with no shadow every changed call site behaves identically (work
 - `[low]` `[patch]` The planning text overclaimed until the above — CAP-270, the Story's Surface, this spec's Intent and AC amended.
 - `[low]` `[patch]` The real-git tests were adapter-level and the behind-count case did not separate short from full — the behind-count test now puts the shadow where the home is (short: 0, full: 1); tag shadows added; the module docstring says what each layer proves.
 - `[nit]` `[patch]` Stale docstrings (`vcs_git`, `ports/vcs`, `deploy`), `cli/init.py`'s operator hint (now `refs/remotes/origin/main`), `dispatch_land` importing another module's private name, `display_ref`'s join. `[nit]` `[note]` The fast-forward reflog now names the full ref; `VcsCommandError` text inside MRS-DISP-044 carries it; nothing parses either.
+
+### Review 2 — 2026-09-27, independent adversarial reviewer, commit `a553d35be9` — PASS with lows
+
+Verified closed by re-running review 1's probes: the publish with a branch or a tag shadow leaves the remote's `main` as `['promote ledger', 'base']`; `watch` returns the remote tip under no shadow, a branch shadow and a tag shadow; no-shadow behaviour identical across every changed site; `init`'s hint is exactly `fast_forward`'s command; every `fetch` passes a bare branch; every publish caller passes `remote="origin"` with a branch name; no false positives on the live tree.
+
+- `[low]` `[patch]` **The matcher still missed spellings** (`remote + "/" + b`, `"origin" + "/" + b`, `%`-mapping, `"".join`, `str.format`, `os.path.join`, a variable holding `"origin"`). **Fix:** every string-building expression is rendered into one template; the self-test pins 17 spellings and 6 non-refs.
+- `[low]` `[patch]` **`watch` echoed a missing loop ref back as its SHA** (`rev-parse` without `--verify`). **Fix:** `--verify --quiet <ref>^{commit}`; a missing branch is `None`, any other failure a `ProbeError`; two tests.
+- `[low]` `[patch]` **`scripts/unpushed_work_check.py` resolved `origin/main` by short name** — a shadow on unpushed work made it report the work safe; it is marshal's detector (`scripts/spec_surface_allowlist.txt`) and `marshal status` runs it, so it is this story's, not another station's. `scripts/fleet_picture.py` counted behind the short name too. **Fix:** full refnames; `tests/scripts/test_unpushed_work_check_full_ref.py` (all three cases fail on the old script).
+- `[nit]` `[patch]` `dispatch_land`'s comment still named `dispatch_verify` as the import; the heal-skipped message named the full ref — both fixed. Planning: "eight more" → ten, FR-216 names the push, the publish serves three promotions.
+- `[note]` `[→ DW-marshal-local-branch-short-names-2026-09-27]` Marshal reads its local landing branch as the short name `main`, which a tag named `main` shadows; `_valid_landing_base_branch` accepts `origin/main`. A separate class (local refs) with its own chain.

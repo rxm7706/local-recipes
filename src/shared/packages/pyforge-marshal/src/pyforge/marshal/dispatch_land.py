@@ -48,8 +48,7 @@ from .ports.vcs import VcsPort
 _FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
-# Story 51.1: `_ORIGIN_MAIN` (imported above from `dispatch_verify`'s own
-# `_SCOPE_BASE`, that module's established name for this exact value) is
+# Story 51.1: `_ORIGIN_MAIN` (imported above from `core.refs`, Story 60.1) is
 # deliberately never `_MERGE_BASE` (the LOCAL landing base used everywhere
 # else in this file). Verifying against the local `main` would reproduce
 # the exact blind spot this story fixes: the 50.4/27.5 incident's
@@ -966,7 +965,7 @@ def execute_dispatch_land(
             vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)
         except VcsCommandError as fetch_exc:
             heal = DispatchLandHealResult(healed=False)
-            heal_skipped = f" (heal skipped: could not fetch {_ORIGIN_MAIN}: {fetch_exc})"
+            heal_skipped = f" (heal skipped: could not fetch {ORIGIN_MAIN_SHORT}: {fetch_exc})"
         else:
             heal = try_heal_dispatch_land_merge(
                 project_slug=project_slug,

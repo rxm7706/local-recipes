@@ -7051,7 +7051,7 @@ ref), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py`
 ## Epic 60: Marshal names the remote's branch, never a name something local can wear (spec-pyforge-marshal CAP-270)
 
 Minted 2026-09-27 (night) from the station Dream's entry of the same name: Stories 57.1 and 59.1 each closed the short-name
-shadowing trap in one place; a sweep found eight more. A new epic because Epic 59 is `done`. **HARD boundaries:** no
+shadowing trap in one place; a sweep and two reviews found ten more, one of them a push. A new epic because Epic 59 is `done`. **HARD boundaries:** no
 behaviour change when no shadowing ref exists; one helper in `core/`, not eight spellings; messages keep `origin/main`.
 
 ### Story 60.1: Every remote-tracking read names the full ref
@@ -7063,8 +7063,9 @@ So that a local branch or tag named `origin/main` can never stand in for what th
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-270 (FR-216) • CAP-267 (57.1), CAP-269 (59.1)
 **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refs.py` (new), `dispatch_verify.py`, `dispatch_land.py`,
 `dispatch_supervisor/__main__.py`, `cli/dispatch.py`, `cli/deploy.py`, `cli/land.py`, `cli/refresh.py`, `cli/watch.py`, `cli/init.py`,
-`core/dispatch.py`, `adapters/vcs_git.py` (incl. the `commit_paths_onto_remote_tip` publish), `ports/vcs.py` (all under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`), tests under
-`src/shared/packages/pyforge-marshal/tests/unit/`.
+`core/dispatch.py`, `adapters/vcs_git.py` (incl. the `commit_paths_onto_remote_tip` publish), `ports/vcs.py` (all under
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/`), `scripts/unpushed_work_check.py`, `scripts/fleet_picture.py`, tests under
+`src/shared/packages/pyforge-marshal/tests/{unit,meta}/` and `tests/scripts/test_unpushed_work_check_full_ref.py`.
 **Given** a repository with a local branch named `origin/main` on an unverified commit
 **When** dispatch computes its scope diff, dispatch land counts behind and previews the merge, and land fast-forwards a loop home
 **Then** each uses the remote-tracking tip, never the shadow's commit, and publishing the ledger onto the remote tip never pushes the shadow's commit

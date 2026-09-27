@@ -2682,13 +2682,13 @@ reconcile; FR derived from the CAP per `one-chain-per-station`.*
 ### 27.1 The FR space: FR-216 registered
 
 After Stories 57.1 and 59.1 closed the short-name shadowing trap in `refresh` and the landing heal,
-a sweep found eight more call sites handing git `origin/<branch>`. FR-216 decomposes into
+a sweep and two reviews found ten more call sites handing git `origin/<branch>`, one of them a push. FR-216 decomposes into
 **Epic 60** (Story 60.1) — a new epic because Epic 59 is `done`.
 
 #### FR-216: Every remote-tracking read names the full ref ← CAP-270
 Every place marshal hands git a remote-tracking ref names it `refs/remotes/<remote>/<branch>`,
 through one pure helper (`core/refs.py`); a local branch or tag named like the remote changes
-nothing marshal reads, diffs or fast-forwards to. Messages keep the short name. Story 60.1.
+nothing marshal reads, diffs, fast-forwards to or pushes. Messages keep the short name. Story 60.1.
 
 **ONE FR space now FR-1..FR-216** (FR-217 = next free id).
 
