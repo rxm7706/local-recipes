@@ -3126,7 +3126,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py": "079a5495320976d852ee0c01e3c9b2fee266e6dc",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py": "a9adfd230b4bb8ada8db701c1e1be8e98ec042c3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/substrate_store.py": "51e7d1afed19e69c757e953ad48607023e54f81e",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py": "b42ff7cc4459ffb68f1d6fb6f53d2d091933e0f7",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py": "e0a44cc177e0ec01c091e168c6b60c100e547581",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/__init__.py": "e245565ee917582f496230b861476cbee4596bf3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py": "4d21576c62480ff66597c85dd1ce33cf059498da",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/benchmark.py": "b913c1af6d1675bd662943c971fca05466ab5bf9",
@@ -3143,7 +3143,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py": "4359a638e89c2a058dd7740db9bf47e4702c3847",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": "a4733930bf3221f0e05df92647ee0efe2af3ecae",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/planning.py": "37f8bb9205c7dba933f4b61dc45fd353691262d3",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py": "cf27a0921d491bc33aa69852390c3d7d4dbae616",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py": "c5b32bb027fd2cd46ce4ff426299674fadaa1bdb",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py": "990f343a373815315cf2c26865a5cb10f8598426",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py": "e5630e3ae99fae98819d8f87501308c168f366e0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "a32608430ad8c3b0bb2f4807887193e9a6f2aed5",
@@ -3231,7 +3231,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py": "b087231b02074495acd0d18e507ef816f1c9b13a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/record.py": "14e3ab065c41d439456068a68403fb0555a05dc9",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/skill_invoke.py": "13f671096b27d94c7ba63948fa4f3a34a7f6f72b",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py": "d5114e61710628864752a24b09bd923559a0e757",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py": "e4e3dec9be0600fd22b454c87bab2d6dd8b2565e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/conformance.json": "f936659078cddc70d1df790865e0f8579b9c32b7",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/envelope.v1.json": "7d9511728c7b77be1a05b85f41cf1cfc5a976b8f",
@@ -3401,7 +3401,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "8fef58d49b2962ec52ec7d2c1e14af3563f4b28d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/track.py": "f979f40049b232a1e96d66bdeba038fa3cd976d5",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "412e34d1ded77ef38aa411e384ca734550c3684f",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "766aec76f7ee25727da1cd76666f85a8ccce494b",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "2b809cd298799ea97bff9d53b163192079294396",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py": "82c91c1197d2778d72eadbe6dee2ac33bdd74626",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py": "1c97b82636fe5f4674a3cf4c227f9ad623ee8d30",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py": "e2b9872657bb7310923d1a655f8598e3ef16c1db",
@@ -3441,7 +3441,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7841247dfd900ae288c19463e38af1276d4d9e81",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "a4d1873ce35f082eff5cc670ba79604eb75d29af"
+  "memlog": "40e00eb437ada874e186848768995ea7e58f625d"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3715,7 +3715,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py": "079a5495320976d852ee0c01e3c9b2fee266e6dc",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py": "a9adfd230b4bb8ada8db701c1e1be8e98ec042c3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/substrate_store.py": "51e7d1afed19e69c757e953ad48607023e54f81e",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py": "b42ff7cc4459ffb68f1d6fb6f53d2d091933e0f7",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py": "e0a44cc177e0ec01c091e168c6b60c100e547581",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/__init__.py": "e245565ee917582f496230b861476cbee4596bf3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py": "4d21576c62480ff66597c85dd1ce33cf059498da",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/benchmark.py": "b913c1af6d1675bd662943c971fca05466ab5bf9",
@@ -3807,7 +3807,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/observer.py": "0d145813236b8254e0569efa729da256e0d2f974",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/record.py": "14e3ab065c41d439456068a68403fb0555a05dc9",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/skill_invoke.py": "13f671096b27d94c7ba63948fa4f3a34a7f6f72b",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py": "d5114e61710628864752a24b09bd923559a0e757",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py": "e4e3dec9be0600fd22b454c87bab2d6dd8b2565e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/conformance.json": "f936659078cddc70d1df790865e0f8579b9c32b7",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/envelope.v1.json": "7d9511728c7b77be1a05b85f41cf1cfc5a976b8f",
@@ -4015,7 +4015,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_promotion.py": "d845c715ed2c607366d76b995f3593cf07ef4ca7",
    "src/shared/packages/pyforge-marshal/tests/unit/test_published_plane.py": "1a0cab7cac125419b2fe848c121204a679963ecb",
    "src/shared/packages/pyforge-marshal/tests/unit/test_publisher.py": "136fa84c2051657a724ae4e892fb93d095eaa506",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py": "c0fb4c4232a9654b82e11e4c05d5e5fc3cbfe857",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py": "13d2740069f650a2979cada694071050686e9398",
    "src/shared/packages/pyforge-marshal/tests/unit/test_retire.py": "5d2bf326091f50aa74e428adfc28c28102c5739f",
    "src/shared/packages/pyforge-marshal/tests/unit/test_savings_telemetry.py": "59086805e2e173fc32c1525f0722e062acbe1f91",
    "src/shared/packages/pyforge-marshal/tests/unit/test_scope.py": "d9a052ccc75476e9f513d1ce2f14ececd5ed0075",
@@ -4074,7 +4074,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_token_economy_benchmark.py": "bc76163f06b3431c4a2fd9e640cc0233b678c44a",
    "src/shared/packages/pyforge-marshal/tests/unit/test_upstream.py": "ffeb958f77b9d441c32b8ce8715832e90c7573b0",
    "src/shared/packages/pyforge-marshal/tests/unit/test_upstream_cli.py": "2b78198379fe66b65dd8b2efd2d043bbd31a332e",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "e4b832990df1a82a200a8c211b22d5252a2178f0",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "d5aa7d8144a8897178e8e63c960643c871eaa5bb",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "2ccaa3be0119f610545dc3e64292083bb3ea9ba0",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verify_scope.py": "1596778d6c2fe9fe095fe46214b8e06227f85a78",
    "src/shared/packages/pyforge-marshal/tests/unit/test_watch.py": "f634543dff68e0509f8d426f53b29d10ed1b3c48",
@@ -4082,7 +4082,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "74068540ba5c6ccc5ba74f8952e263781d84334c"
+  "memlog": "f0c1bf869093fb4722d44cc6dd2461812d556bbe"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -5380,7 +5380,7 @@
    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md": "002b2f409cd33910e6f784285b8fb10311b660a2",
    "docs/dreams/mcp-era-isolation.md": "08cb991e1ed22ad162f4fdaab93e5d3ef042f8d8",
    "docs/dreams/mcp-host-real-station-tools.md": "eac346ba0a7ddc94ef01280c258b4d061813474d",
-   "docs/reference/library-llms-full.md": "2e744aa9c695edcebbf715b6ce4e46ab10fbb503",
+   "docs/reference/library-llms-full.md": "88206a00cf32457daf2639e0a138730613e2b574",
    "docs/reference/pixi-config-jfrog.example.toml": "d3d4af5b71406572d164c8ecddb27ab7fd0cc2a6",
    "evals/review-catches-planted-defect/README.md": "a8c03fa932199cc73f53f27a5f66ccfdd3ced217",
    "evals/review-catches-planted-defect/arms/clean.diff": "8a5abed77a0fc68cb9da84cd6476848cf46cf774",
@@ -5419,10 +5419,10 @@
    "scripts/platform_ci_test_requirements_check.py": "88270b0950cdbf35f3c7706d95826423f6c5e70b",
    "scripts/platform_image_pip_layer.py": "10b16d060483c3f6ca4ef20e321a2ca832d0c0a7",
    "scripts/platform_object_storage.py": "4b44d5fb99b6a5672c98586fd2df701d2ddfe7a1",
-   "scripts/pre_push_preflight.sh": "f24d1f860dbb7e98cf1dcb31e80d6aa104c547ae",
+   "scripts/pre_push_preflight.sh": "5565e2a9a2ac7cd891c90f8b1791e0f72cfb2ab5",
    "scripts/precommit_config_check.py": "7144baa64e92ec54ef1b51a5d877c6c62e1da81d",
    "scripts/target_version_check.py": "d76ccd5e2f77b7584e677fe23eca4b46881a006c",
-   "src/platform/Containerfile": "a29f8ec8bdbb52740d8b3e782305fdd58b454cc9",
+   "src/platform/Containerfile": "22155e84dc67704858e321e35bf1e0f0dda61069",
    "src/platform/compose/mcp-host/Containerfile": "24c5f6bb937ed56f0e15f17cc7624d8ba9b60363",
    "src/platform/config/settings/local.py": "995c441db8f00d6813a5bc3197f1be77c3b17890",
    "src/platform/deploy/charts/platform/templates/_helpers.tpl": "0547ecab3fbacded09721400483025b93e977dcc",
@@ -5502,7 +5502,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py": "1c35bed459ad6edd28a6404692d7df7bc5932381",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "8fef58d49b2962ec52ec7d2c1e14af3563f4b28d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/track.py": "f979f40049b232a1e96d66bdeba038fa3cd976d5",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "766aec76f7ee25727da1cd76666f85a8ccce494b",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "2b809cd298799ea97bff9d53b163192079294396",
    "src/shared/packages/pyforge-steward/tests/fixtures/plaintext_secret_candidate/leaked_key.txt": "3032a639b61ac7dd31b029c4549d8645ed0fa497",
    "src/shared/packages/pyforge-steward/tests/fixtures/track-run-sparse/journal.jsonl": "f7e2e2fe793f5328707b39afe5cc11d2efbda3c7",
    "src/shared/packages/pyforge-steward/tests/fixtures/track-run/gate-record.json": "b5a27e3a6f74d1cf01a334dd38cb366ccc49aa74",
@@ -5595,11 +5595,11 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "99147ea328cee8c68150228310e3f68472cfc0aa",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py": "c09e271257afe028aa58ce322ba7a4e23186c1cc",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "ef39121a6dd7f8769d63626aa214378ff81f89f0",
-   "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "b8dfc52a2cf3d3804358901fc1e5599660033eb9",
+   "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "f907e99e68a577a12af54ffb9331de383eb932e8",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "0234f9f1c32c32a2bc784ad028d3cb1cca523a30",
-   "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "b06cc85edeb5f0c9f924919c94d57b98849b0ccc"
+   "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "ae090048a1d3600ce97b1dbfb71be23b79ac599b"
   },
-  "memlog": "d7d32711f62bd038583d2a169ed910b5b9aa5728"
+  "memlog": "f48729dbb42580d94b11b2506f7d4b2658f5ed75"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
