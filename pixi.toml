@@ -2830,7 +2830,7 @@ description = "Stop the per-user scribe PostgreSQL cluster (fast shutdown). The 
 cmd = "python scripts/scribe_pg.py down"
 
 [feature.scribe-pg.tasks.scribe-pg-status]
-description = "Report whether the scribe PostgreSQL cluster is listening on 127.0.0.1:5433, whether its data directory exists, and its socket directory (the running server's, from postmaster.pid, else the configured one). Read-only; always exits 0."
+description = "Report whether the scribe PostgreSQL cluster is listening on 127.0.0.1:5433, whether its data directory exists, and its socket directory (the listening server's, asked over TCP; else a stale postmaster.pid's; else the configured one). Read-only; always exits 0."
 cmd = "python scripts/scribe_pg.py status"
 
 [feature.platform-object-storage]

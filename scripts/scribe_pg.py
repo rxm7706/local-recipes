@@ -87,20 +87,38 @@ def _is_up() -> bool:
     return _run(["pg_isready", "-h", "127.0.0.1", "-p", PORT, "-q"]).returncode == 0
 
 
-def _socket_dir() -> pathlib.Path:
-    """`SCRIBE_PG_SOCKET_DIR`, else `$XDG_RUNTIME_DIR/scribe-pg`, else `/tmp/scribe-pg-<uid>`."""
+def _socket_dir() -> tuple[pathlib.Path, bool]:
+    """(socket dir, chosen by the user?).
+
+    `SCRIBE_PG_SOCKET_DIR` (made absolute: the server resolves a relative `-k`
+    against its data dir), else `$XDG_RUNTIME_DIR/scribe-pg` when that runtime
+    dir exists and is the user's, else `/tmp/scribe-pg-<uid>`.
+    """
     override = os.environ.get("SCRIBE_PG_SOCKET_DIR")
     if override:
-        return pathlib.Path(override)
+        return pathlib.Path(override).expanduser().absolute(), True
     runtime = os.environ.get("XDG_RUNTIME_DIR")
     if runtime:
-        return pathlib.Path(runtime) / "scribe-pg"
-    return pathlib.Path("/tmp") / f"scribe-pg-{os.getuid()}"
+        base = pathlib.Path(runtime)
+        if base.is_dir() and base.stat().st_uid == os.getuid():
+            return base / "scribe-pg", False
+    return pathlib.Path("/tmp") / f"scribe-pg-{os.getuid()}", False
 
 
 def _prepare_socket_dir() -> pathlib.Path | None:
-    """Create the socket dir 0700 and check the socket path fits; None, with the reason, if not."""
-    sock_dir = _socket_dir()
+    """Make the socket dir usable and check the socket path fits; None, with the reason, if not.
+
+    A default dir must be a real directory the user owns and is kept 0700. A dir
+    the user chose is created 0700 when absent and otherwise used as it is --
+    never re-moded (it may be shared on purpose).
+    """
+    sock_dir, chosen = _socket_dir()
+    if "," in str(sock_dir):
+        sys.stderr.write(
+            f"[scribe-pg] socket directory {sock_dir} contains a comma, which PostgreSQL "
+            f"reads as a list separator; set SCRIBE_PG_SOCKET_DIR to a path without one\n"
+        )
+        return None
     socket_file = sock_dir / f".s.PGSQL.{PORT}"
     length = len(os.fsencode(socket_file))
     if length > SOCKET_PATH_MAX:
@@ -114,6 +132,11 @@ def _prepare_socket_dir() -> pathlib.Path | None:
     except OSError as exc:
         sys.stderr.write(f"[scribe-pg] cannot create socket directory {sock_dir}: {exc}\n")
         return None
+    if chosen:
+        if not sock_dir.is_dir():
+            sys.stderr.write(f"[scribe-pg] SCRIBE_PG_SOCKET_DIR {sock_dir} is not a directory\n")
+            return None
+        return sock_dir
     st = sock_dir.lstat()
     if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid():
         sys.stderr.write(
@@ -126,8 +149,8 @@ def _prepare_socket_dir() -> pathlib.Path | None:
     return sock_dir
 
 
-def _socket_dir_in_use() -> str | None:
-    """The socket dir this checkout's running server reports (`postmaster.pid` line 5)."""
+def _pid_file_socket_dir() -> str | None:
+    """The socket dir this checkout's `postmaster.pid` records (line 5; empty when TCP-only)."""
     pid_file = CLUSTER / "postmaster.pid"
     if not pid_file.is_file():
         return None
@@ -135,6 +158,18 @@ def _socket_dir_in_use() -> str | None:
     if len(lines) <= 4:
         return None
     return lines[4].strip() or None
+
+
+def _server_socket_dirs() -> str | None:
+    """`unix_socket_directories` as the listening server reports it over TCP, or None."""
+    if not shutil.which("psql"):
+        return None
+    r = _run(
+        ["psql", "-h", "127.0.0.1", "-p", PORT, "-U", SUPERUSER, "-d", "postgres",
+         "-tAc", "SHOW unix_socket_directories"],
+        env={**os.environ, "PGPASSWORD": PASSWORD},
+    )
+    return r.stdout.strip() if r.returncode == 0 else None
 
 
 def _server_major() -> str | None:
@@ -183,24 +218,26 @@ def up() -> int:
     if _move_aside_other_major():
         return 1
 
-    if not (CLUSTER / "PG_VERSION").is_file():
-        pwfile = CLUSTER.parent / ".initpw"
-        pwfile.write_text(PASSWORD, encoding="utf-8")
-        try:
-            r = _run([
-                "initdb", "-D", str(CLUSTER), "-U", SUPERUSER,
-                "--auth=scram-sha-256", f"--pwfile={pwfile}", "--encoding=UTF8",
-            ])
-            if r.returncode:
-                sys.stderr.write(r.stdout + r.stderr)
-                return 1
-        finally:
-            pwfile.unlink(missing_ok=True)   # never leave the password on disk
-        print(f"[scribe-pg] initialised cluster at {CLUSTER.relative_to(ROOT)}")
-
+    # A server already on the port -- this checkout's, or another checkout's -- is
+    # reused; initdb only runs when this checkout is about to start its own.
     if _is_up():
         print(f"[scribe-pg] already listening on 127.0.0.1:{PORT}")
     else:
+        if not (CLUSTER / "PG_VERSION").is_file():
+            pwfile = CLUSTER.parent / ".initpw"
+            pwfile.write_text(PASSWORD, encoding="utf-8")
+            try:
+                r = _run([
+                    "initdb", "-D", str(CLUSTER), "-U", SUPERUSER,
+                    "--auth=scram-sha-256", f"--pwfile={pwfile}", "--encoding=UTF8",
+                ])
+                if r.returncode:
+                    sys.stderr.write(r.stdout + r.stderr)
+                    return 1
+            finally:
+                pwfile.unlink(missing_ok=True)   # never leave the password on disk
+            print(f"[scribe-pg] initialised cluster at {CLUSTER.relative_to(ROOT)}")
+
         sock_dir = _prepare_socket_dir()
         if sock_dir is None:
             return 1
@@ -258,8 +295,18 @@ def down() -> int:
 
 def status() -> int:
     live = _is_up()
-    in_use = _socket_dir_in_use()
-    socket = f"socket dir {in_use}" if in_use else f"socket dir {_socket_dir()} (configured)"
+    if live:
+        dirs = _server_socket_dirs()
+        if dirs is None:
+            socket = "socket dir unknown (the server did not answer SHOW unix_socket_directories)"
+        else:
+            socket = f"socket dir {dirs}" if dirs else "no Unix socket (TCP only)"
+    else:
+        recorded = _pid_file_socket_dir()
+        socket = (
+            f"socket dir {recorded} (stale postmaster.pid)" if recorded
+            else f"socket dir {_socket_dir()[0]} (configured)"
+        )
     print(f"[scribe-pg] {'listening' if live else 'not listening'} on 127.0.0.1:{PORT}"
           f"  (cluster {'present' if (CLUSTER / 'PG_VERSION').is_file() else 'absent'}; {socket})")
     return 0
