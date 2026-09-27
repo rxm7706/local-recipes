@@ -6785,3 +6785,13 @@ status: open
   severity: medium
   fix: (1) assert the harness version against the installed release (or `HARNESS_VERSION_RANGE_TEXT`), never a literal; (2) read the 21 planned actions — either the seed's AGENTS.md expectations moved with scribe 21.1 (update the seed) or the plan is right and the file drifted; then decide whether a CI lane should run `-m slow` on a schedule so the next one is caught.
   status: open
+
+## DW-marshal-47-1-intent-gap-2026-09-20 — Story 47.1 is blocked on an intent gap in `spec-marshal-recall-in-the-loop` CAP-1; the whole of Epic 47 waits on an operator decision
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md` (CAP-1; Stories 47.2–47.4 declare `Deps: S-47.1`)
+  summary: the 2026-09-20 dispatch of 47.1 implemented recall injection, then its review found two independent intent gaps and reverted the code: (1) grounding is structurally impossible as specified — the mandated `--scope <station-slug>` path hardcodes `--mode planning` (kinds `{doc, memlog}`, excluding `kind="memory"`), and scribe's `_citation_in_scope()` never admits a `.claude/memory/**` citation under a per-station scope, so real team-memory feedback can never surface; (2) "folds into the dev-pass session's starting context" names an outcome, not a surface — nothing reads the written `recall-feedback.md`. The verdict (15 findings, 7 high) sat on the unmerged `dispatch/pyforge-marshal/47.1` branch for a week while the tracked ledger still read `backlog`, so a drain restart would have re-dispatched 47.1 into the same gap.
+  evidence: the story spec's Review Triage Log (landed 2026-09-27 from `dispatch/pyforge-marshal/47.1` @ `b62bf9f79e`); `spec-marshal-recall-in-the-loop/.memlog.md` (two recovered entries); the attempted implementation at `_bmad-output/projects/pyforge-marshal/implementation-artifacts/story-47-1-attempted-implementation-2026-09-20.patch` (Tier-3; recovered from the dispatch worktree, its only copy).
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md
+  severity: medium
+  fix: operator decides, then `bmad-spec` re-derives CAP-1 (memlog first): (a) grounding — add a `mode`/`kind` override to marshal's `ScribeCli.recall()` (marshal surface), drop the mandatory per-station scope for this query, or extend scribe's `_citation_in_scope()` to admit team-memory citations (scribe-owned); (b) whether CAP-1 ends at the `recall-feedback.md` artifact or also wires a reader into bmad-loop's session-context assembly, and at which step; (c) whether `run_resume` also injects. Then flip 47-1 back from `blocked` (operator-confirmed, AGENTS.md § Policy) and re-dispatch.
+  status: open

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 428
+# stories: 431
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -270,7 +270,7 @@ development_status:
   46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
-  47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: backlog
+  47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: blocked
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: backlog
   47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: backlog
   47-4-a-genuine-recall-miss-injects-nothing-never-a-fabricated-confidence-claim: backlog
@@ -432,8 +432,11 @@ development_status:
   epic-53: done
   epic-53-retrospective: optional
   epic-54: backlog
+  epic-54-retrospective: optional
   epic-55: done
+  epic-55-retrospective: optional
   epic-56: done
+  epic-56-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done
