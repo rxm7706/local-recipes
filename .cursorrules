@@ -4,6 +4,8 @@ Read `AGENTS.md` at the repo root first: its `bmad:context` block carries the ve
 policy, gates, and pitfalls every tool must follow, and the rest of the file carries the
 Dream-first workflow and tier model. `.cursor/rules/specs.mdc` is the always-on summary.
 
-Then read `CLAUDE.md` for the Claude-specific detail it adds: the conda-forge-expert
-lifecycle, the BMAD multi-project switch, PR CI gates, and the skill reference.
+`CLAUDE.md` carries Claude Code-only notes; skip it. The conda-forge-expert lifecycle, the
+BMAD project switch and the PR CI gates are in `AGENTS.md`; the skill reference and the rest
+of what `CLAUDE.md` used to carry are in `docs/reference/agent-instruction-notes.md`
+(`AGENTS.md` § *Read on trigger* says when to read it).
 Write your own working output under `.cursor/`, never into a Tier-3 planning dir.

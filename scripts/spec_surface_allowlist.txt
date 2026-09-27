@@ -73,7 +73,6 @@ helm/lasuite-docs/values.yaml  # stray inherited file — archive candidate, fla
 # (surface) now governs it. GEMINI.md removed 2026-09-19 — spec-pyforge-scribe
 # CAP-27 governs the per-tool pointer family (GEMINI.md, .gemini/settings.json,
 # .github/copilot-instructions.md). CLAUDE.md stays allowlisted.
-CLAUDE.md                # per-tool pointer (governance doc)
 README.md                # repo front page
 CHANGELOG.md             # historical record
 LICENSE*                 # license
@@ -83,7 +82,6 @@ LICENSE*                 # license
 .appveyor.yml.notused    # inherited staged-recipes remnant (upstream-owned)
 .vscode/**               # IDE metadata (settings.json is tracked); .idea/** removed 2026-09-05, untracked entirely (gitignored) rather than allowlisted
 .junie/**                # per-tool pointer (AGENTS.md family)
-.cursorrules             # per-tool pointer (AGENTS.md family)
 .prettierignore          # repo plumbing
 .pixi/**                 # tracked pixi shim files (env itself is gitignored)
 src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it

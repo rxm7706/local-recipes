@@ -126,6 +126,10 @@ pages:
     quadrant: reference
     owner: fleet
     kind: pointer
+  - path: reference/agent-instruction-notes.md
+    quadrant: reference
+    owner: scribe
+    kind: authored
   - path: reference/agent-memory-lifecycle.md
     quadrant: reference
     owner: fleet
