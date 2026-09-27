@@ -2,7 +2,7 @@
 title: '68.2: The pre-push gate skips a push that carries nothing new, and its journal names what was pushed'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 2
 followup_review_recommended: false
 context:
@@ -21,7 +21,7 @@ declared_low_risk: false
 **Approach (after review 1):** one `journal_skip` helper writes every skip line — branch delete, `dispatch/*`, the manual `PYFORGE_PREFLIGHT_SKIP=1` — with the pushed remote ref(s) and local sha(s), falling back to the checked-out branch and HEAD only when the hook received no ref information. The hook adds **no** skip of its own: the "nothing new" skip this story first shipped was refused in review, because under pre-commit the hook receives only the first ref of a multi-ref push and cannot prove what the others carry. The refresh's cost is fixed where the proof lives — `marshal refresh` sets the journaled opt-out for its own proven fast-forward push (marshal Story 57.1, spec-pyforge-marshal CAP-267). This story's title is the ledger key of record and is kept.
 
 Ledger key: `68-2-the-pre-push-gate-skips-a-push-that-carries-nothing-new-and-its-journal-names-what-was-pushed`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations

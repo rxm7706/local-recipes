@@ -2,7 +2,7 @@
 title: '57.1: A refresh pushes its own fast-forward to `main` with the journaled preflight opt-out'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
 context:
@@ -21,7 +21,7 @@ declared_low_risk: false
 **Approach:** `VcsPort.push` gains a keyword-only `proven_on_main_sha: str | None = None` (additive; every existing caller unchanged). `cli/refresh.py` runs `commits_behind` and `fast_forward` on the full refname `refs/remotes/origin/<base>` and, only when `base == "main"` and its own fast-forward succeeded, passes the sha it fast-forwarded to. `GitVcs.push` re-checks that sha with `git merge-base --is-ancestor <sha> refs/remotes/origin/main` (a `VcsCommandError` refusal otherwise), pushes exactly `<sha>:refs/heads/<remote_branch>`, and carries the repo's journaled opt-out to that one `git push` process as `PYFORGE_PREFLIGHT_SKIP=1` and `PYFORGE_PREFLIGHT_SKIP_REASON=marshal refresh: loop/<slug> at <sha12> is a fast-forward to origin/main; every pushed commit is already on origin/main` through the POSIX `env` utility (the process port takes no environment; nothing is exported to anything else). Where `env` is not on `PATH` (win-64) the push goes through the preflight instead. Any other `--base` passes no proof.
 
 Ledger key: `57-1-a-refresh-pushes-its-own-fast-forward-to-main-with-the-journaled-preflight-opt-out`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations

@@ -2,7 +2,7 @@
 title: '68.1: A workspace archive holds the work, not the environments, and one bad record never stops the sweep'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 2
 followup_review_recommended: false
 context:
@@ -21,7 +21,7 @@ declared_low_risk: false
 **Approach:** a `tarfile` filter in `_archive_worktree` drops `REINSTALLABLE_ENV_DIRS` (`.pixi/envs`, `.pixi/solve-group-envs`, `.pixi/bld`) and everything beneath them; every other file, the tracked `.pixi/config.toml` included, archives as before. A tar that fails (an `OSError` or a `tarfile.TarError`) removes its partial archive and raises `WorkspaceError`. In `clean_workspaces` each record's decision and archive run inside a per-record `try`: a `WorkspaceError` becomes a `skipped` row with reason `error: <message>`, the record goes back to `remaining`, and the sweep continues; the record in flight is tracked, so the `finally` saves it back when any other exception escapes (a Ctrl-C at the confirm prompt). The clean duty exits non-zero when any row errored, whichever form ran (one slug, the fleet, or a repo set).
 
 Ledger key: `68-1-a-workspace-archive-holds-the-work-not-the-environments-and-one-bad-record-never-stops-the-sweep`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
