@@ -6,9 +6,9 @@ tree.
 
 Every ``gather()``-level test drives a REAL tmp git repository (mirrors
 ``test_sources_frozen_path.py``'s own convention: never a mocked subprocess
-call), including the same ``origin/main`` local-branch trick (``git branch
-origin/main <sha>`` resolves via ``git rev-parse``/``git diff`` with no real
-remote needed).
+call); ``origin/main`` is a real remote-tracking ref (``git update-ref
+refs/remotes/origin/main <sha>``), no remote needed -- never a local branch named
+``origin/main``, the shadow Story 31.1 made the source read past.
 """
 
 from __future__ import annotations
@@ -80,8 +80,10 @@ def _commit_all(repo: Path, message: str) -> str:
     return _git(repo, "rev-parse", "HEAD").strip()
 
 
-def _branch_at(repo: Path, name: str, sha: str) -> None:
-    _git(repo, "branch", name, sha)
+def _origin_main_at(repo: Path, sha: str) -> None:
+    """The remote-tracking ref `refs/remotes/origin/main` at `sha` (Story 31.1: never a local
+    branch named `origin/main`, the very shadow the sources now read past)."""
+    _git(repo, "update-ref", "refs/remotes/origin/main", sha)
 
 
 def _write_catalog(repo: Path, text: str) -> Path:
@@ -239,7 +241,7 @@ def test_touching_a_catalogued_surface_reports_warn_quoting_how_to_prove(
     _init_repo(repo)
     _write_catalog(repo, _MINIMAL_CATALOG)
     base_sha = _commit_all(repo, "seed catalog")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     touched = "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py"
     _write_file(repo, touched)
@@ -284,7 +286,7 @@ def test_multi_row_and_multi_glob_gather_accumulates_correctly(tmp_path: Path) -
     _init_repo(repo)
     _write_catalog(repo, _MULTI_ROW_CATALOG)
     base_sha = _commit_all(repo, "seed catalog")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     feeds = "src/shared/packages/pyforge-warden/src/pyforge/warden/feeds.py"
     vuln = "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py"
@@ -313,7 +315,7 @@ def test_no_matching_changed_path_reports_zero_findings(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_catalog(repo, _MINIMAL_CATALOG)
     base_sha = _commit_all(repo, "seed catalog")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _write_file(repo, "docsite/build.py")
     _commit_all(repo, "unrelated change")
@@ -331,7 +333,7 @@ def test_first_attempt_false_positives_report_zero_findings(tmp_path: Path) -> N
     _init_repo(repo)
     _write_catalog(repo, _MINIMAL_CATALOG)
     base_sha = _commit_all(repo, "seed catalog")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     for rel in _FIRST_ATTEMPT_FALSE_POSITIVES:
         _write_file(repo, rel)
@@ -347,7 +349,7 @@ def test_empty_glob_cell_row_never_fires(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_catalog(repo, _MINIMAL_CATALOG)
     base_sha = _commit_all(repo, "seed catalog")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     # Touch a path that textually matches the empty-glob row's own station/
     # surface words -- it must still never fire (Boundaries: an empty cell
@@ -365,7 +367,7 @@ def test_no_mechanism_yet_row_states_the_gap_honestly(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_catalog(repo, _MINIMAL_CATALOG)
     base_sha = _commit_all(repo, "seed catalog")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     touched = "src/shared/packages/pyforge-atlas/wasm/loader.wasm"
     _write_file(repo, touched)
@@ -415,7 +417,7 @@ def test_missing_catalog_degrades_to_one_generic_warn(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_file(repo, "README.md", "no catalog here\n")
     base_sha = _commit_all(repo, "seed, no catalog")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     findings = lps.gather(repo)
 

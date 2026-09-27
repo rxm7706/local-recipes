@@ -83,6 +83,7 @@ from pathlib import Path
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..refs import ORIGIN_MAIN
 from . import degrade_on_exception
 
 __all__ = ("CatalogRow", "gather", "parse_catalog")
@@ -218,7 +219,7 @@ def _git(target: Path, *args: str) -> str | None:
         return None
 
 
-def _changed_paths(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> list[str] | None:
+def _changed_paths(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> list[str] | None:
     """The sorted, de-duplicated list of paths changed between ``base`` and
     ``head``, or ``None`` on any git failure (unresolvable ref, non-repo
     target, ...). Sorted for a deterministic match order -- unlike

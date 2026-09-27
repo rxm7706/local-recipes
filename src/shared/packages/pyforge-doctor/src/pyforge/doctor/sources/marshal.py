@@ -65,6 +65,7 @@ from pyforge.core.landing_evidence import (
 from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..refs import MAIN
 from ..rekey import load_rekey_maps, reverse_map
 
 __all__ = ("gather", "gather_story_status")
@@ -828,14 +829,15 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
 
             # Route 3: commits reachable from ``main``, via the same grammar
             # (replaces the private ``<slug>`` + ``story <e>.<s>`` subject
-            # needle dialect).
+            # needle dialect). ``main`` by its full refname (Story 31.1): a
+            # tag named ``main`` would otherwise stand in for the branch.
             if key_ref is not None:
                 if main_commits is None and not main_commits_unavailable:
                     raw = _git(
                         target,
                         "log",
                         "--format=%H%x00%s",
-                        "main",
+                        MAIN,
                         timeout=60.0,
                     )
                     if raw is None:

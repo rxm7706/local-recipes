@@ -60,6 +60,7 @@ from pyforge.core.landing_evidence import parse_templated_merge_subject
 from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..refs import MAIN, ORIGIN_MAIN, display_ref
 from ..rekey import RekeyMap, parse_rekey
 
 __all__ = ("gather", "gather_direction")
@@ -275,7 +276,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                         "project": project,
                         "path": path,
                         "detail": (
-                            f"ledger is tracked at {base} but its blob could not "
+                            f"ledger is tracked at {display_ref(base)} but its blob could not "
                             f"be read — this ledger's regression status is unknown"
                         ),
                     }
@@ -328,7 +329,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
             dangling = []
             for old, new in sorted(mapping.items()):
                 if old not in before:
-                    dangling.append({"line": f"{old} -> {new}", "why": f"{old} not in {base}"})
+                    dangling.append({"line": f"{old} -> {new}", "why": f"{old} not in {display_ref(base)}"})
                 elif new not in after:
                     dangling.append({"line": f"{old} -> {new}", "why": f"{new} not in {head}"})
             if dangling:
@@ -372,7 +373,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
     return findings, compared
 
 
-def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tuple[Finding, ...]:
+def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tuple[Finding, ...]:
     """Judge whether any commit between ``base`` and ``head`` un-finished a
     story in a tracked sprint ledger — the library form of
     ``scripts/ledger_regression_check.py``'s own ``main()``, minus the
@@ -380,8 +381,11 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
     ("UNDETERMINED") here becomes one WARN ``Finding`` instead, and every
     regression becomes a FAIL ``Finding`` rather than a printed report.
 
-    ``base``/``head`` default to the script's own hardcoded defaults
-    (``"origin/main"``/``"HEAD"``). Preserves the script's same-commit
+    ``base``/``head`` default to the script's own defaults (``origin/main``/
+    ``"HEAD"``), the base by its full refname ``refs/remotes/origin/main``
+    (Story 31.1: a local branch or tag named ``origin/main`` would otherwise
+    stand in for the remote); findings and evidence name it as people read it
+    (``display_ref``). Preserves the script's same-commit
     fallback: if ``base`` and ``head`` resolve to the same commit (the shape
     CI takes on a ``push: branches: [main]`` event), this compares against
     ``head``'s first parent instead — the honest question for a push is
@@ -401,6 +405,7 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
     histories) degrades to a WARN rather than silently reverting to the
     bug this exists to fix.
     """
+    shown = display_ref(base)
     if _git(target, "rev-parse", "--verify", "--quiet", base) is None:
         # Both statuses are WARN, but the MESSAGE has to name the real cause:
         # "no such ref" sends an operator hunting for a ref problem, when the
@@ -410,14 +415,14 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
         if _git(target, "rev-parse", "--git-dir") is None:
             message = f"git is unavailable or {target} is not a repository — ledger regression cannot be evaluated"
         else:
-            message = f"base revision {base!r} not resolvable — ledger regression cannot be evaluated"
+            message = f"base revision {shown!r} not resolvable — ledger regression cannot be evaluated"
         return (
             Finding(
                 source=Source.LEDGER_REGRESSION,
                 check="ledger-regression",
                 status=DoctorStatus.WARN,
                 message=message,
-                evidence={"base": base, "head": head, "target": str(target)},
+                evidence={"base": shown, "head": head, "target": str(target)},
             ),
         )
 
@@ -433,12 +438,12 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
                     source=Source.LEDGER_REGRESSION,
                     check="ledger-regression",
                     status=DoctorStatus.WARN,
-                    message=(f"{base!r} and {head!r} are the same commit and it has no parent — nothing to compare"),
+                    message=(f"{shown!r} and {head!r} are the same commit and it has no parent — nothing to compare"),
                     # `target` is carried on BOTH cannot-evaluate WARNs, not
                     # just the unresolvable-base one: same source, same check,
                     # same status, so a consumer reading evidence["target"]
                     # must not KeyError depending on which of the two fired.
-                    evidence={"base": base, "head": head, "target": str(target)},
+                    evidence={"base": shown, "head": head, "target": str(target)},
                 ),
             )
         effective_base = parent
@@ -459,9 +464,9 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
                     check="ledger-regression",
                     status=DoctorStatus.WARN,
                     message=(
-                        f"no common ancestor between {base!r} and {head!r} — ledger regression cannot be evaluated"
+                        f"no common ancestor between {shown!r} and {head!r} — ledger regression cannot be evaluated"
                     ),
-                    evidence={"base": base, "head": head, "target": str(target)},
+                    evidence={"base": shown, "head": head, "target": str(target)},
                 ),
             )
         if merge_base_sha != base_sha:
@@ -477,9 +482,10 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
     # push fallback above -- two different reasons a substitution happened,
     # two distinct evidence shapes, so a consumer can tell which one fired.
     substituted = effective_base != base
-    range_evidence: dict[str, object] = {"base": effective_base, "head": head}
+    shown_base = display_ref(effective_base)
+    range_evidence: dict[str, object] = {"base": shown_base, "head": head}
     if substituted:
-        range_evidence["base_requested"] = base
+        range_evidence["base_requested"] = shown
         if merge_base_sha is not None and effective_base == merge_base_sha:
             range_evidence["merge_base"] = merge_base_sha
         else:
@@ -494,7 +500,7 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
                 source=Source.LEDGER_REGRESSION,
                 check="ledger-regression",
                 status=DoctorStatus.OK,
-                message=(f"no tracked ledger un-finishes a story between {effective_base} and {head}"),
+                message=(f"no tracked ledger un-finishes a story between {shown_base} and {head}"),
                 evidence=dict(range_evidence),
             ),
         )
@@ -548,7 +554,7 @@ def gather(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> tu
                     "keys": item["keys"][:20],
                     **({"transitions": item["transitions"][:20]} if "transitions" in item else {}),
                     **range_evidence,
-                    "remedy": f"git checkout {effective_base} -- {item['path']}",
+                    "remedy": f"git checkout {shown_base} -- {item['path']}",
                 },
             )
         )
@@ -750,7 +756,7 @@ def _rekey_sid_maps(target: Path, rev: str) -> tuple[dict[str, dict[str, str]], 
                     check="rekey-map-unreadable",
                     status=DoctorStatus.WARN,
                     message=(
-                        f"{project}: re-key map {path} is tracked at {rev} "
+                        f"{project}: re-key map {path} is tracked at {display_ref(rev)} "
                         "but unreadable — landed-key translation for this "
                         "project may be incomplete"
                     ),
@@ -800,7 +806,7 @@ def _rekey_sid_maps(target: Path, rev: str) -> tuple[dict[str, dict[str, str]], 
     return maps, problems
 
 
-def gather_direction(target: Path, *, base_ref: str = "main") -> tuple[Finding, ...]:
+def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ...]:
     """Judge tracked-ledger vs. git merge-history drift WITH DIRECTION
     (Story 15.2 / FR-137 / FR-138).
 
@@ -840,6 +846,9 @@ def gather_direction(target: Path, *, base_ref: str = "main") -> tuple[Finding, 
     # Story 27.5: carries the sha alongside each subject (was subject-only
     # pre-27.5) -- the bare-form fallback in `_merged_ids_for_project` needs
     # it to run `git diff --name-only <sha>^1 <sha>`.
+    # Story 31.1: `base_ref` defaults to `refs/heads/main` -- a tag named `main` would otherwise
+    # stand in for the branch; findings name it as people read it.
+    shown = display_ref(base_ref)
     commits_raw = _git(target, "log", "--format=%H%x00%s", base_ref)
     if commits_raw is None:
         return (
@@ -847,8 +856,8 @@ def gather_direction(target: Path, *, base_ref: str = "main") -> tuple[Finding, 
                 source=Source.LEDGER_DIRECTION,
                 check="ledger-direction",
                 status=DoctorStatus.WARN,
-                message=(f"cannot read {base_ref!r} commit subjects — ledger-vs-git direction cannot be checked"),
-                evidence={"target": str(target), "base_ref": base_ref},
+                message=(f"cannot read {shown!r} commit subjects — ledger-vs-git direction cannot be checked"),
+                evidence={"target": str(target), "base_ref": shown},
             ),
         )
     commits: list[tuple[str, str]] = []
@@ -989,7 +998,7 @@ def gather_direction(target: Path, *, base_ref: str = "main") -> tuple[Finding, 
                     message=(
                         f"{project}/{raw_by_id.get(sid, sid)}: "
                         f"{DIRECTION_DONE_UNMERGED} — tracked ledger says "
-                        f"done, but the ledger at {base_ref!r} does not and "
+                        f"done, but the ledger at {shown!r} does not and "
                         "no scoped merge subject names it"
                     ),
                     evidence={
@@ -998,7 +1007,7 @@ def gather_direction(target: Path, *, base_ref: str = "main") -> tuple[Finding, 
                         "key": raw_by_id.get(sid, sid),
                         "direction": DIRECTION_DONE_UNMERGED,
                         "path": str(path.relative_to(target)),
-                        "base_ref": base_ref,
+                        "base_ref": shown,
                         "base_evidence": base_evidence,
                     },
                 )
@@ -1011,7 +1020,7 @@ def gather_direction(target: Path, *, base_ref: str = "main") -> tuple[Finding, 
             source=Source.LEDGER_DIRECTION,
             check="ledger-direction",
             status=DoctorStatus.OK,
-            message=(f"tracked ledgers agree with {base_ref!r} merge history ({audited} ledger(s) audited)"),
-            evidence={"audited": audited, "base_ref": base_ref},
+            message=(f"tracked ledgers agree with {shown!r} merge history ({audited} ledger(s) audited)"),
+            evidence={"audited": audited, "base_ref": shown},
         ),
     )

@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-24'   # RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2455,6 +2455,27 @@ generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the 
 **When** this story lands
 **Then** each generator is idempotent on an unchanged tree and rewrites its page + stamp on a changed one; editing `pixi.toml`'s tasks, a station CLI's grammar, a detector registration or a `SKILL.md` frontmatter without regenerating reds `detectors-ci`; a hand edit to a generated page is a finding
 **And** the pages agents should read (reference) are exact by construction; authored explanation stays for humans
+**Status:** backlog
+
+## Epic 31: Doctor names the refs it judges by their full refname (spec-pyforge-doctor CAP-85)
+
+Minted 2026-09-27 (late) from the station Dream's entry of the same name: marshal Stories 60.1 and 61.1 closed the
+short-name shadowing trap inside marshal's package, and 61.1's third review left one reader in Doctor
+(`DW-marshal-doctor-route3-short-main-2026-09-27`); a sweep found four more Doctor sources reading a branch by short
+name, two of them `detectors-ci` merge-gate detectors. A new epic because Epic 30 is `done`. **HARD boundaries:** no
+verdict changes when no stray ref exists; one Doctor-local helper, never an import of a station's internals; findings
+keep the short names people read. **FRs covered:** FR-18 (minted 2026-09-27 on the PRD, citing CAP-85).
+
+### Story 31.1: Every Doctor source names the branch it reads by its full refname
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** FR-18, spec-pyforge-doctor CAP-85 • marshal CAP-270, CAP-271
+**difficulty:** low
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/refs.py` (new), `sources/marshal.py` (route 3),
+`sources/ledger.py` (`gather`'s and `gather_direction`'s bases), `sources/frozen_path.py`, `sources/live_proof_surfaces.py`
+(all under `src/shared/packages/pyforge-doctor/src/pyforge/doctor/`), tests under `src/shared/packages/pyforge-doctor/tests/{unit,meta}/`.
+**Given** a repository with a local branch or tag named `origin/main`, or a tag named `main`, on another commit
+**When** the story-status, `ledger-direction`, `ledger-regression`, `frozen-path-changed` and `live-proof-surface` sources run
+**Then** each reaches the verdict it reaches without the stray ref
+**And** no Doctor module hands git a bare `main` or `origin/…`; findings still say `main` / `origin/main`; `pixi run -e pyforge-doctor pyforge-doctor-test` green
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

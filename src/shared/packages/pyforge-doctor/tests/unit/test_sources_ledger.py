@@ -4,11 +4,11 @@ repositories (this test file is not restricted to ``cli_bridge.py`` -- only
 the package source under ``pyforge/doctor/`` is; a test file driving real
 ``git`` directly to set up fixtures is fine).
 
-``base="origin/main"`` is made resolvable without a real git remote by
-creating a local branch literally named ``origin/main`` -- git allows
-slashes in branch names, so ``git branch origin/main <sha>`` creates
-``refs/heads/origin/main``, which ``git rev-parse origin/main`` resolves
-exactly like a remote-tracking ref would.
+``origin/main`` is made resolvable without a real git remote by writing the
+remote-tracking ref itself (``git update-ref refs/remotes/origin/main <sha>``,
+``_origin_main_at``). Story 31.1: this file used to create a LOCAL branch
+literally named ``origin/main`` instead -- exactly the shadow that stands in for
+the remote, and which the source's full-ref default now reads past.
 """
 
 from __future__ import annotations
@@ -93,6 +93,12 @@ def _commit_all(repo: Path, message: str) -> str:
     return _git(repo, "rev-parse", "HEAD").strip()
 
 
+def _origin_main_at(repo: Path, sha: str) -> None:
+    """The remote-tracking ref `refs/remotes/origin/main` at `sha` (Story 31.1: never a local
+    branch named `origin/main`, the very shadow the sources now read past)."""
+    _git(repo, "update-ref", "refs/remotes/origin/main", sha)
+
+
 def _branch_at(repo: Path, name: str, sha: str) -> None:
     _git(repo, "branch", name, sha)
 
@@ -105,7 +111,7 @@ def test_clean_revision_range_reports_ok(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     _commit_all(repo, "unrelated change")
@@ -125,7 +131,7 @@ def test_new_ledger_at_head_is_not_a_regression(tmp_path: Path) -> None:
     _init_repo(repo)
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     base_sha = _commit_all(repo, "seed, no ledger yet")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     _commit_all(repo, "add the ledger for the first time")
@@ -144,7 +150,7 @@ def test_done_key_regressed_reports_fail(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
     _commit_all(repo, "regress the story")
@@ -168,7 +174,7 @@ def test_renamed_but_still_done_key_is_not_a_regression(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-scaffold-the-kedro": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _write_ledger(repo, "doctor", {"a1-scaffold-the-kedro": "done"})
     _commit_all(repo, "normalize id to alias form")
@@ -188,7 +194,7 @@ def test_ledger_deleted_while_holding_done_key_reports_fail(tmp_path: Path) -> N
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _delete_ledger(repo, "doctor")
     _commit_all(repo, "delete the ledger")
@@ -232,7 +238,7 @@ def test_base_equals_head_with_no_parent_reports_warn(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     only_sha = _commit_all(repo, "the only commit, no parent")
-    _branch_at(repo, "origin/main", only_sha)
+    _origin_main_at(repo, only_sha)
 
     findings = ledger.gather(repo, base="origin/main", head="HEAD")
 
@@ -254,7 +260,7 @@ def test_base_equals_head_falls_back_to_parent_when_one_exists(tmp_path: Path) -
 
     _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
     head_sha = _commit_all(repo, "regress the story")
-    _branch_at(repo, "origin/main", head_sha)
+    _origin_main_at(repo, head_sha)
 
     findings = ledger.gather(repo, base="origin/main", head="HEAD")
 
@@ -280,7 +286,7 @@ def test_regressions_across_multiple_projects_are_all_reported_independently(
     _write_ledger(repo, "warden", {"2-1-bar": "done"})
     _write_ledger(repo, "mason", {"3-1-baz": "done"})
     base_sha = _commit_all(repo, "seed three ledgers")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
     _write_ledger(repo, "warden", {"2-1-bar": "backlog"})
@@ -329,7 +335,7 @@ def test_base_substitution_is_recorded_in_evidence(tmp_path: Path) -> None:
 
     _write_ledger(repo, "doctor", {"1-1-foo": "done", "1-2-bar": "done"})
     head_sha = _commit_all(repo, "add another done story")
-    _branch_at(repo, "origin/main", head_sha)
+    _origin_main_at(repo, head_sha)
 
     findings = ledger.gather(repo, base="origin/main", head="HEAD")
 
@@ -346,7 +352,7 @@ def test_no_substitution_flag_when_base_is_used_as_requested(tmp_path: Path) -> 
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     _commit_all(repo, "unrelated change")
@@ -437,7 +443,7 @@ def test_merge_base_equal_to_base_tip_is_not_a_substitution(tmp_path: Path) -> N
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     _commit_all(repo, "PR: unrelated change")
@@ -497,7 +503,7 @@ def test_non_utf8_ledger_blob_at_head_warns_and_never_accuses(
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     bad = repo / "_bmad-output" / "projects" / "doctor" / "planning-artifacts" / "sprint-status-ledger.yaml"
     bad.write_bytes(b"development_status:\n  1-1-f\xe9o: done\n")
@@ -527,7 +533,7 @@ def test_an_unreadable_base_blob_is_not_mistaken_for_a_new_ledger(
     path = _write_ledger(repo, "doctor", {"1-1-foo": "done", "1-2-bar": "done"})
     path.write_bytes(b"development_status:\n  # caf\xe9\n  1-1-foo: done\n  1-2-bar: done\n")
     base_sha = _commit_all(repo, "seed ledger with a non-utf8 comment")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     path.write_bytes(b"development_status:\n  # caf\xe9\n  1-1-foo: backlog\n  1-2-bar: backlog\n")
     _commit_all(repo, "un-finish both stories")
@@ -553,7 +559,7 @@ def test_gather_uses_origin_main_and_head_when_no_range_is_given(
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
     _commit_all(repo, "un-finish the story")
@@ -602,7 +608,7 @@ def test_regression_evidence_carries_structured_transitions(tmp_path: Path) -> N
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
     _commit_all(repo, "regress the story")
@@ -625,7 +631,7 @@ def test_ok_finding_reports_how_many_ledgers_were_compared(tmp_path: Path) -> No
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     _write_ledger(repo, "warden", {"2-1-bar": "done"})
     base_sha = _commit_all(repo, "seed two ledgers")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     _commit_all(repo, "unrelated change")
@@ -679,7 +685,7 @@ def _rebased_repo(tmp_path: Path) -> Path:
         },
     )
     base_sha = _commit_all(repo, "seed legacy numbering")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
     return repo
 
 

@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-24'   # RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -635,6 +635,23 @@ legacy `docs/specs/` intake tier, `docs/dreams/`, and `_bmad-output/` are not on
 *Decomposed as Epic 30 — Stories 30.1 (done, PR #1529), 30.2 (done, hand-landed
 `Merge pyforge-doctor/30-2 into main`, e2105fec02d), 30.3 (done). Epic 30 complete.*
 
+## FR-18 — Doctor names the refs it judges by their full refname (spec-pyforge-doctor CAP-85)
+
+Added 2026-09-27 (late). Git resolves a short name through `refs/<n>`, `refs/tags/<n>`,
+`refs/heads/<n>`, then `refs/remotes/<n>`, so a stray local `origin/main` or a tag named `main`
+stands in for the ref a Doctor source means to judge. Every git read Doctor makes of a branch —
+the story-status source's route 3, the `ledger-direction` and `ledger-regression` sources' bases,
+and the `frozen-path-changed` and `live-proof-surface` sources' diff base — names
+`refs/heads/<branch>` or `refs/remotes/<remote>/<branch>` through one Doctor-local helper; findings
+people read keep the short names.
+
+**Consequences (testable):** with a stray ref named like the base on another commit, each of the
+five sources reaches the verdict it reaches without it; with no stray ref every verdict is
+unchanged; a meta test flags a bare `main` or `origin/…` reaching a git argument or a base-like
+parameter default.
+
+*Decomposed as Epic 31 — Story 31.1.*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -894,3 +911,12 @@ bump of its own; both stories are folded into this one pass. FR-17's two capabil
 Epic 30 is 30.1/30.2/30.3 all `done`. No new requirement, decision, or AD; the "Decomposed as
 Epic 30" line above is updated to match. `updated:`/`currency_review:` bumped to record that
 this sweep ran.*
+
+## Currency reconciliation — 2026-09-27
+
+*Chain-currency cascade (spec → PRD): `spec-pyforge-doctor` minted CAP-85 late on 2026-09-27
+(Doctor names the refs it judges by their full refname — the `DW-marshal-doctor-route3-short-main-2026-09-27`
+row from marshal Story 61.1's third review, widened by a sweep to every Doctor source reading a
+branch). FR-18 registered above to cite it; decomposed as **Epic 31** (Story 31.1), a new epic
+because Epic 30 is `done`. No AD amended: one Doctor-local pure helper module and source
+defaults. `updated:` bumped.*

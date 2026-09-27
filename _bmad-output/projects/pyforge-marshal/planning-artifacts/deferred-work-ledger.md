@@ -6815,4 +6815,5 @@ status: open
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
   severity: low
   fix: name `refs/heads/main` in route 3, through doctor's own chain (a doctor Dream append).
-  status: open
+  status: closed
+  resolved: 2026-09-27 (doctor Story 31.1, spec-pyforge-doctor CAP-85) — route 3 reads `refs/heads/main` through Doctor's own `pyforge.doctor.refs`; the sweep that scoped it found four more Doctor sources of the same class and fixed them in the same story (`ledger-direction`'s base `main`, `ledger-regression`'s, `frozen-path-changed`'s and `live-proof-surface`'s base `origin/main` — the first two are `detectors-ci` merge-gate detectors). A route-3 test with a tag `main` left behind a renamed branch; a meta test pins the rule package-wide.
