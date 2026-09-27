@@ -185,6 +185,71 @@ Drift — orphaned between stations.
   wired, `--sync-postgres` unable to succeed yet reporting ok, unescaped HTML in the HTMX
   view and dossier, a stock admin on the append-only audit trail, a sync pixi task
   registered where no env has django — remediated before merge; the rest is DW-FU-65-1..3.
+- **2026-09-27 — Proposed: the preflight answers in under a minute.** `pr-preflight` is the
+  one command that makes a green local run mean a green CI run (CLAUDE.md § PR CI gates rule
+  4), and since steward 66.2 the `pre-push` hook runs it on every push, so its cost is paid
+  on every push — twice for a PR that needs a fix round. Measured today on a 16-core laptop,
+  on a marshal-only branch (`landing-refusal-landed-since` at `c18d048b78`, marshal Story
+  56.1), every one of its 28 leaf lanes timed as its own `pixi run`, all exit 0:
+  **622.8 s — 10 min 23 s** (the `pr-preflight` run itself: 10 min 39 s).
+
+  | Lane (env) | s | | Lane (env) | s |
+  |---|---:|---|---|---:|
+  | `ruff` / `ruff-format` / `mypy` (guild) | 0.6 / 0.6 / 1.9 | | `pyforge-atlas-test` | 70.3 |
+  | `target-version-check` / `precommit-config-check` | 0.4 / 0.4 | | `pyforge-doctor-test` | 62.0 |
+  | `detectors-ci` (guild) | 57.6 | | `pyforge-herald-test` | 29.0 |
+  | `test-ci` (local-recipes, the CFE suite) | 111.5 | | `pyforge-marshal-test` | 49.5 |
+  | `pyforge-doctor-scripts-test` (pyforge-ci) | 75.7 | | `pyforge-mason-test` | 12.1 |
+  | `docs-map-render-test` / `docs-gen-test` | 0.7 / 0.9 | | `pyforge-scribe-test` | 3.8 |
+  | `pyforge-core-test` | 10.9 | | `pyforge-steward-test` | 19.2 |
+  | `pyforge-marshal-coverage-gate` | 56.2 | | `pyforge-warden-test` | 54.0 |
+  | the other 7 coverage gates (each skips: not touched) | 0.7 each | | `site-check` (site) | 0.6 |
+
+  Where the ten minutes go, all four measured the same day:
+  - **Everything is serial.** pixi runs `depends-on` one lane at a time; inside
+    `detectors-ci` the 38 detectors run one at a time (their times sum to 57.0 s of its
+    57.6 s — `cfe_rebuild_guard_check` 24.5 s and `chain_currency_sweep_check` 13.2 s are two
+    thirds of it); every pytest suite is one process — no lane passes `-n`, and
+    `pytest-xdist` is installed only in the `local-recipes` feature. One core of sixteen works.
+  - **It runs more than CI would.** `.github/workflows/pyforge-station-tests.yml` runs a
+    station's suite only when that station's paths changed (plus `pyforge-core` on any station
+    change; everything on `pixi.toml` / `pixi.lock` / core / testing-kit). For this branch CI
+    runs core + marshal; the preflight ran all nine — 250.4 s of suites CI would not run.
+  - **It runs one suite twice.** The marshal coverage gate re-runs marshal's unit suite under
+    coverage (56.2 s) right after `pyforge-marshal-test` ran it (49.5 s).
+  - **The rest is a few large, parallelisable suites:** `test-ci` (9,144 tests), doctor's
+    scripts (746), atlas (1,871), doctor (2,447), warden (2,122).
+  The whole run is ~623 s of work on a machine with 16 cores: perfectly spread, the full
+  estate is ~39 s; the affected set for a single-station branch is well under that.
+
+  **What it looks like when real:** on a single-station branch, `pixi run -e pyforge-guild
+  pr-preflight` — and so the `pre-push` hook — returns its verdict in **under 60 s** of wall
+  clock on this laptop, and the verdict still predicts CI: red locally iff CI would red. A
+  shared-surface branch (`pixi.toml`, `pixi.lock`, core, the testing kit) runs the full
+  estate and is bounded by its slowest lane, not by the sum of all of them. Every run
+  journals its per-lane timings, so a lane that grows is visible the day it grows, and the
+  one-minute budget is a number something checks, not a hope.
+
+  **The mechanism, sketched (not decided):** derive the lane set from the diff with the same
+  path rules the workflows use — read from the workflow files, never a second hand-kept list
+  (a consolidation that hand-writes the trigger union drops a lane); run independent lanes
+  concurrently, since each already lives in its own environment; run the large suites with
+  `pytest-xdist`; take coverage from the station suite's own run instead of a second run;
+  make the two slow detectors incremental on the inputs they read.
+
+  **Constraints:** never weaken what is checked — a lane is skipped only where CI's own rule
+  skips it, and a lane that cannot decide whether it applies runs; verdicts are still read
+  from exit codes, never through a pipe; concurrent lanes must not share mutable state
+  (`.pixi/bld` path-dependency builds, pytest temp dirs, coverage data files, scribe's
+  Postgres on 5433); `PYFORGE_PREFLIGHT_SKIP=1` stays the one journaled opt-out, not the
+  speed-up; the not-covered list (container, atlas's Chromium/DuckDB/WASM, herald's browser
+  check, scribe's Postgres) does not grow.
+
+  Kinships: CAP-153 (the `lint-types` lane) and CAP-154 (the `pre-push` hook that runs this);
+  doctor's `detectors-ci` and `spec-coverage-gate-independence` (the per-station coverage
+  gates); `spec-pyforge-core` CAP-8 (the station-tests shared-surface rule, Story 52.2);
+  mason's CFE suite (`test-ci`).
+  Owner: steward. Not yet specced — the next `bmad-spec` pass on this chain.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
