@@ -6,14 +6,16 @@ Doctor source reaches git through ``_git`` / ``_git_ok`` / ``run_git``; this sca
 argument -- positional, ``args=``, a list or tuple literal, a starred or named argv list -- into
 templates, the way marshal Story 61.1's meta test renders refs: literal text; a name through what
 is bound to it in the module or an enclosing function (a literal, a parameter default, a constant
-imported from another Doctor module, or any other assigned expression, up to three assignments
-deep); f-strings, ``+``, ``%``, ``str.format``, ``join``, ``or``/``and`` and conditionals rendered
+imported from another Doctor module, a tuple-unpacking, loop, comprehension or walrus target, or
+any other assigned expression, up to three assignments deep); f-strings, ``+``, ``%``, ``str.format``, ``join``, ``or``/``and`` and conditionals rendered
 through; anything else an opaque value. A template is flagged when a ``..``/``...``/``:`` side,
-stripped of a ``^``/``~``/``@{`` suffix, is ``main`` or ``origin/...``. The same judgement applies
-to a base-like keyword at any call (``base=``, ``base_ref=``, ...) and to a base-like parameter's
-default, since every caller runs the sources on their defaults. Text with whitespace is a message
+stripped of a leading ``^`` and a ``^``/``~``/``@{`` suffix, is ``main`` or ``origin/...``. The same judgement applies
+to a base-like keyword at any call (``base=``, ``base_ref=``, ...), to a positional argument that
+lands on a same-module function's base-like parameter, and to a base-like parameter's default
+(lambdas too), since every caller runs the sources on their defaults. Text with whitespace is a message
 people read, not a ref. ``pyforge.doctor.refs`` is exempt. Not scanned: method aliases,
-``functools.partial``, ``**kwargs``.
+``functools.partial``, ``**kwargs``, attributes (``self.REF``), ``format`` on a named string,
+``join`` over a named list, and a positional ref passed to a function defined in another module.
 """
 
 from __future__ import annotations
@@ -84,10 +86,25 @@ def _owners(tree: ast.Module) -> dict[ast.AST, ast.AST]:
     return owner
 
 
-def _defaults(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[tuple[ast.arg, ast.expr]]:
+def _defaults(node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda) -> list[tuple[ast.arg, ast.expr]]:
     positional = [*node.args.posonlyargs, *node.args.args]
     pairs = [*zip(positional[len(positional) - len(node.args.defaults) :], node.args.defaults)]
     return pairs + [(a, d) for a, d in zip(node.args.kwonlyargs, node.args.kw_defaults) if d is not None]
+
+
+def _bind(home: _Scope, target: ast.expr, value: ast.expr) -> None:
+    """Bind ``target`` (a name, or a tuple/list unpacked pairwise) to ``value``."""
+    if isinstance(target, (ast.Tuple, ast.List)):
+        if isinstance(value, (ast.Tuple, ast.List)) and len(value.elts) == len(target.elts):
+            for sub_target, sub_value in zip(target.elts, value.elts):
+                _bind(home, sub_target, sub_value)
+        return
+    if not isinstance(target, ast.Name):
+        return
+    if isinstance(value, ast.Constant) and isinstance(value.value, str):
+        home.strings.setdefault(target.id, set()).add(value.value)
+    else:
+        home.exprs.setdefault(target.id, []).append(value)
 
 
 def _scopes(tree: ast.Module, package: dict[str, set[str]]) -> dict[ast.AST, _Scope]:
@@ -98,20 +115,25 @@ def _scopes(tree: ast.Module, package: dict[str, set[str]]) -> dict[ast.AST, _Sc
         return scopes.setdefault(node, _Scope({}, {}))
 
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.level > 0:
+        own = (
+            node.level > 0 or (node.module or "").startswith("pyforge.doctor")
+            if isinstance(node, ast.ImportFrom)
+            else False
+        )
+        if isinstance(node, ast.ImportFrom) and own:
             for alias in node.names:
                 if alias.name in package:
                     scope(tree).strings.setdefault(alias.asname or alias.name, set()).update(package[alias.name])
         elif isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            home = scope(owner.get(node, tree))
             for target in targets:
-                if not isinstance(target, ast.Name):
-                    continue
-                if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
-                    home.strings.setdefault(target.id, set()).add(node.value.value)
-                else:
-                    home.exprs.setdefault(target.id, []).append(node.value)
+                _bind(scope(owner.get(node, tree)), target, node.value)
+        elif isinstance(node, ast.NamedExpr):
+            _bind(scope(owner.get(node, tree)), node.target, node.value)
+        elif isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
+            if isinstance(node.iter, (ast.List, ast.Tuple, ast.Set)):
+                for element in node.iter.elts:
+                    _bind(scope(owner.get(node, tree)), node.target, element)
         elif isinstance(node, _FUNCTION):
             for arg, default in _defaults(node):
                 if isinstance(default, ast.Constant) and isinstance(default.value, str):
@@ -167,12 +189,18 @@ def _render(expr: ast.expr | None, bound: _Scope) -> list[str]:
     if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mod) and isinstance(expr.left, ast.Constant):
         fmt = str(expr.left.value)
         values = list(expr.right.elts) if isinstance(expr.right, (ast.Tuple, ast.List)) else [expr.right]
+        by_key: dict[object, ast.expr] = {}
+        if isinstance(expr.right, ast.Dict):
+            by_key = {k.value: v for k, v in zip(expr.right.keys, expr.right.values) if isinstance(k, ast.Constant)}
         pieces: list[list[str]] = []
         position, last = 0, 0
         for match in _PERCENT_FIELD.finditer(fmt):
             pieces.append([fmt[last : match.start()]])
-            pieces.append(_render(values[position] if position < len(values) else None, bound))
-            position += 1
+            if match.group(1) is not None:
+                pieces.append(_render(by_key.get(match.group(1)), bound))
+            else:
+                pieces.append(_render(values[position] if position < len(values) else None, bound))
+                position += 1
             last = match.end()
         pieces.append([fmt[last:]])
         return _product(pieces)
@@ -206,7 +234,7 @@ def _render(expr: ast.expr | None, bound: _Scope) -> list[str]:
 def _bare(template: str) -> bool:
     if any(ch.isspace() for ch in template):
         return False
-    return any(_BARE.match(_SUFFIX.sub("", side)) for side in _SIDES.split(template))
+    return any(_BARE.match(_SUFFIX.sub("", side.lstrip("^"))) for side in _SIDES.split(template))
 
 
 def _argv(expr: ast.expr, bound: _Scope, depth: int = 0) -> list[ast.expr]:
@@ -215,6 +243,8 @@ def _argv(expr: ast.expr, bound: _Scope, depth: int = 0) -> list[ast.expr]:
         return _argv(expr.value, bound, depth)
     if isinstance(expr, (ast.List, ast.Tuple)):
         return [e for element in expr.elts for e in _argv(element, bound, depth)]
+    if isinstance(expr, (ast.ListComp, ast.GeneratorExp, ast.SetComp)):
+        return [expr.elt]  # its generators' targets are bound in the enclosing scope
     if isinstance(expr, ast.Name) and depth < _MAX_DEPTH and expr.id in bound.exprs:
         lists = [v for v in bound.exprs[expr.id] if isinstance(v, (ast.List, ast.Tuple))]
         if lists:
@@ -225,6 +255,11 @@ def _argv(expr: ast.expr, bound: _Scope, depth: int = 0) -> list[ast.expr]:
 def _findings(tree: ast.Module, package: dict[str, set[str]] | None = None) -> list[int]:
     owner = _owners(tree)
     scopes = _scopes(tree, package or {})
+    positional_bases = {
+        node.name: [i for i, a in enumerate([*node.args.posonlyargs, *node.args.args]) if a.arg in _BASE_PARAMS]
+        for node in ast.walk(tree)
+        if isinstance(node, _FUNCTION)
+    }
     lines: set[int] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
@@ -236,9 +271,10 @@ def _findings(tree: ast.Module, package: dict[str, set[str]] | None = None) -> l
                 for arg in [*node.args[1:], *(kw.value for kw in node.keywords if kw.arg == "args")]:
                     candidates += _argv(arg, bound)
             candidates += [kw.value for kw in node.keywords if kw.arg in _BASE_PARAMS]
+            candidates += [node.args[i] for i in positional_bases.get(name, ()) if i < len(node.args)]
             if any(_bare(t) for arg in candidates for t in _render(arg, bound)):
                 lines.add(node.lineno)
-        elif isinstance(node, _FUNCTION):
+        elif isinstance(node, (*_FUNCTION, ast.Lambda)):
             bound = _scope_at(node, tree, owner, scopes)
             for arg, default in _defaults(node):
                 if arg.arg in _BASE_PARAMS and any(_bare(t) for t in _render(default, bound)):
@@ -311,3 +347,30 @@ def test_the_scan_catches_the_spellings_review_1_found() -> None:
         ]
     )
     assert _findings(ast.parse(source), {"IMPORTED": {"main"}}) == [3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 19]
+
+
+def test_the_scan_catches_the_spellings_review_2_found() -> None:
+    """Doctor Story 31.1 review 2."""
+    source = "\n".join(
+        [
+            "def a(target):",  # 1
+            '    _git(target, "log", "HEAD", "^main")',  # 2: a leading `^`
+            '    run_git(target, ["rev-list", "HEAD", "^origin/main"])',  # 3
+            '    base, head = "origin/main", "HEAD"',  # 4
+            '    _git(target, "diff", f"{base}..{head}")',  # 5: tuple unpacking
+            '    for ref in ("main",):',  # 6
+            '        _git(target, "log", ref)',  # 7: a loop target
+            '    _git(target, "log", *[r for r in ["origin/main"]])',  # 8: a comprehension target
+            '    if (rev := "main"):',  # 9
+            '        _git(target, "log", rev)',  # 10: walrus
+            '    _git(target, "diff", "%(b)s..HEAD" % {"b": "origin/main"})',  # 11: `%` with a mapping
+            'pick = lambda target, base="origin/main": base',  # 12: a lambda default
+            "from pyforge.doctor.sources.x import ABS",  # 13
+            '_git(target, "log", ABS)',  # 14: an absolute import
+            "def _check(target, base, head): ...",  # 15
+            '_check(target, "origin/main", "HEAD")',  # 16: positional onto a base-like parameter
+            '_check(target, ORIGIN_MAIN, "HEAD")',  # 17: fine
+            '_git(target, "log", "HEAD", "^refs/heads/main")',  # 18: fine
+        ]
+    )
+    assert _findings(ast.parse(source), {"ABS": {"main"}}) == [2, 3, 5, 7, 8, 10, 11, 12, 14, 16]

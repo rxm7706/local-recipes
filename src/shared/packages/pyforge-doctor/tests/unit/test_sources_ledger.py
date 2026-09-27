@@ -389,7 +389,7 @@ def test_pr1465_shape_stale_head_after_unattended_main_promotion_is_ok(
     _git(repo, "checkout", "-q", fork_sha)
     _write_ledger(repo, "herald", {"23-6-landing-fallout": "done"})
     _commit_all(repo, "marshal: promote 23-6 to done")
-    _git(repo, "branch", "-f", "origin/main", "HEAD")
+    _origin_main_at(repo, "HEAD")
     _git(repo, "checkout", "-q", head_sha)
 
     findings = ledger.gather(repo, base="origin/main", head="HEAD")
@@ -419,7 +419,7 @@ def test_genuine_regression_survives_merge_base_substitution(tmp_path: Path) -> 
     _git(repo, "checkout", "-q", fork_sha)
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     _commit_all(repo, "unrelated change on main")
-    _git(repo, "branch", "-f", "origin/main", "HEAD")
+    _origin_main_at(repo, "HEAD")
     _git(repo, "checkout", "-q", head_sha)
 
     findings = ledger.gather(repo, base="origin/main", head="HEAD")
@@ -460,7 +460,7 @@ def test_no_common_ancestor_reports_warn(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
     _commit_all(repo, "main history")
-    _git(repo, "branch", "-f", "origin/main", "HEAD")
+    _origin_main_at(repo, "HEAD")
 
     _git(repo, "checkout", "-q", "--orphan", "unrelated")
     _git(repo, "rm", "-rf", "-q", ".")
@@ -800,7 +800,7 @@ def test_rekey_map_already_on_base_is_inert(tmp_path: Path) -> None:
         "46-1-old-slug -> 1-1-new-slug\n46-2-keep -> 1-2-keep\n47-1-thing -> 2-1-thing\nepic-46 -> epic-1\n",
     )
     merged = _commit_all(repo, "fold merged")
-    _git(repo, "branch", "-f", "origin/main", merged)
+    _origin_main_at(repo, merged)
     (repo / "later.txt").write_text("x\n", encoding="utf-8")
     _commit_all(repo, "a later, unrelated PR")
     findings = ledger.gather(repo, base="origin/main", head="HEAD")

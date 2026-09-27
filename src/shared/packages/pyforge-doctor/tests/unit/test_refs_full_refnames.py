@@ -179,16 +179,83 @@ def _no_remote(repo: Path) -> None:
     _commit(repo, "seed")
 
 
-@pytest.mark.parametrize("build", [_regression_pr, _push_to_main, _root_only, _unrelated, _no_remote])
+def _plain_pr(repo: Path) -> None:
+    """Review 2: the ordinary PR -- origin/main at the fork point, no substitution, so the base
+    (and the remedy's ref) is origin/main itself."""
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done"})
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "seed"))
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "in-progress"})
+    _commit(repo, "un-finish on the branch")
+
+
+def _clean_pr(repo: Path) -> None:
+    """No regression: the OK message names the range."""
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "backlog"})
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "seed"))
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done"})
+    _commit(repo, "finish on the branch")
+
+
+def _unreadable_base_blob(repo: Path) -> None:
+    """A base ledger that will not decode: the `ledger is tracked at <base>` WARN."""
+    path = repo / "_bmad-output" / "projects" / "doctor" / "planning-artifacts" / "sprint-status-ledger.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"development_status:\n  # caf\xe9\n  1-1-foo: done\n")
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "seed a non-utf8 ledger"))
+    path.write_bytes(b"development_status:\n  # caf\xe9\n  1-1-foo: backlog\n")
+    _commit(repo, "un-finish")
+
+
+def _dangling_rekey(repo: Path) -> None:
+    """A shipped re-key map naming an old key the base never had: `<old> not in <base>`."""
+    _ledger(repo, "pyforge-marshal", {"46-1-old": "done"})
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "legacy numbering"))
+    _ledger(repo, "pyforge-marshal", {"1-1-old": "done"})
+    rekey = repo / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "rekey-2026-09-27.md"
+    rekey.write_text("46-1-old -> 1-1-old\n99-9-never -> 1-9-nope\n", encoding="utf-8")
+    _commit(repo, "renumber with a bad map")
+
+
+_SHAPES = [_regression_pr, _push_to_main, _root_only, _unrelated, _no_remote, _plain_pr, _clean_pr]
+_SHAPES += [_unreadable_base_blob, _dangling_rekey]
+
+
+@pytest.mark.parametrize("build", _SHAPES)
 def test_ledger_regression_findings_are_unchanged_without_a_stray_ref(repo: Path, build) -> None:
     build(repo)
 
     full, short = ledger.gather(repo), ledger.gather(repo, base="origin/main")
 
-    assert [_shape(f) for f in full] == [_shape(f) for f in short]
+    assert full and [_shape(f) for f in full] == [_shape(f) for f in short]
     for finding in full:
-        if "remedy" in finding.evidence and finding.evidence["base"] == "origin/main":
-            assert finding.evidence["remedy"].startswith("git checkout refs/remotes/origin/main -- ")
+        if finding.status is DoctorStatus.FAIL and "remedy" in finding.evidence:
+            base = finding.evidence["base"]
+            expected_ref = ORIGIN_MAIN if base == "origin/main" else base
+            assert finding.evidence["remedy"] == f"git checkout {expected_ref} -- {finding.evidence['path']}"
+
+
+def test_the_remedy_names_the_full_ref_in_a_plain_pr(repo: Path) -> None:
+    """Review 2: the remedy branch must actually be reached -- every other FAIL shape substitutes
+    a sha for the base."""
+    _plain_pr(repo)
+
+    (finding,) = ledger.gather(repo)
+
+    assert finding.status is DoctorStatus.FAIL and finding.evidence["base"] == "origin/main"
+    assert finding.evidence["remedy"].startswith("git checkout refs/remotes/origin/main -- ")
+
+
+def test_ledger_direction_names_an_unreadable_rekey_map_at_main_by_its_short_name(repo: Path) -> None:
+    """`_rekey_sid_maps` reads re-key maps at the base: an unreadable one is named at `main`."""
+    _ledger(repo, "pyforge-marshal", {"1-1-foo": "done"})
+    rekey = repo / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "rekey-2026-09-27.md"
+    rekey.write_bytes(b"46-1-foo -> 1-1-foo # caf\xe9\n")
+    _commit(repo, "a map that will not decode")
+
+    full, short = ledger.gather_direction(repo), ledger.gather_direction(repo, base_ref="main")
+
+    assert any("tracked at main" in f.message for f in full)
+    assert [_shape(f) for f in full] == [_shape(f) for f in short]
 
 
 def test_ledger_direction_findings_are_unchanged_without_a_stray_ref(repo: Path) -> None:

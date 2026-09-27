@@ -4,7 +4,7 @@ Git resolves a short name through ``refs/<n>``, ``refs/tags/<n>``, ``refs/heads/
 ``refs/remotes/<n>``: a local branch or tag named ``origin/main`` stands in for the remote, and a
 tag named ``main`` for the local branch. Every git read a Doctor source makes of a branch names it
 from here. Doctor's own module -- Doctor imports no station's internals (marshal keeps the same
-rule in its ``core/refs.py``, CAP-270 / CAP-271). Pure: no I/O.
+rule in its ``core/refs.py``, marshal:CAP-270 / marshal:CAP-271). Pure: no I/O.
 """
 
 from __future__ import annotations

@@ -3,7 +3,7 @@ title: '31.1: Every Doctor source names the branch it reads by its full refname'
 type: 'fix'
 created: '2026-09-27'
 status: 'in-progress'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -87,9 +87,19 @@ Verified clean: every `run_git` / `_git` / subprocess path in the package — th
 
 - `[medium]` `[patch]` **`detectors-ci` red on six new cap-citation findings** — marshal's two CAP ids cited unqualified in `epics.md`, this spec and the memlog read as Doctor's own ids. **Fix:** `marshal:CAP-270` / `marshal:CAP-271` throughout (the Dream and CAP-85 too).
 - `[low]` `[note]` `spec-surface` red until the landing reconcile (`pyforge/doctor/refs.py` on the co-governor `spec-pyforge-core`; the new tests on `spec-pyforge-doctor`) — done at landing, naming the paths.
-- `[low]` `[patch]` **The FAIL remedy handed git the short name** — with a local `origin/main` shadow, `git checkout origin/main -- <ledger>` restored the shadow's blob. **Fix:** the remedy names the full ref; AC-4 amended (the one field that changes without a stray ref), pinned by the equivalence test.
+- `[low]` `[patch]` **The FAIL remedy handed git the short name** — with a local `origin/main` shadow, `git checkout origin/main -- <ledger>` restored the shadow's blob. **Fix:** the remedy names the full ref; AC-4 amended (the one field that changes without a stray ref) — pinned only after review 2 (see there).
 - `[low]` `[patch]` **The meta scan missed the spellings marshal's reviews hardened** (function-local bindings, `or` / conditionals, `+` / `%` / `format`, imported constants, `main^`, `args=`, argv variables, starred args, call-site keywords, `base_branch` / `since` defaults). **Fix:** ported marshal 61.1's rendering and scoping, plus git-argv and call-site keyword collection; a second self-test pins every spelling; the live tree stays clean and the pre-change tree flags all five sites and the calls that consume them.
 - `[low]` `[patch]` **AC-1's shape and AC-4's substitution / WARN paths were untested** — AC-1 reworded to what can be observed (the renamed-branch-plus-tag verdict, and route 3's argv pinned to `refs/heads/main`); an equivalence test covers `ledger.gather` in five shapes and `ledger.gather_direction` with both directions firing.
 - `[low]` `[→ DW-marshal-testing-kit-short-origin-main-2026-09-27]` `pyforge-testing-kit`'s `branch_diff_guard` (and steward's `tea-test-review` task) default to `origin/main`; outside Doctor's package — the kit's charter is marshal's. Doctor's own `test_portal_fleet_pulse.py` read of `origin/main:<path>` is fixed here.
-- `[nit]` `[patch]` Two ledger tests still built `origin/main` as a local branch — now `_origin_main_at`, and `_branch_at` is gone. "Two merge-gate detectors" corrected: all five run in `detectors-ci`, only `ledger-regression` blocks. The spine note and CAP-85 name `display_ref`.
+- `[nit]` `[patch]` Two ledger tests still built `origin/main` as a local branch — now `_origin_main_at`, and `_branch_at` is gone (four more, via `git branch -f`, were found by review 2). "Two merge-gate detectors" corrected: all five run in `detectors-ci`, only `ledger-regression` blocks. The spine note and CAP-85 name `display_ref`.
 - `[nit]` `[note]` With no `refs/remotes/origin/main` at all, a tag literally named `refs/remotes/origin/main` would still resolve through `refs/tags/` — no worse than before, and marshal shares it; not guarded.
+
+### Review 2 — 2026-09-27, independent adversarial reviewer, `be92d8f4d0..933b6b17e3` — PASS with lows (3 low, 1 nit)
+
+Verified clean: the remedy names `refs/remotes/origin/main` with no substitution and a sha on the same-commit and merge-base paths, and nothing outside the producer parses or displays it; reverting `base_requested`, the range evidence or the WARN messages kills a test, as does `MAIN` → `"main"` in route 3 (both route-3 tests); each equivalence shape produces its intended finding; the meta scan is clean on the live tree, flags all five pre-change sites, catches nested closures and method defaults, and terminates on self-reference; `update-ref refs/remotes/origin/main` needs no remote, and `detectors.yml`, `pyforge-station-tests.yml` and `coverage-gates.yml` fetch with `fetch-depth: 0`; the planning text and every DW line check out; `ad-citation-check` 0, `detectors-ci` red on spec-surface only, `pyforge-doctor-test` green.
+
+- `[low]` `[patch]` **The remedy was not pinned** — its assertion ran only when the base was `origin/main`, and every FAIL shape substituted a sha; five mutants survived (remedy back to the short name, the OK message, `_check`'s two details, the re-key-unreadable message). **Fix:** a plain-PR shape reaches the remedy, the check is unconditional for FAIL findings, and the clean-PR, unreadable-base-blob and dangling-rekey shapes plus an unreadable re-key map for `ledger-direction` join the equivalence test — all five mutants killed (mutation run recorded in the memlog).
+- `[low]` `[patch]` **The meta scan still missed spellings** — a leading `^` (`^main`, `^origin/main`) blanked the side; tuple-unpacking, loop, comprehension and walrus targets, absolute `pyforge.doctor` imports, `%` with a mapping, lambda defaults and positional refs onto a same-module base-like parameter went unseen. **Fix:** each handled and pinned in a third self-test; attributes, `format` on a named string, `join` over a named list and positional refs into another module's functions are named as not scanned.
+- `[low]` `[patch]` **"The local `origin/main` fixtures are gone" was false** — four ledger tests still ran `git branch -f origin/main`. **Fix:** `_origin_main_at` at all four; no Doctor test builds the shadow now (the memlog's review-1 item 6 corrected by the review-2 entry).
+- `[nit]` `[patch]` `pyforge/doctor/refs.py` cited marshal's ids unqualified — now `marshal:CAP-270` / `marshal:CAP-271`.
+- `[low]` `[note]` `spec-surface` red until the landing reconcile — done at landing.
