@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-212 / CAP-266 (Epic 56). No AD amended. See § 23. Prior 2026-09-26
+updated: "2026-09-27"   # RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-213 / CAP-267 (Epic 57). No AD amended. See § 24. Earlier 2026-09-27: FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
@@ -2597,3 +2597,27 @@ otherwise it stays in ATTENTION (amended 2026-09-27 after the story's review). F
 **Content changed:** § 23 added (FR-212 registered). No FR renumbered or removed. No AD amended —
 the marker is the journal fact and the git fact reported side by side (AD-5, AD-33), with no new
 port or decision boundary.
+
+## 24. Currency reconciliation — 2026-09-27 (later)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-267 later on 2026-09-27. Same-day
+reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 24.1 The FR space: FR-213 registered
+
+`marshal refresh`'s eight fast-forward pushes of `loop/<slug>` to `origin/main` each ran the
+repo's ~10-minute pre-push preflight (steward CAP-154). Steward's hook-side "nothing new" skip was
+refused in review (under pre-commit the hook sees only one ref of a multi-ref push); the proof
+belongs to the tool that pushed. FR-213 decomposes into **Epic 57** (Story 57.1) — a new epic
+because Epic 56 is `done`.
+
+#### FR-213: A loop-home refresh sends its proven fast-forward past the pre-push preflight ← CAP-267
+When `refresh` has itself fast-forwarded `loop/<slug>` to `origin/main`, it pushes with the
+existing journaled opt-out, its reason naming the branch, `origin/main` and the sha, through
+`VcsPort.push`'s keyword-only `preflight_skip_reason` (set for that one `git` process); any other
+`--base`, and every other push caller, pushes through the preflight. Story 57.1.
+
+**ONE FR space now FR-1..FR-213** (FR-214 = next free id).
+
+**Content changed:** § 24 added (FR-213 registered). No AD amended — the `VcsPort` keyword is an
+additive change to an existing port, and the proof is `refresh`'s own git operation.

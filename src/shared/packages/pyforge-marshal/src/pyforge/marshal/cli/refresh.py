@@ -71,6 +71,9 @@ _MRS_REFRESH_007 = "MRS-REFRESH-007"
 _MRS_REFRESH_008 = "MRS-REFRESH-008"
 
 _DEFAULT_BASE = "main"
+#: The only tip whose commits have all passed CI (Story 57.1): a fast-forward to it
+#: is the one push `refresh` may send past the pre-push preflight.
+_MAIN_TIP_REF = "origin/main"
 _SYNC_STATUS_TIMEOUT_S = 60
 
 
@@ -359,9 +362,20 @@ def _refresh_one_home(
             )
 
     if ff_step.status == "done":
+        # Story 57.1 (CAP-267): this function just fast-forwarded `branch` to
+        # `tip_ref` itself, so every commit the push carries is already on it.
+        # Only `origin/main` has passed CI, so only then is the pre-push preflight
+        # skipped -- with this proof as its journaled reason. Any other `--base`
+        # pushes normally and the preflight runs.
+        skip_reason = (
+            f"marshal refresh: {branch} fast-forwarded to {tip_ref} ({(current_ref or '?')[:12]}); "
+            f"every pushed commit is already on {tip_ref}"
+            if tip_ref == _MAIN_TIP_REF
+            else None
+        )
         try:
             # Push via the shared repo root; branch name is loop/<slug> only.
-            vcs.push(git_repo_root, branch)
+            vcs.push(git_repo_root, branch, preflight_skip_reason=skip_reason)
             push_step = RefreshStep(STEP_PUSH, "done", f"pushed {branch} to origin")
         except VcsCommandError as exc:
             findings.append(

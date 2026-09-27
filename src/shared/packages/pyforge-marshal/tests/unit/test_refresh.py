@@ -86,6 +86,7 @@ class _FakeVcs:
         self.fetch_calls: list[tuple[Path, str, str]] = []
         self.ff_calls: list[tuple[Path, str]] = []
         self.push_calls: list[tuple[Path, str]] = []
+        self.push_skip_reasons: list[str | None] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo")
@@ -121,8 +122,9 @@ class _FakeVcs:
             raise VcsCommandError("not a fast-forward")
         return "newsha1234567890"
 
-    def push(self, repo_root, branch):
+    def push(self, repo_root, branch, *, preflight_skip_reason=None):
         self.push_calls.append((repo_root, branch))
+        self.push_skip_reasons.append(preflight_skip_reason)
         slug = branch.removeprefix("loop/")
         if slug in self.push_raise:
             raise VcsCommandError("push failed")
@@ -211,6 +213,35 @@ def test_dirty_home_refused_by_name_no_ff(tmp_path, capsys, monkeypatch):
     assert vcs.ff_calls == []
     assert steps["push"]["status"] == "skipped"
     assert any(f["code"] == "MRS-REFRESH-003" for f in out["findings"])
+
+
+def test_a_fast_forward_to_origin_main_pushes_with_the_journaled_preflight_opt_out(tmp_path, capsys, monkeypatch):
+    """Story 57.1 (CAP-267): refresh just fast-forwarded loop/<slug> to origin/main itself,
+    so the push carries nothing main has not verified -- it passes the pre-push opt-out with
+    that proof as the journaled reason (steward 68.2 removed the hook-side guess)."""
+    monkeypatch.chdir(tmp_path)
+    home = tmp_path / "acme"
+    home.mkdir()
+    vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),), behind={"acme": 2})
+    run_refresh(_ns(), vcs=vcs)
+    capsys.readouterr()
+    (reason,) = vcs.push_skip_reasons
+    assert reason == (
+        "marshal refresh: loop/acme fast-forwarded to origin/main (newsha123456); "
+        "every pushed commit is already on origin/main"
+    )
+
+
+def test_a_fast_forward_to_another_base_pushes_through_the_preflight(tmp_path, capsys, monkeypatch):
+    """Only origin/main has passed CI: a refresh against any other --base never skips."""
+    monkeypatch.chdir(tmp_path)
+    home = tmp_path / "acme"
+    home.mkdir()
+    vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),), behind={"acme": 2})
+    run_refresh(_ns(base="release"), vcs=vcs)
+    capsys.readouterr()
+    assert vcs.ff_calls == [(home, "origin/release")]
+    assert vcs.push_skip_reasons == [None]
 
 
 def test_clean_behind_home_fast_forwards_and_pushes_loop_slug_only(tmp_path, capsys, monkeypatch):

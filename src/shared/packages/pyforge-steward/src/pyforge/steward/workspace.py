@@ -695,11 +695,12 @@ def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
     raise WorkspaceError(f"git merge-base --is-ancestor {branch} {into} failed (exit {result.returncode}): {detail}")
 
 
-#: Reinstallable pixi environment dirs, relative to a worktree root. They are
-#: rebuilt from `pixi.lock` on demand and run to ~13 GB in a worktree that has
-#: run `pr-preflight`, so an archive leaves them out; every other file under
+#: Reinstallable pixi dirs, relative to a worktree root: the environments
+#: (rebuilt from `pixi.lock`) and the path-dependency build cache (rebuilt on
+#: demand). They run to ~13 GB and 1-2 GB in a worktree that has run
+#: `pr-preflight`, so an archive leaves them out; every other file under
 #: `.pixi/` (the tracked `config.toml`) still archives (Story 68.1, CAP-155).
-REINSTALLABLE_ENV_DIRS: tuple[str, ...] = (".pixi/envs", ".pixi/solve-group-envs")
+REINSTALLABLE_ENV_DIRS: tuple[str, ...] = (".pixi/envs", ".pixi/solve-group-envs", ".pixi/bld")
 
 
 def _without_reinstallable_envs(arcroot: str):
@@ -735,8 +736,15 @@ def _archive_worktree(
         wt = Path(record.path)
         if wt.is_dir():
             archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
-            with tarfile.open(archive_path, "w:gz") as tar:
-                tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
+            try:
+                with tarfile.open(archive_path, "w:gz") as tar:
+                    tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
+            except (OSError, tarfile.TarError) as exc:
+                # A half-written archive is not an archive; the record is kept and
+                # retried by the next sweep, so leaving it would leak one per sweep
+                # (Story 68.1 review 1).
+                archive_path.unlink(missing_ok=True)
+                raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
         else:
             # Path already gone — still write a marker so clean is recoverable.
             archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
@@ -813,9 +821,14 @@ def clean_workspaces(
     remaining: list[WorkspaceRecord] = list(others)
     pending = list(records)
 
+    # The record being decided right now: popped from `pending` but not yet placed
+    # in `remaining` or `archived`. The `finally` saves it back, so no exception --
+    # not even a Ctrl-C at the confirm prompt -- can drop it (Story 68.1 review 1).
+    in_flight: WorkspaceRecord | None = None
     try:
         while pending:
             record = pending.pop(0)
+            in_flight = record
             # Story 68.1 (CAP-155): a record this sweep cannot decide (its branch
             # gone, an archive that fails) is reported and KEPT, and the sweep
             # goes on -- it used to abort here, and the `finally` below then
@@ -824,21 +837,26 @@ def clean_workspaces(
                 if merged_only and not _branch_merged_into(root, record.branch, record.source):
                     skipped.append({**record.to_dict(), "reason": "not-merged"})
                     remaining.append(record)
+                    in_flight = None
                     continue
                 if not merged_only and not confirm_fn(record.slug):
                     skipped.append({**record.to_dict(), "reason": "declined"})
                     remaining.append(record)
+                    in_flight = None
                     continue
                 archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
             except WorkspaceError as exc:
                 skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
+                in_flight = None
                 continue
+            in_flight = None
             archived.append({**record.to_dict(), "archive": str(archive_path)})
     finally:
         # Persist removals already archived even if a later record fails —
         # otherwise archived trees stay listed in bookkeeping.
-        save_bookkeeping(bookkeeping, tuple(remaining + pending))
+        kept_in_flight = [in_flight] if in_flight is not None else []
+        save_bookkeeping(bookkeeping, tuple(remaining + kept_in_flight + pending))
 
     return {"archived": archived, "skipped": skipped}
 
@@ -975,7 +993,10 @@ class WorkspaceDuty:
                 result = clean_repo_set(slug, merged_only=merged_only)
                 return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
             result = clean_workspaces(merged_only=merged_only, slug=slug)
-            return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
+            # Story 68.1 review 1: the sweep now finishes past a record it could not
+            # decide, but that record is still a failure -- the exit code says so.
+            errored = any(row.get("reason", "").startswith("error: ") for row in result["skipped"])
+            return DutyResult(ok=not errored, summary=format_clean(result, as_json=as_json))
         except WorkspaceError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
         except RuntimeError as exc:

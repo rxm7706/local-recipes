@@ -4487,7 +4487,7 @@ So that no later story implements a Phase 6 the operator retired.
 **And** the spine re-stamp is scoped (`--spec` for each Spec the detector names)
 **Status:** backlog
 
-## Epic 68: Housekeeping that does not leak, and a gate that does not re-check `main` (spec-pyforge-steward CAP-155..156)
+## Epic 68: Housekeeping that does not leak, and a gate journal that names what was pushed (spec-pyforge-steward CAP-155..156)
 
 Minted 2026-09-27 from the Dream entry "housekeeping that leaks, and a gate that re-checks what `main` already
 checked": landing marshal 56.1 and resyncing the loop homes found `.steward/workspace-archive/` at 75 GB (every archive
@@ -4495,38 +4495,44 @@ carries `.pixi/envs`), a fleet `workspace clean` that stops at — and silently 
 gone, a `pre-push` gate that ran the ~10-minute preflight eight times for pushes carrying nothing `main` lacked, and a
 skip journal that names the checked-out branch instead of what was pushed. **HARD boundaries:** archive-not-delete
 stands (work still archives; only reinstallable env dirs are left out); a record the sweep cannot decide is kept,
-never dropped; the automatic skip covers only commits already reachable from `origin/main`, and anything the hook
-cannot determine runs the full preflight.
+never dropped; the pre-push hook gains NO skip of its own (review 1: under pre-commit it sees only the first ref
+of a multi-ref push) -- a loop-home refresh's proven nothing-new push is `marshal refresh`'s own opt-out, marshal Story
+57.1 (spec-pyforge-marshal CAP-267).
 
 ### Story 68.1: A workspace archive holds the work, not the environments, and one bad record never stops the sweep
 
 As the operator whose archive folder reached 75 GB,
-I want `workspace clean` to leave `.pixi/envs` out of every archive and to report-and-keep a record it cannot decide instead of aborting,
+I want `workspace clean` to leave `.pixi/envs`, `.pixi/solve-group-envs` and `.pixi/bld` out of every archive and to report-and-keep a record it cannot decide instead of aborting,
 So that archive-not-delete stays affordable and one stale record never blocks, or erases, the rest of the fleet's bookkeeping.
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-155 (extends CAP-107) • Dream 2026-09-27 (later)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_archive_worktree`: a tar filter leaving
-`.pixi/envs` and `.pixi/solve-group-envs` out; `clean_workspaces`: a per-record `WorkspaceError` becomes a `skipped` row with its
-reason, the record stays in bookkeeping, the sweep continues), `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py`.
+`.pixi/envs`, `.pixi/solve-group-envs` and `.pixi/bld` out, a failed tar removing its partial archive; `clean_workspaces`: a
+per-record `WorkspaceError` becomes a `skipped` row with its reason and the record stays, a record in flight survives any other
+exception; the clean duty exits non-zero when a row errored), `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py`.
 **Given** a worktree with a populated `.pixi/envs`, and bookkeeping holding a record whose branch no longer exists ahead of a merged one
 **When** `workspace clean --merged-only` runs over the fleet
 **Then** the merged worktree's archive holds its files and `.pixi/config.toml` but nothing under `.pixi/envs`; the stale record is reported skipped with its git error and is still in bookkeeping afterwards
-**And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**And** an unreadable file leaves no partial archive and keeps the record; an interrupt mid-sweep loses no record; a run with an error row exits non-zero; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 
 ### Story 68.2: The pre-push gate skips a push that carries nothing new, and its journal names what was pushed
 
-As the operator who waited ~80 minutes of preflight for eight fast-forwards to `main`,
-I want the `pre-push` hook to skip, journaled, when every pushed commit is already on `origin/main`, and every journal line to name the pushed refs,
-So that a loop-home refresh costs seconds and the skip journal says what actually left the machine unchecked.
+As the operator whose skip journal named `main` for eight `loop/*` pushes,
+I want every `pre-push` skip line to name the refs and commits that were actually pushed, and the hook to add no skip it cannot prove,
+So that the journal says what left the machine unchecked, and CAP-154's refusal of a red push has no new hole.
+
+**Scope after review 1 (2026-09-27):** the hook-side "nothing new" skip this story first shipped was refused -- under
+pre-commit the hook sees only the first ref of a multi-ref push -- and removed; the proven skip for a loop-home refresh
+is marshal Story 57.1. The story title is the key of record and stays.
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-156 (extends CAP-154) • Dream 2026-09-27 (later)
-**Surface:** `scripts/pre_push_preflight.sh` (a nothing-new skip: every non-delete ref's `git rev-list <sha> --not origin/main` empty;
-journal lines carry the pushed remote ref(s) and local sha(s), falling back to the checked-out branch only when no ref arrived),
+**Surface:** `scripts/pre_push_preflight.sh` (one `journal_skip` helper: every skip line carries the pushed remote ref(s) and local
+sha(s), falling back to the checked-out branch only when no ref arrived; the delete skip is journaled; no ref-based skip),
 `tests/scripts/test_lint_types_gate.py`.
-**Given** a push of `loop/<slug>` whose tip is `origin/main`, a push carrying one new commit, and a manual `PYFORGE_PREFLIGHT_SKIP=1` push
+**Given** a push of `loop/<slug>` whose tip is `origin/main`, a manual `PYFORGE_PREFLIGHT_SKIP=1` push from a `main` checkout, a `dispatch/*` push and a delete
 **When** the hook runs for each
-**Then** the first skips with an "already on origin/main" journal line naming `refs/heads/loop/<slug>`; the second runs the preflight; the third's line names the pushed ref and sha, not the checked-out branch
-**And** the existing `dispatch/*` and delete skips behave exactly as before; `tests/scripts/test_lint_types_gate.py` green
+**Then** the first still runs the preflight (env and stdin forms); the second's line names the pushed ref and sha, not `main`; the `dispatch/*` and delete lines name their refs
+**And** CAP-154's refusal of a red push is unchanged; `tests/scripts/test_lint_types_gate.py` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

@@ -274,16 +274,18 @@ Drift — orphaned between stations.
     pushed, so the journal cannot say what left the machine unchecked.
   **What it looks like when real:** an archive holds the work, never the environments, so
   archive-not-delete stays affordable; a fleet sweep reports each record it could not decide
-  and keeps it, and finishes; a push that carries nothing `main` does not already have skips
-  the preflight on its own, journaled; and every journal line names the refs and commits that
-  were pushed.
-  **Constraints:** the tracked `.pixi/config.toml` still archives (only reinstallable env dirs
-  are left out); a record the sweep cannot decide is kept, never dropped; the automatic skip
-  covers only commits already reachable from `origin/main` — a push with any new commit still
-  runs the full preflight, and anything the hook cannot determine runs it too.
+  and keeps it, and finishes; a push its own tool proves carries nothing `main` lacks (a
+  loop-home fast-forward to `origin/main`) skips the preflight, journaled with that proof; and
+  every journal line names the refs and commits that were pushed.
+  **Constraints:** the tracked `.pixi/config.toml` still archives (only reinstallable pixi dirs
+  are left out); a record the sweep cannot decide is kept, never dropped; the hook itself never
+  skips on a guess — under pre-commit it sees only the first ref of a multi-ref push (found in
+  review of the first cut, which let a new commit through), so the proof has to come from the
+  tool that made the push.
   Kinships: CAP-107 (`workspace clean`, archive-not-delete, absorbed from
   `scratch-worktree-lifecycle`) and CAP-154 (the pre-push gate); the preflight-under-a-minute
-  entry above (the automatic skip is its first, smallest cut). Owner: steward.
+  entry above; marshal's `refresh` (the proven loop-home skip is its CAP-267, marshal Dream
+  2026-09-27). Owner: steward.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

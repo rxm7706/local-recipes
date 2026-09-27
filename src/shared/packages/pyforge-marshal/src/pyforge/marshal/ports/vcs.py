@@ -281,7 +281,7 @@ class VcsPort(Protocol):
         git failure."""
         ...
 
-    def push(self, repo_root: Path, branch: str) -> None:
+    def push(self, repo_root: Path, branch: str, *, preflight_skip_reason: str | None = None) -> None:
         """A plain ``git push`` of ``branch`` (Story 3.8, AD-46), naming
         ``branch`` explicitly rather than relying on ``repo_root``'s own
         checked-out HEAD: if ``branch`` already has a configured upstream,
@@ -296,7 +296,14 @@ class VcsPort(Protocol):
         push performs). Raises ``VcsCommandError`` on any git failure
         (rejected non-fast-forward, no network, no configured remote) -- the
         caller treats that as a registered ``WARN``, never a run-halting
-        condition."""
+        condition.
+
+        ``preflight_skip_reason`` (Story 57.1, CAP-267): when given, the push
+        runs with the repo's journaled pre-push opt-out
+        (``PYFORGE_PREFLIGHT_SKIP=1``, the reason in
+        ``PYFORGE_PREFLIGHT_SKIP_REASON``). Only a caller that has itself
+        PROVEN the push carries no commit outside ``origin/main`` may pass it;
+        the hook cannot prove that under pre-commit (steward 68.2)."""
         ...
 
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:

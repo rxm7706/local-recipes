@@ -146,10 +146,12 @@ def test_pre_push_hook_skips_dispatch_branches_and_deletes(tmp_path: Path, env: 
     assert expect in proc.stderr
 
 
-# Story 68.2 (spec-pyforge-steward CAP-156): a push carrying nothing origin/main lacks skips the
-# preflight, journaled; anything new (or undeterminable) still runs it; every journal line names
-# the pushed ref(s) and sha(s). A fake `pixi` on PATH stands in for the real preflight so "ran the
-# preflight" is observable without running it.
+# Story 68.2 (spec-pyforge-steward CAP-156): every skip is journaled with the pushed ref(s) and
+# sha(s), never the checked-out branch. There is deliberately NO hook-side "nothing new" skip
+# (review 1, high): under pre-commit the hook sees only the FIRST ref of a multi-ref push, so it
+# cannot prove what the others carry -- a push already on origin/main still runs the preflight
+# unless the pushing tool sets the journaled opt-out with its own proof (marshal Story 57.1).
+# A fake failing `pixi` on PATH stands in for the real preflight, so "ran it" is observable.
 _GIT_ID = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x"}
 
 
@@ -193,51 +195,17 @@ def _journal(repo: Path) -> list[list[str]]:
 
 
 @pytest.mark.parametrize("form", ["env", "stdin"])
-def test_pre_push_hook_skips_a_push_already_on_origin_main_and_names_the_ref(tmp_path: Path, form: str) -> None:
+def test_pre_push_hook_still_preflights_a_push_already_on_origin_main(tmp_path: Path, form: str) -> None:
+    """The hook cannot see a multi-ref push's other refs under pre-commit, so it never skips on
+    "the first ref is on main" -- in either invocation form."""
     repo, env, sha = _hook_repo(tmp_path)
     if form == "env":
         proc = _run_hook(repo, env, extra={"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/loop/x", "PRE_COMMIT_TO_REF": sha})
     else:
         proc = _run_hook(repo, env, stdin=f"refs/heads/loop/x\t{sha}\trefs/heads/loop/x\t{'0' * 40}\n")
-    assert proc.returncode == 0, proc.stderr
-    assert "already on origin/main" in proc.stderr
-    assert "PREFLIGHT-RAN" not in proc.stderr
-    (row,) = _journal(repo)
-    assert row[1] == "refs/heads/loop/x"
-    assert row[2] == sha[:10]
-    assert row[3] == "already on origin/main: nothing new to preflight"
-
-
-def test_pre_push_hook_runs_the_preflight_for_a_new_commit(tmp_path: Path) -> None:
-    import subprocess
-
-    repo, env, _ = _hook_repo(tmp_path)
-    subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "new"], check=True, env=env)
-    new = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
-    proc = _run_hook(repo, env, extra={"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/feature", "PRE_COMMIT_TO_REF": new})
     assert proc.returncode == 1
     assert "PREFLIGHT-RAN" in proc.stderr
     assert _journal(repo) == []
-
-
-def test_pre_push_hook_runs_the_preflight_without_an_origin_main(tmp_path: Path) -> None:
-    """Undeterminable is not "nothing new": no origin/main, no skip."""
-    repo, env, sha = _hook_repo(tmp_path, with_origin_main=False)
-    proc = _run_hook(repo, env, extra={"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/loop/x", "PRE_COMMIT_TO_REF": sha})
-    assert proc.returncode == 1
-    assert "PREFLIGHT-RAN" in proc.stderr
-
-
-def test_pre_push_hook_runs_the_preflight_when_one_of_several_refs_is_new(tmp_path: Path) -> None:
-    import subprocess
-
-    repo, env, sha = _hook_repo(tmp_path)
-    subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "new"], check=True, env=env)
-    new = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
-    stdin = f"refs/heads/loop/x\t{sha}\trefs/heads/loop/x\t{'0' * 40}\nrefs/heads/main\t{new}\trefs/heads/main\t{sha}\n"
-    proc = _run_hook(repo, env, stdin=stdin)
-    assert proc.returncode == 1
-    assert "PREFLIGHT-RAN" in proc.stderr
 
 
 def test_pre_push_hook_manual_opt_out_journals_the_pushed_ref_not_the_checked_out_branch(tmp_path: Path) -> None:
@@ -257,7 +225,27 @@ def test_pre_push_hook_manual_opt_out_journals_the_pushed_ref_not_the_checked_ou
         },
     )
     assert proc.returncode == 0, proc.stderr
+    assert "PREFLIGHT-RAN" not in proc.stderr
     (row,) = _journal(repo)
     assert row[1] == "refs/heads/feature"  # the pushed ref, never the checked-out `main`
     assert row[2] == new[:10]
     assert row[3] == "operator reason"
+
+
+@pytest.mark.parametrize(
+    ("extra", "stdin", "ref", "reason"),
+    [
+        ({"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/dispatch/pyforge-marshal/53.2", "PRE_COMMIT_TO_REF": "a" * 40}, "",
+         "refs/heads/dispatch/pyforge-marshal/53.2", "dispatch/* branch: supervisor-gated"),
+        ({}, "(delete)\t" + "0" * 40 + "\trefs/heads/gone\tabc\n", "refs/heads/gone", "branch delete: nothing to preflight"),
+    ],
+    ids=["dispatch", "delete"],
+)
+def test_pre_push_hook_automatic_skips_journal_the_pushed_ref(tmp_path: Path, extra: dict, stdin: str, ref: str, reason: str) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    proc = _run_hook(repo, env, stdin=stdin, extra=extra)
+    assert proc.returncode == 0, proc.stderr
+    assert "PREFLIGHT-RAN" not in proc.stderr
+    (row,) = _journal(repo)
+    assert row[1] == ref
+    assert row[3] == reason

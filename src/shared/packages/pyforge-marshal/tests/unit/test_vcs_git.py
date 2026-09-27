@@ -833,6 +833,33 @@ def test_push_with_configured_upstream_pushes_new_commits(vcs, cloned_repo, remo
     assert remote_head == local_head
 
 
+def test_push_hands_the_preflight_opt_out_to_the_pre_push_hook_only_when_asked(vcs, cloned_repo, remote):
+    """Story 57.1 (CAP-267): `preflight_skip_reason` reaches the repo's real `pre-push` hook as
+    the journaled opt-out (PYFORGE_PREFLIGHT_SKIP=1 + the reason); a push without it sets
+    neither variable."""
+    seen = cloned_repo / "hook-env.txt"
+    hook = cloned_repo / ".git" / "hooks" / "pre-push"
+    hook.write_text(
+        "#!/usr/bin/env bash\n"
+        f'printf "%s|%s\\n" "${{PYFORGE_PREFLIGHT_SKIP:-unset}}" "${{PYFORGE_PREFLIGHT_SKIP_REASON:-unset}}" >> {seen}\n',
+        encoding="utf-8",
+    )
+    hook.chmod(0o755)
+    (cloned_repo / "a.txt").write_text("a\n", encoding="utf-8")
+    _git(cloned_repo, "add", "a.txt")
+    _git(cloned_repo, "commit", "-m", "a")
+    vcs.push(cloned_repo, "main", preflight_skip_reason="marshal refresh: proven fast-forward")
+    (cloned_repo / "b.txt").write_text("b\n", encoding="utf-8")
+    _git(cloned_repo, "add", "b.txt")
+    _git(cloned_repo, "commit", "-m", "b")
+    vcs.push(cloned_repo, "main")
+
+    assert seen.read_text(encoding="utf-8").splitlines() == [
+        "1|marshal refresh: proven fast-forward",
+        "unset|unset",
+    ]
+
+
 def test_push_never_passes_force(vcs, cloned_repo, remote, monkeypatch):
     """Structural proof the port's own contract holds: no invocation this
     method makes ever carries `--force`/`--force-with-lease`, on either the

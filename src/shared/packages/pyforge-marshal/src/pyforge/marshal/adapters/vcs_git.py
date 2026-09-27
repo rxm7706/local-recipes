@@ -530,7 +530,7 @@ class GitVcs:
             return ()
         return tuple(line for line in result.stdout.splitlines() if line.strip())
 
-    def push(self, repo_root: Path, branch: str) -> None:
+    def push(self, repo_root: Path, branch: str, *, preflight_skip_reason: str | None = None) -> None:
         """Story 3.8 (AD-46): resolves whether ``branch`` already has a
         configured upstream via ``git rev-parse --abbrev-ref
         <branch>@{upstream}`` -- exit 0 means one exists (``origin/x``-shaped
@@ -578,6 +578,16 @@ class GitVcs:
                 f"(exit {upstream_check.returncode}), and it is not the "
                 f"ordinary no-upstream case: {upstream_check.stderr.strip()}"
             )
+        if preflight_skip_reason is not None:
+            # Story 57.1 (CAP-267): the pre-push hook's journaled opt-out, set for
+            # this one git process only -- the process port takes no environment,
+            # so the POSIX `env` utility carries it (never exported to anything else).
+            args = [
+                "env",
+                "PYFORGE_PREFLIGHT_SKIP=1",
+                f"PYFORGE_PREFLIGHT_SKIP_REASON={preflight_skip_reason}",
+                *args,
+            ]
         result = _run(args, timeout_s=_GIT_PUSH_TIMEOUT_S)
         if result.returncode != 0:
             raise VcsCommandError(f"git push failed for {branch}: {result.stderr.strip()}")

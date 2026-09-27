@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -231,6 +232,8 @@ def test_clean_archive_leaves_out_reinstallable_envs_but_keeps_pixi_config(repo:
     (dest / ".pixi" / "solve-group-envs" / "g" / "lib").write_text("env\n", encoding="utf-8")
     (dest / ".pixi" / "config.toml").write_text("[pypi-config]\n", encoding="utf-8")
     (dest / ".pixi" / "envs-notes.txt").write_text("not an env dir\n", encoding="utf-8")
+    (dest / ".pixi" / "bld" / "pyforge-core" / "work").mkdir(parents=True)
+    (dest / ".pixi" / "bld" / "pyforge-core" / "work" / "wheel.whl").write_text("build cache\n", encoding="utf-8")
 
     result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
 
@@ -242,7 +245,67 @@ def test_clean_archive_leaves_out_reinstallable_envs_but_keeps_pixi_config(repo:
     assert "with-envs/.pixi/envs-notes.txt" in names
     assert not [n for n in names if "/.pixi/envs" in n and not n.endswith("envs-notes.txt")]
     assert not [n for n in names if "/.pixi/solve-group-envs" in n]
+    assert not [n for n in names if "/.pixi/bld" in n]
     assert not dest.exists()
+
+
+def test_a_failed_archive_leaves_no_partial_file_and_keeps_the_record(repo: Path, tmp_path: Path):
+    """Story 68.1 review 1 (M2): an unreadable file makes the tar fail; the half-written
+    archive is removed (a kept record is retried every sweep, so leaving it leaked one per
+    sweep), the worktree stays, and the record stays in bookkeeping with its error."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    dest = tmp_path / "unreadable"
+    start_workspace("unreadable", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    secret = dest / "root-owned.bin"
+    secret.write_text("x\n", encoding="utf-8")
+    secret.chmod(0)
+    try:
+        if secret.stat().st_mode & 0o444 or os.access(secret, os.R_OK):
+            pytest.skip("running with privileges that ignore file modes")
+        result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+    finally:
+        secret.chmod(0o644)
+
+    assert result["archived"] == []
+    assert result["skipped"][0]["reason"].startswith("error: could not archive")
+    assert list(archive_dir.glob("*.tar.gz")) == []
+    assert dest.is_dir()
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["unreadable"]
+
+
+def test_an_interrupt_mid_sweep_never_drops_the_record_in_flight(repo: Path, tmp_path: Path):
+    """Story 68.1 review 1 (M1): not only WorkspaceError -- a Ctrl-C at the confirm prompt
+    must not lose the popped record from bookkeeping."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    start_workspace("a", root=repo, bookkeeping=bookkeeping, path=tmp_path / "a", from_ref="origin/main")
+    start_workspace("b", root=repo, bookkeeping=bookkeeping, path=tmp_path / "b", from_ref="origin/main")
+
+    def _interrupt(slug: str) -> bool:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        clean_workspaces(merged_only=False, root=repo, bookkeeping=bookkeeping,
+                         archive_dir=tmp_path / "archive", confirm=_interrupt)
+
+    assert sorted(r.slug for r in load_bookkeeping(bookkeeping)) == ["a", "b"]
+
+
+def test_clean_via_cli_exits_failed_when_a_record_errored(repo: Path, tmp_path: Path, monkeypatch, capsys):
+    """Story 68.1 review 1 (L3): the sweep finishes past an undecidable record, but the
+    run still reports failure."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    save_bookkeeping(bookkeeping, (WorkspaceRecord("stale", str(tmp_path / "gone"), "deleted-branch",
+                                                   "origin/deleted", "2026-09-16T13:01:19+00:00"),))
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
+    monkeypatch.setattr("pyforge.steward.workspace.default_archive_dir", lambda: tmp_path / "archive")
+
+    rc = main(["workspace", "clean", "--merged-only", "--json"])
+
+    assert rc == EXIT_FAILED
+    payload = json.loads(capsys.readouterr().err)  # a failed duty's summary goes to stderr
+    assert payload["skipped"][0]["reason"].startswith("error: ")
 
 
 def test_fleet_clean_reports_and_keeps_a_record_whose_branch_is_gone(repo: Path, tmp_path: Path):
