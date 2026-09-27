@@ -6,8 +6,10 @@
 #
 # The one opt-out is explicit and journaled, never silent:
 #   PYFORGE_PREFLIGHT_SKIP=1 git push ...
-# appends branch, head SHA, timestamp and reason ($PYFORGE_PREFLIGHT_SKIP_REASON)
-# to .steward/preflight-skips.log (gitignored) and lets the push through.
+# appends timestamp, the pushed ref(s) and sha(s), and the reason
+# ($PYFORGE_PREFLIGHT_SKIP_REASON) to .steward/preflight-skips.log (gitignored) and lets
+# the push through. Automatic, journaled skips: branch deletes, `dispatch/*` branches,
+# and pushes whose every commit is already on origin/main (Story 68.2).
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -36,20 +38,48 @@ if [ -n "$local_sha" ] && ! printf '%s\n' $local_sha | grep -qvE '^0+$'; then
   exit 0
 fi
 
+# Every skip is journaled with WHAT was pushed -- the remote ref(s) and local sha(s) -- falling back
+# to the checked-out branch and HEAD only when no ref information arrived (Story 68.2, CAP-156;
+# the journal used to record the checked-out branch, e.g. `main` for eight `loop/*` pushes).
+journal_skip() {
+  local refs="${remote_ref:-$branch}" shas=""
+  local s
+  for s in $local_sha; do shas="${shas:+$shas }${s:0:10}"; done
+  mkdir -p .steward
+  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$refs" "${shas:-$head_sha}" "$1" >> .steward/preflight-skips.log
+}
+
 # A `dispatch/*` branch is the marshal supervisor's: it pushes `wip:` auto-checkpoints every few
 # minutes and its landing is gated by the station's verify_commands, the S-13.7 guard and CI --
 # a full preflight per checkpoint would stall every drain. Skipped, journaled, never silent.
 if [ -n "$remote_ref" ] && ! printf '%s\n' $remote_ref | grep -qvE '^refs/heads/dispatch/'; then
-  mkdir -p .steward
-  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$branch" "$head_sha" "dispatch/* branch: supervisor-gated" >> .steward/preflight-skips.log
+  journal_skip "dispatch/* branch: supervisor-gated"
   echo "[pre-push] dispatch/* branch -- pr-preflight left to the supervisor gate and CI (journaled)" >&2
   exit 0
 fi
 
+# A push whose every commit is already on origin/main carries nothing main has not verified --
+# `marshal refresh` fast-forwarding a `loop/<slug>` home to main is the case (Story 68.2, CAP-156;
+# eight such pushes ran ~80 minutes of preflight on 2026-09-27). Any new commit, a missing
+# origin/main, or a sha git cannot read runs the full preflight: never skip on a guess.
+if [ -n "$local_sha" ] && git rev-parse --verify -q origin/main >/dev/null; then
+  nothing_new=1
+  for sha in $local_sha; do
+    case "$sha" in *[!0]*) ;; *) continue ;; esac  # a delete inside a multi-ref push
+    if ! new="$(git rev-list "$sha" --not origin/main 2>/dev/null)" || [ -n "$new" ]; then
+      nothing_new=0
+      break
+    fi
+  done
+  if [ "$nothing_new" = 1 ]; then
+    journal_skip "already on origin/main: nothing new to preflight"
+    echo "[pre-push] every pushed commit is already on origin/main -- nothing new to preflight (journaled)" >&2
+    exit 0
+  fi
+fi
+
 if [ "${PYFORGE_PREFLIGHT_SKIP:-}" = "1" ]; then
-  mkdir -p .steward
-  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$branch" "$head_sha" \
-    "${PYFORGE_PREFLIGHT_SKIP_REASON:-no reason given}" >> .steward/preflight-skips.log
+  journal_skip "${PYFORGE_PREFLIGHT_SKIP_REASON:-no reason given}"
   echo "[pre-push] pr-preflight SKIPPED by PYFORGE_PREFLIGHT_SKIP=1 -- journaled in .steward/preflight-skips.log" >&2
   exit 0
 fi

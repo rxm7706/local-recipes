@@ -144,3 +144,120 @@ def test_pre_push_hook_skips_dispatch_branches_and_deletes(tmp_path: Path, env: 
     proc = subprocess.run(["bash", str(hook)], cwd=repo, input=stdin, capture_output=True, text=True, env={**clean_env, **env})
     assert proc.returncode == 0, proc.stderr
     assert expect in proc.stderr
+
+
+# Story 68.2 (spec-pyforge-steward CAP-156): a push carrying nothing origin/main lacks skips the
+# preflight, journaled; anything new (or undeterminable) still runs it; every journal line names
+# the pushed ref(s) and sha(s). A fake `pixi` on PATH stands in for the real preflight so "ran the
+# preflight" is observable without running it.
+_GIT_ID = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x"}
+
+
+def _hook_repo(tmp_path: Path, *, with_origin_main: bool = True) -> tuple[Path, dict, str]:
+    """A throwaway repo on `main` with one commit, optionally pushed to a bare `origin`, a
+    `loop/x` branch at main's tip, the hook copied in, and a fake failing `pixi` on PATH."""
+    import os
+    import shutil
+    import subprocess
+
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("PRE_COMMIT_", "GIT_", "PYFORGE_PREFLIGHT"))}
+    env.update(_GIT_ID)
+    fakebin = tmp_path / "bin"
+    fakebin.mkdir()
+    (fakebin / "pixi").write_text("#!/usr/bin/env bash\necho PREFLIGHT-RAN >&2\nexit 1\n", encoding="utf-8")
+    (fakebin / "pixi").chmod(0o755)
+    env["PATH"] = f"{fakebin}:{env['PATH']}"
+    repo = tmp_path / "repo"
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "base"], check=True, env=env)
+    if with_origin_main:
+        origin = tmp_path / "origin.git"
+        subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True, env=env)
+        subprocess.run(["git", "-C", str(repo), "remote", "add", "origin", str(origin)], check=True, env=env)
+        subprocess.run(["git", "-C", str(repo), "push", "-q", "origin", "main"], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "branch", "loop/x"], check=True, env=env)
+    shutil.copy(SCRIPTS / "pre_push_preflight.sh", repo / "hook.sh")
+    main_sha = subprocess.run(["git", "-C", str(repo), "rev-parse", "main"], check=True, capture_output=True, text=True).stdout.strip()
+    return repo, env, main_sha
+
+
+def _run_hook(repo: Path, env: dict, *, stdin: str = "", extra: dict | None = None):
+    import subprocess
+
+    return subprocess.run(["bash", "hook.sh"], cwd=repo, input=stdin, capture_output=True, text=True, env={**env, **(extra or {})})
+
+
+def _journal(repo: Path) -> list[list[str]]:
+    log = repo / ".steward" / "preflight-skips.log"
+    return [line.split("\t") for line in log.read_text(encoding="utf-8").splitlines()] if log.exists() else []
+
+
+@pytest.mark.parametrize("form", ["env", "stdin"])
+def test_pre_push_hook_skips_a_push_already_on_origin_main_and_names_the_ref(tmp_path: Path, form: str) -> None:
+    repo, env, sha = _hook_repo(tmp_path)
+    if form == "env":
+        proc = _run_hook(repo, env, extra={"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/loop/x", "PRE_COMMIT_TO_REF": sha})
+    else:
+        proc = _run_hook(repo, env, stdin=f"refs/heads/loop/x\t{sha}\trefs/heads/loop/x\t{'0' * 40}\n")
+    assert proc.returncode == 0, proc.stderr
+    assert "already on origin/main" in proc.stderr
+    assert "PREFLIGHT-RAN" not in proc.stderr
+    (row,) = _journal(repo)
+    assert row[1] == "refs/heads/loop/x"
+    assert row[2] == sha[:10]
+    assert row[3] == "already on origin/main: nothing new to preflight"
+
+
+def test_pre_push_hook_runs_the_preflight_for_a_new_commit(tmp_path: Path) -> None:
+    import subprocess
+
+    repo, env, _ = _hook_repo(tmp_path)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "new"], check=True, env=env)
+    new = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    proc = _run_hook(repo, env, extra={"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/feature", "PRE_COMMIT_TO_REF": new})
+    assert proc.returncode == 1
+    assert "PREFLIGHT-RAN" in proc.stderr
+    assert _journal(repo) == []
+
+
+def test_pre_push_hook_runs_the_preflight_without_an_origin_main(tmp_path: Path) -> None:
+    """Undeterminable is not "nothing new": no origin/main, no skip."""
+    repo, env, sha = _hook_repo(tmp_path, with_origin_main=False)
+    proc = _run_hook(repo, env, extra={"PRE_COMMIT_REMOTE_BRANCH": "refs/heads/loop/x", "PRE_COMMIT_TO_REF": sha})
+    assert proc.returncode == 1
+    assert "PREFLIGHT-RAN" in proc.stderr
+
+
+def test_pre_push_hook_runs_the_preflight_when_one_of_several_refs_is_new(tmp_path: Path) -> None:
+    import subprocess
+
+    repo, env, sha = _hook_repo(tmp_path)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "new"], check=True, env=env)
+    new = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    stdin = f"refs/heads/loop/x\t{sha}\trefs/heads/loop/x\t{'0' * 40}\nrefs/heads/main\t{new}\trefs/heads/main\t{sha}\n"
+    proc = _run_hook(repo, env, stdin=stdin)
+    assert proc.returncode == 1
+    assert "PREFLIGHT-RAN" in proc.stderr
+
+
+def test_pre_push_hook_manual_opt_out_journals_the_pushed_ref_not_the_checked_out_branch(tmp_path: Path) -> None:
+    import subprocess
+
+    repo, env, _ = _hook_repo(tmp_path)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "new"], check=True, env=env)
+    new = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    proc = _run_hook(
+        repo,
+        env,
+        extra={
+            "PRE_COMMIT_REMOTE_BRANCH": "refs/heads/feature",
+            "PRE_COMMIT_TO_REF": new,
+            "PYFORGE_PREFLIGHT_SKIP": "1",
+            "PYFORGE_PREFLIGHT_SKIP_REASON": "operator reason",
+        },
+    )
+    assert proc.returncode == 0, proc.stderr
+    (row,) = _journal(repo)
+    assert row[1] == "refs/heads/feature"  # the pushed ref, never the checked-out `main`
+    assert row[2] == new[:10]
+    assert row[3] == "operator reason"

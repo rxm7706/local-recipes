@@ -214,6 +214,63 @@ def test_clean_archives_not_deletes(repo: Path, tmp_path: Path):
     assert any(n.endswith("marker.txt") for n in names)
 
 
+def test_clean_archive_leaves_out_reinstallable_envs_but_keeps_pixi_config(repo: Path, tmp_path: Path):
+    """Story 68.1 (CAP-155): `.pixi/envs` and `.pixi/solve-group-envs` are
+    rebuilt from the lock on demand (~13 GB after a preflight) -- never
+    archived; the rest of `.pixi/` (the tracked `config.toml`) still is."""
+    import tarfile
+
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    dest = tmp_path / "with-envs"
+    start_workspace("with-envs", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    (dest / "marker.txt").write_text("keep-me\n", encoding="utf-8")
+    (dest / ".pixi" / "envs" / "default" / "bin").mkdir(parents=True)
+    (dest / ".pixi" / "envs" / "default" / "bin" / "python").write_text("env\n", encoding="utf-8")
+    (dest / ".pixi" / "solve-group-envs" / "g").mkdir(parents=True)
+    (dest / ".pixi" / "solve-group-envs" / "g" / "lib").write_text("env\n", encoding="utf-8")
+    (dest / ".pixi" / "config.toml").write_text("[pypi-config]\n", encoding="utf-8")
+    (dest / ".pixi" / "envs-notes.txt").write_text("not an env dir\n", encoding="utf-8")
+
+    result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+
+    archive = Path(result["archived"][0]["archive"])
+    with tarfile.open(archive, "r:gz") as tar:
+        names = tar.getnames()
+    assert "with-envs/marker.txt" in names
+    assert "with-envs/.pixi/config.toml" in names
+    assert "with-envs/.pixi/envs-notes.txt" in names
+    assert not [n for n in names if "/.pixi/envs" in n and not n.endswith("envs-notes.txt")]
+    assert not [n for n in names if "/.pixi/solve-group-envs" in n]
+    assert not dest.exists()
+
+
+def test_fleet_clean_reports_and_keeps_a_record_whose_branch_is_gone(repo: Path, tmp_path: Path):
+    """Story 68.1 (CAP-155): a record the sweep cannot decide no longer stops
+    it -- the live 2026-09-27 case raised on `git merge-base --is-ancestor` for
+    a deleted branch -- and is kept in bookkeeping, not dropped by the save."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    stale = WorkspaceRecord(
+        slug="stale",
+        path=str(tmp_path / "stale-gone"),
+        branch="branch-that-was-deleted",
+        source="origin/source-that-was-deleted",
+        created_at="2026-09-16T13:01:19+00:00",
+    )
+    save_bookkeeping(bookkeeping, (stale,))
+    merged = tmp_path / "merged"
+    start_workspace("merged", root=repo, bookkeeping=bookkeeping, path=merged, from_ref="origin/main")
+
+    result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+
+    assert [row["slug"] for row in result["archived"]] == ["merged"]
+    assert [row["slug"] for row in result["skipped"]] == ["stale"]
+    assert result["skipped"][0]["reason"].startswith("error: git merge-base --is-ancestor branch-that-was-deleted")
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["stale"]
+    assert not merged.exists()
+
+
 def test_clean_json_via_cli(repo: Path, tmp_path: Path, monkeypatch, capsys):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     archive_dir = tmp_path / "archive"

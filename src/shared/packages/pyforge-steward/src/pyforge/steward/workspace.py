@@ -695,6 +695,27 @@ def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
     raise WorkspaceError(f"git merge-base --is-ancestor {branch} {into} failed (exit {result.returncode}): {detail}")
 
 
+#: Reinstallable pixi environment dirs, relative to a worktree root. They are
+#: rebuilt from `pixi.lock` on demand and run to ~13 GB in a worktree that has
+#: run `pr-preflight`, so an archive leaves them out; every other file under
+#: `.pixi/` (the tracked `config.toml`) still archives (Story 68.1, CAP-155).
+REINSTALLABLE_ENV_DIRS: tuple[str, ...] = (".pixi/envs", ".pixi/solve-group-envs")
+
+
+def _without_reinstallable_envs(arcroot: str):
+    """A ``tarfile`` filter dropping ``REINSTALLABLE_ENV_DIRS`` (and everything
+    beneath them) from an archive whose members are rooted at ``arcroot``."""
+    prefixes = tuple(f"{arcroot}/{d}" for d in REINSTALLABLE_ENV_DIRS)
+
+    def _filter(info: tarfile.TarInfo) -> tarfile.TarInfo | None:
+        name = info.name
+        if any(name == p or name.startswith(p + "/") for p in prefixes):
+            return None
+        return info
+
+    return _filter
+
+
 def _archive_worktree(
     record: WorkspaceRecord,
     *,
@@ -715,7 +736,7 @@ def _archive_worktree(
         if wt.is_dir():
             archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
             with tarfile.open(archive_path, "w:gz") as tar:
-                tar.add(wt, arcname=wt.name)
+                tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
         else:
             # Path already gone — still write a marker so clean is recoverable.
             archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
@@ -795,15 +816,24 @@ def clean_workspaces(
     try:
         while pending:
             record = pending.pop(0)
-            if merged_only and not _branch_merged_into(root, record.branch, record.source):
-                skipped.append({**record.to_dict(), "reason": "not-merged"})
+            # Story 68.1 (CAP-155): a record this sweep cannot decide (its branch
+            # gone, an archive that fails) is reported and KEPT, and the sweep
+            # goes on -- it used to abort here, and the `finally` below then
+            # saved bookkeeping without the popped record, silently dropping it.
+            try:
+                if merged_only and not _branch_merged_into(root, record.branch, record.source):
+                    skipped.append({**record.to_dict(), "reason": "not-merged"})
+                    remaining.append(record)
+                    continue
+                if not merged_only and not confirm_fn(record.slug):
+                    skipped.append({**record.to_dict(), "reason": "declined"})
+                    remaining.append(record)
+                    continue
+                archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
+            except WorkspaceError as exc:
+                skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
                 continue
-            if not merged_only and not confirm_fn(record.slug):
-                skipped.append({**record.to_dict(), "reason": "declined"})
-                remaining.append(record)
-                continue
-            archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
             archived.append({**record.to_dict(), "archive": str(archive_path)})
     finally:
         # Persist removals already archived even if a later record fails —
