@@ -13,6 +13,13 @@ This module centralizes the git mechanics only. Each guard's own POLICY --
 which paths, which exemptions, which content check -- stays local to the test
 file that owns it; nothing here decides what a violation looks like.
 
+The base defaults to ``refs/remotes/origin/main`` (``ORIGIN_MAIN``), and an
+explicit ``origin/<branch>`` is read by its full refname too (marshal Story
+62.1, spec-pyforge-marshal CAP-272): git resolves a short name to a local
+branch or tag of that name before ``refs/remotes/<name>``, so a stray local
+``origin/main`` at HEAD emptied every guard, which then passed having checked
+nothing.
+
 ``pytest`` is needed for skip-on-missing-base-ref (the whole point of this
 module), but it is imported INSIDE ``_require_ref`` rather than at module
 scope, so this package keeps the empty ``[project.dependencies]`` it declares.
@@ -28,6 +35,15 @@ import ast
 import re
 import subprocess
 from pathlib import Path
+
+#: The remote's ``main`` by its full refname -- every guard's default base.
+ORIGIN_MAIN = "refs/remotes/origin/main"
+
+
+def _full(ref: str) -> str:
+    """``origin/<branch>`` as ``refs/remotes/origin/<branch>``; any other ref (a full
+    ref, ``HEAD``, a sha, a local branch name) unchanged."""
+    return f"refs/remotes/{ref}" if ref.startswith("origin/") else ref
 
 
 def _require_ref(root: Path, ref: str) -> None:
@@ -61,14 +77,15 @@ def _pathspec_args(pathspec: str | tuple[str, ...] | None) -> list[str]:
 def diff_text_since(
     root: Path,
     *,
-    base: str = "origin/main",
+    base: str = ORIGIN_MAIN,
     pathspec: str | tuple[str, ...] | None = None,
     require: str | None = None,
 ) -> str:
     """Raw ``git diff <base> [-- pathspec...]`` text. Skips the calling test
     when the base ref (``require``, defaulting to ``base``) is not resolvable
     in this checkout -- never raises ``CalledProcessError``."""
-    _require_ref(root, require or base)
+    base = _full(base)
+    _require_ref(root, _full(require) if require else base)
     cmd = ["git", "diff", base, *_pathspec_args(pathspec)]
     return subprocess.check_output(cmd, cwd=root, text=True)
 
@@ -76,7 +93,7 @@ def diff_text_since(
 def changed_paths_since(
     root: Path,
     *,
-    base: str = "origin/main",
+    base: str = ORIGIN_MAIN,
     pathspec: str | tuple[str, ...] | None = None,
     require: str | None = None,
     include_untracked: bool = False,
@@ -85,7 +102,8 @@ def changed_paths_since(
     """Paths changed since ``base`` under ``pathspec`` (repo-wide if
     ``None``). Skips the calling test (never raises ``CalledProcessError``)
     when the base ref is not resolvable in this checkout."""
-    _require_ref(root, require or base)
+    base = _full(base)
+    _require_ref(root, _full(require) if require else base)
     named = subprocess.check_output(
         ["git", "diff", "--name-only", base, *_pathspec_args(pathspec)],
         cwd=root,
@@ -103,11 +121,11 @@ def changed_paths_since(
     return sorted(changed)
 
 
-def existed_at_ref(root: Path, path: str, *, ref: str = "origin/main") -> bool:
+def existed_at_ref(root: Path, path: str, *, ref: str = ORIGIN_MAIN) -> bool:
     """True if ``path`` was already present in ``ref``'s tree -- i.e. a diff
     against it MODIFIES an existing file rather than ADDING a new one."""
     result = subprocess.run(
-        ["git", "cat-file", "-e", f"{ref}:{path}"],
+        ["git", "cat-file", "-e", f"{_full(ref)}:{path}"],
         cwd=root,
         capture_output=True,
         check=False,
@@ -139,12 +157,13 @@ def pyforge_import_offenders(paths: list[str], root: Path) -> list[str]:
 def commits_since(
     root: Path,
     *,
-    base: str = "origin/main",
+    base: str = ORIGIN_MAIN,
     pathspec: str | tuple[str, ...] | None = None,
     no_merges: bool = True,
 ) -> list[str]:
     """Full commit SHAs on ``base..HEAD`` touching ``pathspec`` (repo-wide if
     ``None``). Skips the calling test when ``base`` is not resolvable."""
+    base = _full(base)
     _require_ref(root, base)
     cmd = ["git", "log"]
     if no_merges:
@@ -170,7 +189,7 @@ def unsanctioned_commits(
     *,
     pathspec: str,
     changelog_path: str,
-    base: str = "origin/main",
+    base: str = ORIGIN_MAIN,
 ) -> list[str]:
     """Commits on ``base..HEAD`` touching ``pathspec`` that are NOT a
     sanctioned Rule-2 retro (subject starts ``retro:`` or ``retro(<scope>):``

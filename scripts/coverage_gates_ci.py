@@ -51,17 +51,27 @@ from coverage_gate import (
 
 
 def _normalize_base(base: str) -> str:
-    """``origin/<name>`` for a bare branch name (GITHUB_BASE_REF is the name
-    only); anything already a revision is returned as-is -- ``origin/...``,
-    a ``<remote>/<branch>`` path, or a bare commit sha. The push-event
+    """``refs/remotes/origin/<name>`` for a bare branch name (GITHUB_BASE_REF is
+    the name only) and for ``origin/<name>`` (what the pixi tasks pass); a sha,
+    a full ref and any revision expression are returned as-is. The push-event
     workflow passes ``git rev-parse HEAD~1``; prefixing that made every
     push-to-main run die with "unknown revision 'origin/<sha>'"
-    (2026-08-24 -> 2026-09-04)."""
-    if not base or base.startswith("origin/") or "/" in base:
+    (2026-08-24 -> 2026-09-04).
+
+    Full refname, never the short ``origin/<name>`` (spec-coverage-gate-
+    independence CAP-4, doctor Story 32.1): git resolves a short name to a
+    local branch or tag of that name before ``refs/remotes/<name>``, so a
+    stray local ``origin/main`` at HEAD made the diff empty and the gate pass
+    having judged nothing."""
+    if not base or base.startswith("refs/") or any(ch in base for ch in "~^@:"):
         return base
     if re.fullmatch(r"[0-9a-f]{7,40}", base):
         return base
-    return f"origin/{base}"
+    if base.startswith("origin/"):
+        return f"refs/remotes/{base}"
+    if "/" in base:
+        return base  # another remote's branch or a local branch with a slash: not ours to guess
+    return f"refs/remotes/origin/{base}"
 
 
 def _git_diff_names(base: str, head: str) -> list[str]:
@@ -258,7 +268,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--base",
         default=os.environ.get("GITHUB_BASE_REF", "origin/main"),
-        help="git diff base (default: origin/main or GITHUB_BASE_REF)",
+        help=(
+            "git diff base (default: GITHUB_BASE_REF, else origin/main); a branch name "
+            "or origin/<name> is read as refs/remotes/origin/<name>"
+        ),
     )
     parser.add_argument(
         "--head",
