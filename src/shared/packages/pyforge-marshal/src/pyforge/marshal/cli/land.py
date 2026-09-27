@@ -375,7 +375,6 @@ def run_land(
     # and cli/init.py are never imported at module level here.
     from .deploy import (
         _BATCH_PR_WRITE_KIND,
-        _MALFORMED_LANDING_FALLBACK,
         _batch_pr_body,
         _batch_pr_redact,
         _batch_pr_title,
@@ -384,6 +383,7 @@ def run_land(
         _evaluate_hygiene,
         _gather_gate_verdicts,
         _land_redact_text,
+        _malformed_landing_fallback,
         _malformed_landing_policy_key,
         _reconcile_open_intents,
         reconcile_feed,
@@ -479,7 +479,7 @@ def run_land(
                 message=(
                     f"refusing to land {head_branch!r}: policy composition "
                     f"reported a malformed {malformed!r} layer above -- "
-                    f"proceeding would silently use {_MALFORMED_LANDING_FALLBACK[malformed]} "
+                    f"proceeding would silently use {_malformed_landing_fallback(malformed, effective)} "
                     "instead of the project's declared one; fix "
                     "the malformed layer and re-run land"
                 ),

@@ -78,6 +78,24 @@ def test_fleet_picture_counts_the_primary_checkout_current_beside_a_tag_named_ma
     assert fleet_picture.primary_checkout_staleness(repo) is None  # main == origin/main: nothing behind
 
 
+def test_fleet_picture_sees_the_checkout_behind_beside_a_tag_on_the_remote_named_main(
+    clone, tmp_path, monkeypatch
+) -> None:
+    """Review 2: `git fetch origin main` fetched the remote's TAG `main` into FETCH_HEAD only, so
+    `refs/remotes/origin/main` stayed stale and the checkout read as current."""
+    repo, base, _landed = clone
+    remote = tmp_path / "remote.git"
+    other = tmp_path / "other"
+    subprocess.run(["git", "clone", "-q", str(remote), str(other)], check=True, capture_output=True)
+    _git(other, "config", "user.email", "t@example.com")
+    _git(other, "config", "user.name", "T")
+    _commit(other, "elsewhere.txt", "landed elsewhere")
+    _git(other, "push", "-q", "origin", "refs/heads/main:refs/heads/main", f"{base}:refs/tags/main")
+    fleet_picture = _load("fleet_picture_61_1_remote_tag", SCRIPTS / "fleet_picture.py", monkeypatch)
+
+    assert fleet_picture.primary_checkout_staleness(repo) == 1
+
+
 def _provision(clone_repo: Path, tmp_path: Path, monkeypatch) -> tuple[ModuleType, Path]:
     """`bmad-loop-worktree` against the scratch repo, with a `bmad-switch` stub the home runs."""
     (clone_repo / "_bmad-output" / "projects" / "acme").mkdir(parents=True)
@@ -147,3 +165,4 @@ def test_unpushed_work_check_still_reports_unpushed_work_beside_a_same_named_tag
     findings = _unpushed(repo)["findings"]
     assert [f.get("ref") for f in findings if f.get("kind") == "unpushed-branch"] == ["work"]
     assert findings[0]["files"] == 1  # the bare name diffed the tag (the base): empty, so never reported
+    assert findings[0]["remedy"] == "git push origin refs/heads/work:refs/heads/work"  # review 2: runnable beside the tag

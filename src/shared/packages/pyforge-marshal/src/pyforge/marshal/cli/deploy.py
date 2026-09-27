@@ -304,20 +304,25 @@ _MRS_DEPLOY_025 = "MRS-DEPLOY-025"
 _MRS_DEPLOY_026 = "MRS-DEPLOY-026"
 _MRS_DEPLOY_027 = "MRS-DEPLOY-027"
 
-#: What a malformed landing policy key silently falls back to -- the reason
-#: `batch-pr` and `land` refuse on one (MRS-DEPLOY-015 / MRS-LAND-002).
-_MALFORMED_LANDING_FALLBACK = {
-    "landing_rules": "an EMPTY rule set",
-    "landing_base_branch": "the default base branch 'main'",  # Story 61.1 (CAP-271)
-}
+#: The landing policy keys `batch-pr` and `land` refuse to run past when malformed
+#: (MRS-DEPLOY-015 / MRS-LAND-002): each silently falls back to a lower layer's value.
+_MALFORMED_LANDING_KEYS = ("landing_rules", "landing_base_branch")  # the second: Story 61.1 (CAP-271)
 
 
 def _malformed_landing_policy_key(policy_findings: Sequence[Finding]) -> str | None:
-    """The first landing policy key an ERROR policy finding names, if any."""
-    for key in _MALFORMED_LANDING_FALLBACK:
-        if any(f.severity is Severity.ERROR and f"'{key}'" in f.message for f in policy_findings):
+    """The first landing policy key an ERROR policy finding reports malformed, if any --
+    matched on the policy's own ``policy key '<key>'`` wording, not a bare quoted name."""
+    for key in _MALFORMED_LANDING_KEYS:
+        if any(f.severity is Severity.ERROR and f"policy key '{key}'" in f.message for f in policy_findings):
             return key
     return None
+
+
+def _malformed_landing_fallback(key: str, effective: policy.EffectivePolicy) -> str:
+    """What ``key`` fell back to, for the refusal message."""
+    if key == "landing_base_branch":
+        return f"the base branch {effective.landing_base_branch.value!r}"
+    return "an EMPTY rule set" if not effective.landing_rules.value else "a lower layer's rule set"
 
 
 # Story 5.9's own local copies of `cli/status.py`'s ledger-path/status
@@ -2641,7 +2646,7 @@ def run_batch_pr(
                     "refusing to run the hygiene preflight for "
                     f"{head_branch!r}: policy composition reported a "
                     f"malformed {malformed!r} layer above -- proceeding "
-                    f"would silently use {_MALFORMED_LANDING_FALLBACK[malformed]} "
+                    f"would silently use {_malformed_landing_fallback(malformed, effective)} "
                     "instead of the project's declared one; fix the "
                     "malformed layer and re-run batch-pr"
                 ),

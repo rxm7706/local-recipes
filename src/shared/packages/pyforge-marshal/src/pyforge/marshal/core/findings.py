@@ -982,7 +982,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `marshal deploy batch-pr`: MRS-DEPLOY-013 (an unsatisfied blocking
 # hygiene rule) and MRS-DEPLOY-014 (a ForgePort/gh command failure).
 # Code review (2026-08-06) adds four more MRS-DEPLOY-* codes for
-# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules
+# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules --
+# or, since Story 61.1, landing_base_branch --
 # policy layer hard-refuses the whole invocation), MRS-DEPLOY-016 (P4: the
 # head branch moved between hygiene evaluation and the PR write),
 # MRS-DEPLOY-017 (P5: the loop-home worktree's checkout does not match the
@@ -1004,7 +1005,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # silent empty FoldResult).
 # Story 4.8's cli/land.py adds the twelfth real caller's own NEW area,
 # MRS-LAND-* (seven codes): MRS-LAND-001 (the station branch could not be
-# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules policy
+# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules or, since
+# Story 61.1, landing_base_branch policy
 # layer), MRS-LAND-003 (an already-landed wave's own branch retirement
 # could not be confirmed), MRS-LAND-004 (a fired required_check resolved to
 # a real failure or could not be read), MRS-LAND-005 (a fired

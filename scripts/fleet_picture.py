@@ -155,7 +155,7 @@ def _dispatch_stranded_work_needs_lines(
     if isinstance(stranded, dict) and stranded.get("kind") == "unpushed-branch":
         ref = stranded.get("ref") or "?"
         files = stranded.get("files")
-        remedy = stranded.get("remedy") or f"git push origin {ref}"
+        remedy = stranded.get("remedy") or f"git push origin refs/heads/{ref}:refs/heads/{ref}"
         lines.append(
             f"{slug}: stranded dispatch work for {story} — unpushed branch "
             f"{ref!r} ({files} file(s) not on origin) — {remedy}"
@@ -394,7 +394,7 @@ def loop_home_staleness(
             if not branch:
                 continue  # detached HEAD
             subprocess.run(
-                ["git", "fetch", "--quiet", "origin", "main"],
+                ["git", "fetch", "--quiet", "origin", "refs/heads/main"],  # Story 61.1: never a remote tag `main`
                 cwd=home, capture_output=True, text=True, timeout=60, check=True,
             )
             count = subprocess.run(
@@ -430,7 +430,7 @@ def primary_checkout_staleness(
         if not branch:
             return None  # detached HEAD
         subprocess.run(
-            ["git", "fetch", "--quiet", "origin", "main"],
+            ["git", "fetch", "--quiet", "origin", "refs/heads/main"],  # Story 61.1: never a remote tag `main`
             cwd=repo, capture_output=True, text=True, timeout=60, check=True,
         )
         count = subprocess.run(

@@ -539,17 +539,20 @@ class GitVcs:
 
     def push(self, repo_root: Path, branch: str, *, proven_on_main_sha: str | None = None) -> None:
         """Story 3.8 (AD-46): resolves whether ``branch`` already has a
-        configured upstream via ``git rev-parse --abbrev-ref
-        <branch>@{upstream}`` -- exit 0 means one exists (``origin/x``-shaped
-        output, split on the first ``/`` into the remote name and the
-        remote-side branch name, then pushed EXPLICITLY,
+        configured upstream via ``git rev-parse --symbolic-full-name
+        <branch>@{upstream}`` -- exit 0 means one exists
+        (``refs/remotes/origin/x``-shaped output, stripped of
+        ``refs/remotes/`` and split on the first ``/`` into the remote name
+        and the remote-side branch name, then pushed EXPLICITLY,
         ``git push <remote> refs/heads/<branch>:refs/heads/<remote_branch>``);
         a non-zero exit whose stderr carries git's own "no upstream configured
         for branch" wording (128, the ordinary case for a brand-new
         station/per-story branch) falls back to ``git push origin
         refs/heads/<branch>:refs/heads/<branch>``, the branch's first push
-        (Story 61.1: full refnames on both sides, so a same-named tag --
-        local or remote -- never makes the push ambiguous). Any OTHER non-zero exit (an ambiguous ref, "no such
+        (Story 61.1: full refnames on both sides, so a tag named like the
+        branch -- local or remote -- never makes the push ambiguous, and the
+        full upstream name, so a local ``origin/<branch>`` cannot bend the
+        parse). Any OTHER non-zero exit (an ambiguous ref, "no such
         branch" because ``branch`` itself does not exist locally, a
         corrupted repo) is NOT treated as "no upstream" -- silently falling
         back there would push to a remote/branch the caller never intended
@@ -569,20 +572,27 @@ class GitVcs:
         ``_GIT_PUSH_TIMEOUT_S``, not ``_GIT_TIMEOUT_S``/
         ``_GIT_CHECKOUT_TIMEOUT_S`` -- a push is a network round-trip, not a
         local query or tree-populating checkout (review finding)."""
-        upstream_check = _run(["git", "-C", str(repo_root), "rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"])
+        # `--symbolic-full-name`, not `--abbrev-ref` (Story 61.1 review 2): with a local tag or
+        # branch named `origin/<b>`, the abbreviation disambiguates to `remotes/origin/<b>` and
+        # the push went to a "remote" called `remotes`.
+        upstream_check = _run(
+            ["git", "-C", str(repo_root), "rev-parse", "--symbolic-full-name", f"{branch}@{{upstream}}"]
+        )
         if upstream_check.returncode == 0:
             upstream = upstream_check.stdout.strip()
-            remote, _, remote_branch = upstream.partition("/")
-            if not remote or not remote_branch:
-                # An upstream ref with no `/` (or an empty remote-side name)
-                # is not a shape a real `@{upstream}` resolution produces --
-                # refuse to guess rather than push to a malformed target.
+            tracking = upstream.removeprefix("refs/remotes/")
+            remote, _, remote_branch = tracking.partition("/")
+            if tracking == upstream or not remote or not remote_branch:
+                # An upstream that is not a remote-tracking ref (a local branch
+                # tracking another local branch) or has no remote-side name is
+                # not something to push to -- refuse to guess rather than push
+                # to a malformed target.
                 raise VcsCommandError(f"cannot parse upstream {upstream!r} for {branch} into <remote>/<remote_branch>")
         elif "no upstream configured for branch" in upstream_check.stderr:
             remote, remote_branch = "origin", branch
         else:
             raise VcsCommandError(
-                f"git rev-parse --abbrev-ref {branch}@{{upstream}} failed "
+                f"git rev-parse --symbolic-full-name {branch}@{{upstream}} failed "
                 f"(exit {upstream_check.returncode}), and it is not the "
                 f"ordinary no-upstream case: {upstream_check.stderr.strip()}"
             )
@@ -1035,9 +1045,16 @@ class GitVcs:
         ``repo_root`` -- updates ONLY ``refs/remotes/<remote>/<ref>``, never
         any local branch. Uses ``_GIT_FETCH_TIMEOUT_S``, not
         ``_GIT_TIMEOUT_S``/``_GIT_CHECKOUT_TIMEOUT_S`` -- a network
-        round-trip, mirroring ``push``'s own identical reasoning."""
+        round-trip, mirroring ``push``'s own identical reasoning.
+
+        ``ref`` is the remote's branch NAME; the fetch names it
+        ``refs/heads/<ref>`` (Story 61.1 review 2). The remote resolves a
+        short source like ``main`` to its tag ``main`` first, which lands in
+        ``FETCH_HEAD`` only: the fetch exits 0 and ``refs/remotes/<remote>/<ref>``
+        stays stale -- a false "0 behind", a heal probing an old tip, a
+        publish rejected as non-fast-forward."""
         result = _run(
-            ["git", "-C", str(repo_root), "fetch", remote, ref],
+            ["git", "-C", str(repo_root), "fetch", remote, local_branch_ref(ref)],
             timeout_s=_GIT_FETCH_TIMEOUT_S,
         )
         if result.returncode != 0:

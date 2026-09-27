@@ -146,7 +146,7 @@ def find_unpushed(base: str, remote: dict[str, str]) -> list[dict]:
             note = "no branch of this name on origin at all"
         findings.append({"kind": "unpushed-branch", "ref": br,
                          "files": len(files), "stat": stat, "detail": note,
-                         "remedy": f"git push origin {br}"})
+                         "remedy": f"git push origin refs/heads/{br}:refs/heads/{br}"})
     return findings
 
 

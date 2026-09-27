@@ -130,6 +130,60 @@ def test_a_push_succeeds_beside_a_tag_on_the_remote_named_like_the_branch(repo, 
     assert _git(remote, "rev-parse", "refs/tags/loop/acme").stdout.strip() == base  # the tag untouched
 
 
+def _remote_moves_on_beside_a_remote_tag_main(remote: Path, clone: Path, base: str, tmp_path: Path) -> str:
+    """Another clone lands a commit on the remote's `main`; the remote also carries a tag `main`
+    on `base`. Returns the remote's new tip (not yet fetched into `clone`)."""
+    other = tmp_path / "other"
+    subprocess.run(["git", "clone", "-q", str(remote), str(other)], check=True, capture_output=True)
+    _git(other, "config", "user.email", "t@example.com")
+    _git(other, "config", "user.name", "T")
+    tip = _commit(other, "elsewhere.txt", "landed elsewhere")
+    _git(other, "push", "-q", "origin", "refs/heads/main:refs/heads/main", f"{base}:refs/tags/main")
+    return tip
+
+
+def test_a_fetch_updates_the_remote_tracking_ref_beside_a_tag_on_the_remote_named_main(repo, tmp_path) -> None:
+    """Review 2: the remote resolved the short source `main` to its TAG, which landed in FETCH_HEAD
+    only -- the fetch exited 0 and `refs/remotes/origin/main` stayed stale."""
+    remote, clone, base, landed = repo
+    tip = _remote_moves_on_beside_a_remote_tag_main(remote, clone, base, tmp_path)
+
+    _git(clone, "fetch", "-q", "origin", "main")  # the trap, for the record
+    assert _git(clone, "rev-parse", ORIGIN_MAIN).stdout.strip() == landed  # stale
+    GitVcs().fetch(clone, "origin", "main")
+
+    assert _git(clone, "rev-parse", ORIGIN_MAIN).stdout.strip() == tip
+
+
+def test_the_ledger_publish_lands_beside_a_tag_on_the_remote_named_main(repo, tmp_path) -> None:
+    """The promotion publish fetches, builds on the tracking ref and pushes: on the stale ref every
+    push was rejected as a non-fast-forward, so no promotion ever landed."""
+    remote, clone, base, _landed = repo
+    tip = _remote_moves_on_beside_a_remote_tag_main(remote, clone, base, tmp_path)
+
+    GitVcs().commit_paths_onto_remote_tip(
+        clone, remote="origin", ref="main", writes=(("ledger.yaml", "development_status: {}\n"),), message="promote"
+    )
+
+    assert _git(remote, "rev-parse", "refs/heads/main^").stdout.strip() == tip
+    assert _git(remote, "show", "refs/heads/main:ledger.yaml").stdout.strip() == "development_status: {}"
+
+
+def test_a_push_reads_its_upstream_beside_a_local_origin_branch_shadow(repo) -> None:
+    """Review 2: with a local tag named `origin/loop/acme`, `--abbrev-ref <b>@{upstream}` answered
+    `remotes/origin/loop/acme` and the push went to a remote called `remotes`."""
+    remote, clone, base, _landed = repo
+    _git(clone, "checkout", "-q", "-b", "loop/acme")
+    _git(clone, "push", "-q", "-u", "origin", "refs/heads/loop/acme:refs/heads/loop/acme")
+    _git(clone, "tag", "origin/loop/acme", base)  # the Story 60.1-class shadow
+    tip = _commit(clone, "story.txt", "the story's work")
+
+    assert _git(clone, "rev-parse", "--abbrev-ref", "loop/acme@{upstream}").stdout.strip() == "remotes/origin/loop/acme"
+    GitVcs().push(clone, "loop/acme")
+
+    assert _git(remote, "rev-parse", "refs/heads/loop/acme").stdout.strip() == tip
+
+
 # --- the landing heal, end to end ------------------------------------------------------------------
 
 

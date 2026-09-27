@@ -7092,7 +7092,7 @@ So that a tag named like a branch can never stand in for it, and a landing base 
 `scripts/fleet_scan.py`, `scripts/bmad-loop-worktree`, `scripts/fleet_picture.py`, `scripts/unpushed_work_check.py`, tests under
 `src/shared/packages/pyforge-marshal/tests/{unit,meta}/` and `tests/scripts/test_local_branch_full_ref_scripts.py`.
 **Given** a repository with a tag named `main` on an older commit than the branch `main`
-**When** status, deploy and dispatch land read the landing subjects, deploy and land compute their merge base and diff base, init mints a loop-home branch, the landing heal probes and merges the dispatch branch, and the fleet scripts read `main`
+**When** status, deploy, retire and dispatch land read the landing subjects, deploy and land compute their merge base and diff base, init mints a loop-home branch, the landing heal probes and merges the dispatch branch, marshal fetches and pushes, and the fleet scripts read `main`
 **Then** each reads the branch, never the tag, and the heal's push succeeds
 **And** `landing_base_branch = "origin/main"` is refused (MRS-POLICY-002) and `land` / `batch-pr` refuse to run on it; no revision argument of a `VcsPort` read receives a bare local branch name; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 

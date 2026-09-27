@@ -3,7 +3,7 @@ title: '61.1: Every local-branch read names the full ref'
 type: 'fix'
 created: '2026-09-27'
 status: 'in-progress'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -47,6 +47,7 @@ Type / Effort / Deps: fix / S / —.
 - Given the same tag When deploy or land compute the merge base, the wave range and the changed-files base Then each reads the branch
 - Given the same tag When init or the loop-home adapter mints a branch from `main` Then the new branch starts at the branch's tip (today: the mint refuses as ambiguous)
 - Given a tag named like the dispatch branch When the landing heal probes, reads and merges the dispatch branch Then it reads the branch, and the local-`main` advance's push succeeds with a tag named `main` present, locally or on the remote
+- Given a tag named `main` on the remote When marshal fetches `main` (the behind-count, the heal, the ledger publish, land, refresh, `fleet_picture`) Then `refs/remotes/origin/main` moves to the remote's branch, and the publish lands
 - Given the same tag When `fleet_scan`, `bmad-loop-worktree`, `fleet_picture` and `unpushed_work_check` read `main` or a branch Then each reads the branch
 - Given `landing_base_branch = "origin/main"`, `"refs/heads/main"`, `"heads/main"` or `"bad..name"` When the policy composes Then the value is refused with MRS-POLICY-002, and `land` / `batch-pr` refuse to run on it (never fall back to `main`); `"release/2026"` is accepted
 - Given the package source When scanned Then no revision argument of a `VcsPort` read receives a bare local branch name (a meta test, every known spelling in its self-test)
@@ -72,6 +73,8 @@ Type / Effort / Deps: fix / S / —.
 | tag named like a dispatch branch | heal probe and merge | reads and merges the branch | — |
 | push with tag `main` present | local-main advance | push succeeds (`refs/heads/main:refs/heads/main`) | a rejected push fails as before |
 | push with a same-named tag on the remote | with or without an upstream | push succeeds; the remote tag untouched | — |
+| fetch with a tag `main` on the remote | remote's `main` moved on | `refs/remotes/origin/main` updated (source `refs/heads/main`) | a missing branch fails as before |
+| push beside a local `origin/<b>` shadow | upstream configured | upstream read by full name; push succeeds | — |
 | `landing_base_branch = "origin/main"` | project policy | MRS-POLICY-002; `land` / `batch-pr` refuse (MRS-LAND-002 / MRS-DEPLOY-015) | — |
 | `landing_base_branch = "release/2026"` | project policy | accepted; reads `refs/heads/release/2026` | a missing branch fails as before |
 | `deploy land-story --since <rev>` | operator-typed revision | passed through untouched | — |
@@ -106,3 +109,16 @@ Verified clean: every call site of all 30 `VcsPort` methods — local-branch rev
 - `[low]` `[patch]` **The scan missed spellings** — it now renders f-strings, `+`, `%`, `format`, `join` and conditionals, resolves function-local and imported literal bindings, spares a hand-built `refs/heads/…`, and flags a `*_ref` name or `refs/` template reaching a name-taking parameter; the self-test pins each. Not scanned, by design: direct git argv outside the adapter (AD-4), method aliases, `functools.partial`.
 - `[low]` `[note]` Four call sites (`cli/gate`, `cli/adapters`, `dispatch_land`, `dispatch_supervisor`) are pinned by the meta test alone, not by a fake — accepted: the meta test's literal/constant rule catches each.
 - `[nit]` `[patch]` The chain said `dispatch` mints from local `main` (it mints from `refs/remotes/origin/main` since 60.1) — corrected in this spec, CAP-271, the Dream entry. The validator refuses ref namespaces (`heads/`, `tags/`, `remotes/`) and judges only an ASCII space; `schemas/policy.json` describes the rule. `epics.md` counts bumped; the DW entry closes at landing.
+
+### Review 2 — 2026-09-27, independent adversarial reviewer, commits through `eacafa23d5` — FAIL (1 medium, 4 low)
+
+Verified clean: all six script cases fail on the `origin/main` scripts and pass on HEAD; the `land` / `batch-pr` refusal fires only on ERROR findings, before any forge call, and nothing outside the tests parses MRS-DEPLOY-015 / MRS-LAND-002 text; `bmad-loop-worktree`'s mint from `refs/heads/main` writes the same branch config under every `autoSetupMerge`, steward only locates the script, seed copies it with no byte pin; `fleet_picture` from `HEAD` equals the branch (detached is skipped first); `lstrip=2` is right for nested names and now matches `cli/status.py`'s `by_ref`; a push to a non-`origin` upstream with a different remote-side name works; the validator matches git plus the documented refusals; the meta guard fails on a new `str` port parameter; marshal 8823, steward 1745, scripts green.
+
+- `[medium]` `[patch]` **`fetch` named the remote's branch by short name** — a tag `main` on the remote made the fetch of `main` land the tag in `FETCH_HEAD` only, exit 0, and leave `refs/remotes/origin/main` stale: a false 0-behind that skipped the MRS-DISP-044 merge preview, the heal probing an old tip, every ledger / blocked-twin / deferred-work publish rejected as non-fast-forward, `land`'s and `refresh`'s fast-forward short, `fleet_picture` under-reporting. **Fix:** `GitVcs.fetch` names `refs/heads/<ref>` itself (the parameter stays a name, like `resolve_ref`'s); `fleet_picture` fetches `refs/heads/main`. Tests: the fetch, the publish, `fleet_picture` — each fails on the prior code.
+- `[low]` `[patch]` **The unpushed-work remedy printed a bare `<b>` push**, which fails beside a same-named tag. **Fix:** `refs/heads/<b>:refs/heads/<b>` in the script and both fallback texts (`core/status.py`, `fleet_picture.py`); the script test asserts it.
+- `[low]` `[patch]` **The meta scan missed a branch through one more name** (`ref = head_branch`, `_A = _B`, the pre-61.1 heal's `probe = … else base`) and skipped non-`str` parameter types. **Fix:** names are rendered through what is assigned to them (three deep) and through literal parameter defaults; every parameter whose type mentions `str` is classified. A new self-test pins the spellings.
+- `[low]` `[patch]` **`push` parsed its upstream from `--abbrev-ref`**, which answers `remotes/origin/<b>` beside a local `origin/<b>` shadow (a push to a remote called `remotes`). Pre-existing and loud, but the rewritten docstring claimed otherwise. **Fix:** `--symbolic-full-name`, stripped of `refs/remotes/`; a test with the shadow.
+- `[low]` `[note]` `spec-surface-check` red until the landing reconcile — done at landing.
+- `[nit]` `[patch]` The refusal names what it would have fallen back to (a lower layer can hold a valid base) and matches the policy's `policy key '<key>'` wording; `core/findings.py`'s comment block and the Story's When clause (`retire`, fetch/push) updated.
+- `[nit]` `[note]` Under an operator's `merge.log=true` the heal's local-advance merge body names `refs/heads/<b>`; the subject is unchanged and landing evidence reads subjects only — accepted. `fleet_scan.py`'s shipped-history read (`build_status`) has no direct test; the same one-line change is tested through `done_ids_from_git`.
+- `[nit]` `[→ DW-marshal-conservative-short-main-reads-2026-09-27]` doctor's `sources/marshal.py` route 3 and `scripts/worktree_sweep.py` still read `main` bare; a tag only makes them more conservative (nothing lost). Another station's code and an interim script — a deferred-work row.

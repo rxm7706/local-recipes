@@ -8,19 +8,23 @@ local_branch_ref`` (``refs/heads/<branch>``).
 The scan renders each argument at a revision position (``_REVISION_ARGS``) into templates -- one
 per alternative of a conditional -- the way the Story 60.1 meta test renders remote refs: literal
 text, ``local_branch_ref(...)``/``remote_tracking_ref(...)`` as ``refs/...``, a name bound to a
-string literal (module-level, function-local, or imported from another marshal module) as that
-literal, a name whose dotted text reads ``branch`` (without ``sha``/``tip``/``oid``/``commit``) or
-ends ``base``/``into`` as a branch, and anything else as an opaque value (a sha). f-strings, ``+``,
+string literal (module-level, function-local, a parameter default, or imported from another
+marshal module) as that literal, a name assigned some other expression as that expression (up to
+``_MAX_DEPTH`` assignments deep), a name whose dotted text reads ``branch`` (without
+``sha``/``tip``/``oid``/``commit``) or ends ``base``/``into`` as a branch, and anything else as an
+opaque value (a sha). f-strings, ``+``,
 ``%``, ``str.format`` and ``join`` are rendered through. Each ``..``/``...`` side of a template
 must then start with ``refs/``, ``HEAD`` or an opaque value -- a branch or bare literal there is
 flagged. The reverse holds too: a parameter that takes a branch *name* and qualifies it itself
 (``_NAME_ARGS``) must never receive a template starting ``refs/`` or a ``*_ref`` name, which would
-read ``refs/heads/refs/heads/<branch>``. Every ``str`` parameter of every ``VcsPort`` method is
-classified in one of the three tables, so a new port read cannot slip past the scan.
+read ``refs/heads/refs/heads/<branch>`` (``fetch`` is one: the adapter names the remote's branch
+``refs/heads/<ref>`` itself). Every parameter of every ``VcsPort`` method whose type mentions
+``str`` is classified in one of the three tables, so a new port parameter cannot slip past the scan.
 
 Not scanned, by design: git argv lists built outside ``adapters/vcs_git.py`` (AD-4 makes the
-adapter the git seam; the few direct shell-outs carry no branch names, per Story 61.1's review),
-method aliases and ``functools.partial``.
+adapter the git seam; the few direct shell-outs carry no branch names, per Story 61.1's reviews),
+method aliases, ``functools.partial``, ``**kwargs`` and starred arguments, and attributes assigned
+elsewhere (``self.x = ...``) -- the name rule still reads their text.
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ import inspect
 import itertools
 import re
 import string
+from dataclasses import dataclass
 from pathlib import Path
 
 import pyforge.marshal
@@ -84,6 +89,8 @@ _NOT_A_REF = {
     ("spec_text_at_ref", "slug"),
     ("spec_text_at_ref", "story"),
     ("commit_worktree_checkpoint", "story_key"),
+    ("commit_paths_onto_remote_tip", "writes"),  # (path, text) pairs
+    ("merge_ref_resolving", "resolutions"),  # path -> text
 }
 #: A revision parameter handed straight through to one of the reads above; its callers are
 #: scanned in turn (`commit_worktree_checkpoint` defaults `base` to "HEAD").
@@ -96,6 +103,7 @@ _VALUE = "\x00V"  # a piece holding an opaque value (a sha, HEAD, a ref built el
 _RANGE = re.compile(r"\.\.\.?")
 _PERCENT_FIELD = re.compile(r"%(?:\((\w+)\))?[sdr]")
 _MAX_ALTERNATIVES = 16
+_MAX_DEPTH = 3  # how many assignments deep a name is rendered through
 
 
 def _string_bindings(tree: ast.AST) -> dict[str, set[str]]:
@@ -132,15 +140,43 @@ def _package_constants() -> dict[str, set[str]]:
     return merged
 
 
-def _bindings(tree: ast.Module, package: dict[str, set[str]]) -> dict[str, set[str]]:
-    """Local bindings plus names imported from sibling marshal modules."""
-    bound = _string_bindings(tree)
+@dataclass(frozen=True)
+class _Scope:
+    """What a name in one module can hold: string literals, and other expressions assigned to it."""
+
+    strings: dict[str, set[str]]
+    exprs: dict[str, list[ast.expr]]
+    depth: int = 0
+
+    def deeper(self) -> _Scope:
+        return _Scope(self.strings, self.exprs, self.depth + 1)
+
+
+def _bindings(tree: ast.Module, package: dict[str, set[str]]) -> _Scope:
+    """Local bindings (assignments anywhere, parameter defaults) plus names imported from sibling
+    marshal modules. A name assigned a non-literal expression is rendered through it (review 2:
+    `ref = head_branch`, `probe = probe_ref if ... else base`, `_A = _B`)."""
+    strings = _string_bindings(tree)
+    exprs: dict[str, list[ast.expr]] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.level > 0:
             for alias in node.names:
                 if alias.name in package:
-                    bound.setdefault(alias.asname or alias.name, set()).update(package[alias.name])
-    return bound
+                    strings.setdefault(alias.asname or alias.name, set()).update(package[alias.name])
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
+            if not (isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                for target in targets:
+                    if isinstance(target, ast.Name):
+                        exprs.setdefault(target.id, []).append(node.value)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            positional = [*node.args.posonlyargs, *node.args.args]
+            pairs = [*zip(positional[len(positional) - len(node.args.defaults) :], node.args.defaults)]
+            pairs += [(a, d) for a, d in zip(node.args.kwonlyargs, node.args.kw_defaults) if d is not None]
+            for arg, default in pairs:
+                if isinstance(default, ast.Constant) and isinstance(default.value, str):
+                    strings.setdefault(arg.arg, set()).add(default.value)
+    return _Scope(strings, exprs)
 
 
 def _is_helper_call(expr: ast.expr) -> bool:
@@ -161,7 +197,7 @@ def _product(parts: list[list[str]]) -> list[str]:
     return ["".join(combo) for combo in itertools.islice(itertools.product(*parts), _MAX_ALTERNATIVES)]
 
 
-def _render(expr: ast.expr | None, bound: dict[str, set[str]]) -> list[str]:
+def _render(expr: ast.expr | None, bound: _Scope) -> list[str]:
     """Every template ``expr`` can produce."""
     if expr is None:
         return [_VALUE]
@@ -173,8 +209,14 @@ def _render(expr: ast.expr | None, bound: dict[str, set[str]]) -> list[str]:
         return [expr.value]
     if isinstance(expr, ast.IfExp):
         return (_render(expr.body, bound) + _render(expr.orelse, bound))[:_MAX_ALTERNATIVES]
-    if isinstance(expr, ast.Name) and expr.id in bound:
-        return sorted(bound[expr.id])
+    if isinstance(expr, ast.Name) and (expr.id in bound.strings or expr.id in bound.exprs):
+        alternatives = sorted(bound.strings.get(expr.id, ()))
+        if bound.depth < _MAX_DEPTH:
+            for value in bound.exprs.get(expr.id, ()):
+                alternatives += _render(value, bound.deeper())
+        elif expr.id in bound.exprs:
+            alternatives.append(_BRANCH if _branchy(expr) else _VALUE)
+        return alternatives[:_MAX_ALTERNATIVES]
     if isinstance(expr, (ast.Name, ast.Attribute)):
         return [_BRANCH if _branchy(expr) else _VALUE]
     if isinstance(expr, ast.JoinedStr):
@@ -275,7 +317,7 @@ def _str_params(method: str) -> list[str]:
         params = inspect.signature(func).parameters
     else:
         params = dict(list(inspect.signature(getattr(VcsPort, method)).parameters.items())[1:])  # drop self
-    return [name for name, p in params.items() if str(p.annotation) in ("str", "str | None")]
+    return [name for name, p in params.items() if "str" in str(p.annotation)]
 
 
 def test_every_str_parameter_of_every_port_method_is_classified() -> None:
@@ -368,3 +410,27 @@ def test_an_imported_constant_is_resolved_across_modules() -> None:
     source = "from ..dispatch_land import _MERGE_BASE as BASE\nvcs.commit_subjects(root, BASE)\n"
     bare, _doubled = _findings(ast.parse(source), "scratch.py", _package_constants())
     assert bare == [2]
+
+
+def test_the_scan_follows_a_name_through_what_is_assigned_to_it() -> None:
+    """Review 2: a branch reaching a read through one more name."""
+    source = "\n".join(
+        [
+            "ref = head_branch",  # 1
+            "vcs.commit_subjects(root, ref)",  # 2
+            '_DEFAULT = "main"',  # 3
+            "_MERGE_INTO = _DEFAULT",  # 4
+            "vcs.commit_subjects(root, _MERGE_INTO)",  # 5
+            "probe = probe_ref if probe_ref is not None else base",  # 6: the pre-61.1 heal
+            "vcs.file_text_at_ref(root, probe, rel)",  # 7
+            "healed = probe_ref if probe_ref is not None else local_branch_ref(base)",  # 8: the fix
+            "vcs.file_text_at_ref(root, healed, rel)",  # 9
+            "full = local_branch_ref(branch)",  # 10
+            "vcs.resolve_ref(root, full)",  # 11: a name-taker given a ref through a name
+            'def f(start="main"):',  # 12
+            "    vcs.commit_subjects(root, start)",  # 13: a parameter's literal default
+        ]
+    )
+    bare, doubled = _findings(ast.parse(source), "scratch.py")
+    assert bare == [2, 5, 7, 13]
+    assert doubled == [11]
