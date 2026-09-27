@@ -314,6 +314,22 @@ def test_malformed_landing_rules_hard_refuses(tmp_path, capsys, monkeypatch):
     assert forge.find_calls == []
 
 
+def test_a_malformed_landing_base_branch_hard_refuses(tmp_path, capsys, monkeypatch):
+    """Story 61.1 review 1: `land` would otherwise fall back to `main` and merge there."""
+    policy_path = _write_project_policy(tmp_path, 'landing_base_branch = "origin/release"\n')
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert [f["code"] for f in payload["findings"]] == ["MRS-POLICY-002", "MRS-LAND-002"]
+    assert "'landing_base_branch'" in payload["findings"][1]["message"]
+    assert exit_code != 0
+    assert forge.find_calls == [] and forge.merge_calls == []
+
+
 # --- empty / already-landed wave -----------------------------------------
 
 

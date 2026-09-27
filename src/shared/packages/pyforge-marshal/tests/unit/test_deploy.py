@@ -2009,6 +2009,26 @@ landing_rules = "not-a-list-of-rules"
     assert forge.create_calls == []
 
 
+@pytest.mark.parametrize("value", ["origin/release/2026", "refs/heads/release/2026"])
+def test_batch_pr_refuses_on_a_malformed_landing_base_branch(tmp_path, capsys, monkeypatch, value):
+    """Story 61.1 review 1: the refused value falls back to `main`, so proceeding opened the PR
+    against a base nobody declared -- refused like a malformed `landing_rules` instead."""
+    policy_path = _write_batch_pr_project_policy(tmp_path, f'landing_base_branch = "{value}"\n')
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+    forge = _FakeForge()
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    refusal = [f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-015"]
+    assert [f["code"] for f in payload["findings"]] == ["MRS-POLICY-002", "MRS-DEPLOY-015"]
+    assert "'landing_base_branch'" in refusal[0]["message"] and "'main'" in refusal[0]["message"]
+    assert exit_code != 0
+    assert forge.find_calls == [] and forge.create_calls == []
+
+
 def test_batch_pr_p2_add_labels_failure_does_not_claim_labels_applied(tmp_path, capsys, monkeypatch):
     """P2 (HIGH, Edge Case Hunter, CONFIRMED): `data["labels_applied"]` must
     never claim a label was applied when `add_labels` itself raised."""

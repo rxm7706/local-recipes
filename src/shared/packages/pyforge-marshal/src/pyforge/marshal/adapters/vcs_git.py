@@ -543,11 +543,13 @@ class GitVcs:
         <branch>@{upstream}`` -- exit 0 means one exists (``origin/x``-shaped
         output, split on the first ``/`` into the remote name and the
         remote-side branch name, then pushed EXPLICITLY,
-        ``git push <remote> refs/heads/<branch>:<remote_branch>``); a non-zero exit
-        whose stderr carries git's own "no upstream configured for branch"
-        wording (128, the ordinary case for a brand-new station/per-story
-        branch) falls back to ``git push origin <branch>``, the branch's
-        first push. Any OTHER non-zero exit (an ambiguous ref, "no such
+        ``git push <remote> refs/heads/<branch>:refs/heads/<remote_branch>``);
+        a non-zero exit whose stderr carries git's own "no upstream configured
+        for branch" wording (128, the ordinary case for a brand-new
+        station/per-story branch) falls back to ``git push origin
+        refs/heads/<branch>:refs/heads/<branch>``, the branch's first push
+        (Story 61.1: full refnames on both sides, so a same-named tag --
+        local or remote -- never makes the push ambiguous). Any OTHER non-zero exit (an ambiguous ref, "no such
         branch" because ``branch`` itself does not exist locally, a
         corrupted repo) is NOT treated as "no upstream" -- silently falling
         back there would push to a remote/branch the caller never intended
@@ -584,11 +586,18 @@ class GitVcs:
                 f"(exit {upstream_check.returncode}), and it is not the "
                 f"ordinary no-upstream case: {upstream_check.stderr.strip()}"
             )
-        # Story 61.1 (CAP-271): the source by its full refname -- with a tag named like the
-        # branch, a bare `<branch>:` source is ambiguous and git refuses the push. The
-        # `<branch>@{upstream}` read above stays bare: git takes it as a branch name, and
-        # `refs/heads/<branch>@{upstream}` fails.
-        args = ["git", "-C", str(repo_root), "push", remote, f"{local_branch_ref(branch)}:{remote_branch}"]
+        # Story 61.1 (CAP-271): both sides by their full refname -- with a tag named like the
+        # branch, locally or on the remote, a bare `<branch>:` source or `:<branch>` destination
+        # is ambiguous and git refuses the push. The `<branch>@{upstream}` read above stays
+        # bare: git takes it as a branch name, and `refs/heads/<branch>@{upstream}` fails.
+        args = [
+            "git",
+            "-C",
+            str(repo_root),
+            "push",
+            remote,
+            f"{local_branch_ref(branch)}:{local_branch_ref(remote_branch)}",
+        ]
         if proven_on_main_sha is not None:
             # Story 57.1 (CAP-267, review 2): re-check the proof here, against the full
             # refname (a local branch or tag named `origin/main` must not stand in), and

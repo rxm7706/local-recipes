@@ -939,6 +939,9 @@ def test_landing_keys_default_values():
         "@",
         "",
         "double//slash",
+        "heads/main",  # review 1: a ref namespace -- refs/heads/heads/main
+        "tags/v1",
+        "remotes/origin/main",
     ],
 )
 def test_landing_base_branch_refuses_what_is_not_a_plain_branch_name(value):
@@ -948,7 +951,7 @@ def test_landing_base_branch_refuses_what_is_not_a_plain_branch_name(value):
     assert [f.code for f in findings] == ["MRS-POLICY-002"]
 
 
-@pytest.mark.parametrize("value", ["main", "release/2026", "trunk", "origin", "v2.x", "feature/a-b_c"])
+@pytest.mark.parametrize("value", ["main", "release/2026", "trunk", "origin", "v2.x", "feature/a-b_c", "nb\u00a0sp"])
 def test_landing_base_branch_accepts_a_plain_branch_name(value):
     effective, findings = compose(project_slug="acme", project={"landing_base_branch": value}, flags={})
     assert findings == ()

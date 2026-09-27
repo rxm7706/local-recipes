@@ -601,14 +601,17 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   name `main` to `refs/tags/main` before `refs/heads/main`, so a tag named `main` stands in for
   the local branch. Marshal still hands git its local branches by short name — the landing
   subjects `status`, `deploy`, `retire` and `dispatch land` read, deploy's and land's merge base
-  and diff base, the gate's scope diff, the start point `init` and `dispatch` mint a branch from,
-  the supervisor's station branch, and the landing heal's reads of the dispatch branch. Most
-  read the tag's commit with only a warning; the push and the worktree mint refuse outright.
-  And the policy's `landing_base_branch` accepts `origin/main`, which would reach every one of
-  those reads. **What it looks like when real:** every git read of a local branch asks for
+  and diff base, the gate's scope diff, the start point `init` mints a loop home from, the
+  supervisor's station branch, the landing heal's reads of the dispatch branch, and the
+  repo-root scripts marshal owns (the dashboard's landing history, the loop-home provisioner,
+  the fleet picture's behind-count, the unpushed-work check). Most read the tag's commit with
+  only a warning; the push and the worktree mint refuse outright. And the policy's
+  `landing_base_branch` accepts `origin/main`, which would reach every one of those reads.
+  **What it looks like when real:** every git read of a local branch asks for
   `refs/heads/<branch>`, from the same `core/refs.py`; a tag named like a branch changes nothing
   marshal reads, diffs, merges or pushes; the policy refuses a landing base that is a full ref
-  or a remote's branch. **Constraints:** no behaviour change when no tag shadows a branch;
+  or a remote's branch, and a landing refuses to run on one rather than fall back to `main`.
+  **Constraints:** no behaviour change when no tag shadows a branch;
   arguments git reads as a branch *name* (`branch -D`, attaching an existing branch to a
   worktree, `<branch>@{upstream}`) stay bare. Kinships: CAP-270 (60.1); owner
   `spec-pyforge-marshal`.

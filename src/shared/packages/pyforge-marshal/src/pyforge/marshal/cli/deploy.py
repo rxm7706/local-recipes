@@ -231,7 +231,7 @@ import os
 import re
 import secrets
 import shlex
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -303,6 +303,22 @@ _MRS_DEPLOY_024 = "MRS-DEPLOY-024"
 _MRS_DEPLOY_025 = "MRS-DEPLOY-025"
 _MRS_DEPLOY_026 = "MRS-DEPLOY-026"
 _MRS_DEPLOY_027 = "MRS-DEPLOY-027"
+
+#: What a malformed landing policy key silently falls back to -- the reason
+#: `batch-pr` and `land` refuse on one (MRS-DEPLOY-015 / MRS-LAND-002).
+_MALFORMED_LANDING_FALLBACK = {
+    "landing_rules": "an EMPTY rule set",
+    "landing_base_branch": "the default base branch 'main'",  # Story 61.1 (CAP-271)
+}
+
+
+def _malformed_landing_policy_key(policy_findings: Sequence[Finding]) -> str | None:
+    """The first landing policy key an ERROR policy finding names, if any."""
+    for key in _MALFORMED_LANDING_FALLBACK:
+        if any(f.severity is Severity.ERROR and f"'{key}'" in f.message for f in policy_findings):
+            return key
+    return None
+
 
 # Story 5.9's own local copies of `cli/status.py`'s ledger-path/status
 # literals -- mirrors this module's own established "each module owns its
@@ -2612,8 +2628,11 @@ def run_batch_pr(
     # (every rule evaluates against zero declared rules, `applies` is never
     # even checked). Refused HERE, before `landing_rules`/`base` are even
     # read below, and before the forge is ever touched -- never a softer
-    # degrade to "ran with whatever policy composed to".
-    if any(finding.severity is Severity.ERROR and "'landing_rules'" in finding.message for finding in policy_findings):
+    # degrade to "ran with whatever policy composed to". Story 61.1 (CAP-271):
+    # a malformed `landing_base_branch` refuses the same way -- its fallback is
+    # `main`, so proceeding would open the PR against a base nobody declared.
+    malformed = _malformed_landing_policy_key(policy_findings)
+    if malformed is not None:
         findings.append(
             Finding(
                 code=_MRS_DEPLOY_015,
@@ -2621,9 +2640,9 @@ def run_batch_pr(
                 message=(
                     "refusing to run the hygiene preflight for "
                     f"{head_branch!r}: policy composition reported a "
-                    "malformed 'landing_rules' layer above -- proceeding "
-                    "would silently evaluate against an EMPTY rule set "
-                    "instead of the project's declared rules; fix the "
+                    f"malformed {malformed!r} layer above -- proceeding "
+                    f"would silently use {_MALFORMED_LANDING_FALLBACK[malformed]} "
+                    "instead of the project's declared one; fix the "
                     "malformed layer and re-run batch-pr"
                 ),
             )

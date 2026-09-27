@@ -2709,9 +2709,11 @@ epic because Epic 60 is `done`.
 
 #### FR-217: Every local-branch read names the full ref ← CAP-271
 Every place marshal hands git one of its local branches to read names it `refs/heads/<branch>`,
-through `core/refs.py`; a tag named like a branch changes nothing marshal reads, diffs, merges or
-pushes. Arguments git reads as a branch name stay bare. `landing_base_branch` refuses a full
-refname or a remote's branch. Story 61.1.
+through `core/refs.py` — in the package and in the repo-root scripts marshal owns; a tag named
+like a branch changes nothing marshal reads, diffs, merges or pushes. Arguments git reads as a
+branch name stay bare. `landing_base_branch` refuses a full refname, a ref namespace or a
+remote's branch, and `land` / `batch-pr` refuse to run on one rather than fall back to `main`.
+Story 61.1.
 
 **ONE FR space now FR-1..FR-217** (FR-218 = next free id).
 

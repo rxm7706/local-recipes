@@ -109,6 +109,27 @@ def test_a_push_succeeds_beside_a_tag_named_like_the_branch(repo) -> None:
     assert _git(remote, "rev-parse", "refs/heads/main").stdout.strip() == tip
 
 
+@pytest.mark.parametrize("upstream", [True, False])
+def test_a_push_succeeds_beside_a_tag_on_the_remote_named_like_the_branch(repo, upstream: bool) -> None:
+    """Review 1: a bare destination was ambiguous once the REMOTE carried a same-named tag (a
+    `git push --tags` puts one there), with or without a configured upstream."""
+    remote, clone, base, _landed = repo
+    _git(clone, "checkout", "-q", "-b", "loop/acme")
+    _git(clone, "push", "-q", "origin", "refs/heads/loop/acme:refs/heads/loop/acme")
+    _git(clone, "push", "-q", "origin", f"{base}:refs/tags/loop/acme")  # the remote's tag
+    if upstream:
+        _git(clone, "branch", "-q", "--set-upstream-to=origin/loop/acme", "loop/acme")
+    tip = _commit(clone, "story.txt", "the story's work")
+
+    assert (
+        "matches more than one" in _git(clone, "push", "origin", "refs/heads/loop/acme:loop/acme", check=False).stderr
+    )
+    GitVcs().push(clone, "loop/acme")
+
+    assert _git(remote, "rev-parse", "refs/heads/loop/acme").stdout.strip() == tip
+    assert _git(remote, "rev-parse", "refs/tags/loop/acme").stdout.strip() == base  # the tag untouched
+
+
 # --- the landing heal, end to end ------------------------------------------------------------------
 
 
