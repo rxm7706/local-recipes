@@ -284,7 +284,7 @@ development_status:
   67-8-the-cutover-spine-drops-the-archive: backlog
   68-1-a-workspace-archive-holds-the-work-not-the-environments-and-one-bad-record-never-stops-the-sweep: done
   68-2-the-pre-push-gate-skips-a-push-that-carries-nothing-new-and-its-journal-names-what-was-pushed: done
-  69-1-workspace-clean-keeps-a-note-not-a-tarball-for-a-worktree-already-on-its-source: backlog
+  69-1-workspace-clean-keeps-a-note-not-a-tarball-for-a-worktree-already-on-its-source: done
   7-1-one-build-whole-guild: done
   7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: done
@@ -433,7 +433,7 @@ development_status:
   epic-67: in-progress
   epic-67-retrospective: optional
   epic-68: done
-  epic-69: backlog
+  epic-69: done
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

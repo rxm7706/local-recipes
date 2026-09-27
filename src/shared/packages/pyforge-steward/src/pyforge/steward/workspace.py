@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -726,18 +727,36 @@ def _without_reinstallable_envs(arcroot: str):
 #: backlink symlink -- can hold Tier-3 work (story drafts, sprint feeds) that exists nowhere
 #: else, so it forces a tarball (Story 69.1 review 1).
 _IGNORED_WORK_PREFIXES: tuple[str, ...] = ("_bmad-output/",)
-#: How many git-ignored paths a note lists before it counts the rest.
+#: How many git-ignored paths (and skip-journal lines) a note lists before it counts the rest.
 _NOTE_IGNORED_LIMIT = 200
+#: The pre-push gate's per-worktree skip journal (CAP-156): a note copies its lines, since the
+#: file itself is git-ignored and goes with the worktree (Story 69.1 review 2).
+_SKIP_JOURNAL = Path(".steward/preflight-skips.log")
 
 
-def _resolve_commit(ref: str, *, cwd: Path) -> str | None:
-    """``ref``'s commit, or None when git cannot resolve it unambiguously: a local branch or
-    tag named ``origin/main`` shadows the remote-tracking ref with only a warning on stderr,
-    and a warning is no proof (Story 69.1 review 1)."""
+def _git_bytes(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
+    """``_git_ok`` without text decoding, for NUL-separated (``-z``) output whose paths need
+    not be valid UTF-8 -- one such name crashed the whole sweep (Story 69.1 review 2)."""
+    return subprocess.run(["git", *args], cwd=cwd, check=False, capture_output=True)
+
+
+def _commit_of(ref: str, *, cwd: Path) -> str | None:
+    """``ref``'s commit, or None when git cannot resolve it."""
     result = _git_ok("rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}", cwd=cwd)
-    if result.returncode != 0 or "ambiguous" in (result.stderr or ""):
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _source_commit(source: str, *, root: Path) -> str | None:
+    """The commit ``source`` names when git resolves it to a remote-tracking ref, else None.
+    A short name like ``origin/main`` resolves to a local branch or tag of that name first,
+    with a warning that config can switch off and a locale can reword; so the proof asks git
+    which ref won (``--symbolic-full-name``) -- only one under ``refs/remotes/`` is a landing
+    (Story 69.1 reviews 1 and 2)."""
+    full = _git_ok("rev-parse", "--verify", "--symbolic-full-name", "--end-of-options", source, cwd=root)
+    name = (full.stdout or "").strip()
+    if full.returncode != 0 or not name.startswith("refs/remotes/") or "\n" in name:
         return None
-    return result.stdout.strip()
+    return _commit_of(name, cwd=root)
 
 
 def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str | None:
@@ -748,53 +767,68 @@ def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str
     - ``status --porcelain`` is empty, pinned against config (``_worktree_dirty``);
     - no index entry is marked skip-worktree or assume-unchanged (``ls-files -v``) -- both hide
       an edited file from ``status``;
-    - HEAD and the recorded branch (when it exists) are both ancestors of the source: cleanup
-      deletes the branch, not HEAD, so a detached HEAD proves nothing about the branch;
+    - HEAD and the recorded branch (when it exists) are both ancestors of the source, and the
+      source resolves to a remote-tracking ref: cleanup deletes the branch, not HEAD, so a
+      detached HEAD proves nothing about the branch;
+    - no gitlink (a submodule's own ignored files would go unnamed) and no per-worktree ref
+      (``refs/worktree/``, ``refs/bisect/``) that could hold a commit nothing else does;
     - the git-ignored listing succeeds, and none of it is Tier-3 work under ``_bmad-output/``
       other than a backlink symlink.
 
-    Any command that fails or answers ambiguously is no proof. Raises only if git cannot be
+    Any command that fails, answers ambiguously, or prints what cannot be decoded is no proof
+    (review 2: a non-UTF-8 ignored name crashed the sweep). Raises only if git cannot be
     launched at all, which the sweep reports as an error row and keeps the record."""
     wt = Path(record.path)
     try:
-        if _worktree_dirty(wt):
-            return None
-    except WorkspaceError:
+        return _landed_note_body(record, wt=wt, root=root, stamp=stamp)
+    except WorkspaceError, ValueError:
+        return None
+
+
+def _landed_note_body(record: WorkspaceRecord, *, wt: Path, root: Path, stamp: str) -> str | None:
+    if _worktree_dirty(wt):
         return None
     flags = _git_ok("ls-files", "-v", cwd=wt)
     if flags.returncode != 0 or any(
         line[:1].islower() or line[:1] == "S" for line in (flags.stdout or "").splitlines()
     ):
         return None
-    head_sha = _resolve_commit("HEAD", cwd=wt)
-    source_sha = _resolve_commit(record.source, cwd=root)
+    staged = _git_ok("ls-files", "--stage", cwd=wt)
+    if staged.returncode != 0 or any(line.startswith("160000 ") for line in (staged.stdout or "").splitlines()):
+        return None
+    local_refs = _git_ok("for-each-ref", "--format=%(refname)", "refs/worktree/", "refs/bisect/", cwd=wt)
+    if local_refs.returncode != 0 or (local_refs.stdout or "").strip():
+        return None
+    head_sha = _commit_of("HEAD", cwd=wt)
+    source_sha = _source_commit(record.source, root=root)
     if head_sha is None or source_sha is None:
         return None
     tips = [head_sha]
     if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
-        branch_sha = _resolve_commit(f"refs/heads/{record.branch}", cwd=root)
+        branch_sha = _commit_of(f"refs/heads/{record.branch}", cwd=root)
         if branch_sha is None:
             return None
         tips.append(branch_sha)
     for tip in tips:
         if _git_ok("merge-base", "--is-ancestor", tip, source_sha, cwd=root).returncode != 0:
             return None
-    listed = _git_ok(
-        "-c",
-        "status.showUntrackedFiles=normal",
-        "-c",
-        "core.quotePath=false",
-        "status",
-        "--ignored",
-        "--porcelain",
-        cwd=wt,
-    )
+    listed = _git_bytes("-c", "status.showUntrackedFiles=normal", "status", "--ignored", "--porcelain", "-z", cwd=wt)
     if listed.returncode != 0:
         return None
-    ignored = [line[3:] for line in (listed.stdout or "").splitlines() if line.startswith("!! ")]
-    if any(path.startswith(_IGNORED_WORK_PREFIXES) and not (wt / path.rstrip("/")).is_symlink() for path in ignored):
-        return None
+    raw_ignored = [entry[3:] for entry in listed.stdout.split(b"\0") if entry.startswith(b"!! ")]
+    work_prefixes = tuple(prefix.encode() for prefix in _IGNORED_WORK_PREFIXES)
+    for raw in raw_ignored:
+        if raw.startswith(work_prefixes) and not (wt / os.fsdecode(raw.rstrip(b"/"))).is_symlink():
+            return None
+    ignored = [raw.decode("utf-8", "backslashreplace") for raw in raw_ignored]
     shown = ignored[:_NOTE_IGNORED_LIMIT]
+    journal: list[str] = []
+    journal_path = wt / _SKIP_JOURNAL
+    if journal_path.is_file() and not journal_path.is_symlink():
+        try:
+            journal = journal_path.read_text(encoding="utf-8", errors="backslashreplace").splitlines()
+        except OSError:
+            return None
     lines = [
         f"workspace {record.slug!r} cleaned {stamp}: nothing unlanded, so no archive was kept (Story 69.1).",
         f"branch: {record.branch}",
@@ -807,6 +841,9 @@ def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str
     ]
     if len(ignored) > len(shown):
         lines.append(f"  ... and {len(ignored) - len(shown)} more")
+    if journal:
+        lines.append(f"pre-push skip journal ({_SKIP_JOURNAL}), copied ({len(journal)} line(s)):")
+        lines.extend(f"  {line}" for line in journal[-_NOTE_IGNORED_LIMIT:])
     return "\n".join(lines) + "\n"
 
 
@@ -815,14 +852,17 @@ def _archive_worktree(
     *,
     root: Path,
     archive_dir: Path,
-) -> Path:
+) -> tuple[Path, bool]:
     """Archive-not-delete: tar the tree, then ``git worktree remove``.
 
-    After a successful remove/prune, also best-effort deletes the local branch
-    so a later ``start`` with the same slug can recreate ``-b`` cleanly. The
-    tar (or missing marker) is retained — archive-not-delete of tree content.
     A worktree git proves already landed keeps a ``.landed.txt`` note instead
     of a tar (Story 69.1, CAP-157): there is no unlanded content to archive.
+    After a successful remove/prune, the local branch is deleted when it is on
+    the record's source, so a later ``start`` with the same slug can recreate
+    ``-b`` cleanly; an unmerged branch is kept -- its commits exist nowhere
+    else, since a tar holds files, never history -- and a later ``start`` of
+    that slug needs it deleted by hand. Returns the archive (or note or
+    marker) path and whether the branch was kept.
     """
     try:
         archive_dir.mkdir(parents=True, exist_ok=True)
@@ -873,12 +913,18 @@ def _archive_worktree(
         # Branch may still exist after worktree remove; drop it so slug reuse works -- but only
         # when it is on the source. An unmerged branch's commits exist nowhere else (a tarball
         # holds files, never history), so it is kept (Story 69.1 review 1).
-        source_sha = _resolve_commit(record.source, cwd=root)
-        if source_sha is not None and (
-            _git_ok("merge-base", "--is-ancestor", f"refs/heads/{record.branch}", source_sha, cwd=root).returncode == 0
-        ):
-            _git_ok("branch", "-D", record.branch, cwd=root)
-        return archive_path
+        branch_kept = False
+        if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
+            source_sha = _commit_of(record.source, cwd=root)
+            merged = source_sha is not None and (
+                _git_ok("merge-base", "--is-ancestor", f"refs/heads/{record.branch}", source_sha, cwd=root).returncode
+                == 0
+            )
+            if merged:
+                _git_ok("branch", "-D", record.branch, cwd=root)
+            else:
+                branch_kept = True
+        return archive_path, branch_kept
     except OSError as exc:
         raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
 
@@ -951,14 +997,17 @@ def clean_workspaces(
                     remaining.append(record)
                     in_flight = None
                     continue
-                archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
+                archive_path, branch_kept = _archive_worktree(record, root=root, archive_dir=archive_dir)
             except WorkspaceError as exc:
                 skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
                 in_flight = None
                 continue
             in_flight = None
-            archived.append({**record.to_dict(), "archive": str(archive_path)})
+            row = {**record.to_dict(), "archive": str(archive_path)}
+            if branch_kept:
+                row["branch_kept"] = record.branch  # unmerged: its commits exist nowhere else (Story 69.1)
+            archived.append(row)
     finally:
         # Persist removals already archived even if a later record fails —
         # otherwise archived trees stay listed in bookkeeping.
@@ -1044,7 +1093,8 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
     for item in archived:
         member = item.get("member")
         prefix = f"archived {member}/" if member else "archived "
-        lines.append(f"{prefix}{item['slug']} -> {item['archive']}")
+        kept = f" (branch {item['branch_kept']} kept: not on its source)" if item.get("branch_kept") else ""
+        lines.append(f"{prefix}{item['slug']} -> {item['archive']}{kept}")
     for item in skipped:
         member = item.get("member")
         prefix = f"skipped {member}/" if member else "skipped "

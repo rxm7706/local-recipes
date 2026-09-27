@@ -888,14 +888,14 @@ def test_a_backlinked_tier3_symlink_does_not_block_the_note(repo: Path, tmp_path
 
 def test_a_failed_ignored_listing_archives_instead_of_writing_an_empty_note(repo: Path, tmp_path: Path, monkeypatch):
     wt = _started(repo, tmp_path, "listing-fails")
-    real = ws_module._git_ok
+    real = ws_module._git_bytes
 
     def _fail_ignored(*args, cwd):
         if "--ignored" in args:
-            return subprocess.CompletedProcess(args, 128, stdout="", stderr="fatal: simulated")
+            return subprocess.CompletedProcess(args, 128, stdout=b"", stderr=b"fatal: simulated")
         return real(*args, cwd=cwd)
 
-    monkeypatch.setattr(ws_module, "_git_ok", _fail_ignored)
+    monkeypatch.setattr(ws_module, "_git_bytes", _fail_ignored)
     assert _clean_one(repo, tmp_path, "listing-fails").name.endswith(".tar.gz")
     assert not wt.exists()
 
@@ -909,3 +909,98 @@ def test_the_note_lists_at_most_200_ignored_paths_and_counts_the_rest(repo: Path
     note = _clean_one(repo, tmp_path, "many-ignored").read_text(encoding="utf-8")
     assert "git-ignored paths not kept (250):" in note
     assert "  ... and 50 more" in note
+
+
+# --- Story 69.1 review 2 ---
+
+
+def test_a_non_utf8_ignored_name_neither_crashes_the_sweep_nor_goes_unnamed(repo: Path, tmp_path: Path):
+    """It crashed the whole sweep with a UnicodeDecodeError (CAP-155: one bad record never stops it)."""
+    import os
+
+    _exclude(repo, "*.local")
+    wt = _started(repo, tmp_path, "latin1")
+    (wt / os.fsdecode(b"caf\xe9.local")).write_text("x\n", encoding="utf-8")
+
+    note = _clean_one(repo, tmp_path, "latin1").read_text(encoding="utf-8")
+    assert "caf\\xe9.local" in note
+
+
+def test_a_shadowing_ref_is_no_proof_even_with_ambiguity_warnings_off(repo: Path, tmp_path: Path):
+    _git("config", "core.warnAmbiguousRefs", "false", cwd=repo)
+    wt = _started(repo, tmp_path, "quiet-shadow")
+    (wt / "work.txt").write_text("work\n", encoding="utf-8")
+    _git("add", "work.txt", cwd=wt)
+    _git("commit", "-m", "unlanded", cwd=wt)
+    _git("branch", "origin/main", "HEAD", cwd=wt)
+
+    assert _clean_one(repo, tmp_path, "quiet-shadow").name.endswith(".tar.gz")
+
+
+def test_quoted_tier3_paths_still_force_a_tarball(repo: Path, tmp_path: Path):
+    _exclude(repo, "_bmad-output/projects/*/implementation-artifacts")
+    wt = _started(repo, tmp_path, "quoted")
+    drafts = wt / "_bmad-output" / "projects" / 'we"ird' / "implementation-artifacts"
+    drafts.mkdir(parents=True)
+    (drafts / "story.md").write_text("a draft\n", encoding="utf-8")
+
+    assert _clean_one(repo, tmp_path, "quoted").name.endswith(".tar.gz")
+
+
+def test_an_unmerged_branch_is_kept_and_the_clean_output_says_so(repo: Path, tmp_path: Path):
+    wt = _started(repo, tmp_path, "unmerged")
+    (wt / "work.txt").write_text("work\n", encoding="utf-8")
+    _git("add", "work.txt", cwd=wt)
+    _git("commit", "-m", "not on main", cwd=wt)
+    tip = _git("rev-parse", "HEAD", cwd=wt).stdout.strip()
+    cleaned = clean_workspaces(
+        slug="unmerged",
+        root=repo,
+        bookkeeping=repo / ".steward" / "workspaces.yaml",
+        archive_dir=tmp_path / "archive",
+        confirm=lambda s: True,
+    )
+
+    assert cleaned["archived"][0]["branch_kept"] == "unmerged"
+    assert _git("rev-parse", "refs/heads/unmerged", cwd=repo).stdout.strip() == tip
+    assert "(branch unmerged kept: not on its source)" in ws_module.format_clean(cleaned, as_json=False)
+
+
+def test_a_merged_branch_is_still_deleted(repo: Path, tmp_path: Path):
+    _started(repo, tmp_path, "merged-away")
+    left = _clean_one(repo, tmp_path, "merged-away")
+
+    assert left.name.endswith(".landed.txt")
+    probe = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", "refs/heads/merged-away"], cwd=repo, capture_output=True
+    )
+    assert probe.returncode != 0
+
+
+def test_the_skip_journal_is_copied_into_the_note(repo: Path, tmp_path: Path):
+    _exclude(repo, ".steward/")
+    wt = _started(repo, tmp_path, "journaled")
+    (wt / ".steward").mkdir()
+    (wt / ".steward" / "preflight-skips.log").write_text(
+        "2026-09-27T12:00:00Z\trefs/heads/journaled\tabc1234567\tpreflight ran green\n", encoding="utf-8"
+    )
+
+    note = _clean_one(repo, tmp_path, "journaled").read_text(encoding="utf-8")
+    assert "pre-push skip journal (.steward/preflight-skips.log), copied (1 line(s)):" in note
+    assert "refs/heads/journaled\tabc1234567\tpreflight ran green" in note
+
+
+def test_a_gitlink_is_no_proof(repo: Path, tmp_path: Path):
+    _git("update-index", "--add", "--cacheinfo", f"160000,{'1' * 40},sub", cwd=repo)
+    _git("commit", "-m", "a submodule gitlink", cwd=repo)
+    _git("push", "-q", "origin", "main", cwd=repo)
+    _started(repo, tmp_path, "with-gitlink")
+
+    assert _clean_one(repo, tmp_path, "with-gitlink").name.endswith(".tar.gz")
+
+
+def test_a_per_worktree_ref_is_no_proof(repo: Path, tmp_path: Path):
+    wt = _started(repo, tmp_path, "worktree-ref")
+    _git("update-ref", "refs/worktree/keep", "HEAD", cwd=wt)
+
+    assert _clean_one(repo, tmp_path, "worktree-ref").name.endswith(".tar.gz")

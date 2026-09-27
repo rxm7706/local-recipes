@@ -4548,8 +4548,8 @@ I want `workspace clean` to leave a short note instead of a tarball when git pro
 So that the archive folder only ever holds work that could otherwise be lost, and a dropped local file is still named.
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-157 (extends CAP-155 / CAP-107)
-**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_landed_proof`, `_landed_note`; `_archive_worktree`
-writes `<slug>-<stamp>.landed.txt` when proven), tests: `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py`,
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_landed_note_text`, `_source_commit`, `_git_bytes`; `_archive_worktree`
+writes `<slug>-<stamp>.landed.txt` when proven and keeps an unmerged branch; `format_clean` reports it), tests: `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py`,
 `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py`.
 **Given** a clean worktree whose HEAD is on its source, holding one git-ignored file
 **When** `workspace clean` removes it
