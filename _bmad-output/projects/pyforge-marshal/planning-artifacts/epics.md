@@ -7032,7 +7032,7 @@ the merge and escalates by name; the local-`main` advance is unchanged; a confli
 ### Story 59.1: A ledger-only conflict is healed by a merge of `origin/main`, not a union commit
 
 As the operator whose dispatch landings race other landings on the sprint ledger,
-I want the heal to merge `origin/main` into the dispatch branch with the ledger resolved by union,
+I want the heal to merge `origin/main` into the dispatch branch with the ledger resolved three-way against the merge base,
 So that the retried merge is actually clean, and nothing but the landing project's own ledger is ever resolved mechanically.
 
 **Type:** fix • **Effort:** M • **Deps:** 58.1 • **FR/AD:** spec-pyforge-marshal CAP-269 (FR-215) • Story 28.20 (spec-marshal-drain-self-resolution CAP-3)

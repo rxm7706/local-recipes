@@ -2664,8 +2664,10 @@ epic because Epic 58 rolled up to `done`.
 #### FR-215: The ledger union heal merges the base ← CAP-269
 The heal probes `refs/remotes/origin/main` after a fetch; a ledger-only conflict is healed by a
 real two-parent merge of that ref into the dispatch branch with the landing project's own ledger
-resolved by union, and any other conflict aborts the merge before a commit or a push; only the
-landing project's ledger is mechanical. Story 59.1.
+resolved three-way against the merge base (`done` never regresses, `blocked` is never undone),
+and any other conflict aborts the merge before a commit or a push; once the heal's merge is
+committed, a failure ends the attempt — never the local-`main` advance; only the landing
+project's ledger is mechanical. Story 59.1.
 
 **ONE FR space now FR-1..FR-215** (FR-216 = next free id).
 

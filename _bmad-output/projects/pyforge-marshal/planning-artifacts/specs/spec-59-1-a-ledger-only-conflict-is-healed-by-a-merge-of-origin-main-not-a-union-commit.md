@@ -2,8 +2,8 @@
 title: '59.1: A ledger-only conflict is healed by a merge of `origin/main`, not a union commit'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
-review_loop_iteration: 1
+status: 'done'
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -30,11 +30,11 @@ declared_low_risk: false
   4. Otherwise write each resolution's text, `git add -- <path>`, and `git commit -m <message>`. The result is a two-parent merge commit.
   5. Return the new HEAD sha.
   6. Any failure or interrupt after the merge started aborts it before raising.
-- **Build the union text purely.** A new pure `core/chain_regen.render_ledger_statuses(template_text, statuses) -> str` produces the template's header plus a sorted `development_status:` body, which is the generator's own layout. `write_ledger_statuses` now uses it, with unchanged behaviour. The heal resolves the ledger three-way against the merge base (`core/dispatch_landing.three_way_ledger_statuses`: a row only one side changed takes that side, deletions hold, precedence settles only a row both sides changed, and `blocked` is never undone), renders it under `origin/main`'s header (the branch's when `origin/main` has no ledger) and passes it as the resolution of `sprint_ledger_rel_path(project_slug)`. Once that merge is committed, a refused retry or a rejected push ends the attempt `healed=False` — never the local-`main` advance.
+- **Build the union text purely.** A new pure `core/chain_regen.render_ledger_statuses(template_text, statuses) -> str` produces the template's header plus a sorted `development_status:` body, which is the generator's own layout. `write_ledger_statuses` now uses it, with unchanged behaviour. The heal resolves the ledger three-way against the merge base (`core/dispatch_landing.three_way_ledger_statuses`: a row only one side changed takes that side, deletions hold, precedence settles only a row both sides changed, where `done` never regresses and `blocked` beats every other status), renders it under `origin/main`'s header (the branch's when `origin/main` has no ledger) and passes it as the resolution of `sprint_ledger_rel_path(project_slug)`. Once that merge is committed, a refused retry or a rejected push ends the attempt `healed=False` — never the local-`main` advance.
 - **Mechanical means this project's ledger only.** `is_mechanical_conflict_path` and `unknown_conflict_paths` take an optional `ledger_rel`. When it is given, only that exact path is mechanical, and the heal always passes it.
 
 Ledger key: `59-1-a-ledger-only-conflict-is-healed-by-a-merge-of-origin-main-not-a-union-commit`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / M / 58.1.
 
 ### Living CAP citations
@@ -75,11 +75,13 @@ All of these run against a bare remote, the real `GitVcs`, and a forge fake that
 | ledger + other | `README.md` conflicts too | `escalated_paths=("README.md",)`; no commit, no push | — |
 | foreign ledger | only another project's ledger | escalated by name | — |
 | unresolvable conflict in `merge_ref_resolving` | a conflicted path without a resolution | `git merge --abort`; HEAD and tree unchanged | `VcsCommandError` |
-| fetch fails | no network | heal skipped; landing refused as before | MRS-DISP-020 naming the skipped heal |
+| fetch fails | no network | the whole heal skipped, the local-`main` advance included (fail closed) | MRS-DISP-020 naming the skipped heal |
 | retry refused after the union merge | a red required check | `healed=False`; `main` untouched; PR open | MRS-DISP-020; the next attempt reads a fresh state |
 | push rejected | someone pushed to the PR branch | `healed=False`; `main` untouched; the merge stays local | MRS-DISP-020 |
 | main's own ledger change | `blocked` flip / retired row on `main` | kept (three-way against the merge base) | — |
-| both sides re-status one row | `blocked` vs `done` | `blocked` (never undone mechanically) | — |
+| both sides re-status one row | `blocked` vs `done` | `done` (never regresses; `ledger-regression` would red) | — |
+| both sides re-status one row | `blocked` vs `review` | `blocked` (never undone mechanically) | — |
+| unwritable resolution | an `OSError` writing the ledger | merge aborted; `healed=False` | `VcsCommandError` |
 | merge in progress | an operator's pending merge in the worktree | refused, left as it was | `VcsCommandError` |
 
 **Known sibling, outside this story:** `dispatch_land.py`'s merge-preview gate counts behind with the short name `origin/main` (`_ORIGIN_MAIN`). A local branch or tag of that name would shadow it, the same trap Story 57.1's review found in `refresh`.
@@ -113,3 +115,14 @@ Verified clean: `merge_ref_resolving` over a conflict plus clean changes elsewhe
 - `[low]` `[patch]` A failed fetch left no trace — MRS-DISP-020 now says the heal was skipped and why.
 - `[nit]` `[patch]` An absent `origin/main` ledger dropped the GENERATED header — the branch's header is used. `[nit]` `[patch]` Story 59.1's Surface list omitted `test_dispatch_landing.py`. `[nit]` `[note]` The union keeps `origin/main`'s `# stories: N` comment (the next `sprint-ledger-sync` regenerates it); `_ORIGIN_MAIN_REF` is a private constant in two modules; the new real-git tests follow the file's existing convention of not isolating global git config.
 - `[note]` After a rejected push the heal's merge commit stays on the local branch only (nothing pushed); the next landing attempt starts from it.
+
+### Review 2 — 2026-09-27, independent adversarial reviewer, commit `18af4505fb` — PASS with lows
+
+Verified closed by re-running review 1's probes: the fall-through (a refused retry, a rejected push and a `resolve_ref` failure all end `healed=False`, remote `main` untouched, the PR open); a union failing before its commit leaves a clean worktree and no local advance, and the next attempt's own push rejects a diverged local merge (MRS-DISP-017); the #985 advance still runs for a branch clean against `origin/main` while GitHub says DIRTY; `main`'s `blocked` flip and retired row survive; a stale MERGE_HEAD is refused and left. Parse/render round-trips all 8 tracked ledgers byte-for-byte. Tags, annotated tags and `-`-leading refs are handled; `heal_skipped` is set on every path; nothing parses the MRS-DISP-020 text.
+
+- `[low]` `[patch]` **`blocked` beat `done` in a both-changed row**, un-finishing a `main` row — doctor's `ledger-regression` (`detectors-ci`) fails it, and `promote_sprint_status` ranks `done` strictly senior to `blocked`. **Fix:** `done` > `blocked` > precedence; the pure test's case `c` now asserts `done`, and case `e` pins `blocked` over a non-`done` status.
+- `[low]` `[patch]` **An `OSError` writing the resolution escaped raw** and would crash `dispatch land`. **Fix:** wrapped as `VcsCommandError` (the merge is aborted); `test_merge_ref_resolving_reports_an_unwritable_resolution_as_a_vcs_error_and_aborts`.
+- `[low]` `[patch]` **The guard aborted a foreign merge** started in the window after the pre-check. **Fix:** abort only when MERGE_HEAD is the ref's own commit.
+- `[low]` `[patch]` FR-215 and Story 59.1's I-want line still said "resolved by union"; FR-215 omitted the no-fall-through rule. **Fix:** both amended.
+- `[nit]` `[patch]` With `rerere.enabled` + `rerere.autoupdate` a recorded resolution staged itself past `resolutions`. **Fix:** `--no-rerere-autoupdate`.
+- `[nit]` `[patch]` "landing refused as before" for a failed fetch was inexact: the #985 advance is skipped too (fail closed). **Fix:** the I/O row says so.

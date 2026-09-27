@@ -313,7 +313,7 @@ development_status:
   56-1-a-refused-landing-whose-story-has-since-landed-reads-as-superseded: done
   57-1-a-refresh-pushes-its-own-fast-forward-to-main-with-the-journaled-preflight-opt-out: done
   58-1-merge-tree-conflict-paths-reads-gits-own-conflicted-file-list: done
-  59-1-a-ledger-only-conflict-is-healed-by-a-merge-of-origin-main-not-a-union-commit: backlog
+  59-1-a-ledger-only-conflict-is-healed-by-a-merge-of-origin-main-not-a-union-commit: done
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done
@@ -442,7 +442,7 @@ development_status:
   epic-56-retrospective: optional
   epic-57: done
   epic-58: done
-  epic-59: backlog
+  epic-59: done
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

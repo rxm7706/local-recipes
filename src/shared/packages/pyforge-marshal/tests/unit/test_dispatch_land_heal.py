@@ -572,15 +572,16 @@ def test_real_heal_keeps_mains_own_changes_to_rows_the_branch_never_touched(tmp_
     assert "58-1-x: backlog" in ledger and "59-1-y: done" in ledger
 
 
-def test_three_way_ledger_statuses_takes_the_changed_side_and_never_unblocks() -> None:
-    base = {"a": "backlog", "b": "backlog", "gone": "done", "c": "backlog", "d": "backlog"}
-    main = {"a": "blocked", "b": "backlog", "c": "done", "d": "in-progress", "m": "backlog"}
-    branch = {"a": "backlog", "b": "done", "gone": "done", "c": "blocked", "d": "done", "r": "done"}
+def test_three_way_ledger_statuses_takes_the_changed_side_never_unfinishes_and_never_unblocks() -> None:
+    base = {"a": "backlog", "b": "backlog", "gone": "done", "c": "in-progress", "d": "backlog", "e": "backlog"}
+    main = {"a": "blocked", "b": "backlog", "c": "done", "d": "in-progress", "e": "blocked", "m": "backlog"}
+    branch = {"a": "backlog", "b": "done", "gone": "done", "c": "blocked", "d": "done", "e": "review", "r": "done"}
     assert three_way_ledger_statuses(base, main, branch) == {
         "a": "blocked",  # only main changed it
         "b": "done",  # only the branch changed it
-        "c": "blocked",  # both changed it: blocked is never undone mechanically
+        "c": "done",  # both changed it: done never regresses (review 2 -- ledger-regression reds it)
         "d": "done",  # both changed it: precedence
+        "e": "blocked",  # both changed it, neither done: blocked is never undone mechanically
         "m": "backlog",  # main added it
         "r": "done",  # the branch added it
     }  # "gone": main retired it, the branch left it alone

@@ -1130,8 +1130,11 @@ class GitVcs:
             raise VcsCommandError(f"git merge --no-commit {ref} failed in {worktree_path}: {target.stderr.strip()}")
         target_sha = target.stdout.strip()
         try:
+            # --no-rerere-autoupdate: a recorded rerere resolution must not stage itself and slip
+            # past `resolutions` (Story 59.1 review 2).
             merge = _run(
-                ["git", "-C", wt, "merge", "--no-ff", "--no-commit", target_sha], timeout_s=_GIT_CHECKOUT_TIMEOUT_S
+                ["git", "-C", wt, "merge", "--no-ff", "--no-commit", "--no-rerere-autoupdate", target_sha],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
             )
             started = merge_head()
             if started is None:
@@ -1155,8 +1158,11 @@ class GitVcs:
                     f"merge of {ref} into {worktree_path} conflicts outside the resolvable paths: {', '.join(unresolved)}"
                 )
             for rel in conflicted:
-                (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
-                (worktree_path / rel).write_text(resolutions[rel], encoding="utf-8")
+                try:
+                    (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
+                    (worktree_path / rel).write_text(resolutions[rel], encoding="utf-8")
+                except OSError as exc:
+                    raise VcsCommandError(f"cannot write the resolution of {rel} in {worktree_path}: {exc}") from exc
                 added = _run(["git", "-C", wt, "add", "--", rel])
                 if added.returncode != 0:
                     raise VcsCommandError(f"git add -- {rel} failed in {worktree_path}: {added.stderr.strip()}")
@@ -1166,9 +1172,10 @@ class GitVcs:
                     f"git commit of the merge of {ref} failed in {worktree_path}: {committed.stderr.strip()}"
                 )
         except BaseException:
-            # No merge was in progress before this call, so one in progress now is ours.
+            # Abort only our own merge: one of another commit (someone else's, started in the
+            # window after the pre-check) is theirs to finish (Story 59.1 review 2).
             try:
-                if merge_head() is not None:
+                if merge_head() == target_sha:
                     _run(["git", "-C", wt, "merge", "--abort"])
             except VcsCommandError:
                 pass  # best effort -- the original failure is the one to report

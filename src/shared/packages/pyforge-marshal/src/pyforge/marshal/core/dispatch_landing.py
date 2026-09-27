@@ -112,8 +112,10 @@ def three_way_ledger_statuses(
     """Story 59.1 review: resolve two ledger maps against their merge base, row by row. A row
     only one side changed (added, re-statused or removed) takes that side; a row both sides
     changed alike takes it; a row one side removed and the other re-statused is kept; a row both
-    re-statused differently takes ``blocked`` if either side set it -- un-blocking is the
-    operator's, never a mechanical merge's (AGENTS.md) -- else ``ledger_status_precedence``.
+    re-statused differently takes ``done`` if either side finished it (``done`` never regresses
+    -- ``ledger-regression`` reds that, and ``promote_sprint_status`` ranks ``done`` strictly
+    senior to ``blocked``), else ``blocked`` if either side set it (un-blocking is the
+    operator's, never a mechanical merge's -- AGENTS.md), else ``ledger_status_precedence``.
     A two-way union resurrected retired rows and undid the base's own changes."""
     out: dict[str, str] = {}
     for key in sorted(set(base) | set(main) | set(branch)):
@@ -126,6 +128,8 @@ def three_way_ledger_statuses(
             value = ours
         elif ours is None or theirs is None:
             value = ours if ours is not None else theirs
+        elif "done" in (ours, theirs):
+            value = "done"
         elif "blocked" in (ours, theirs):
             value = "blocked"
         else:

@@ -1858,6 +1858,27 @@ def test_merge_ref_resolving_aborts_on_a_conflict_it_cannot_resolve(vcs, repo):
     assert probe.returncode != 0  # no merge left in progress
 
 
+def test_merge_ref_resolving_reports_an_unwritable_resolution_as_a_vcs_error_and_aborts(vcs, repo, monkeypatch):
+    """Story 59.1 review 2: an OSError writing the resolution used to escape raw and crash
+    `dispatch land`; it is the port's `VcsCommandError`, and the merge is aborted."""
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "-b", "readme-only", "feature/conflict~1")
+    (repo / "README.md").write_text("readme-only version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "only README differs")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    def _refuse(self, *args, **kwargs):
+        raise PermissionError(13, "Permission denied", str(self))
+
+    monkeypatch.setattr(Path, "write_text", _refuse)
+    with pytest.raises(VcsCommandError, match="cannot write the resolution of README.md"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "resolved\n"}, message="union heal")
+    monkeypatch.undo()
+
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(repo, "status", "--porcelain").stdout == ""
+
+
 def test_merge_ref_resolving_refuses_and_leaves_a_merge_already_in_progress(vcs, repo):
     """Story 59.1 review: a pending merge in the worktree is someone else's -- never adopted
     (committed under the heal's message) nor aborted (their work lost)."""
