@@ -2,7 +2,7 @@
 title: '68.1: A workspace archive holds the work, not the environments, and one bad record never stops the sweep'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
