@@ -558,6 +558,23 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `origin/main` (the one tip whose commits all passed CI); the opt-out is the existing one, set for
   that single `git push` process and nowhere else. Kinships: steward's 2026-09-27 (later) entry
   and CAP-154/156; owner `spec-pyforge-marshal`.
+- **2026-09-27 (evening) — Proposed: the landing heal sees the conflicts it was built to heal.**
+  Story 28.20's heal — union a PR whose only conflict is the sprint ledger, escalate any other
+  conflict by name — has never seen a conflict. `merge_tree_conflict_paths` runs the legacy
+  three-arg `git merge-tree <base> <a> <b>` and looks for `Merge conflict in <path>`; that form
+  prints `changed in both` and conflict markers, never that line (only `--write-tree` prints
+  `CONFLICT` messages), so every real conflict reads as clean. Found while writing real-git tests
+  to lift `adapters/vcs_git.py` over the coverage floor for Story 57.1; probed on git 2.43.
+  Nothing landed wrongly — the local-merge fallback still refuses a conflicted merge — but the
+  ledger union never fired, and a conflicted PR was never escalated with its paths.
+  **What it looks like when real:** the method returns every conflicted path — content,
+  modify/delete, add/add alike — from git's own conflicted-file list; a ledger-only conflict is
+  unioned and the merge retried; any other conflict escalates naming its paths; a merge-tree that
+  fails (an unknown ref) is an error, never an empty list.
+  **Constraints:** the heal's decisions do not change, only what it sees; git's `--write-tree`
+  mode, which `merge_tree_write` already requires; a conflicted merge still never lands. Kinships:
+  Story 28.20 (`spec-marshal-drain-self-resolution` CAP-3, folded here); owner
+  `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

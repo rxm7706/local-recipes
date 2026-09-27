@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
+from pyforge.marshal.adapters.vcs_git import GitVcs
 from pyforge.marshal.core.dispatch_landing import (
     is_mechanical_conflict_path,
     ledger_status_precedence,
@@ -272,4 +274,49 @@ def test_heal_escalates_unknown_conflict_paths(tmp_path: Path) -> None:
 
     assert result.healed is False
     assert result.escalated_paths == ("recipes/foo/recipe.yaml",)
+    assert forge.merge_calls == 0
+
+
+def test_heal_with_the_real_git_adapter_escalates_a_real_conflict_by_name(tmp_path: Path) -> None:
+    """Story 58.1 (CAP-268): until 2026-09-27 the real adapter read every conflict as clean, so
+    this path was only ever exercised through the fake above. With the real `GitVcs` a genuine
+    conflict outside the sprint ledger is escalated naming its path, before the forge is asked."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
+
+    git("init", "-q", "-b", "main")
+    git("config", "user.email", "t@example.com")
+    git("config", "user.name", "T")
+    (repo / "README.md").write_text("base\n", encoding="utf-8")
+    git("add", "README.md")
+    git("commit", "-qm", "base")
+    git("checkout", "-qb", "dispatch/pyforge-marshal/58.1")
+    (repo / "README.md").write_text("branch\n", encoding="utf-8")
+    git("commit", "-qam", "branch edits README")
+    git("checkout", "-q", "main")
+    (repo / "README.md").write_text("main\n", encoding="utf-8")
+    git("commit", "-qam", "main edits README")
+    forge = FakeForgeHeal(merge_state="CONFLICTING")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=repo,
+        worktree=repo,
+        base="main",
+        head_branch="dispatch/pyforge-marshal/58.1",
+        head_sha="unused",
+        subject="Merge 58.1 into main",
+        merge_strategy="merge",
+        delete_branch=False,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=58, url="https://example/pr/58", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=GitVcs(),
+        forge=forge,
+    )
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=("README.md",))
     assert forge.merge_calls == 0

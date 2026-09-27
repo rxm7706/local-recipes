@@ -3191,6 +3191,12 @@ capabilities:
     heading: "a loop-home refresh sends its proven fast-forward past the pre-push preflight, journaled"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-268
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the landing heal sees every merge conflict"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core

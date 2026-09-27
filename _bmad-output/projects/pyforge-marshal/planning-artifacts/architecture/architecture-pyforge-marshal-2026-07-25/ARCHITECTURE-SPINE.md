@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED (later): chain-currency cascade for FR-213 / CAP-267 (Epic 57). No AD amended. Earlier 2026-09-27: FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
+updated: "2026-09-27"   # RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
 # 2026-09-18  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-196..FR-200 / CAP-244..248 (Epic 50). AD-24 amended in place: default merge-subject form gains {slug}. Four FRs land on AD-5/26/28, the harness seam, AD-16 and AD-13 -- no AD added or removed. See § Currency reconciliation — 2026-09-18.
@@ -1804,5 +1804,16 @@ fast-forward to `refs/remotes/origin/main` that `refresh` performed itself) stay
 it, and carries the journaled opt-out to the one `git push` process (Story 57.1 review 2: a short
 name can be shadowed by a local ref, and a branch re-read at push time can have moved). No new
 port, adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (evening)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-214 / CAP-268 (Epic 58, the landing
+heal sees every merge conflict). The fix is inside the `GitVcs` adapter's
+`merge_tree_conflict_paths` — the modern `--write-tree --name-only -z` form in place of the legacy
+three-arg one; the heal's orchestration in `dispatch_land_heal.py` (outside `core/`, AD-4) and its
+pure classification in `core/dispatch_landing.py` are unchanged. No new port, adapter or decision
+boundary.*
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
