@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 426
+# stories: 428
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -310,6 +310,7 @@ development_status:
   53-3-the-supervisor-entrypoint-reaches-the-floor: done
   54-1-the-landing-repairs-its-own-feed-drift-before-it-gives-up: backlog
   55-1-the-7-non-marshal-stations-stop-overriding-context-and-inherit-the-clean-default: done
+  56-1-a-refused-landing-whose-story-has-since-landed-reads-as-superseded: backlog
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done
@@ -432,6 +433,7 @@ development_status:
   epic-53-retrospective: optional
   epic-54: backlog
   epic-55: done
+  epic-56: backlog
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

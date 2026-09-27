@@ -514,6 +514,33 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   already knows the truth and repairing toward it is provably safe.
   Kinships: continues the `dispatch_land_finalize` reliability thread above (Epic 51
   CAP-249/CAP-252, Epic 53 CAP-261); owner `spec-pyforge-marshal`.
+- **2026-09-27 — Proposed: a landing refusal outlives the landing.** The 2026-09-25, -26 and
+  -27 fleet pictures each opened ATTENTION with `doctor: landing refused (1 finding(s)) --
+  MRS-DISP-020` and the same line for marshal. Both refusals were real when written: doctor
+  30.3's PR #1585 and marshal 46.6's PR #1597 could not be merged cleanly by `dispatch land`.
+  Both PRs merged afterwards by another route (2026-09-24 and 2026-09-25), both refused head SHAs
+  are ancestors of `origin/main`, and both keys read `done` in their tracked ledgers. The line
+  stayed anyway, because `marshal status` projects the newest dispatch run's last `dispatch-land`
+  OUTCOME and nothing written after a landing made by hand can reach that journal. Marshal's line
+  clears when its next dispatch replaces the run; doctor has no backlog left, so its line would
+  stay until someone dispatched doctor again. An ATTENTION line that is not an operator decision
+  teaches the operator to skip ATTENTION. Recorded as
+  `DW-marshal-disp020-stale-refusal-2026-09-25`; the 2026-09-26 retro filed it as "attention
+  items that are not work".
+  **What it looks like when real:** a refusal whose story has since landed on `main` is reported
+  as exactly that — refused, then landed — and `fleet-picture` lists it among the lines that are
+  not waiting on the operator. A refusal whose story has not landed, or whose landing status cannot
+  be read, stays in ATTENTION unchanged.
+  **The mechanism, sketched:** the journal and git each keep their own truth (the Spec's
+  truth-partition constraint), so the refusal is never deleted or rewritten. `marshal status`
+  reads git beside it: when the row's story key is among `main`'s corroborated merged keys (the
+  check `dispatch land` already uses to answer ALREADY_LANDED), the row carries
+  `dispatch_landing_superseded: true` next to the unchanged findings. `main`'s subjects are read
+  once per sweep, as the failed-patch check already does. An unreadable `main` or policy leaves
+  the marker off, so the refusal is never hidden on a guess.
+  Kinships: the Story 53.2 review finding (I1) that first surfaced landing findings in status;
+  the Story 28.25 rule that a resolved finalize failure is not an active escalation; owner
+  `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

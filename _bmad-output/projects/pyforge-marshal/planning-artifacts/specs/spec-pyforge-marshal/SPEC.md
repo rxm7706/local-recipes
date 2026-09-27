@@ -2,7 +2,7 @@
 id: SPEC-pyforge-marshal
 spec: pyforge-marshal
 status: ready
-updated: "2026-09-24"
+updated: "2026-09-27"
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
   - docs/dreams/pyforge-marshal.md
@@ -1025,6 +1025,9 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-265 — a landing's ledger promotion repairs its own feed drift, never a human's job** ← spec-pyforge-marshal CAP-265 (ready 2026-09-24)
   - **intent:** `dispatch_land_finalize`'s promotion of the just-landed story into the tracked `sprint-status-ledger.yaml` retries with the Tier-3 feed's stale-but-safe keys repaired from the tracked twin (the same pull-forward `--repair-feed` already does, which is strictly safe — the twin is the authoritative record and the operation only ever moves a key toward `done`) whenever `sprint-ledger-sync`'s regression guard refuses solely because of keys *other than* the one being promoted; the feed catch-up lands in the SAME commit as the story it promotes, never a separate PR. The guard still refuses, and still needs a human, when the disagreement is about the story actually being promoted — that stays a genuine judgment call, not blind drift.
   - **success:** doctor 24.2 and 24.3 (PRs #1577/#1578 merged, spec `status: done`; PRs #1579/#1580 merged, spec `status: done`) are the reproduction fixture — replaying either landing's stale-feed shape (13 and 14 unrelated keys behind, respectively) against the fixed finalize promotes the just-landed key and pulls the drifted-but-safe keys forward in one commit, with no second PR opened; a refusal caused by the promoted story's *own* key disagreeing with the twin still stops and names it, unchanged; `pyforge-marshal-test` green.
+- **CAP-266 — a landing refusal whose story has since landed is reported as superseded, never as work owed** ← spec-pyforge-marshal CAP-266 (ready 2026-09-27)
+  - **intent:** `marshal status`'s dispatch overlay keeps the newest run's `dispatch_landing_findings` verbatim and, when any is ERROR-severity and the row's story key is among `main`'s corroborated merged story keys (`core.promotion.corroborated_merged_story_keys` with the station's `merge_subject_template` and the `origin/main` spec-status reader — the check `dispatch land` already uses for ALREADY_LANDED), adds `dispatch_landing_superseded: true` to the JSON row; `main`'s subjects are read at most once per sweep; an unreadable `main` or a policy ERROR leaves the marker off. `fleet-picture` renders a superseded refusal in its not-blocking list, naming the story as landed since, never in ATTENTION. (Found 2026-09-25..27: doctor 30.3 and marshal 46.6 kept `landing refused -- MRS-DISP-020` in ATTENTION after both PRs merged by another route.)
+  - **success:** replaying doctor 30.3 (run `pyforge-doctor-20260924T110838338Z-84c5006a`, PR #1585) and marshal 46.6 (run `pyforge-marshal-20260925T064250213Z-f0621b0b`, PR #1597) yields the marker on both rows and no ATTENTION landing line; a refusal whose story is not on `main`, and a sweep whose `main` read fails, still show `landing refused` in ATTENTION; a WARN-only landing finding carries no marker; the findings list is byte-identical with and without the marker; `pyforge-marshal-test` green.
 
 ## Constraints
 

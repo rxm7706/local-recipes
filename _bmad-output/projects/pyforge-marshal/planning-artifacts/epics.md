@@ -11,9 +11,10 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 52  # 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 311  # 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-26"   # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
+epicCount: 54  # 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 323  # 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
+# 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -6928,6 +6929,43 @@ So that `wire` and `structure-graph` — the two layers 28.32 deliberately left 
 **And** no other policy content changes; the removed blocks' comments are replaced with a short note explaining the station now inherits the repo-wide default
 
 **Outcome (2026-09-24):** landed hand-driven (config-only, no dev/review loop needed) — all 7 stations' `marshal-policy.toml` stale 3-of-5 override removed. `epics.md` Story 28.33's own inline status marker corrected in the same pass (found stale while decomposing this epic).
+
+## Epic 56: A landing refusal outlives the landing — status reports it superseded (spec-pyforge-marshal CAP-266)
+
+Minted 2026-09-27 from the station Dream's entry of the same name: the 2026-09-25..27 fleet pictures kept
+`landing refused -- MRS-DISP-020` in ATTENTION for doctor 30.3 (PR #1585) and marshal 46.6 (PR #1597) after
+both PRs had merged by another route, both refused head SHAs were ancestors of `origin/main`, and both keys
+read `done` in their tracked ledgers (`DW-marshal-disp020-stale-refusal-2026-09-25`). A new epic because
+Epic 53 — whose Story 53.2 review (I1) first surfaced landing findings in status — is `done` (a done key never
+moves). **HARD boundaries:** the refusal is never deleted, rewritten or re-journaled — the journal stays the
+process-fact authority and git the repository-fact authority (AD-5, AD-33), reported side by side; the
+marker is set only on a positive, corroborated merge, so an unreadable `main` or policy keeps the refusal in
+ATTENTION.
+
+### Story 56.1: A refused landing whose story has since landed reads as superseded
+
+As a fleet operator reading ATTENTION,
+I want `marshal status` to mark a dispatch landing refusal whose story has since landed on `main`, and `fleet-picture` to list that refusal as not waiting on me,
+So that ATTENTION names only decisions still owed, and a station with no backlog left does not keep a finished landing on it forever.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-266 (FR-212); AD-4, AD-5, AD-33
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` (pure `landing_refusal_superseded`:
+true only when a landing finding is ERROR-severity and the story is corroborated merged on `main`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py` (`FleetHomeFacts.dispatch_landing_superseded`; the JSON
+row carries `dispatch_landing_superseded: true` beside the unchanged findings),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py` (the fleet sweep sets the marker from `main`'s subjects,
+read at most once per sweep and shared with the failed-patch check; `_merged_keys_for_slug` gains the corroborated form behind an
+optional spec-status reader), `scripts/fleet_picture.py` (a superseded refusal renders in the not-blocking list naming the story),
+tests: `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/test_status_landing_superseded.py` (new),
+`src/shared/packages/pyforge-marshal/tests/meta/test_fleet_picture_landing_findings.py`.
+**Given** doctor 30.3 and marshal 46.6 each carry an `MRS-DISP-020` refusal as their station's newest dispatch-land OUTCOME, and each
+story has since landed on `main` (PRs #1585 / #1597 merged, keys `done`)
+**When** `marshal status --format json` runs
+**Then** both rows keep `dispatch_landing_findings` unchanged and carry `dispatch_landing_superseded: true`, and `fleet-picture`
+lists both as landed since, with no `landing refused` line in ATTENTION
+**And** a refusal whose story is not on `main`, or a sweep whose `main` read fails, still shows `landing refused` in ATTENTION; a
+WARN-only landing finding carries no marker
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

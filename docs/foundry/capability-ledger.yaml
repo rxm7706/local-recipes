@@ -3179,6 +3179,12 @@ capabilities:
     heading: "a landing's ledger promotion repairs its own feed drift, never a human's job"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-266
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a landing refusal whose story has since landed is reported as superseded, never as work owed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
