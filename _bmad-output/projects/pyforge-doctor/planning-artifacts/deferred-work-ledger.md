@@ -1940,4 +1940,5 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   location: scripts/coverage_gates_ci.py; pixi.toml `pyforge-*-coverage-gate` tasks
   severity: low
   fix: default to `refs/remotes/origin/main` (and qualify a bare `$GITHUB_BASE_REF` as `refs/remotes/origin/<name>`), through the governance Spec's own chain.
-  status: open
+  status: closed
+  resolved: 2026-09-27 (doctor Story 32.1, spec-coverage-gate-independence CAP-4) — `_normalize_base` names `refs/remotes/origin/<name>` for a bare branch name and for `origin/<name>` (shas, full refs and revision expressions pass through), so the default, the pixi tasks and CI all read the remote-tracking ref with no argument changed; `coverage-gates.yml`'s own station selection builds `refs/remotes/origin/${GITHUB_BASE_REF}` too. A real-git shadow test fails on the old normalizer. The recipe CI workflows' changed-recipe selection has the same shape and another owner: `DW-mason-recipe-ci-short-base-ref-2026-09-27`.

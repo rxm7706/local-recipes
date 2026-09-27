@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 180
+# stories: 182
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -101,6 +101,7 @@ development_status:
   30-2-docs-map-yaml-is-the-registry-map-md-is-its-render-and-docs-currency-reds-a-stale-page: done
   30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: done
   31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname: done
+  32-1-the-gates-base-normalizer-names-the-remote-tracking-ref: backlog
   4-1-health-scoring-fr-10: done
   4-2-persistent-fleet-health-surface-fr-11: done
   4-3-adoption-tracking-watch-axis-fr-12: done
@@ -182,6 +183,7 @@ development_status:
   epic-30: done
   epic-30-retrospective: optional
   epic-31: done
+  epic-32: backlog
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

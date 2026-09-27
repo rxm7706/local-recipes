@@ -6826,4 +6826,5 @@ status: open
   location: src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py; pixi.toml `tea-test-review`
   severity: low
   fix: default to `refs/remotes/origin/main` in the kit (callers passing nothing follow), through the testing charter's chain; the steward task's `--base` likewise.
-  status: open
+  status: closed
+  resolved: 2026-09-27 (marshal Story 62.1, spec-pyforge-marshal CAP-272) — `branch_diff_guard` defaults to `refs/remotes/origin/main` (the kit's `ORIGIN_MAIN`) in all five guards and reads an explicit `origin/<branch>` by its full refname; no caller changed; a shadow test per guard fails on the old kit. The TEA half of this row (warden's `tea_advisory` and steward's `tea-test-review` task pass `--base origin/main` to the external TEA binary) is another owner's: `DW-warden-tea-advisory-short-base-2026-09-27`.

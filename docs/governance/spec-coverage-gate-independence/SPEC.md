@@ -7,7 +7,7 @@ status: ready   # 2026-09-14 — seeded `draft` in the morning; ruled and flippe
                 # docs/governance/ beside spec-pyforge-charter because its Dream is guild-owned
                 # (chain.py `_expected_spec_dir`: guild -> docs/governance/spec-<slug>/).
 created: "2026-09-14"
-updated: "2026-09-24"
+updated: "2026-09-27"
 owner-dream: docs/dreams/coverage-gate-independence.md
 surface:        # Declared 2026-09-20 by doctor Story 24.1 (CAP-1/CAP-2): the evaluator and
                 # its thresholds moved outside every pyforge.<station> package. All four
@@ -98,6 +98,16 @@ in an AD-3/AD-4 import-linter contract, so the move amends a declared layering r
     station's own CI gate.
   - *success:* reintroducing this shape fails a test rather than waiting for a future audit. This
     defect survived because nothing could see it. *(Ruled: yes.)*
+- **CAP-4 — the gate diffs against the remote-tracking ref, never a name a local ref can wear.** *(minted 2026-09-27 (late); kinships `marshal:CAP-270`, `pyforge-doctor:CAP-85`; doctor Story 32.1)*
+  - *intent:* `scripts/coverage_gates_ci.py`'s base normalizer names `refs/remotes/origin/<name>` for a bare
+    branch name (what `GITHUB_BASE_REF` holds) and for `origin/<name>` (what the pixi tasks pass), and leaves a
+    sha, a full ref and a revision expression alone. Git resolves a short name to a local branch or tag of that
+    name before `refs/remotes/<name>`, so a stray `origin/main` at HEAD emptied the touched-module diff and the
+    gate passed having judged nothing.
+  - *success:* with a local branch or tag named `origin/main` at HEAD, the driver's touched-module list is the
+    one the remote-tracking ref gives; with none, every list is unchanged; a push event's sha still passes
+    through; no pixi task argument changes, and `coverage-gates.yml`'s station selection (a diff the driver
+    never sees) names `refs/remotes/origin/${GITHUB_BASE_REF}` too.
 
 ## Constraints
 

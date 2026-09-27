@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
+updated: "2026-09-27"   # RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
@@ -2720,3 +2720,24 @@ Story 61.1.
 **Content changed:** § 28 added (FR-217 registered). No AD amended — one more pure helper in
 `core/refs.py`, a stricter policy validator and call-site arguments; no new port, adapter or
 decision boundary.
+
+## 29. Currency reconciliation — 2026-09-27 (late, cont.)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-272 late on 2026-09-27. Same-day reconcile;
+FR derived from the CAP per `one-chain-per-station`.*
+
+### 29.1 The FR space: FR-218 registered
+
+Doctor Story 31.1's review found the shadowing trap in `pyforge-testing-kit`, the shared test kit
+marshal seeded: its branch-diff guards default to the short name `origin/main`. FR-218 decomposes
+into **Epic 62** (Story 62.1) — a new epic because Epic 61 is `done`.
+
+#### FR-218: The shared test kit's branch guards diff against the remote ← CAP-272
+`branch_diff_guard` defaults to `refs/remotes/origin/main` and reads an explicit `origin/<branch>`
+by its full refname; a local ref named `origin/main` changes nothing a guard sees. No caller
+changes. Story 62.1.
+
+**ONE FR space now FR-1..FR-218** (FR-219 = next free id).
+
+**Content changed:** § 29 added (FR-218 registered). No AD amended — a kit constant and default
+arguments; no new port, adapter or decision boundary.
