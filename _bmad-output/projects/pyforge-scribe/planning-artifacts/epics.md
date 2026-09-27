@@ -781,6 +781,20 @@ So that I place a task on the right root and in the right mode before I read a s
 **And** the story's run result records the removed → target map (one row per removed note, the target file and anchor), and a one-shot check at landing confirms every target exists; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; `governance-currency` (in `detectors-ci`) green; `CLAUDE.md` still imports `@AGENTS.md` bare; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
 **Status:** done
 
+### Story 21.2: `AGENTS.md` says what runs `governance-currency`
+
+As an agent reading the instruction-file checklist before a PR,
+I want the line about `governance-currency` to say which lanes run it,
+So that I neither skip a gate that runs nor hand-run one out of a false belief that nothing does.
+
+**Type:** docs • **Effort:** S • **Deps:** 21.1 • **FR/AD:** spec-pyforge-scribe CAP-27 • minted 2026-09-26 from the station Dream's entry of the same date (a defect in 21.1's own output)
+**Surface:** `AGENTS.md` (Pre-PR checklist item 10, outside the managed block); `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-21-1-agents-md-opens-with-what-this-repository-is.md` (a dated correction appended to its triage log).
+**Given** 21.1 wrote that neither `detectors-ci` nor `pr-preflight` runs `governance-currency`, while `scripts/detectors.py --scope repo` discovers `scripts/governance_currency_check.py` by its `*_check.py` glob
+**When** this story lands
+**Then** checklist item 10 says `detectors-ci` (and so `pr-preflight`) runs `governance-currency` as a repo-scope detector, and 21.1's triage log carries a dated correction; the claim is proven against `python scripts/detectors.py --scope repo --list`, not a name grep
+**And** `pixi run -e pyforge-guild governance-currency` exits 0; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** done
+
 ## Epic 22: The local Postgres cluster starts from any checkout (spec-pyforge-scribe CAP-31)
 
 Minted 2026-09-25 from the station Dream's entry of the same date (found landing PR #1605). A
@@ -801,6 +815,28 @@ So that `pr-preflight` is red only for my change, never for the length of my wor
 **Then** `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0 from such a worktree and `scribe-pg-status` reports the cluster listening on 127.0.0.1:5433 with the socket directory it used; the data directory is unchanged (`var/scribe-pg/data`); a cluster already listening is reused, not re-initialised
 **And** `tests/scripts/test_scribe_pg.py` covers the directory choice, the override and the length guard without starting a server; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green with the cluster up; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
 **Status:** backlog
+
+## Epic 23: The instruction surface loads once (spec-pyforge-scribe CAP-27)
+
+Minted 2026-09-26 from the station Dream's entry of the same date (found landing Story 21.1). A
+new epic because Epic 21 carries `fnd:CAP-15` and Epic 22 CAP-31. One story. **HARD
+boundaries:** the SKF block's content is `skf-export-skill`'s, never hand-edited in `AGENTS.md`;
+`skills_output_folder` and `snippet_skill_root_override` stay `.claude/skills`; `CLAUDE.md` keeps
+its bare `@AGENTS.md` import.
+
+### Story 23.1: The SKF managed block lives in `AGENTS.md` only
+
+As an agent session that loads both `AGENTS.md` and `CLAUDE.md`,
+I want the SKF skills block written into one of them,
+So that every session stops paying for the same 54 lines twice.
+
+**Type:** config • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-27
+**Surface:** `_bmad/skf/config.yaml` (`ides`, and its comment); `CLAUDE.md` (the SKF block removed); `docs/reference/agent-instruction-notes.md` (the one line only `CLAUDE.md`'s copy carried, moved verbatim).
+**Given** `_bmad/skf/config.yaml` lists `ides: [claude-code, other]`, which `skf-export-skill` maps to `CLAUDE.md` and `AGENTS.md`, and Claude Code loads both files every session under `instructionFiles=claude-md-and-agents-md`
+**When** this story lands
+**Then** `ides` is `[other]`, so the export targets `AGENTS.md` only; `CLAUDE.md` has no `<!-- SKF:BEGIN` / `<!-- SKF:END -->` markers, so the export's orphan check has nothing to ask about; `AGENTS.md`'s SKF block is unchanged; the line only `CLAUDE.md`'s copy carried (Mason has no SKF skill) lands in the notes file, its rule already in `AGENTS.md` § Policy
+**And** `skf-rebuild-managed-sections.py <file> check` reports `CLAUDE.md` without a managed section and `AGENTS.md` with valid markers; the seven station SKF meta-tests and scribe's parity tests pass; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** done
 
 ## Platform floor addendum — 2026-09-07
 

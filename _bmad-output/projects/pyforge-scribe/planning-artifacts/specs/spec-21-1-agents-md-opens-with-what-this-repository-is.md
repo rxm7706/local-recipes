@@ -182,3 +182,11 @@ Verified 2026-09-26:
 | CLAUDE.md § Multi-Project Pattern | ask which project at session start | `AGENTS.md` | project it targets (ask, or `scripts/bmad-switch --current` | yes |
 
 46 rows, 0 missing
+
+## Correction (2026-09-26, Story 21.2)
+
+The triage log's "Found while fixing" paragraph, and its first follow-up, are wrong.
+
+- `governance-currency` does run in `detectors-ci`. `detectors-ci` is `scripts/detectors.py --scope repo`, which discovers `scripts/governance_currency_check.py` (`DETECTOR = {"scope": "repo"}`) by its `*_check.py` glob. `pr-preflight` depends on `detectors-ci`, and CI's `detectors` job ran the check on PR #1621.
+- The claim came from a subagent's survey and was "confirmed" by a name grep of `scripts/detectors.py`, which cannot see glob discovery.
+- Story 21.2 restores a true checklist line, proven with `python scripts/detectors.py --scope repo --list`. The "wire it into `detectors-ci`" follow-up is withdrawn: there was nothing to wire.

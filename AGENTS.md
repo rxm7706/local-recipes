@@ -372,9 +372,9 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
      `scribe`'s parity meta-test reds a duplicated section, a missing `@AGENTS.md` import in
      `CLAUDE.md`, a missing Gemini / VS Code setting, or a memory path this file cites that does
      not exist.
-   - `pixi run -e pyforge-guild governance-currency` reds a skill, script or path named here that
-     no longer resolves. Neither `detectors-ci` nor `pr-preflight` runs it, so run it by hand after
-     editing this file or `CLAUDE.md`. Mark a deliberately historical name with
+   - `governance-currency` reds a skill, script or path named here that no longer resolves. It is a
+     repo-scope detector, so `detectors-ci` and `pr-preflight` run it; `pixi run -e pyforge-guild
+     governance-currency` runs it alone. Mark a deliberately historical name with
      `governance-currency:ignore-start/end`, never leave it bare.
    - An incident note leaves this file only after its text lands in
      `docs/reference/agent-instruction-notes.md`.
