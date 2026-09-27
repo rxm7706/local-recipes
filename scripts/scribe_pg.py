@@ -27,6 +27,13 @@ CI installs is unchanged -- exactly how `platform-dev` layers onto
 The cluster is per-user state under gitignored `var/`, never a container, and
 `up` is idempotent: re-running against a live cluster re-asserts the database,
 role and extension instead of failing.
+
+WHY THE SOCKET LIVES ELSEWHERE (Story 22.1). The data dir stays under the
+checkout, but the server's Unix socket goes in a short per-user directory:
+`SCRIBE_PG_SOCKET_DIR`, else `$XDG_RUNTIME_DIR/scribe-pg`, else
+`/tmp/scribe-pg-<uid>`. A worktree's `var/scribe-pg/.s.PGSQL.5433` runs past the
+kernel's socket-path limit, and PostgreSQL then refuses to start ("could not
+create any Unix-domain sockets").
 """
 
 from __future__ import annotations
@@ -35,7 +42,9 @@ import argparse
 import os
 import pathlib
 import re
+import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -52,6 +61,10 @@ PORT = "5433"
 SUPERUSER = "postgres"
 PASSWORD = "scribe"
 DATABASE = "scribe_graph"
+
+#: A Unix socket path (`sun_path`) holds 108 bytes on Linux and 104 on macOS,
+#: the terminating NUL included; the server's socket is `<dir>/.s.PGSQL.<port>`.
+SOCKET_PATH_MAX = 103 if sys.platform == "darwin" else 107
 
 
 def _run(args: list[str], **kw) -> subprocess.CompletedProcess:
@@ -72,6 +85,56 @@ def _is_up() -> bool:
     if not shutil.which("pg_isready"):
         return False
     return _run(["pg_isready", "-h", "127.0.0.1", "-p", PORT, "-q"]).returncode == 0
+
+
+def _socket_dir() -> pathlib.Path:
+    """`SCRIBE_PG_SOCKET_DIR`, else `$XDG_RUNTIME_DIR/scribe-pg`, else `/tmp/scribe-pg-<uid>`."""
+    override = os.environ.get("SCRIBE_PG_SOCKET_DIR")
+    if override:
+        return pathlib.Path(override)
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime:
+        return pathlib.Path(runtime) / "scribe-pg"
+    return pathlib.Path("/tmp") / f"scribe-pg-{os.getuid()}"
+
+
+def _prepare_socket_dir() -> pathlib.Path | None:
+    """Create the socket dir 0700 and check the socket path fits; None, with the reason, if not."""
+    sock_dir = _socket_dir()
+    socket_file = sock_dir / f".s.PGSQL.{PORT}"
+    length = len(os.fsencode(socket_file))
+    if length > SOCKET_PATH_MAX:
+        sys.stderr.write(
+            f"[scribe-pg] socket path {socket_file} is {length} bytes; the limit is "
+            f"{SOCKET_PATH_MAX}. Set SCRIBE_PG_SOCKET_DIR to a shorter directory.\n"
+        )
+        return None
+    try:
+        sock_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    except OSError as exc:
+        sys.stderr.write(f"[scribe-pg] cannot create socket directory {sock_dir}: {exc}\n")
+        return None
+    st = sock_dir.lstat()
+    if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid():
+        sys.stderr.write(
+            f"[scribe-pg] socket directory {sock_dir} is not a directory you own "
+            f"(a symlink, a file, or another user's); set SCRIBE_PG_SOCKET_DIR\n"
+        )
+        return None
+    if st.st_mode & 0o077:
+        sock_dir.chmod(0o700)
+    return sock_dir
+
+
+def _socket_dir_in_use() -> str | None:
+    """The socket dir this checkout's running server reports (`postmaster.pid` line 5)."""
+    pid_file = CLUSTER / "postmaster.pid"
+    if not pid_file.is_file():
+        return None
+    lines = pid_file.read_text(encoding="utf-8", errors="replace").splitlines()
+    if len(lines) <= 4:
+        return None
+    return lines[4].strip() or None
 
 
 def _server_major() -> str | None:
@@ -138,10 +201,13 @@ def up() -> int:
     if _is_up():
         print(f"[scribe-pg] already listening on 127.0.0.1:{PORT}")
     else:
+        sock_dir = _prepare_socket_dir()
+        if sock_dir is None:
+            return 1
         LOGFILE.parent.mkdir(parents=True, exist_ok=True)
         r = _run([
             "pg_ctl", "-D", str(CLUSTER), "-l", str(LOGFILE), "-w", "start",
-            "-o", f"-p {PORT} -k {CLUSTER.parent} -c listen_addresses=127.0.0.1",
+            "-o", f"-p {PORT} -k {shlex.quote(str(sock_dir))} -c listen_addresses=127.0.0.1",
         ])
         if r.returncode:
             sys.stderr.write(r.stdout + r.stderr)
@@ -153,7 +219,7 @@ def up() -> int:
             time.sleep(1)
         else:
             return sys.exit(f"[scribe-pg] server did not become ready; see {LOGFILE}")
-        print(f"[scribe-pg] started on 127.0.0.1:{PORT}")
+        print(f"[scribe-pg] started on 127.0.0.1:{PORT} (socket dir {sock_dir})")
 
     env = {**os.environ, "PGPASSWORD": PASSWORD}
     base = ["psql", "-h", "127.0.0.1", "-p", PORT, "-U", SUPERUSER, "-v", "ON_ERROR_STOP=1"]
@@ -192,8 +258,10 @@ def down() -> int:
 
 def status() -> int:
     live = _is_up()
+    in_use = _socket_dir_in_use()
+    socket = f"socket dir {in_use}" if in_use else f"socket dir {_socket_dir()} (configured)"
     print(f"[scribe-pg] {'listening' if live else 'not listening'} on 127.0.0.1:{PORT}"
-          f"  (cluster {'present' if (CLUSTER / 'PG_VERSION').is_file() else 'absent'})")
+          f"  (cluster {'present' if (CLUSTER / 'PG_VERSION').is_file() else 'absent'}; {socket})")
     return 0
 
 

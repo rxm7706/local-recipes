@@ -2822,7 +2822,7 @@ pgvector = ">=0.8.1,<0.8.2"       # the `vector` extension conftest.py requires 
                                   # (measured 2026-09-26): linux-64/osx-arm64 builds from 0.8.2 need libpq 18
 
 [feature.scribe-pg.tasks.scribe-pg-up]
-description = "Start the per-user PostgreSQL+pgvector cluster pyforge-scribe's durable GraphStore tests require, on 127.0.0.1:5433 with database `scribe_graph` -- the DSN tests/unit/conftest.py hard-codes. Idempotent: re-running against a live cluster re-asserts the database and extension rather than failing. Cluster state lives under gitignored var/scribe-pg/, never a container."
+description = "Start the per-user PostgreSQL+pgvector cluster pyforge-scribe's durable GraphStore tests require, on 127.0.0.1:5433 with database `scribe_graph` -- the DSN tests/unit/conftest.py hard-codes. Idempotent: re-running against a live cluster re-asserts the database and extension rather than failing. Cluster state lives under gitignored var/scribe-pg/, never a container; the server's Unix socket lives in a short per-user directory (SCRIBE_PG_SOCKET_DIR, else $XDG_RUNTIME_DIR/scribe-pg, else /tmp/scribe-pg-<uid>) so a long worktree path cannot overflow the socket-path limit (scribe Story 22.1)."
 cmd = "python scripts/scribe_pg.py up"
 
 [feature.scribe-pg.tasks.scribe-pg-down]
@@ -2830,7 +2830,7 @@ description = "Stop the per-user scribe PostgreSQL cluster (fast shutdown). The 
 cmd = "python scripts/scribe_pg.py down"
 
 [feature.scribe-pg.tasks.scribe-pg-status]
-description = "Report whether the scribe PostgreSQL cluster is listening on 127.0.0.1:5433 and whether its data directory exists. Read-only; always exits 0."
+description = "Report whether the scribe PostgreSQL cluster is listening on 127.0.0.1:5433, whether its data directory exists, and its socket directory (the running server's, from postmaster.pid, else the configured one). Read-only; always exits 0."
 cmd = "python scripts/scribe_pg.py status"
 
 [feature.platform-object-storage]
