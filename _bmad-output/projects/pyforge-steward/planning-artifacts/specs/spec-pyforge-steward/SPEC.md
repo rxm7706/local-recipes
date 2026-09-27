@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-09-19"
+updated: "2026-09-27"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -591,6 +591,12 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-154 — the pre-commit set: attribution lines and un-preflighted pushes are refused by hooks, not prose** ← spec-pyforge-steward CAP-154 (ready 2026-09-20)
   - **intent:** `.pre-commit-config.yaml` at the repo root with a `commit-msg` hook that refuses `Co-Authored-By:` and AI-attribution trailers, and a `pre-push` hook that runs `pixi run -e pyforge-guild pr-preflight` (opt-out only by an explicit env var, journaled; `dispatch/*` branches are supervisor-gated and skip it, journaled); `steward setup` / `initrepo` install it through the existing hooks step (`bootstrap._run_pre_commit_install`, waiting on this file since Story 17.2); a CI check reds a missing file or a missing hook.
   - **success:** a commit carrying `Co-Authored-By:` is refused locally with the rule named; a push from a branch whose `pr-preflight` is red is refused; the two `TODO:` lines in `AGENTS.md`'s managed block retire under bmad-project-context ground 2 in the same landing.
+- **CAP-155 — `workspace clean` archives the work, never the environments, and one undecidable record never stops the sweep** ← spec-pyforge-steward CAP-155 (ready 2026-09-27)
+  - **intent:** `_archive_worktree` leaves reinstallable pixi environment dirs (`.pixi/envs`, `.pixi/solve-group-envs`) out of the tar while every other file — the tracked `.pixi/config.toml` included — archives as before; in `clean_workspaces` a record whose merge check or archive raises is reported as skipped with the reason and kept in bookkeeping, and the sweep continues. (Found 2026-09-27: `.steward/workspace-archive/` held 75 GB in 62 archives; a fleet `clean --merged-only` raised on a record whose branch was gone, examined nothing after it, and its `finally`-save dropped the failing record.)
+  - **success:** a worktree carrying a populated `.pixi/envs` archives without it and still carries `.pixi/config.toml`; a fleet `clean --merged-only` over [a record with a missing branch, a merged record] archives the merged one, reports the other skipped with its git error, and keeps it in bookkeeping; no record is ever lost from bookkeeping by an exception; `pyforge-steward-test` green.
+- **CAP-156 — the pre-push gate preflights only what is new, and its journal names what was pushed** ← spec-pyforge-steward CAP-156 (ready 2026-09-27)
+  - **intent:** `scripts/pre_push_preflight.sh` skips the preflight, journaled, when every pushed ref's commits are already reachable from `origin/main` (`git rev-list <local sha> --not origin/main` is empty for every non-delete ref) — a loop-home fast-forward to `main` carries nothing `main` has not verified; any new commit, an unreadable `origin/main`, or refs it cannot parse still run the full preflight. Every `.steward/preflight-skips.log` line records the pushed remote ref(s) and local sha(s), falling back to the checked-out branch and HEAD only when the hook received no ref information. (Found 2026-09-27: `marshal refresh`'s eight fast-forward pushes each ran the ~10-minute preflight; the manual opt-out journaled `main` eight times.)
+  - **success:** pushing `loop/<slug>` at `origin/main` skips with an 'already on origin/main' line naming `refs/heads/loop/<slug>`; a push with one new commit runs the preflight; the manual opt-out's line names the pushed ref, not the checked-out branch; the `dispatch/*` and delete skips are unchanged; `tests/scripts/test_lint_types_gate.py` green.
 
 ## Constraints
 
