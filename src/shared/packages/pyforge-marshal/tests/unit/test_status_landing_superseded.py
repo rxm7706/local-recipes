@@ -113,7 +113,7 @@ def _superseded(
 def test_doctor_30_3_refusal_is_superseded_once_pr_1585_is_on_main(tmp_path: Path) -> None:
     vcs = _Vcs((_UNRELATED[0], _DOCTOR_MERGE, _UNRELATED[1]))
     assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path)
-    assert vcs.commit_subjects_calls == ["main"]
+    assert vcs.commit_subjects_calls == ["refs/heads/main"]
 
 
 def test_marshal_46_6_refusal_is_superseded_once_pr_1597_is_on_main(tmp_path: Path) -> None:
@@ -164,7 +164,7 @@ def test_main_is_read_once_for_every_refused_row_in_a_sweep(tmp_path: Path) -> N
     main = status_cli._MainSubjects()
     assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path, main)
     assert _superseded(_facts("pyforge-marshal", "46.6", _MARSHAL_REFUSAL), vcs, tmp_path, main)
-    assert vcs.commit_subjects_calls == ["main"]
+    assert vcs.commit_subjects_calls == ["refs/heads/main"]
 
 
 def test_a_policy_error_leaves_the_marker_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

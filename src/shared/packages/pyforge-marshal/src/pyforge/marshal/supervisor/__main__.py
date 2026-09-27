@@ -359,6 +359,7 @@ from ..core.publish import (
     loop_complete_result,
     shape_loop_publish,
 )
+from ..core.refs import local_branch_ref
 from ..core.supervise import (
     ACTION_PRECEDENCE,
     CeilingStatus,
@@ -1297,7 +1298,7 @@ def run_supervisor(
                     return False
                 landed = False
                 if commit_sha:
-                    landed = vcs.merge_base(repo_root, commit_sha, into) == commit_sha
+                    landed = vcs.merge_base(repo_root, commit_sha, local_branch_ref(into)) == commit_sha
             except VcsCommandError, OSError, subprocess.SubprocessError:
                 return False
             payload: dict[str, object] = {"boundary": boundary, "branch": branch}

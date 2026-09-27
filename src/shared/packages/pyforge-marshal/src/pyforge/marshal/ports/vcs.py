@@ -72,7 +72,7 @@ primitives:
   for "merged or not"; this method is that authority's one read
   primitive) to answer AD-29's "pushed to the remote" route
   (``ref="refs/remotes/origin/main"``) and "merged to the integration branch" route
-  (``ref="main"``) -- the caller decides which ``ref`` each route needs;
+  (``ref="refs/heads/main"``, Story 61.1) -- the caller decides which ``ref`` each route needs;
   this method has no branch-name opinion of its own.
 - ``commit_paths`` -- the one write: stages EXACTLY ``paths`` (an
   individual ``git add -- <path>`` per entry, never ``git add -A``) and
@@ -405,7 +405,10 @@ class VcsPort(Protocol):
         failure (``into`` moved concurrently), or other git failure -- a
         caller treats that as a hard stop: never retried, never
         auto-resolved. The temp worktree used internally is always removed
-        before this returns or raises, on every exit path."""
+        before this returns or raises, on every exit path. ``branch`` is a
+        revision -- a sha or a full ``refs/heads/<branch>`` (Story 61.1: a
+        bare name lets a tag of that name stand in); ``into`` is a branch
+        name, which this method qualifies itself."""
         ...
 
     def worktree_head_sha(self, worktree_path: Path) -> str:

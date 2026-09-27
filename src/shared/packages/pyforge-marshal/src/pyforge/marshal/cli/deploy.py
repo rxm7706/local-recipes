@@ -257,7 +257,7 @@ from ..core.journal import (
 from ..core.landing import LandingRule, rule_applies
 from ..core.model import Finding, Severity, Status, Verdict, build_envelope, status_for
 from ..core.promotion import PromotionPlan, SpecCandidate
-from ..core.refs import ORIGIN_MAIN
+from ..core.refs import ORIGIN_MAIN, local_branch_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
@@ -729,7 +729,7 @@ def _scan_promotions(
     # finding, never a silently-empty merged_keys (which would read as
     # "nothing merged yet" and promote nothing without saying why).
     try:
-        main_subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+        main_subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -1988,7 +1988,7 @@ def run_land_story(
     since_ref = args.since
     if since_ref is None:
         try:
-            since_ref = vcs.merge_base(git_repo_root, branch, _MERGE_BASE_BRANCH)
+            since_ref = vcs.merge_base(git_repo_root, local_branch_ref(branch), local_branch_ref(_MERGE_BASE_BRANCH))
         except VcsCommandError as exc:
             findings.append(
                 Finding(
@@ -2037,7 +2037,7 @@ def run_land_story(
     # attempt below (the safety-critical checks -- the gate, and P1/P4's own
     # merge-time guards -- still protect the merge itself).
     try:
-        main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE_BRANCH)
+        main_subjects = vcs.commit_subjects(git_repo_root, local_branch_ref(_MERGE_BASE_BRANCH))
     except VcsCommandError:
         main_subjects = ()
     merged_keys_now = promotion.merged_story_keys(main_subjects, template, slug)
@@ -2640,9 +2640,11 @@ def run_batch_pr(
     # Wave discovery (reuses Story 4.1's own merged_story_keys/durability
     # machinery, per the story's own Always bullet): every story key
     # reachable in the station branch's own commits since its merge-base
-    # with the configured base branch.
+    # with the configured base branch. Both are read by their full refname
+    # (Story 61.1): a tag named like either would otherwise stand in for it.
+    head_ref, base_ref = local_branch_ref(head_branch), local_branch_ref(base)
     try:
-        merge_base_sha = vcs.merge_base(git_repo_root, head_branch, base)
+        merge_base_sha = vcs.merge_base(git_repo_root, head_ref, base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -2653,7 +2655,7 @@ def run_batch_pr(
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
     try:
-        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_branch}")
+        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_ref}")
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -2687,7 +2689,7 @@ def run_batch_pr(
     # a fresh `create_pr`/`update_pr` attempt. Best-effort: a read failure
     # here never blocks the real attempt below.
     try:
-        base_subjects = vcs.commit_subjects(git_repo_root, base)
+        base_subjects = vcs.commit_subjects(git_repo_root, base_ref)
     except VcsCommandError:
         base_subjects = ()
     already_landed_keys = promotion.merged_story_keys(base_subjects, template, slug)
@@ -2756,7 +2758,7 @@ def run_batch_pr(
     # per the story's own Always bullet) -- the hygiene preflight's own
     # change set.
     try:
-        changed_paths = vcs.changed_files(git_repo_root, home, base=base)
+        changed_paths = vcs.changed_files(git_repo_root, home, base=base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -3311,7 +3313,7 @@ def reconcile_feed(
     # Merge route: REQUIRED, same as `_scan_promotions` -- its failure means
     # Marshal cannot honestly determine ANY story's durability this run.
     try:
-        main_subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+        main_subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
     except VcsCommandError as exc:
         findings.append(
             Finding(

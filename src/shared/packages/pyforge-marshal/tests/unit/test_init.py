@@ -514,7 +514,7 @@ def test_fresh_provision_all_steps_done(repo_root, capsys):
     assert "tier3_backlink: done" in out
     assert "symlink: done" in out
     assert "marker: done" in out
-    assert vcs.add_worktree_calls == [(repo_root, vcs.worktrees["loop/acme"], "loop/acme", "main")]
+    assert vcs.add_worktree_calls == [(repo_root, vcs.worktrees["loop/acme"], "loop/acme", "refs/heads/main")]
 
 
 def test_fresh_provision_prints_launch_line(repo_root, capsys):

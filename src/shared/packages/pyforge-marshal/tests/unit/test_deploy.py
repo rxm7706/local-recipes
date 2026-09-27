@@ -109,7 +109,7 @@ class _FakeVcs:
             if self.origin_raises:
                 raise VcsCommandError("no origin remote configured")
             return self.origin_subjects
-        if ref == "main":
+        if ref == "refs/heads/main":
             if self.main_raises:
                 raise VcsCommandError("corrupted repo, no main")
             return self.main_subjects
@@ -1621,7 +1621,7 @@ def test_land_story_rerun_against_a_converged_system_is_zero_changes(tmp_path, c
     capsys.readouterr()
     journal_lines_after_first = _find_land_journal_lines(tmp_path, "acme")
 
-    # The second run's own `_FakeVcs.commit_subjects("main", ...)` must now
+    # The second run's own `_FakeVcs.commit_subjects("refs/heads/main", ...)` must now
     # report the story as merged for the already-merged short-circuit to
     # fire -- exactly what a REAL git repo would show after a real merge.
     landed_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")

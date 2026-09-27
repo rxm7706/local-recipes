@@ -66,6 +66,7 @@ from ..core import promotion as promotion_core
 from ..core.identity import MalformedStoryKeyError
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Finding, Severity, build_envelope
+from ..core.refs import local_branch_ref
 from ..core.retire import (
     InsufficientEvidence,
     RetirementCandidate,
@@ -286,7 +287,7 @@ def run_retire(
     def _subjects_for_base(base_branch: str) -> tuple[str, ...]:
         if base_branch not in subjects_by_base:
             try:
-                subjects_by_base[base_branch] = vcs.commit_subjects(git_repo_root, base_branch)
+                subjects_by_base[base_branch] = vcs.commit_subjects(git_repo_root, local_branch_ref(base_branch))
             except VcsCommandError:
                 subjects_by_base[base_branch] = ()
         return subjects_by_base[base_branch]

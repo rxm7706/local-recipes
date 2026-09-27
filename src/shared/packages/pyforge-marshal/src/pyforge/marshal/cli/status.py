@@ -129,6 +129,7 @@ from ..core import status as status_core
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize
 from ..core.journal import Phase, fold
 from ..core.model import Finding, Severity, build_envelope
+from ..core.refs import local_branch_ref
 from ..core.verdict import Verdict, classify, compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
@@ -1485,7 +1486,7 @@ class _MainSubjects:
         if not self.attempted:
             self.attempted = True
             try:
-                self.subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+                self.subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
             except VcsCommandError as exc:
                 self.error = exc
         return self.subjects
@@ -2299,7 +2300,7 @@ def _reconcile_ledger(
     main_subjects: tuple[str, ...] = ()
     git_error: VcsCommandError | None = None
     try:
-        main_subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+        main_subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
     except VcsCommandError as exc:
         git_error = exc
 

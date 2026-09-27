@@ -5335,7 +5335,7 @@ def test_a_merged_and_retired_story_branch_is_not_a_push_failure():
     ]
     vcs = FakeVcs()
     vcs.missing_branches = {"loop/3.8"}  # merged, therefore deleted
-    vcs.merged_commits = {"abc123": "loop/acme"}  # ...and provably landed
+    vcs.merged_commits = {"abc123": "refs/heads/loop/acme"}  # ...and provably landed
 
     rc = run_supervisor(
         _HOME,

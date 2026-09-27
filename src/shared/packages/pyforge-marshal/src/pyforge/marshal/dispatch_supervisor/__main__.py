@@ -71,7 +71,7 @@ from ..core.journal import (
 )
 from ..core.model import Finding, Severity
 from ..core.publish import dispatch_complete_result, shape_dispatch_publish
-from ..core.refs import ORIGIN_MAIN
+from ..core.refs import ORIGIN_MAIN, local_branch_ref
 from ..core.supervise import resolve_terminal_session_verdict
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
@@ -373,7 +373,7 @@ def gather_dispatch_git_facts(
         else False
     )
     branch_merged = raw_branch_merged and current_head_sha != baseline_head_sha
-    subjects = vcs.commit_subjects(repo_root, _MERGE_INTO)
+    subjects = vcs.commit_subjects(repo_root, local_branch_ref(_MERGE_INTO))
     known_keys = _load_known_story_keys(fs, repo_root=repo_root, project_slug=project_slug)
 
     def _spec_status_for(candidate_key: StoryKey) -> str | None:

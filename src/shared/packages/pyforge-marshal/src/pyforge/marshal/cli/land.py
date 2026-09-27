@@ -119,7 +119,7 @@ from ..core.identity import MalformedStoryKeyError, StoryKey
 from ..core.journal import Phase
 from ..core.landing import rule_applies
 from ..core.model import Finding, Severity, build_envelope
-from ..core.refs import remote_tracking_ref
+from ..core.refs import local_branch_ref, remote_tracking_ref
 from ..core.status import is_run_live, render_ledger_advancements
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
@@ -491,8 +491,11 @@ def run_land(
     data["base"] = base
 
     # --- wave discovery (byte-for-byte batch-pr's own sequence) ---------
+    # Both branches by their full refname (Story 61.1): a tag named like
+    # either would otherwise stand in for it.
+    head_ref, base_ref = local_branch_ref(head_branch), local_branch_ref(base)
     try:
-        merge_base_sha = vcs.merge_base(git_repo_root, head_branch, base)
+        merge_base_sha = vcs.merge_base(git_repo_root, head_ref, base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -503,7 +506,7 @@ def run_land(
         )
         return _emit(args, data, findings)
     try:
-        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_branch}")
+        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_ref}")
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -530,7 +533,7 @@ def run_land(
         return _emit(args, data, findings)
 
     try:
-        base_subjects = vcs.commit_subjects(git_repo_root, base)
+        base_subjects = vcs.commit_subjects(git_repo_root, base_ref)
     except VcsCommandError:
         base_subjects = ()
     already_landed_keys = promotion.merged_story_keys(base_subjects, template, slug)
@@ -655,7 +658,7 @@ def run_land(
         return _emit(args, data, findings)
 
     try:
-        changed_paths = vcs.changed_files(git_repo_root, home, base=base)
+        changed_paths = vcs.changed_files(git_repo_root, home, base=base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(

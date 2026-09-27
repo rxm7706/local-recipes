@@ -96,7 +96,7 @@ class _FakeVcs:
         return self.merge_base_sha
 
     def commit_subjects(self, repo_root, ref):
-        if ref == "main":
+        if ref == "refs/heads/main":
             if self.base_subjects_raises:
                 raise VcsCommandError("corrupted repo, no main")
             return self.base_subjects

@@ -596,6 +596,22 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   fast-forwards to; messages people read still say `origin/main`.
   **Constraints:** no behaviour changes when no shadowing ref exists; one helper, not eight
   spellings. Kinships: CAP-267 (57.1), CAP-269 (59.1); owner `spec-pyforge-marshal`.
+- **2026-09-27 (late) — Proposed: marshal names its own branches too, never a name a tag can
+  wear.** Story 60.1's second review found the other half of the trap: git resolves the short
+  name `main` to `refs/tags/main` before `refs/heads/main`, so a tag named `main` stands in for
+  the local branch. Marshal still hands git its local branches by short name — the landing
+  subjects `status`, `deploy`, `retire` and `dispatch land` read, deploy's and land's merge base
+  and diff base, the gate's scope diff, the start point `init` and `dispatch` mint a branch from,
+  the supervisor's station branch, and the landing heal's reads of the dispatch branch. Most
+  read the tag's commit with only a warning; the push and the worktree mint refuse outright.
+  And the policy's `landing_base_branch` accepts `origin/main`, which would reach every one of
+  those reads. **What it looks like when real:** every git read of a local branch asks for
+  `refs/heads/<branch>`, from the same `core/refs.py`; a tag named like a branch changes nothing
+  marshal reads, diffs, merges or pushes; the policy refuses a landing base that is a full ref
+  or a remote's branch. **Constraints:** no behaviour change when no tag shadows a branch;
+  arguments git reads as a branch *name* (`branch -D`, attaching an existing branch to a
+  worktree, `<branch>@{upstream}`) stay bare. Kinships: CAP-270 (60.1); owner
+  `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

@@ -80,7 +80,7 @@ from pathlib import Path
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
-from ..core.refs import ORIGIN_MAIN, remote_tracking_ref
+from ..core.refs import ORIGIN_MAIN, local_branch_ref, remote_tracking_ref
 from ..ports.vcs import WorktreeEntry
 
 
@@ -543,7 +543,7 @@ class GitVcs:
         <branch>@{upstream}`` -- exit 0 means one exists (``origin/x``-shaped
         output, split on the first ``/`` into the remote name and the
         remote-side branch name, then pushed EXPLICITLY,
-        ``git push <remote> <branch>:<remote_branch>``); a non-zero exit
+        ``git push <remote> refs/heads/<branch>:<remote_branch>``); a non-zero exit
         whose stderr carries git's own "no upstream configured for branch"
         wording (128, the ordinary case for a brand-new station/per-story
         branch) falls back to ``git push origin <branch>``, the branch's
@@ -584,7 +584,11 @@ class GitVcs:
                 f"(exit {upstream_check.returncode}), and it is not the "
                 f"ordinary no-upstream case: {upstream_check.stderr.strip()}"
             )
-        args = ["git", "-C", str(repo_root), "push", remote, f"{branch}:{remote_branch}"]
+        # Story 61.1 (CAP-271): the source by its full refname -- with a tag named like the
+        # branch, a bare `<branch>:` source is ambiguous and git refuses the push. The
+        # `<branch>@{upstream}` read above stays bare: git takes it as a branch name, and
+        # `refs/heads/<branch>@{upstream}` fails.
+        args = ["git", "-C", str(repo_root), "push", remote, f"{local_branch_ref(branch)}:{remote_branch}"]
         if proven_on_main_sha is not None:
             # Story 57.1 (CAP-267, review 2): re-check the proof here, against the full
             # refname (a local branch or tag named `origin/main` must not stand in), and
@@ -754,8 +758,8 @@ class GitVcs:
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
         """Story 4.1 (AD-33): ``git log <ref> --format=%s``, read-only.
         ``ref`` is never resolved/validated ahead of time -- an unresolvable
-        ref (no ``origin`` remote for ``"origin/main"``, a corrupted repo
-        missing ``"main"``) surfaces as an ordinary ``VcsCommandError``,
+        ref (no ``origin`` remote for ``"refs/remotes/origin/main"``, a
+        corrupted repo missing ``"refs/heads/main"``) surfaces as an ordinary ``VcsCommandError``,
         which the caller (``cli/deploy.py``) treats differently per route:
         best-effort for the push route, a hard failure for the merge
         route -- a distinction this method itself has no opinion about."""
