@@ -285,8 +285,9 @@ def test_an_interrupt_mid_sweep_never_drops_the_record_in_flight(repo: Path, tmp
         raise KeyboardInterrupt
 
     with pytest.raises(KeyboardInterrupt):
-        clean_workspaces(merged_only=False, root=repo, bookkeeping=bookkeeping,
-                         archive_dir=tmp_path / "archive", confirm=_interrupt)
+        clean_workspaces(
+            merged_only=False, root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive", confirm=_interrupt
+        )
 
     assert sorted(r.slug for r in load_bookkeeping(bookkeeping)) == ["a", "b"]
 
@@ -295,8 +296,14 @@ def test_clean_via_cli_exits_failed_when_a_record_errored(repo: Path, tmp_path: 
     """Story 68.1 review 1 (L3): the sweep finishes past an undecidable record, but the
     run still reports failure."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
-    save_bookkeeping(bookkeeping, (WorkspaceRecord("stale", str(tmp_path / "gone"), "deleted-branch",
-                                                   "origin/deleted", "2026-09-16T13:01:19+00:00"),))
+    save_bookkeeping(
+        bookkeeping,
+        (
+            WorkspaceRecord(
+                "stale", str(tmp_path / "gone"), "deleted-branch", "origin/deleted", "2026-09-16T13:01:19+00:00"
+            ),
+        ),
+    )
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
     monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
     monkeypatch.setattr("pyforge.steward.workspace.default_archive_dir", lambda: tmp_path / "archive")

@@ -2,7 +2,7 @@
 title: '68.2: The pre-push gate skips a push that carries nothing new, and its journal names what was pushed'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 1
 followup_review_recommended: false
 context:

@@ -992,11 +992,11 @@ class WorkspaceDuty:
             if slug is not None and slug in load_repo_sets():
                 result = clean_repo_set(slug, merged_only=merged_only)
                 return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
-            result = clean_workspaces(merged_only=merged_only, slug=slug)
+            cleaned = clean_workspaces(merged_only=merged_only, slug=slug)
             # Story 68.1 review 1: the sweep now finishes past a record it could not
             # decide, but that record is still a failure -- the exit code says so.
-            errored = any(row.get("reason", "").startswith("error: ") for row in result["skipped"])
-            return DutyResult(ok=not errored, summary=format_clean(result, as_json=as_json))
+            errored = any(row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
+            return DutyResult(ok=not errored, summary=format_clean(cleaned, as_json=as_json))
         except WorkspaceError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
         except RuntimeError as exc:
