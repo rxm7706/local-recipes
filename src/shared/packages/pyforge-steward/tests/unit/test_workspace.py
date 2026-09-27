@@ -274,6 +274,26 @@ def test_a_failed_archive_leaves_no_partial_file_and_keeps_the_record(repo: Path
     assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["unreadable"]
 
 
+def test_an_interrupt_mid_tar_leaves_no_partial_archive(repo: Path, tmp_path: Path, monkeypatch):
+    """Story 68.1 review 2 (L-E): whatever stops the tar -- a Ctrl-C included -- the
+    half-written archive is removed; the interrupt still propagates and the record stays."""
+    import tarfile
+
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    start_workspace("a", root=repo, bookkeeping=bookkeeping, path=tmp_path / "a", from_ref="origin/main")
+
+    def _interrupt(self, *args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(tarfile.TarFile, "add", _interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+
+    assert list(archive_dir.glob("*.tar.gz")) == []
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["a"]
+
+
 def test_an_interrupt_mid_sweep_never_drops_the_record_in_flight(repo: Path, tmp_path: Path):
     """Story 68.1 review 1 (M1): not only WorkspaceError -- a Ctrl-C at the confirm prompt
     must not lose the popped record from bookkeeping."""

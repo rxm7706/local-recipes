@@ -155,9 +155,9 @@ def test_pre_push_hook_skips_dispatch_branches_and_deletes(tmp_path: Path, env: 
 _GIT_ID = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x"}
 
 
-def _hook_repo(tmp_path: Path, *, with_origin_main: bool = True) -> tuple[Path, dict, str]:
-    """A throwaway repo on `main` with one commit, optionally pushed to a bare `origin`, a
-    `loop/x` branch at main's tip, the hook copied in, and a fake failing `pixi` on PATH."""
+def _hook_repo(tmp_path: Path) -> tuple[Path, dict, str]:
+    """A throwaway repo on `main` with one commit pushed to a bare `origin`, a `loop/x` branch
+    at main's tip, the hook copied in, and a fake failing `pixi` on PATH."""
     import os
     import shutil
     import subprocess
@@ -172,11 +172,10 @@ def _hook_repo(tmp_path: Path, *, with_origin_main: bool = True) -> tuple[Path, 
     repo = tmp_path / "repo"
     subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True, env=env)
     subprocess.run(["git", "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "base"], check=True, env=env)
-    if with_origin_main:
-        origin = tmp_path / "origin.git"
-        subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True, env=env)
-        subprocess.run(["git", "-C", str(repo), "remote", "add", "origin", str(origin)], check=True, env=env)
-        subprocess.run(["git", "-C", str(repo), "push", "-q", "origin", "main"], check=True, env=env)
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "remote", "add", "origin", str(origin)], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "push", "-q", "origin", "main"], check=True, env=env)
     subprocess.run(["git", "-C", str(repo), "branch", "loop/x"], check=True, env=env)
     shutil.copy(SCRIPTS / "pre_push_preflight.sh", repo / "hook.sh")
     main_sha = subprocess.run(["git", "-C", str(repo), "rev-parse", "main"], check=True, capture_output=True, text=True).stdout.strip()

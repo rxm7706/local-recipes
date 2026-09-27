@@ -739,12 +739,14 @@ def _archive_worktree(
             try:
                 with tarfile.open(archive_path, "w:gz") as tar:
                     tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
-            except (OSError, tarfile.TarError) as exc:
-                # A half-written archive is not an archive; the record is kept and
-                # retried by the next sweep, so leaving it would leak one per sweep
-                # (Story 68.1 review 1).
+            except BaseException as exc:
+                # A half-written archive is not an archive -- whatever stopped the tar,
+                # a Ctrl-C included; the record is kept and retried by the next sweep,
+                # so leaving it would leak one per sweep (Story 68.1 reviews 1 and 2).
                 archive_path.unlink(missing_ok=True)
-                raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
+                if isinstance(exc, (OSError, tarfile.TarError)):
+                    raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
+                raise
         else:
             # Path already gone — still write a marker so clean is recoverable.
             archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
@@ -989,12 +991,13 @@ class WorkspaceDuty:
             # clean — optional slug targets a repo set or a single owned worktree
             slug = getattr(ns, "slug", None)
             merged_only = bool(getattr(ns, "merged_only", False))
+            # Story 68.1 review 1/2: a sweep finishes past a record it could not
+            # decide, but that record is still a failure -- the exit code says so,
+            # for a repo-set feature as for a single worktree or the fleet.
             if slug is not None and slug in load_repo_sets():
-                result = clean_repo_set(slug, merged_only=merged_only)
-                return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
-            cleaned = clean_workspaces(merged_only=merged_only, slug=slug)
-            # Story 68.1 review 1: the sweep now finishes past a record it could not
-            # decide, but that record is still a failure -- the exit code says so.
+                cleaned = clean_repo_set(slug, merged_only=merged_only)
+            else:
+                cleaned = clean_workspaces(merged_only=merged_only, slug=slug)
             errored = any(row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
             return DutyResult(ok=not errored, summary=format_clean(cleaned, as_json=as_json))
         except WorkspaceError as exc:

@@ -6987,15 +6987,16 @@ So that a resync costs seconds instead of eight preflights, and the skip journal
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-267 (FR-213) • cross-station: steward Story 68.2 (the hook adds no skip of its own)
 **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` (`VcsPort.push` gains keyword-only
-`preflight_skip_reason`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` (`GitVcs.push` carries it
-to the one `git push` process as `PYFORGE_PREFLIGHT_SKIP=1` + reason via the POSIX `env` utility),
-`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py` (passes the reason only after its own fast-forward to
-`origin/main`), tests: `src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py`,
+`proven_on_main_sha`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` (`GitVcs.push` re-checks the
+sha against `refs/remotes/origin/main`, pushes exactly it, and sets `PYFORGE_PREFLIGHT_SKIP=1` + a reason for the one
+`git push` process via the POSIX `env` utility),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py` (fast-forwards on `refs/remotes/origin/<base>`; passes
+the sha only after its own fast-forward to `origin/main`), tests: `src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py`,
 `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py`.
 **Given** a clean loop home behind `origin/main`, refreshed with the default base
 **When** `marshal refresh` fast-forwards and pushes it
 **Then** the push carries `PYFORGE_PREFLIGHT_SKIP=1` and a reason naming `loop/<slug>`, `origin/main` and the new sha, and a real pre-push hook receives both
-**And** a refresh with any other `--base` pushes with no opt-out; a push given no reason sets neither variable; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+**And** a refresh with any other `--base` pushes with no opt-out; a push given no proof sets neither variable; a proof not on `refs/remotes/origin/main` (a local branch named `origin/main` included) is refused and nothing is pushed; a commit made after the fast-forward stays local; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

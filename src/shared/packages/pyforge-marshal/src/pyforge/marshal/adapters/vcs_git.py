@@ -117,6 +117,9 @@ _GIT_CHECKOUT_TIMEOUT_S = 600.0
 # plenty of headroom without leaving a hung push indefinitely blocking the
 # tick loop's durability watcher.
 _GIT_PUSH_TIMEOUT_S = 120.0
+#: The full refname of origin/main -- never the short name, which git resolves to a local
+#: branch or tag called `origin/main` first (Story 57.1 review 2).
+_ORIGIN_MAIN_REF = "refs/remotes/origin/main"
 # `git fetch` is likewise a network round-trip, not a local query -- mirrors
 # `_GIT_PUSH_TIMEOUT_S`'s own reasoning exactly (Story 4.12, FR-173).
 _GIT_FETCH_TIMEOUT_S = 120.0
@@ -530,7 +533,7 @@ class GitVcs:
             return ()
         return tuple(line for line in result.stdout.splitlines() if line.strip())
 
-    def push(self, repo_root: Path, branch: str, *, preflight_skip_reason: str | None = None) -> None:
+    def push(self, repo_root: Path, branch: str, *, proven_on_main_sha: str | None = None) -> None:
         """Story 3.8 (AD-46): resolves whether ``branch`` already has a
         configured upstream via ``git rev-parse --abbrev-ref
         <branch>@{upstream}`` -- exit 0 means one exists (``origin/x``-shaped
@@ -569,25 +572,37 @@ class GitVcs:
                 # is not a shape a real `@{upstream}` resolution produces --
                 # refuse to guess rather than push to a malformed target.
                 raise VcsCommandError(f"cannot parse upstream {upstream!r} for {branch} into <remote>/<remote_branch>")
-            args = ["git", "-C", str(repo_root), "push", remote, f"{branch}:{remote_branch}"]
         elif "no upstream configured for branch" in upstream_check.stderr:
-            args = ["git", "-C", str(repo_root), "push", "origin", branch]
+            remote, remote_branch = "origin", branch
         else:
             raise VcsCommandError(
                 f"git rev-parse --abbrev-ref {branch}@{{upstream}} failed "
                 f"(exit {upstream_check.returncode}), and it is not the "
                 f"ordinary no-upstream case: {upstream_check.stderr.strip()}"
             )
-        if preflight_skip_reason is not None:
-            # Story 57.1 (CAP-267): the pre-push hook's journaled opt-out, set for
-            # this one git process only -- the process port takes no environment,
-            # so the POSIX `env` utility carries it (never exported to anything else).
-            args = [
-                "env",
-                "PYFORGE_PREFLIGHT_SKIP=1",
-                f"PYFORGE_PREFLIGHT_SKIP_REASON={preflight_skip_reason}",
-                *args,
-            ]
+        args = ["git", "-C", str(repo_root), "push", remote, f"{branch}:{remote_branch}"]
+        if proven_on_main_sha is not None:
+            # Story 57.1 (CAP-267, review 2): re-check the proof here, against the full
+            # refname (a local branch or tag named `origin/main` must not stand in), and
+            # push exactly that commit -- never whatever `branch` points at by now.
+            on_main = _run(
+                ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", proven_on_main_sha, _ORIGIN_MAIN_REF]
+            )
+            if on_main.returncode != 0:
+                raise VcsCommandError(
+                    f"refusing the preflight opt-out for {branch}: {proven_on_main_sha[:12]} is not on {_ORIGIN_MAIN_REF}"
+                )
+            args = ["git", "-C", str(repo_root), "push", remote, f"{proven_on_main_sha}:refs/heads/{remote_branch}"]
+            # The pre-push hook's journaled opt-out, set for this one git process only:
+            # the process port takes no environment, so the POSIX `env` utility carries
+            # it. Where `env` does not exist (win-64), the push goes through the
+            # preflight instead -- slower, never unchecked.
+            if shutil.which("env") is not None:
+                reason = (
+                    f"marshal refresh: {branch} at {proven_on_main_sha[:12]} is a fast-forward to origin/main; "
+                    "every pushed commit is already on origin/main"
+                )
+                args = ["env", "PYFORGE_PREFLIGHT_SKIP=1", f"PYFORGE_PREFLIGHT_SKIP_REASON={reason}", *args]
         result = _run(args, timeout_s=_GIT_PUSH_TIMEOUT_S)
         if result.returncode != 0:
             raise VcsCommandError(f"git push failed for {branch}: {result.stderr.strip()}")

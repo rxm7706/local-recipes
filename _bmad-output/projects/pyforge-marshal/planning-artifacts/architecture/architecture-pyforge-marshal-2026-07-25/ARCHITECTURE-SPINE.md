@@ -1798,9 +1798,11 @@ reuses the status sweep's existing cached read, so no new port, adapter or decis
 
 *RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-213 / CAP-267 (Epic 57, a loop-home
 refresh sends its proven fast-forward past the pre-push preflight). `VcsPort.push` gains a
-keyword-only `preflight_skip_reason` — additive, defaulting to today's behaviour — and the
-`GitVcs` adapter carries it to the one `git push` process; the decision (a fast-forward to
-`origin/main` that `refresh` performed itself) stays in `cli/refresh.py`. No new port, adapter or
-decision boundary.*
+keyword-only `proven_on_main_sha` — additive, defaulting to today's behaviour. The decision (a
+fast-forward to `refs/remotes/origin/main` that `refresh` performed itself) stays in
+`cli/refresh.py`; the `GitVcs` adapter re-checks the sha against that full refname, pushes exactly
+it, and carries the journaled opt-out to the one `git push` process (Story 57.1 review 2: a short
+name can be shadowed by a local ref, and a branch re-read at push time can have moved). No new
+port, adapter or decision boundary.*
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

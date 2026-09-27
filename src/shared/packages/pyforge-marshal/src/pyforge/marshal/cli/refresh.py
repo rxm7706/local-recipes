@@ -71,9 +71,6 @@ _MRS_REFRESH_007 = "MRS-REFRESH-007"
 _MRS_REFRESH_008 = "MRS-REFRESH-008"
 
 _DEFAULT_BASE = "main"
-#: The only tip whose commits have all passed CI (Story 57.1): a fast-forward to it
-#: is the one push `refresh` may send past the pre-push preflight.
-_MAIN_TIP_REF = "origin/main"
 _SYNC_STATUS_TIMEOUT_S = 60
 
 
@@ -225,6 +222,8 @@ def _refresh_one_home(
     slug: str,
     home: Path,
     tip_ref: str,
+    tip_full_ref: str,
+    proves_main: bool,
     findings: list[Finding],
 ) -> HomeRefreshResult:
     branch = f"loop/{slug}"
@@ -234,7 +233,7 @@ def _refresh_one_home(
     current_ref: str | None = None
     try:
         current_ref = vcs.worktree_head_sha(home)
-        behind_count = vcs.commits_behind(home, tip_ref)
+        behind_count = vcs.commits_behind(home, tip_full_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -326,7 +325,7 @@ def _refresh_one_home(
         ff_step = RefreshStep(STEP_FAST_FORWARD, "skipped", f"already current with {tip_ref}")
     else:
         try:
-            new_sha = vcs.fast_forward(home, tip_ref)
+            new_sha = vcs.fast_forward(home, tip_full_ref)
             current_ref = new_sha
             ff_step = RefreshStep(
                 STEP_FAST_FORWARD,
@@ -363,19 +362,15 @@ def _refresh_one_home(
 
     if ff_step.status == "done":
         # Story 57.1 (CAP-267): this function just fast-forwarded `branch` to
-        # `tip_ref` itself, so every commit the push carries is already on it.
-        # Only `origin/main` has passed CI, so only then is the pre-push preflight
-        # skipped -- with this proof as its journaled reason. Any other `--base`
-        # pushes normally and the preflight runs.
-        skip_reason = (
-            f"marshal refresh: {branch} fast-forwarded to {tip_ref} ({(current_ref or '?')[:12]}); "
-            f"every pushed commit is already on {tip_ref}"
-            if tip_ref == _MAIN_TIP_REF
-            else None
-        )
+        # `origin/main` itself, so the commit it now holds is the proof. Only
+        # `origin/main` has passed CI, so only then does the push go past the
+        # pre-push preflight -- the adapter re-checks the sha against the full
+        # refname and pushes exactly it (review 2). Any other `--base` pushes
+        # normally and the preflight runs.
+        proven = current_ref if proves_main else None
         try:
             # Push via the shared repo root; branch name is loop/<slug> only.
-            vcs.push(git_repo_root, branch, preflight_skip_reason=skip_reason)
+            vcs.push(git_repo_root, branch, proven_on_main_sha=proven)
             push_step = RefreshStep(STEP_PUSH, "done", f"pushed {branch} to origin")
         except VcsCommandError as exc:
             findings.append(
@@ -459,6 +454,10 @@ def run_refresh(
         vcs = GitVcs()
 
     tip_ref = f"origin/{base}"
+    # Full refname for every git operation: a local branch or tag named `origin/<base>`
+    # must never stand in for the remote-tracking ref (Story 57.1 review 2).
+    tip_full_ref = f"refs/remotes/origin/{base}"
+    proves_main = base == _DEFAULT_BASE
 
     if args.project is not None and not policy_core._is_valid_project_slug(args.project):
         findings.append(
@@ -526,6 +525,8 @@ def run_refresh(
             slug=slug,
             home=home,
             tip_ref=tip_ref,
+            tip_full_ref=tip_full_ref,
+            proves_main=proves_main,
             findings=findings,
         )
         homes_out.append(home_result_to_dict(result))

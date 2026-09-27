@@ -3,7 +3,7 @@ title: '68.2: The pre-push gate skips a push that carries nothing new, and its j
 type: 'fix'
 created: '2026-09-27'
 status: 'in-review'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -79,3 +79,9 @@ Verified clean: no `set -euo pipefail` path exits 0 by accident; tab/newline inj
 - `[low]` `[patch]` **L4 — the delete skip was not journaled although the header said so.** **Fix:** the delete path journals through `journal_skip`; the header lists only the skips that exist.
 - `[low]` `[note]` In the pre-commit root-commit case (`PRE_COMMIT_TO_REF` unset) a manual-skip line pairs the pushed ref with HEAD's sha — the documented fallback.
 - Test gaps "dispatch journal line", "multi-ref only in stdin form" — closed: the automatic-skip test covers dispatch and delete journaling; the multi-ref hazard no longer exists.
+
+### Review 2 — 2026-09-27, independent adversarial reviewer, commit `db044dad6a` — PASS with lows (none here)
+
+Verified closed under real pre-commit 4.6.2 with the real script: H1 (no ref-based skip remains; a push already on `origin/main` with a failing preflight is refused and not journaled), L4 (the delete skip journals through `journal_skip`). The skip journal names the pushed ref and sha for the manual, `dispatch/*` and delete lines.
+
+- `[nit]` `[patch]` `_hook_repo(with_origin_main=…)` in `tests/scripts/test_lint_types_gate.py` was always true after H1; the dead branch and parameter are removed.

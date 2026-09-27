@@ -833,31 +833,68 @@ def test_push_with_configured_upstream_pushes_new_commits(vcs, cloned_repo, remo
     assert remote_head == local_head
 
 
-def test_push_hands_the_preflight_opt_out_to_the_pre_push_hook_only_when_asked(vcs, cloned_repo, remote):
-    """Story 57.1 (CAP-267): `preflight_skip_reason` reaches the repo's real `pre-push` hook as
-    the journaled opt-out (PYFORGE_PREFLIGHT_SKIP=1 + the reason); a push without it sets
-    neither variable."""
-    seen = cloned_repo / "hook-env.txt"
-    hook = cloned_repo / ".git" / "hooks" / "pre-push"
+def _record_hook_env(repo: Path) -> Path:
+    """A real `pre-push` hook that appends what opt-out variables it received."""
+    seen = repo / "hook-env.txt"
+    hook = repo / ".git" / "hooks" / "pre-push"
     hook.write_text(
         "#!/usr/bin/env bash\n"
         f'printf "%s|%s\\n" "${{PYFORGE_PREFLIGHT_SKIP:-unset}}" "${{PYFORGE_PREFLIGHT_SKIP_REASON:-unset}}" >> {seen}\n',
         encoding="utf-8",
     )
     hook.chmod(0o755)
-    (cloned_repo / "a.txt").write_text("a\n", encoding="utf-8")
-    _git(cloned_repo, "add", "a.txt")
-    _git(cloned_repo, "commit", "-m", "a")
-    vcs.push(cloned_repo, "main", preflight_skip_reason="marshal refresh: proven fast-forward")
-    (cloned_repo / "b.txt").write_text("b\n", encoding="utf-8")
-    _git(cloned_repo, "add", "b.txt")
-    _git(cloned_repo, "commit", "-m", "b")
-    vcs.push(cloned_repo, "main")
+    return seen
 
-    assert seen.read_text(encoding="utf-8").splitlines() == [
-        "1|marshal refresh: proven fast-forward",
-        "unset|unset",
-    ]
+
+def test_push_with_a_proven_main_sha_reaches_the_hook_as_the_journaled_opt_out(vcs, cloned_repo, remote):
+    """Story 57.1 (CAP-267): a sha on refs/remotes/origin/main -- the proof refresh holds after
+    its fast-forward -- is pushed with PYFORGE_PREFLIGHT_SKIP=1 and a reason naming the branch
+    and sha; a push without a proof sets neither variable."""
+    seen = _record_hook_env(cloned_repo)
+    tip = _git(cloned_repo, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+    _git(cloned_repo, "branch", "loop/acme", tip)
+    vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=tip)
+    _git(cloned_repo, "branch", "loop/beta", tip)
+    vcs.push(cloned_repo, "loop/beta")
+
+    lines = seen.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == (
+        f"1|marshal refresh: loop/acme at {tip[:12]} is a fast-forward to origin/main; "
+        "every pushed commit is already on origin/main"
+    )
+    assert lines[1] == "unset|unset"
+    assert _git(remote, "rev-parse", "loop/acme").stdout.strip() == tip
+
+
+def test_push_refuses_the_opt_out_for_a_sha_not_on_origin_main(vcs, cloned_repo, remote):
+    """Review 2 (L-B): the proof is re-checked against the FULL refname -- a local branch named
+    `origin/main` carrying an unverified commit must not stand in for the remote-tracking ref."""
+    _git(cloned_repo, "checkout", "-q", "-b", "loop/acme")
+    (cloned_repo / "unverified.txt").write_text("x\n", encoding="utf-8")
+    _git(cloned_repo, "add", "unverified.txt")
+    _git(cloned_repo, "commit", "-m", "unverified")
+    unverified = _git(cloned_repo, "rev-parse", "HEAD").stdout.strip()
+    _git(cloned_repo, "branch", "origin/main", unverified)  # the trap: a LOCAL branch of that name
+
+    with pytest.raises(VcsCommandError, match="is not on refs/remotes/origin/main"):
+        vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=unverified)
+    assert "loop/acme" not in _git(remote, "branch", "--list", "loop/acme").stdout
+
+
+def test_push_sends_exactly_the_proven_commit_even_if_the_branch_moved(vcs, cloned_repo, remote):
+    """Review 2 (L-C): the pushed commit is the proven one, not whatever the branch points at by
+    push time -- a commit made after the fast-forward never leaves with the opt-out."""
+    seen = _record_hook_env(cloned_repo)
+    tip = _git(cloned_repo, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+    _git(cloned_repo, "checkout", "-q", "-b", "loop/acme", tip)
+    (cloned_repo / "later.txt").write_text("x\n", encoding="utf-8")
+    _git(cloned_repo, "add", "later.txt")
+    _git(cloned_repo, "commit", "-m", "made after the fast-forward")
+
+    vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=tip)
+
+    assert _git(remote, "rev-parse", "loop/acme").stdout.strip() == tip
+    assert seen.read_text(encoding="utf-8").startswith("1|")
 
 
 def test_push_never_passes_force(vcs, cloned_repo, remote, monkeypatch):

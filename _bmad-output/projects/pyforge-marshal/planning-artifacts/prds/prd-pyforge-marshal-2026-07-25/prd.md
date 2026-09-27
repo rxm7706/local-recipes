@@ -2612,10 +2612,13 @@ belongs to the tool that pushed. FR-213 decomposes into **Epic 57** (Story 57.1)
 because Epic 56 is `done`.
 
 #### FR-213: A loop-home refresh sends its proven fast-forward past the pre-push preflight ← CAP-267
-When `refresh` has itself fast-forwarded `loop/<slug>` to `origin/main`, it pushes with the
-existing journaled opt-out, its reason naming the branch, `origin/main` and the sha, through
-`VcsPort.push`'s keyword-only `preflight_skip_reason` (set for that one `git` process); any other
-`--base`, and every other push caller, pushes through the preflight. Story 57.1.
+When `refresh` has itself fast-forwarded `loop/<slug>` to `refs/remotes/origin/main` (the full
+refname — a local branch or tag named `origin/main` never stands in), it hands the sha it
+fast-forwarded to as `VcsPort.push`'s keyword-only `proven_on_main_sha`; the adapter re-checks it
+against `refs/remotes/origin/main`, pushes exactly that sha, and sets the existing journaled
+opt-out — its reason naming the branch, `origin/main` and the sha — for that one `git` process.
+Any other `--base`, a host without the POSIX `env` utility, and every other push caller push
+through the preflight. Story 57.1.
 
 **ONE FR space now FR-1..FR-213** (FR-214 = next free id).
 
