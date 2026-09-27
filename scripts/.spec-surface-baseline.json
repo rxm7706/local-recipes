@@ -2874,7 +2874,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "822abbf320372b3888f3186d2cd78474d8956309",
+   "pixi.toml": "751cf6438e57030e167bd0136b34bb821c850c87",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "f634eebb7d280de9667527361cb160b786242fd0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "52923d5b2ec955c7f91f434f710d7d166bcd8398",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3147,7 +3147,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py": "990f343a373815315cf2c26865a5cb10f8598426",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py": "e5630e3ae99fae98819d8f87501308c168f366e0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "a32608430ad8c3b0bb2f4807887193e9a6f2aed5",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "b1f31e9ae619269f37fc107f011222112edb4318",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "a5f98931fe677e130da8e2a561e8a3f77745561a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/upstream.py": "54e4b4aa94c1378261e523cf6f09e47257f725bb",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py": "71fee1e1eea36dedbe4c3725fedb1ff4521880a1",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -3162,7 +3162,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "a62b81f67d6167ab4ff22fff975fb2f11c225488",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py": "c975bbfb8a7ce667f04af4c2c6977b3d8f2e5fed",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_land_heal.py": "acd5f7d734b2195e0fe43909373c8c3bb2cb370a",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py": "7250671bd4b1fa9f4c5de2d447f01f32380f50a1",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py": "a4f7fc2d469746bab64d299e3223240b6a894ec8",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_preserve.py": "dc8eda9fee7c4fc3fa428c99e2661bd5a32d973a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_push.py": "1611c1f3d3f99d0b030ef7d3169e5b750a84c1bd",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_re_preflight.py": "3412fb87f4d465fb39e56bc7519b31268f24ea3e",
@@ -3193,7 +3193,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_difficulty.py": "5338266868b8f9e674cbd4c50b892205700e9be3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_low_risk.py": "039b11fcf33d4041917044da88720a8fd7e0d74e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_surface.py": "1b80285b05b4f948a306b7355beb41cad1bfa9e9",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "40cea7661aeec5d307de1b7aa715005efbf90846",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "9c59d860230340f6e4d34da334f5a382477985b3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/structure_graph_dispatch_benchmark.py": "b829b274002c8e27e0a985d3c972cb1cb56b3a53",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/substrate.py": "2f1893937a2771fff0c9be3fbfc23322eafbaba8",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py": "726afd0be6f4fbdfdf1862e8043b7ce20ea074ba",
@@ -3441,7 +3441,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7841247dfd900ae288c19463e38af1276d4d9e81",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "942a78844aa4d6bbf1170d8c45ba70447aec6031"
+  "memlog": "a4d1873ce35f082eff5cc670ba79604eb75d29af"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
