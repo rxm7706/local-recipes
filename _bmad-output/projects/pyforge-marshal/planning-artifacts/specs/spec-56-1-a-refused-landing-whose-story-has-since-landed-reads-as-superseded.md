@@ -2,8 +2,8 @@
 title: '56.1: A refused landing whose story has since landed reads as superseded'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-review'
-review_loop_iteration: 1
+status: 'done'
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -97,3 +97,21 @@ Read against this spec, CAP-266 and the Spec's Constraints; not against the impl
 - `[low]` `[patch]` `spec-surface` warned on the new test file. **Fix:** memlog entry + scoped stamp at landing.
 
 Out of this story's Boundaries, recorded rather than fixed here: the two `MRS-DISP-020` meanings deserve distinct codes (`DW-marshal-disp020-two-meanings-2026-09-27`).
+
+### Review 2 — 2026-09-27, same independent reviewer, commit `7bd2644ba5` — PASS
+
+Every review-1 finding verified closed in code, not only in prose: the post-merge finalize failure stays in ATTENTION (`test_main_keeps_a_post_merge_finalize_failure_in_attention`); the line names `dispatch_story` for a `completed` run (row and fleet tests); the shared `main` read with a patch home is pinned (`commit_subjects_calls == ["main"]`, one `MRS-STATUS-011`); the docstring is accurate. `dispatch_story` on every dispatch row breaks no consumer (`cli/watch.py`, `scripts/fleet_scan.py`, the MCP tool, the text renderer read keys by name; no JSON schema covers fleet rows). Boundaries hold.
+
+- `[low]` `[patch]` **L1 — a letter-suffix key failed open.** `ledger_story_done`'s epic-seq fallback read `6-1a` as prefix `6-1-`, so a 6.1a finalize failure with 6.1 `done` read "not waiting on you". Latent (no suffix key in any tracked ledger today). **Fix:** `fleet_picture.ledger_story_key_done` matches the full stem including the suffix, accepts `30.3` / `30-3` / `30-3-<title>`, and fails closed on anything else; parametrized tests plus an end-to-end 6.1a case.
+- `[low]` `[defer]` **L2 — the ledger's `done` proves the ledger half of the finalize, not the spec-promotion half.** Rare; recorded as a known limit on `DW-marshal-disp020-two-meanings-2026-09-27`, whose distinct code closes both halves.
+- `[info]` The key name `dispatch_landing_superseded` now means only "the story is on `main`"; the field comment and CAP-266 state the narrower meaning. Kept as named — the operator chose it at design time.
+- Out of scope, found by the reviewer's full-tree run: two `@pytest.mark.slow` integration tests are red on `main` and run by no CI lane — `DW-marshal-slow-lane-red-2026-09-27`.
+
+## Outcome
+
+Verified 2026-09-27:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0 (8680 passed, 1 skipped at review-1 fixes; re-run at landing).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0.
+- `pixi run -e pyforge-guild lint-types`: exit 0.
+- Live `marshal status --format json` from this branch: the doctor and marshal rows gain `dispatch_landing_superseded: true` (and `dispatch_story`); their `dispatch_landing_findings` are byte-identical to before; no other row changed.
+- Live `fleet-picture`: ATTENTION carries no landing line; the not-blocking list reads `doctor: landing refused (1 finding(s)) -- MRS-DISP-020 -- but 30.3 has since landed on main and reads done, not waiting on you` and the same for marshal 46.6.

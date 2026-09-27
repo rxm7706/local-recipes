@@ -259,3 +259,46 @@ def test_running_stations_maps_the_marker_and_the_dispatch_story(fleet, monkeypa
     assert info["herald"]["landing_superseded"] is False
     assert info["marshal"]["landing_story"] == "46.6"
     assert info["herald"]["landing_story"] == ""
+
+
+@pytest.mark.parametrize(
+    ("ledger", "story", "expected"),
+    [
+        # Review 2 (L1): a suffixed story never matches its base story's row.
+        ({"6-1-base": "done", "6-1a-follow-up": "backlog"}, "6.1a", False),
+        ({"6-1-base": "backlog", "6-1a-follow-up": "done"}, "6.1a", True),
+        ({"6-1-base": "done", "6-1a-follow-up": "backlog"}, "6.1", True),
+        # Epic-seq boundaries and the three accepted spellings.
+        ({"30-30-other": "done"}, "30.3", False),
+        ({"30-3-the-reference-pages": "done"}, "30.3", True),
+        ({"30-3-the-reference-pages": "done"}, "30-3", True),
+        ({"30-3-the-reference-pages": "done"}, "30-3-the-reference-pages", True),
+        ({"56-1-a-refused-landing": "done"}, "56-1-a-refused-landing", True),
+        ({"30-3": "done"}, "30.3", True),
+        # Fails closed.
+        ({"30-3-x": "done"}, "", False),
+        ({"30-3-x": "done"}, "not a key", False),
+        ({"30-3-x": "in-progress"}, "30.3", False),
+    ],
+)
+def test_ledger_story_key_done_matches_exactly_one_story(fleet, ledger, story, expected):
+    assert fleet.ledger_story_key_done(ledger, story) is expected
+
+
+def test_a_suffixed_finalize_failure_stays_in_attention_when_only_its_base_story_is_done(
+    fleet, monkeypatch, capsys, tmp_path
+):
+    """Review 2 (L1), end to end: 6.1a on main with its own key `backlog`
+    and 6.1's key `done` is still owed -- never "not waiting on you"."""
+    rc = _run_main_with_live(
+        fleet,
+        monkeypatch,
+        tmp_path,
+        _marshal_live_row(landing_story="6.1a", landing_findings=_FINALIZE_FAILED, landing_superseded=True),
+        ledger="development_status:\n  epic-6: in-progress\n  6-1-base: done\n  6-1a-follow-up: backlog\n",
+    )
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert "6.1a is on main but its ledger key is not done" in out
+    assert "not waiting on you" not in out

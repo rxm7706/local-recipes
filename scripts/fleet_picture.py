@@ -270,6 +270,22 @@ def ledger_story_done(stories: dict[str, str], story: str) -> bool:
     return any(k.startswith(prefix) and v == "done" for k, v in stories.items())
 
 
+_STORY_KEY_STEM = re.compile(r"(\d+)[.-](\d+)([a-z]?)(?:-|$)")
+
+
+def ledger_story_key_done(stories: dict[str, str], story: str) -> bool:
+    """True when the tracked ledger marks exactly ``story`` done -- a key
+    given as ``30.3``, ``30-3`` or ``30-3-<title>``, with an optional letter
+    suffix (``6.1a``). Unlike ``ledger_story_done``'s epic-seq fallback, a
+    suffixed story never matches its base story's row, and anything that
+    does not parse is not done (Story 56.1, review 2)."""
+    m = _STORY_KEY_STEM.match(story.strip())
+    if not m:
+        return False
+    stem = f"{m.group(1)}-{m.group(2)}{m.group(3)}"
+    return any(v == "done" and (k == stem or k.startswith(stem + "-")) for k, v in stories.items())
+
+
 def story_ledger_status(stories: dict[str, str], story: str) -> str | None:
     """Ledger status for ``story``'s epic-seq key, if any."""
     if not story:
@@ -1106,7 +1122,7 @@ def main() -> int:
                 # owes that work (review 1, high).
                 landed = str(live_row.get("landing_story") or "")
                 on_main = live_row.get("landing_superseded") is True
-                if on_main and ledger_story_done(stories, landed.replace(".", "-")):
+                if on_main and ledger_story_key_done(stories, landed):
                     watch.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
                                  f"-- {codes} -- but {landed} has since landed on main "
                                  f"and reads done, not waiting on you")
