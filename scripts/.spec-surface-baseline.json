@@ -536,7 +536,7 @@
    "docs/how-to/monitor-the-fleet.md": "9fd532b364f8ff1d692772334318a058d67df868",
    "docs/how-to/ocp-cluster-bringup.md": "f775b91267f07ab3e31f83b26edf7df8257b353f",
    "docs/how-to/one-chain-station-ops.md": "9e4997a0f6c4d5c718e404b6fa62b3b7e9f2f4d2",
-   "docs/how-to/pixi-tasks.md": "18d057123479ebaaed03ade14467e32575ce5ea9",
+   "docs/how-to/pixi-tasks.md": "0352bd83bbec1c5d6845fc17a4916909fbd499c2",
    "docs/how-to/presentation-deck.md": "709ede4a97047507007167c45e886767bba9af3a",
    "docs/how-to/recipe-testing-and-builds.md": "c47ca693437e4c1588737f20694d1ae1dc7ebacd",
    "docs/how-to/reconcile-spec-surface.md": "f9cf25fd5f8adb36331a3c90aad489c6cd661035",
@@ -545,7 +545,7 @@
    "docs/how-to/station-cli-operations.md": "9e2551ec419f3541373843fc98f5d229fe9774bc",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "5e96a3bbd5d6707576a87bc3f2c04e3dbc806e1d",
    "docs/how-to/troubleshooting-recipe-builds.md": "4c029ebd50084d47dc00bbd80aaad2372fbaa754",
-   "docs/map.yaml": "98b3eeb55cb335d82887848a5bd2c03a78958dab",
+   "docs/map.yaml": "beff3ed5fb6f8c39694e909adbf446f5c8ef8224",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "85b4d0d4dd4cb85f640d492c8cfad832e2ad2e20",
    "docs/tutorials/local-platform-development.md": "c6acf468d653c6698bb8a1a0d7f675351cf72f8f",
@@ -717,7 +717,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "8da68a637664b00173d1da991f51b04c9b8cf3ba"
+  "memlog": "a38837f4a4934f1db6d8924d63731b997aac9be1"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -5123,7 +5123,7 @@
    "scripts/scribe_graph_freshness_check.py": "992380215b7243a111a4e968a6fd50ea7f8b5dae",
    "scripts/scribe_install_nightly_trigger.py": "a4a0daff11a85afb65b75a2294d3e311398e9e92",
    "scripts/scribe_nightly_trigger.py": "9f95036d8b5ee494aa49ff5d708bb725328840e6",
-   "scripts/scribe_pg.py": "1e111ab8974ddbacc1928de225e35cf7ec1873a7",
+   "scripts/scribe_pg.py": "cbba22a318c2e008b61b43ed98b0d22554bae914",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "369bce620626332ee9e297a5d87ce91060e4e1c0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "2a8070b1ec3515e4e992a008fb47edc40b549c9c",
    "src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py": "029708b7dbc9a38e4846a32d5e10c1157c64c6e9",
@@ -5176,7 +5176,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "fb1f6add380a9cb8c0e80f32b17c2f1becd5ced5"
+  "memlog": "d366ee0263f84354d2a5c351968ac1c964786d85"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},

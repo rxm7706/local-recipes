@@ -814,7 +814,7 @@ So that `pr-preflight` is red only for my change, never for the length of my wor
 **When** this story lands
 **Then** `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0 from such a worktree and `scribe-pg-status` reports the cluster listening on 127.0.0.1:5433 with the socket directory it used; the data directory is unchanged (`var/scribe-pg/data`); a cluster already listening is reused, not re-initialised
 **And** `tests/scripts/test_scribe_pg.py` covers the directory choice, the override and the length guard without starting a server; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green with the cluster up; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
-**Status:** backlog
+**Status:** done
 
 ## Epic 23: The instruction surface loads once (spec-pyforge-scribe CAP-27)
 
