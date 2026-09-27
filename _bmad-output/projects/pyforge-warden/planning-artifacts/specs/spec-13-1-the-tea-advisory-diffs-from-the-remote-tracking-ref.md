@@ -64,3 +64,8 @@ Ledger status at mint: `backlog`.
 - `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass.
 
 ## Review Triage Log
+
+- **Review 1 (2026-09-27, independent agent) — FAIL (on 70.1), then fixed:**
+  - [fixed] nit: `_default_runner`'s docstring said it is never exercised in the suite -- the real binary never is;
+    the new test calls the function with `subprocess.run` replaced. Verified: TEA 1.27.2 rejects only an empty
+    base or one starting with `-`, so the full ref is accepted.

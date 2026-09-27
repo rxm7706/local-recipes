@@ -70,3 +70,8 @@ Ledger status at mint: `backlog`.
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0.
 
 ## Review Triage Log
+
+- **Review 1 (2026-09-27, independent agent) — FAIL (on 70.1), then fixed:**
+  - [fixed] nit: the scan missed a quoted variable (`origin/"$X"`), `format('origin/{0}', ...)` and a literal range
+    (`origin/main...HEAD`), and flagged a trailing comment -- all four handled and pinned; the redundant
+    `refs/remotes/` lookbehind dropped. It still finds exactly the five pre-fix lines on `origin/main`'s workflows.

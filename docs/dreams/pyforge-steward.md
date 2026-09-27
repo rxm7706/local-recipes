@@ -311,7 +311,7 @@ Drift — orphaned between stations.
   deliberate copy of the testing kit's diff guard
   (`src/platform/tests/test_warden_portal_audit_start_get.py`, kept apart by `pap:AD-2`) diffs from
   `origin/main` and so checks nothing past a shadow; the `tea-test-review` pixi task passes
-  `--base origin/main` (`DW-steward-platform-diff-guard-short-origin-main-2026-09-27`,
+  `--base origin/main`, and so does its one caller, marshal's review lens, whose `--base` wins (`DW-steward-platform-diff-guard-short-origin-main-2026-09-27`,
   `DW-warden-tea-advisory-short-base-2026-09-27`). **What it looks like when real:** every git read
   of a workspace source `origin/<b>` names `refs/remotes/origin/<b>` and every read of its branch
   `refs/heads/<branch>`; the platform guard and the task name `refs/remotes/origin/main`; a stray

@@ -16,9 +16,9 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** `pyforge.steward.workspace` hands git its recorded source (`origin/main`) and branch by short name in `start` (`worktree add`), `status` (`_ahead_behind`, `_branch_merged_into`) and `clean` (`--merged-only`'s `_branch_merged_into`, `_source_commit`, the branch-drop `_commit_of`). Git resolves a short name to `refs/tags/<n>` and `refs/heads/<n>` before `refs/remotes/<n>`. Probed on the old code: with a local branch or tag named `origin/main` at an unmerged workspace's tip, `clean --merged-only` archived the worktree and deleted its branch (its commits then reachable only through the stray ref); `status` reported it merged; `start` refused ("ambiguous object name"); and a tag named like the branch stood in for it in the merged check. Two smaller reads: the platform's deliberate copy of the kit's diff guard (`src/platform/tests/test_warden_portal_audit_start_get.py`) diffs from `origin/main`, and the `tea-test-review` pixi task passes `--base origin/main` (`DW-steward-platform-diff-guard-short-origin-main-2026-09-27`, steward's half of `DW-warden-tea-advisory-short-base-2026-09-27`).
+**Problem:** `pyforge.steward.workspace` hands git its recorded source (`origin/main`) and branch by short name in `start` (`worktree add`), `status` (`_ahead_behind`, `_branch_merged_into`) and `clean` (`--merged-only`'s `_branch_merged_into`, `_source_commit`, the branch-drop `_commit_of`). Git resolves a short name to `refs/tags/<n>` and `refs/heads/<n>` before `refs/remotes/<n>`. Probed on the old code: with a local branch or tag named `origin/main` at an unmerged workspace's tip, `clean --merged-only` archived the worktree and deleted its branch (its commits then reachable only through the stray ref); `status` reported it merged; `start` refused ("ambiguous object name"); and a tag named like the branch stood in for it in the merged check. Two smaller reads: the platform's deliberate copy of the kit's diff guard (`src/platform/tests/test_warden_portal_audit_start_get.py`) diffs from `origin/main`, and the `tea-test-review` pixi task passes `--base origin/main` — as does its one documented caller, marshal's review lens (`_bmad/custom/bmad-review.toml`), whose own `--base` replaces the task's (`DW-steward-platform-diff-guard-short-origin-main-2026-09-27`, steward's half of `DW-warden-tea-advisory-short-base-2026-09-27`).
 
-**Approach:** two private helpers in `workspace.py` — `_source_ref(source)` (`origin/<b>` → `refs/remotes/origin/<b>`, anything else unchanged) and `_branch_ref(branch)` (`refs/heads/<branch>`) — used at every git read of a record's source and branch; `start` passes `_source_ref(from_ref)` to `worktree add` and records `from_ref` as written, so old bookkeeping reads the same way. The platform guard's `rev-parse`, skip text and `diff` name `refs/remotes/origin/main` (the platform CI fetch already writes that ref). The pixi task passes `--base refs/remotes/origin/main` and its description says so; `environment.yaml` is re-exported (tasks are not in it, so it should not change).
+**Approach:** two private helpers in `workspace.py` — `_source_ref(source)` (`origin/<b>` → `refs/remotes/origin/<b>`, anything else unchanged) and `_branch_ref(branch)` (`refs/heads/<branch>`) — used at every git read of a record's source and branch; `start` passes `_source_ref(from_ref)` to `worktree add` and records `from_ref` as written, so old bookkeeping reads the same way. The platform guard's `rev-parse`, skip text and `diff` name `refs/remotes/origin/main` (the platform CI fetch already writes that ref). The pixi task passes `--base refs/remotes/origin/main` and its description says so; the review lens defaults to the same and writes a stated `origin/<b>` as `refs/remotes/origin/<b>`; `environment.yaml` is re-exported (tasks are not in it, so it should not change).
 
 Ledger key: `70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs`.
 Ledger status (do not edit the ledger): `backlog`.
@@ -71,3 +71,15 @@ Ledger status at mint: `backlog`.
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass.
 
 ## Review Triage Log
+
+- **Review 1 (2026-09-27, independent agent) — FAIL, then fixed:**
+  - [fixed] MEDIUM: marshal's review lens (`_bmad/custom/bmad-review.toml`) passed its own `--base origin/main`,
+    and TEA keeps the last `--base` (commander) -- the lens now names `refs/remotes/origin/main`; CAP-158 amended.
+  - [fixed] MEDIUM: no test pinned the confirmed clean's branch-drop proof or the landed proof past a shadow --
+    both added; each full-ref read in `workspace.py`, reverted alone, now fails a test (7/7 mutants killed).
+  - [fixed] LOW-MEDIUM: CAP-157's success still listed a shadowed source among the cases that archive -- amended
+    (memlog, then its rendered line); its two tests renamed to what they prove (an unlanded commit past a shadow).
+  - [fixed] LOW: `_branch_ref` passed a slug beginning `refs/` through (`refs/heads/main` read the real `main`) --
+    it always prefixes now; a test pins it.
+  - [fixed] nit: a test docstring said the deleted branch's commits existed nowhere else -- they stayed reachable
+    through the stray ref.

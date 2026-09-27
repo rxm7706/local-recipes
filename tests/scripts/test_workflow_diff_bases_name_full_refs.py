@@ -14,16 +14,26 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 WORKFLOWS = REPO / ".github" / "workflows"
 
-#: ``origin/`` followed by a GitHub expression (``${{ github.base_ref }}``) or a shell variable (``${GITHUB_BASE_REF}``,
-#: ``$BASE``) -- the shapes a workflow builds a base-branch ref from -- unless it already sits under ``refs/remotes/``.
-SHORT_BASE = re.compile(r"(?<!refs/remotes/)(?<![\w/.-])origin/\$(?:\{\{|\{|[A-Za-z_])")
+#: The shapes a workflow builds a short base from: ``origin/`` then a GitHub expression or shell variable, quoted or not
+#: (``origin/${{ github.base_ref }}``, ``origin/"$BASE"``); ``format('origin/{0}', ...)``; and a literal range
+#: (``origin/main...HEAD``). The lookbehind skips ``refs/remotes/origin/...`` (a ``/`` precedes it).
+SHORT_BASE = re.compile(
+    r"(?<![\w/.-])origin/[\"']?\$(?:\{\{|\{|[A-Za-z_])"
+    r"|format\(\s*'origin/\{"
+    r"|(?<![\w/.-])origin/[\w.-]+(?:/[\w.-]+)*\.\."
+)
+
+
+def _code(line: str) -> str:
+    """The line without a comment: a whole-line ``#`` or a trailing `` #``."""
+    return "" if line.lstrip().startswith("#") else re.split(r"\s#", line, maxsplit=1)[0]
 
 
 def _offenders(text: str) -> list[tuple[int, str]]:
     return [
         (number, line.strip())
         for number, line in enumerate(text.splitlines(), 1)
-        if not line.lstrip().startswith("#") and SHORT_BASE.search(line)
+        if SHORT_BASE.search(_code(line))
     ]
 
 
@@ -42,7 +52,15 @@ def test_the_scan_sees_each_short_shape_and_passes_the_full_ref() -> None:
     assert _offenders('BASE="origin/${GITHUB_BASE_REF}"')
     assert _offenders("git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*'")
     assert _offenders("git diff origin/$BASE_BRANCH...HEAD")
+    assert _offenders('git diff origin/"$BASE"...HEAD')
+    assert _offenders("git diff origin/'${{ github.base_ref }}'...HEAD")
+    assert _offenders("base: ${{ format('origin/{0}', github.base_ref) }}")
+    assert _offenders("git diff --name-only origin/main...HEAD")
+    assert _offenders("git log origin/release/2026..HEAD")
     assert not _offenders('BASE="refs/remotes/origin/${GITHUB_BASE_REF}"')
     assert not _offenders("git diff --name-only refs/remotes/origin/${{ github.base_ref }}...HEAD")
+    assert not _offenders("git diff refs/remotes/origin/main...HEAD")
     assert not _offenders('# was BASE="origin/${GITHUB_BASE_REF}"')
+    assert not _offenders('BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # was origin/${GITHUB_BASE_REF}')
     assert not _offenders("git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main")
+    assert not _offenders("git branch --set-upstream-to=origin/main main")

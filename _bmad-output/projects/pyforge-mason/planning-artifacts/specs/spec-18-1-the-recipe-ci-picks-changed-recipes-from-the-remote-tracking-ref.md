@@ -16,7 +16,7 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** the four recipe build workflows (`.github/workflows/test-{all,linux,macos,windows}.yml`) choose which recipes a pull request builds with `git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*'`. Their checkout fetches tags (`fetch-depth: 0`), and git resolves a short name to `refs/tags/<n>` before `refs/remotes/<n>`, so a pushed tag named `origin/main` empties the changed-recipe set and the PR builds nothing. Found by doctor Story 32.1 (`DW-mason-recipe-ci-short-base-ref-2026-09-27`).
+**Problem:** the four recipe build workflows (`.github/workflows/test-{all,linux,macos,windows}.yml`) choose which recipes a pull request builds with `git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*'`. Their checkout fetches tags (`fetch-depth: 0`), and git resolves a short name to `refs/tags/<n>` before `refs/remotes/<n>`, so a pushed tag named `origin/main` would empty the changed-recipe set. The branch is dormant today: no recipe workflow runs on `pull_request` (`test-all.yml` is `workflow_dispatch` only; `test-{linux,macos,windows}.yml` are `workflow_call` + `workflow_dispatch`, called only by `test-all`), so this hardens it for when a trigger returns. Found by doctor Story 32.1 (`DW-mason-recipe-ci-short-base-ref-2026-09-27`).
 
 **Approach:** all four diff from `refs/remotes/origin/${{ github.base_ref }}...HEAD`. The regression test is `pyforge-core:CAP-10`'s workflow scan (marshal Story 63.1, same change), which covers these four; no second test. `.github/` is outside the CFE surface (`scripts/mason_cfe_surface_check.py`), so no CFE retro is owed.
 
@@ -64,3 +64,8 @@ Ledger status at mint: `backlog`.
 - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — expected: pass (the workflow scan).
 
 ## Review Triage Log
+
+- **Review 1 (2026-09-27, independent agent) — FAIL (on 70.1), then fixed:**
+  - [fixed] LOW: the failure scenario cannot occur today -- no recipe workflow runs on `pull_request`, so the branch
+    is dormant; the Dream, CAP-28 (memlog amendment, then its rendered line), the epic and this spec now call it
+    hardening.

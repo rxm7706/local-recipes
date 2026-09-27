@@ -604,8 +604,10 @@ def _source_ref(source: str) -> str:
 
 
 def _branch_ref(branch: str) -> str:
-    """A workspace branch as git must read it, ``refs/heads/<branch>``: a tag named like it never stands in."""
-    return branch if branch.startswith("refs/") else f"refs/heads/{branch}"
+    """A workspace branch as git must read it, ``refs/heads/<branch>``: a tag named like it never stands in. A
+    record's branch is always the slug ``start`` created, so a slug that itself begins ``refs/`` is prefixed too
+    (``worktree add -b refs/heads/x`` makes ``refs/heads/refs/heads/x``), as ``_archive_worktree`` does."""
+    return f"refs/heads/{branch}"
 
 
 def _ahead_behind(wt: Path, source: str, branch: str) -> tuple[int, int]:

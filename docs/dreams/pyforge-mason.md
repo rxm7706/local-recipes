@@ -179,8 +179,9 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   ref.** The four recipe build workflows (`.github/workflows/test-{all,linux,macos,windows}.yml`)
   choose which recipes to build with `git diff --name-only origin/${{ github.base_ref }}...HEAD --
   'recipes/*'`. Their checkout fetches tags (`fetch-depth: 0`), so a pushed tag named `origin/main`
-  wins over `refs/remotes/origin/main`, the changed-recipe set comes out empty and the PR builds
-  nothing — found by doctor Story 32.1 fixing the coverage gate's identical base
+  wins over `refs/remotes/origin/main` and the changed-recipe set would come out empty. The branch is
+  dormant today — no recipe workflow runs on `pull_request` (`test-all` is dispatch-only and calls the
+  other three) — so this is hardening, found by doctor Story 32.1 fixing the coverage gate's identical base
   (`DW-mason-recipe-ci-short-base-ref-2026-09-27`). **What it looks like when real:** all four diff
   from `refs/remotes/origin/${{ github.base_ref }}`; a stray ref changes no recipe selection.
   **Constraints:** the manual `workflow_dispatch` `recipes` input is untouched; no recipe and no CFE

@@ -63,7 +63,7 @@ def test_start_branches_from_the_remote_past_a_shadow(repo: Path, tmp_path: Path
 @pytest.mark.parametrize("kind", ["branch", "tag"])
 def test_clean_merged_only_keeps_an_unmerged_branch_past_a_source_shadow(repo: Path, tmp_path: Path, kind: str) -> None:
     """The trap: a shadow at the unmerged tip read the branch as merged, so ``clean --merged-only`` removed the
-    worktree and deleted the branch -- whose commits existed nowhere else."""
+    worktree and deleted the branch -- its commits left reachable only through the stray ref."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     dest = tmp_path / "unmerged"
     start_workspace("unmerged", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
@@ -105,6 +105,58 @@ def test_status_reads_the_remote_past_a_shadow(repo: Path, tmp_path: Path, kind:
 
     assert row.error is None
     assert (row.ahead, row.behind, row.merged) == (1, 0, False)
+
+
+@pytest.mark.parametrize("kind", ["branch", "tag"])
+def test_a_confirmed_clean_keeps_an_unmerged_branch_past_a_shadow(repo: Path, tmp_path: Path, kind: str) -> None:
+    """The branch-drop proof read the source short: a confirmed (not ``--merged-only``) clean past a shadow at the
+    unmerged tip archived the files and then deleted the branch, whose history a tarball does not hold."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "unmerged"
+    start_workspace("unmerged", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    _git("commit", "--allow-empty", "-m", "ahead", cwd=dest)
+    tip = _git("rev-parse", "HEAD", cwd=dest)
+    _shadow(kind, "origin/main", tip, cwd=repo)
+
+    result = clean_workspaces(
+        slug="unmerged", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive", confirm=lambda s: True
+    )
+
+    (row,) = result["archived"]
+    assert row["archive"].endswith(".tar.gz")
+    assert _git("rev-parse", "--verify", "refs/heads/unmerged", cwd=repo) == tip
+
+
+@pytest.mark.parametrize("kind", ["branch", "tag"])
+def test_a_landed_worktree_past_a_shadow_leaves_a_note(repo: Path, tmp_path: Path, kind: str) -> None:
+    """The landed proof asked git for the short source and refused whatever was not under ``refs/remotes/``, so a
+    shadow turned a provable landing into a tarball; it now asks for the remote-tracking ref itself."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "landed"
+    start_workspace("landed", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    _git("commit", "--allow-empty", "-m", "local only", cwd=repo)
+    _shadow(kind, "origin/main", "HEAD", cwd=repo)
+
+    result = clean_workspaces(
+        slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive", confirm=lambda s: True
+    )
+
+    (row,) = result["archived"]
+    assert row["archive"].endswith(".landed.txt")
+    assert not dest.exists()
+
+
+def test_a_slug_that_begins_refs_is_read_as_its_own_branch(repo: Path, tmp_path: Path) -> None:
+    """``start`` creates ``refs/heads/<slug>`` whatever the slug; a slug beginning ``refs/`` must not be read as a
+    different, full ref -- ``refs/heads/main`` read as the real ``main`` made an unmerged workspace look merged."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "refs-slug"
+    start_workspace("refs/heads/main", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    _git("commit", "--allow-empty", "-m", "ahead", cwd=dest)
+
+    (row,) = status_workspaces(root=repo, bookkeeping=bookkeeping)
+
+    assert (row.ahead, row.merged) == (1, False)
 
 
 def test_a_merged_workspace_still_cleans_with_no_shadow(repo: Path, tmp_path: Path) -> None:

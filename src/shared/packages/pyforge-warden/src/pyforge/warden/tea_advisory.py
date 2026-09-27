@@ -151,10 +151,11 @@ def _default_runner(binary: str, target: Path, json_path: Path) -> subprocess.Co
     """Shell out to the real ``tea-test-review`` binary. Both the markdown
     report and the JSON verdict are written into ``json_path``'s own
     scratch directory -- never into ``target`` -- an advisory scanner must
-    not litter the scanned tree with a stray ``test-review.md``. NEVER
-    exercised inside this repo's own test suite: the "TEA absent" test
-    relies on the real absent binary, and the "low score"/"runner errors"
-    tests inject their own ``runner`` instead."""
+    not litter the scanned tree with a stray ``test-review.md``. The real
+    binary is NEVER run inside this repo's own test suite: the "TEA absent"
+    test relies on the real absent binary, the "low score"/"runner errors"
+    tests inject their own ``runner``, and the one test that calls this
+    function (Story 13.1: the argv's ``--base``) replaces ``subprocess.run``."""
     report_path = json_path.with_name("test-review.md")
     return subprocess.run(
         [

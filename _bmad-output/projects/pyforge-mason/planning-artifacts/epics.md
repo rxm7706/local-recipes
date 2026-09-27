@@ -1993,7 +1993,8 @@ criterion held when waves ran (Track A Waves B–F)
 ## Epic 18: The recipe CI picks changed recipes from the remote-tracking ref (spec-pyforge-mason CAP-28)
 
 Minted 2026-09-27 (night) from the station Dream's entry of the same name, closing
-`DW-mason-recipe-ci-short-base-ref-2026-09-27` (found by doctor Story 32.1). **HARD boundaries:** the manual
+`DW-mason-recipe-ci-short-base-ref-2026-09-27` (found by doctor Story 32.1). Hardening: the pull_request branch is
+dormant today (no recipe workflow runs on `pull_request`). **HARD boundaries:** the manual
 `workflow_dispatch` `recipes` input path is untouched; no recipe and no CFE surface changes; the regression test is
 `pyforge-core:CAP-10`'s workflow scan (marshal Story 63.1), not a second one.
 
@@ -2001,7 +2002,7 @@ Minted 2026-09-27 (night) from the station Dream's entry of the same name, closi
 
 As a recipe maintainer whose pull request the recipe CI builds,
 I want the four recipe workflows to choose recipes from a diff against `refs/remotes/origin/${{ github.base_ref }}`,
-So that a pushed tag named `origin/main` can never empty the changed-recipe set into a PR that builds nothing.
+So that, when a pull_request trigger returns, a pushed tag named `origin/main` can never empty the changed-recipe set.
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-28
 **Surface:** `.github/workflows/test-all.yml`, `.github/workflows/test-linux.yml`, `.github/workflows/test-macos.yml`,

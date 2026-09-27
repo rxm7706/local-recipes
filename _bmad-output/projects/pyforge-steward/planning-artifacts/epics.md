@@ -4573,12 +4573,12 @@ So that a stray local ref can never make an unmerged workspace look merged, lose
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_source_ref`, `_branch_ref`; `start_workspace`,
 `_ahead_behind`, `_branch_merged_into`, `_source_commit`, `_archive_worktree`), tests:
 `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` (new); `src/platform/tests/test_warden_portal_audit_start_get.py`
-(the diff guard); `pixi.toml` (`tea-test-review`).
+(the diff guard); `pixi.toml` (`tea-test-review`); `_bmad/custom/bmad-review.toml` (marshal's review lens, the task's caller).
 **Given** a local branch or tag named `origin/main` at an unmerged workspace's tip, or a tag named like its branch
 **When** `workspace clean --merged-only`, `status` or `start` runs
 **Then** clean keeps the workspace and its branch (`not-merged`), status reports it ahead and unmerged, and start branches from `refs/remotes/origin/main`
-**And** with no shadow every result is unchanged; the platform guard diffs `refs/remotes/origin/main`; the task passes
-`--base refs/remotes/origin/main`; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `platform-ci-local -- --test` green
+**And** with no shadow every result is unchanged; the platform guard diffs `refs/remotes/origin/main`; the task and the
+review lens pass `--base refs/remotes/origin/main`; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `platform-ci-local -- --test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

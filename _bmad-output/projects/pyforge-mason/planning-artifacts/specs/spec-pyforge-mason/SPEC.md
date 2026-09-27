@@ -153,7 +153,9 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
 
 - **intent:** The four recipe build workflows (`.github/workflows/test-{all,linux,macos,windows}.yml`)
   diff from `refs/remotes/origin/${{ github.base_ref }}`, never the short `origin/<base>` a pushed tag
-  of that name shadows (their checkout fetches tags, so the changed-recipe set would come out empty).
+  of that name shadows (their checkout fetches tags, so the changed-recipe set would come out empty). The
+  pull_request branch is dormant today — no recipe workflow runs on `pull_request` — so this hardens it for
+  when a trigger returns.
 - **success:** All four name the full ref; `pyforge-core:CAP-10`'s workflow test covers them; the
   manual `recipes` input path is unchanged. (Minted 2026-09-27.)
 
