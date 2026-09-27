@@ -74,7 +74,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
@@ -1100,6 +1100,87 @@ class GitVcs:
             f"git merge-tree --write-tree {base} {branch} failed (exit {result.returncode}): "
             f"{result.stderr.strip() or result.stdout.strip()}"
         )
+
+    def merge_ref_resolving(
+        self,
+        worktree_path: Path,
+        ref: str,
+        *,
+        resolutions: Mapping[str, str],
+        message: str,
+    ) -> str:
+        """Story 59.1 (CAP-269): ``git merge --no-ff --no-commit <ref>`` in ``worktree_path``, so
+        git stops before committing whether or not it conflicts; the conflicted set is read from
+        the index (``diff --name-only --diff-filter=U -z``), never parsed from merge's output.
+        A conflicted path with no resolution -- or any failure or interrupt once the merge has
+        started -- aborts the merge, leaving the worktree at its previous HEAD. An already-merged
+        ``ref`` is a no-op that returns HEAD. Commits with ``-m <message>`` (hooks run, as in
+        ``commit_paths``). A merge already in progress is someone else's: refused, never adopted
+        or aborted; and the merge started must be exactly ``ref``'s commit (Story 59.1 review)."""
+        wt = str(worktree_path)
+
+        def merge_head() -> str | None:
+            probe = _run(["git", "-C", wt, "rev-parse", "-q", "--verify", "MERGE_HEAD"])
+            return probe.stdout.strip() if probe.returncode == 0 else None
+
+        if merge_head() is not None:
+            raise VcsCommandError(f"a merge is already in progress in {worktree_path}; refusing to merge {ref} over it")
+        target = _run(["git", "-C", wt, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"])
+        if target.returncode != 0:
+            raise VcsCommandError(f"git merge --no-commit {ref} failed in {worktree_path}: {target.stderr.strip()}")
+        target_sha = target.stdout.strip()
+        try:
+            # --no-rerere-autoupdate: a recorded rerere resolution must not stage itself and slip
+            # past `resolutions` (Story 59.1 review 2).
+            merge = _run(
+                ["git", "-C", wt, "merge", "--no-ff", "--no-commit", "--no-rerere-autoupdate", target_sha],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+            )
+            started = merge_head()
+            if started is None:
+                if merge.returncode == 0:  # "Already up to date." -- nothing to merge
+                    return self.worktree_head_sha(worktree_path)
+                raise VcsCommandError(
+                    f"git merge --no-commit {ref} failed in {worktree_path}: "
+                    f"{merge.stderr.strip() or merge.stdout.strip()}"
+                )
+            if started != target_sha:
+                raise VcsCommandError(f"the merge in progress in {worktree_path} is {started[:12]}, not {ref}")
+            listed = _run(
+                ["git", "-C", wt, "-c", "core.quotePath=false", "diff", "--name-only", "--diff-filter=U", "-z"]
+            )
+            if listed.returncode != 0:
+                raise VcsCommandError(f"cannot list the conflicted paths in {worktree_path}: {listed.stderr.strip()}")
+            conflicted = sorted({p for p in listed.stdout.split("\0") if p})
+            unresolved = [p for p in conflicted if p not in resolutions]
+            if unresolved:
+                raise VcsCommandError(
+                    f"merge of {ref} into {worktree_path} conflicts outside the resolvable paths: {', '.join(unresolved)}"
+                )
+            for rel in conflicted:
+                try:
+                    (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
+                    (worktree_path / rel).write_text(resolutions[rel], encoding="utf-8")
+                except OSError as exc:
+                    raise VcsCommandError(f"cannot write the resolution of {rel} in {worktree_path}: {exc}") from exc
+                added = _run(["git", "-C", wt, "add", "--", rel])
+                if added.returncode != 0:
+                    raise VcsCommandError(f"git add -- {rel} failed in {worktree_path}: {added.stderr.strip()}")
+            committed = _run(["git", "-C", wt, "commit", "-m", message])
+            if committed.returncode != 0:
+                raise VcsCommandError(
+                    f"git commit of the merge of {ref} failed in {worktree_path}: {committed.stderr.strip()}"
+                )
+        except BaseException:
+            # Abort only our own merge: one of another commit (someone else's, started in the
+            # window after the pre-check) is theirs to finish (Story 59.1 review 2).
+            try:
+                if merge_head() == target_sha:
+                    _run(["git", "-C", wt, "merge", "--abort"])
+            except VcsCommandError:
+                pass  # best effort -- the original failure is the one to report
+            raise
+        return self.worktree_head_sha(worktree_path)
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         """Story 28.20: ``git show ref:path`` read-only."""

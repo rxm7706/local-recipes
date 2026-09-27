@@ -167,6 +167,7 @@ succeeded by the time this resync step runs)."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -460,6 +461,23 @@ class VcsPort(Protocol):
         modify/delete and add/add alike (Story 58.1, CAP-268). Raises
         ``VcsCommandError`` on git failure (an unknown ref included) and on a
         conflict that names no file, never an empty tuple for either."""
+        ...
+
+    def merge_ref_resolving(
+        self,
+        worktree_path: Path,
+        ref: str,
+        *,
+        resolutions: Mapping[str, str],
+        message: str,
+    ) -> str:
+        """Story 59.1 (CAP-269): merge ``ref`` into ``worktree_path``'s checked-out branch as a
+        real two-parent merge commit. Every conflicted path must be a key of ``resolutions``
+        (repo-relative POSIX path -> the full resolved text), which is written and staged;
+        any other conflicted path aborts the merge -- the worktree back at its previous HEAD,
+        nothing committed -- and raises ``VcsCommandError``, as does any git failure. A merge
+        already in progress in the worktree is refused, never adopted or aborted. Returns the
+        merge commit's sha (HEAD itself when ``ref`` is already merged). Never pushes."""
         ...
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:

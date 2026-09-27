@@ -34,7 +34,7 @@ from .core.identity import StoryKey, normalize, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
 from .core.verdict import compute_verdict
-from .dispatch_land_heal import try_heal_dispatch_land_merge
+from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
 from .dispatch_verify import (
     _SCOPE_BASE as _ORIGIN_MAIN,
 )
@@ -57,6 +57,9 @@ _MAINTENANCE_LABEL = "maintenance"
 # operator-composed merge commit landed against `origin/main`, not
 # whatever a stale local `main` happened to be.
 _ORIGIN_REMOTE = "origin"
+# Story 59.1 (CAP-269): the full refname the landing heal probes and merges -- never the short
+# `origin/main`, which git resolves to a local branch or tag of that name first (Story 57.1 review).
+_ORIGIN_MAIN_REF = f"refs/remotes/{_ORIGIN_REMOTE}/{_MERGE_BASE}"
 
 
 @dataclass(frozen=True)
@@ -956,22 +959,32 @@ def execute_dispatch_land(
             subject=ForgeRef(subject),
         )
     except ForgeCommandError as exc:
-        heal = try_heal_dispatch_land_merge(
-            project_slug=project_slug,
-            git_repo_root=git_repo_root,
-            worktree=worktree,
-            base=_MERGE_BASE,
-            head_branch=head_branch,
-            head_sha=head_sha,
-            subject=subject,
-            merge_strategy=merge_strategy,
-            delete_branch=delete_branch,
-            repo_ref=repo_ref,
-            pr=pr,
-            fs=fs,
-            vcs=vcs,
-            forge=forge,
-        )
+        # Story 59.1 (CAP-269): the heal measures against what GitHub merges against, fetched now;
+        # a failed fetch skips the heal and the landing refuses as before (MRS-DISP-020).
+        heal_skipped = ""
+        try:
+            vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)
+        except VcsCommandError as fetch_exc:
+            heal = DispatchLandHealResult(healed=False)
+            heal_skipped = f" (heal skipped: could not fetch {_ORIGIN_MAIN_REF}: {fetch_exc})"
+        else:
+            heal = try_heal_dispatch_land_merge(
+                project_slug=project_slug,
+                git_repo_root=git_repo_root,
+                worktree=worktree,
+                base=_MERGE_BASE,
+                head_branch=head_branch,
+                head_sha=head_sha,
+                subject=subject,
+                merge_strategy=merge_strategy,
+                delete_branch=delete_branch,
+                repo_ref=repo_ref,
+                pr=pr,
+                fs=fs,
+                vcs=vcs,
+                forge=forge,
+                probe_ref=_ORIGIN_MAIN_REF,
+            )
         if heal.escalated_paths:
             paths = ", ".join(heal.escalated_paths)
             findings.append(
@@ -1005,7 +1018,7 @@ def execute_dispatch_land(
                 Finding(
                     code="MRS-DISP-020",
                     severity=Severity.ERROR,
-                    message=f"merge of PR #{pr.number} failed: {exc}",
+                    message=f"merge of PR #{pr.number} failed: {exc}{heal_skipped}",
                 )
             )
             envelope = build_envelope(

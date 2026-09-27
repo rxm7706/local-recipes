@@ -744,18 +744,24 @@ def apply_preserved_code_statuses(
     return out
 
 
+def render_ledger_statuses(template: str, statuses: Mapping[str, str]) -> str:
+    """``template``'s header (everything before ``development_status:``) plus the map, sorted --
+    the generator's own layout. Pure; the text a merge resolution or a rewrite writes (Story 59.1)."""
+    head = ""
+    if template:
+        if "development_status:" in template:
+            head = template.split("development_status:", 1)[0]
+        else:
+            head = template.rstrip() + "\n"
+    body = "".join(f"  {k}: {v}\n" for k, v in sorted(statuses.items()))
+    return head + "development_status:\n" + body
+
+
 def write_ledger_statuses(path: Path, statuses: Mapping[str, str]) -> None:
     """Rewrite the ``development_status:`` map in-place. Never git-commits."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    head = ""
-    if path.is_file():
-        existing = path.read_text(encoding="utf-8")
-        if "development_status:" in existing:
-            head = existing.split("development_status:", 1)[0]
-        else:
-            head = existing.rstrip() + "\n"
-    body = "".join(f"  {k}: {v}\n" for k, v in sorted(statuses.items()))
-    path.write_text(head + "development_status:\n" + body, encoding="utf-8")
+    existing = path.read_text(encoding="utf-8") if path.is_file() else ""
+    path.write_text(render_ledger_statuses(existing, statuses), encoding="utf-8")
 
 
 def save_code_status_snapshot(run_dir: Path, statuses: Mapping[str, str]) -> Path:

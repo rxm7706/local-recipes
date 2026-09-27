@@ -104,17 +104,56 @@ def union_sprint_ledger_maps(*maps: dict[str, str]) -> dict[str, str]:
     return merged
 
 
-def is_mechanical_conflict_path(path: str) -> bool:
-    """True when ``path`` is a known mechanical-only merge conflict."""
+def three_way_ledger_statuses(
+    base: Mapping[str, str],
+    main: Mapping[str, str],
+    branch: Mapping[str, str],
+) -> dict[str, str]:
+    """Story 59.1 review: resolve two ledger maps against their merge base, row by row. A row
+    only one side changed (added, re-statused or removed) takes that side; a row both sides
+    changed alike takes it; a row one side removed and the other re-statused is kept; a row both
+    re-statused differently takes ``done`` if either side finished it (``done`` never regresses
+    -- ``ledger-regression`` reds that, and ``promote_sprint_status`` ranks ``done`` strictly
+    senior to ``blocked``), else ``blocked`` if either side set it (un-blocking is the
+    operator's, never a mechanical merge's -- AGENTS.md), else ``ledger_status_precedence``.
+    A two-way union resurrected retired rows and undid the base's own changes."""
+    out: dict[str, str] = {}
+    for key in sorted(set(base) | set(main) | set(branch)):
+        was, ours, theirs = base.get(key), main.get(key), branch.get(key)
+        if ours == theirs:
+            value = ours
+        elif ours == was:
+            value = theirs
+        elif theirs == was:
+            value = ours
+        elif ours is None or theirs is None:
+            value = ours if ours is not None else theirs
+        elif "done" in (ours, theirs):
+            value = "done"
+        elif "blocked" in (ours, theirs):
+            value = "blocked"
+        else:
+            value = ledger_status_precedence(ours, theirs)
+        if value is not None:
+            out[key] = value
+    return out
+
+
+def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None) -> bool:
+    """True when ``path`` is a known mechanical-only merge conflict. Given ``ledger_rel`` (the
+    landing project's own ledger), only that exact path is mechanical -- another project's
+    ledger is not this landing's to resolve (Story 59.1)."""
     normalized = path.replace("\\", "/")
+    if ledger_rel is not None:
+        return normalized == ledger_rel
     return normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or normalized.endswith(
         SPRINT_LEDGER_BASENAME
     )
 
 
-def unknown_conflict_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
+def unknown_conflict_paths(paths: tuple[str, ...], *, ledger_rel: str | None = None) -> tuple[str, ...]:
     """Conflict paths that are not mechanical — must escalate, never merge."""
-    return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p)))
+    return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel)))
 
 
 # --- Story 51.11 (CAP-258): blocked-twin promotion --------------------------

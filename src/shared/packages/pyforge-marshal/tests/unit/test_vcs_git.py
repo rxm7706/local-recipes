@@ -1825,6 +1825,89 @@ def test_merge_tree_conflict_paths_raises_on_an_unknown_branch(vcs, repo):
         vcs.merge_tree_conflict_paths(repo, "main", "no-such-branch")
 
 
+def test_merge_ref_resolving_commits_a_two_parent_merge_with_the_given_resolution(vcs, repo):
+    """Story 59.1 (CAP-269): the conflicted path takes the given text; the result is a real
+    merge of the ref, so a later three-way merge against that ref is clean."""
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "-b", "readme-only", "feature/conflict~1")
+    (repo / "README.md").write_text("readme-only version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "only README differs")
+    main_sha = _git(repo, "rev-parse", "main").stdout.strip()
+    # main also touched b c.txt / d.txt / e.txt, which this branch never did -> they merge cleanly
+    sha = vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "resolved\n"}, message="union heal")
+
+    parents = _git(repo, "rev-list", "--parents", "-n", "1", sha).stdout.split()[1:]
+    assert parents[1] == main_sha
+    assert (repo / "README.md").read_text(encoding="utf-8") == "resolved\n"
+    assert _git(repo, "log", "-1", "--format=%s", sha).stdout.strip() == "union heal"
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert vcs.merge_tree_conflict_paths(repo, "main", "readme-only") == ()
+
+
+def test_merge_ref_resolving_aborts_on_a_conflict_it_cannot_resolve(vcs, repo):
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "feature/conflict")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    with pytest.raises(VcsCommandError, match="conflicts outside the resolvable paths: .*README.md"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={"b c.txt": "x\n"}, message="union heal")
+
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    probe = subprocess.run(["git", "-C", str(repo), "rev-parse", "-q", "--verify", "MERGE_HEAD"], capture_output=True)
+    assert probe.returncode != 0  # no merge left in progress
+
+
+def test_merge_ref_resolving_reports_an_unwritable_resolution_as_a_vcs_error_and_aborts(vcs, repo, monkeypatch):
+    """Story 59.1 review 2: an OSError writing the resolution used to escape raw and crash
+    `dispatch land`; it is the port's `VcsCommandError`, and the merge is aborted."""
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "-b", "readme-only", "feature/conflict~1")
+    (repo / "README.md").write_text("readme-only version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "only README differs")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    def _refuse(self, *args, **kwargs):
+        raise PermissionError(13, "Permission denied", str(self))
+
+    monkeypatch.setattr(Path, "write_text", _refuse)
+    with pytest.raises(VcsCommandError, match="cannot write the resolution of README.md"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "resolved\n"}, message="union heal")
+    monkeypatch.undo()
+
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(repo, "status", "--porcelain").stdout == ""
+
+
+def test_merge_ref_resolving_refuses_and_leaves_a_merge_already_in_progress(vcs, repo):
+    """Story 59.1 review: a pending merge in the worktree is someone else's -- never adopted
+    (committed under the heal's message) nor aborted (their work lost)."""
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "feature/conflict")
+    subprocess.run(["git", "-C", str(repo), "merge", "--no-commit", "main"], capture_output=True)  # conflicts
+    theirs = _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip()
+
+    with pytest.raises(VcsCommandError, match="already in progress"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "x\n"}, message="union heal")
+
+    assert _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip() == theirs
+
+
+def test_merge_ref_resolving_is_a_no_op_for_a_ref_already_merged(vcs, repo):
+    _git(repo, "checkout", "-q", "-b", "ahead")
+    (repo / "ahead.txt").write_text("a\n", encoding="utf-8")
+    _git(repo, "add", "ahead.txt")
+    _git(repo, "commit", "-m", "ahead of main")
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    assert vcs.merge_ref_resolving(repo, "main", resolutions={}, message="union heal") == head
+
+
+def test_merge_ref_resolving_raises_on_an_unknown_ref(vcs, repo):
+    with pytest.raises(VcsCommandError, match="git merge --no-commit no-such-ref failed"):
+        vcs.merge_ref_resolving(repo, "no-such-ref", resolutions={}, message="union heal")
+
+
 def test_merge_tree_conflict_paths_is_empty_for_a_clean_merge(vcs, repo):
     _git(repo, "checkout", "-q", "-b", "feature/clean")
     (repo / "feature.txt").write_text("feature\n", encoding="utf-8")

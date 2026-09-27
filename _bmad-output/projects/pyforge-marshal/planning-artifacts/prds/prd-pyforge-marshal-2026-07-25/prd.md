@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
+updated: "2026-09-27"   # RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
@@ -2648,3 +2648,28 @@ a follow-up story makes it a merge of the base. Story 58.1.
 
 **Content changed:** § 25 added (FR-214 registered). No AD amended — the fix is inside the existing
 `VcsPort` adapter; the port's contract is the one Story 28.20 already specified.
+
+## 26. Currency reconciliation — 2026-09-27 (evening, cont.)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-269 the same evening as CAP-268, from
+Story 58.1's review. Same-day reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 26.1 The FR space: FR-215 registered
+
+With conflicts visible (FR-214), the ledger union heal was reachable and fell short: a
+single-parent union commit clears a same-row status conflict but not adjacent added rows, and it
+was pushed to the PR branch regardless. FR-215 decomposes into **Epic 59** (Story 59.1) — a new
+epic because Epic 58 rolled up to `done`.
+
+#### FR-215: The ledger union heal merges the base ← CAP-269
+The heal probes `refs/remotes/origin/main` after a fetch; a ledger-only conflict is healed by a
+real two-parent merge of that ref into the dispatch branch with the landing project's own ledger
+resolved three-way against the merge base (`done` never regresses, `blocked` is never undone),
+and any other conflict aborts the merge before a commit or a push; once the heal's merge is
+committed, a failure ends the attempt — never the local-`main` advance; only the landing
+project's ledger is mechanical. Story 59.1.
+
+**ONE FR space now FR-1..FR-215** (FR-216 = next free id).
+
+**Content changed:** § 26 added (FR-215 registered). No AD amended — one additive `VcsPort` method
+(`merge_ref_resolving`); the heal stays outside `core/` (AD-4) and its classification stays pure.
