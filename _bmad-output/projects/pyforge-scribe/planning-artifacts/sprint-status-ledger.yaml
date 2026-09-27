@@ -36,7 +36,7 @@ development_status:
   2-3-fact-supersession-in-the-compiled-graph: done
   2-4-scribe-recall-grounded-cited-answers: done
   20-1-the-parity-meta-test-reds-a-todo-inside-the-managed-block: done
-  21-1-agents-md-opens-with-what-this-repository-is: backlog
+  21-1-agents-md-opens-with-what-this-repository-is: done
   22-1-scribe-pg-up-succeeds-from-a-long-path-worktree: backlog
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
@@ -81,7 +81,7 @@ development_status:
   epic-2-retrospective: optional
   epic-20: done
   epic-20-retrospective: optional
-  epic-21: backlog
+  epic-21: done
   epic-21-retrospective: optional
   epic-22: backlog
   epic-22-retrospective: optional

@@ -2,7 +2,7 @@
 id: SPEC-scribe
 spec: pyforge-scribe
 status: ready
-updated: "2026-09-25"
+updated: "2026-09-26"
 owner-dream: docs/dreams/pyforge-scribe.md
 covers-dreams:
   - docs/dreams/pyforge-scribe.md
@@ -30,6 +30,7 @@ surface:
   - scripts/scribe_graph_freshness_check.py
   - scripts/claude_instruction_mode_check.py
   - AGENTS.md
+  - CLAUDE.md
   - GEMINI.md
   - .gemini/settings.json
   - .github/copilot-instructions.md
@@ -38,6 +39,9 @@ surface:
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py
   - src/shared/packages/pyforge-scribe/tests/unit/test_navigation_owner.py
   - .cursor/rules/scribe-recall.mdc
+  - .cursorrules
+  - .cursor/rules/specs.mdc
+  - .cursor/rules/trunk-worktree-pr.mdc
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
