@@ -3954,6 +3954,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_context_bundle.py": "150fb48119ae8bc0d52bf2f8485dc716acc836a5",
    "src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py": "61484a9724ef365622bc31c61c7e3902f1116492",
    "src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py": "5ad2698b453d1467b1bd3761d7f81c00297b9254",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_deploy_renderers.py": "c1e67ba38e7233ec932052b2fd53aab8dc05695d",
    "src/shared/packages/pyforge-marshal/tests/unit/test_derived_context.py": "f35697e9b3fd728c2c393daaf7c9df1b24d97ebb",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py": "94c31d224b640dba04524a13fc6cd5795b4fd2ee",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py": "77015cafa9888a3804fd601ce8b8d7279be4b35e",
@@ -3973,6 +3974,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_state.py": "d6d9cc1eb03cf92f07890e5009538e1c05afac60",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_survival.py": "ed19aa97c1afb347a4ff8e692ab028e26559c38a",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py": "eac9e9d164817e7721784752babd7f3686c5a01f",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_commands.py": "ae5daa60e1d665adaebc6c02f185bb5b380be6d0",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py": "f3b01e5a04240c2cdc56d4357723ce68dc9719fe",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_wave_status.py": "738121e789b27132c2f7a39c7f80449b597bc931",
    "src/shared/packages/pyforge-marshal/tests/unit/test_durability.py": "f94ef466c03174e00805e82a774e9f48251d44bb",
@@ -4086,7 +4088,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "f173d95575e09382d62fb9968d961463c04144d6"
+  "memlog": "f381177a23f5b08ca41c688d711474aa304cf636"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
