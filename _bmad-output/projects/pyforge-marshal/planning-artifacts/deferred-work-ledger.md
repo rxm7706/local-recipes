@@ -6742,7 +6742,8 @@ status: open
   location: scripts/fleet_picture.py
   severity: low
   fix: when composing `landing_findings`, drop (or render as "reconciled") a refusal whose story key reads `done` in the tracked ledger and whose PR is merged; alternatively have `sprint-ledger-sync` append a `dispatch-land` reconciliation OUTCOME to the run journal when it promotes the key, so the journal itself stops lying.
-  status: open
+  status: closed
+  resolved: 2026-09-27 (Story 56.1, spec-pyforge-marshal CAP-266) — `marshal status` marks a refused landing whose story is on `main` (`dispatch_landing_superseded`, beside the unchanged findings, with the run's own `dispatch_story`); `fleet-picture` lists it as not waiting on the operator when the tracked ledger also reads the story `done`, and keeps a merged-but-unpromoted one in ATTENTION. Live: doctor 30.3 and marshal 46.6 both moved out of ATTENTION. The fix sits in `cli/status.py` + `scripts/fleet_picture.py` rather than `fleet_picture.py` alone, and neither of the entry's two suggested mechanisms was taken as written: the journal is never rewritten (AD-33).
 
 ## DW-marshal-bmad-loop-0-12-cap-2026-09-26 — pyforge-marshal caps `bmad-loop <0.12` while the channel now serves bmad-loop 0.12.0; the pixi floor cannot follow the published build until marshal is re-verified against 0.12.x
 
@@ -6754,3 +6755,33 @@ status: open
   fix: run marshal's suite (`pixi run -e pyforge-marshal pyforge-marshal-test`) with bmad-loop 0.12.0 installed, confirm the three lazily-imported module paths still resolve, then widen the cap to `<0.13` in the pyproject and raise the `pixi.toml` floors to `>=0.12.0` in the same PR (re-lock; `environment.yaml` re-export; `llms-full-check`). Loop homes install bmad-loop from these envs, so until then they stay on 0.11.1.
   status: closed
   resolved: 2026-09-26 (PR #1607, round three) — bmad-loop 0.12.0 verified: the four lazily-imported modules ship, the full marshal suite passes (8652 passed) in a re-solved env carrying 0.12.0; cap widened to `<0.13` in pyproject.toml, the package pixi.toml and the FR-52 range constants (+ 4 fixture tests moved to 0.13.2; one accepted 0.12.0's own `must contain a top-level mapping` config-shape wording). pixi.toml floors moved to `>=0.12.0`, channel-pinned to SelfExplainML because conda-forge/bmad-loop-feedstock (2026-09-20) gates `__unix` and strict priority shadowed the estate build on win-64.
+
+## DW-marshal-repair-feed-drops-trailing-metadata-2026-09-27 — `repair_feed` rewrites a Tier-3 feed as "everything before `development_status:`" plus the map, so a feed whose top-level metadata follows the map loses it
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-265 — Story 54.1 makes `dispatch_land_finalize` call this repair automatically on every landing)
+  summary: marshal's Tier-3 feed (`implementation-artifacts/sprint-status.yaml`) carries `generated`, `last_updated`, `project`, `project_key`, `tracking_system` and `story_location` AFTER its `development_status:` map. `scripts/promote_sprint_status.py::repair_feed` writes `head + "development_status:\n" + sorted map`, where `head` is only the text before the marker, so all six keys are dropped. By hand this is one lost block per `--repair-feed`; once Story 54.1 wires the repair into `dispatch_land_finalize`, it happens on every landing whose feed has drifted.
+  evidence: probe 2026-09-27 on a scratch copy of marshal's feed — `repair_feed(copy, parse_sprint_status(copy), twin)` restored 24 regressed + 15 missing keys and the four keys checked (`generated`, `project`, `project_key`, `story_location`) were all gone from the output; the Story 56.1 mint aligned the live feed with a layout-preserving script instead.
+  location: scripts/promote_sprint_status.py
+  severity: medium
+  fix: split the feed at the `development_status:` block's end (the first following line that starts a top-level key), not only at its start, and write `head + block + tail`; add a regression test with trailing metadata. Home: Story 54.1, which already names `scripts/promote_sprint_status.py`'s repair path in its Surface — land the fix there before the repair runs unattended.
+  status: open
+
+## DW-marshal-disp020-two-meanings-2026-09-27 — `MRS-DISP-020` names two different failures: a PR that could not be merged, and a promote + ledger finalize that failed after the PR merged
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-266; AD-15, findings are coded, never free-text-only)
+  summary: `dispatch_land.py` emits ERROR `MRS-DISP-020` when `forge.merge_pr` fails and again when the `dispatch_land_finalize` subprocess fails after `data["merged"] = True`. The journaled land outcome carries no `merged` flag, so a consumer can tell the two apart only by message text. Story 56.1's review found the consequence: a git-only "landed since" predicate would call a finalize failure "not waiting on you". 56.1 closes that with the tracked ledger's `done` in `fleet-picture`, but the code itself still conflates the two. Known limit of that closure (56.1 review 2, L2): the ledger's `done` proves the ledger half of the finalize, not the spec-promotion half — `dispatch_land_finalize` promotes specs first, then the ledger, and exits 1 on any ERROR, so a spec copy/commit failure (`MRS-DEPLOY-003`) with a successful ledger promotion still reads "not waiting on you". Rare (dispatch specs are usually already tracked, and teardown refuses to lose an unpromoted spec); the distinct code below closes both halves.
+  evidence: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — the `if not heal.healed:` branch (merge failure) and the `except ProcessError` branch after `data["merged"] = True` (finalize failure) both append `code="MRS-DISP-020"`; `dispatch_supervisor/__main__.py`'s KIND_DISPATCH_LAND outcome payload has `pr_number`, `merge_sha`, `land_findings`, no `merged`.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  severity: low
+  fix: register a new code (e.g. `MRS-DISP-0xx` "dispatch land finalize failed after merge") in `core/findings.py` + `core/verdict.py`, emit it from the finalize branch, and journal `merged` on the land outcome; `fleet-picture` can then name "finish the promote + ledger" from the code rather than from the ledger fallback. Needs its own Story (the 56.1 Boundaries forbid touching `dispatch_land.py`).
+  status: open
+
+## DW-marshal-slow-lane-red-2026-09-27 — `pyforge-marshal-test-slow` is red on two integration tests no CI lane runs
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (FR-52 harness range; Genesis seed adopt)
+  summary: two `@pytest.mark.slow` integration tests fail; the default `pyforge-marshal-test` lane excludes them (`-m "not slow"`) and no `.github/workflows/*.yml` runs the slow lane, so nothing caught them. (1) `tests/integration/test_init_worktree.py::test_preflight_end_to_end_converges_seeds_and_acknowledges` asserts the literal `harness_version: 0.11.0`, stale since PR #1607 moved the environments to bmad-loop 0.12.0 — the same "grep the tests for the literal" lesson the 2026-09-26 retro recorded for the fixture ranges. (2) `tests/integration/test_local_recipes_empty_plan.py::test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred` finds a 21-action `marshal seed adopt` dry-run plan against the live tree, probably since scribe 21.1 rewrote `AGENTS.md` (2026-09-26).
+  evidence: `pixi run -e pyforge-marshal pyforge-marshal-test-slow` on 2026-09-27 (branch `landing-refusal-landed-since`, Story 56.1, which touches neither test nor the code they exercise) — exit 1, 2 failed, 9 passed, 2 skipped; the 56.1 reviewer reproduced both twice.
+  location: src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py
+  severity: medium
+  fix: (1) assert the harness version against the installed release (or `HARNESS_VERSION_RANGE_TEXT`), never a literal; (2) read the 21 planned actions — either the seed's AGENTS.md expectations moved with scribe 21.1 (update the seed) or the plan is right and the file drifted; then decide whether a CI lane should run `-m slow` on a schedule so the next one is caught.
+  status: open

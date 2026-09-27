@@ -7,10 +7,12 @@ self-report without passing independent verification (Story 22.3).
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import StrEnum
 
 from . import promotion
 from .dispatch_verification import DispatchVerificationVerdict
+from .model import Severity
 
 
 class DispatchLandingVerdict(StrEnum):
@@ -41,6 +43,26 @@ def refuse_unverified_landing(
 def merge_subject_is_marshal_native(subject: str, template: str, project_slug: str) -> bool:
     """True when ``subject`` classifies marshal-native (FR-187 / Story 5.10)."""
     return bool(promotion.marshal_native_merged_keys((subject,), template, project_slug))
+
+
+def landing_was_refused(landing_findings: tuple[Mapping[str, object], ...]) -> bool:
+    """True when a dispatch landing's journaled findings include a refusal:
+    an ERROR-severity finding. A WARN-only landing (MRS-DISP-047) is not a
+    refusal (Story 56.1)."""
+    return any(finding.get("severity") == Severity.ERROR for finding in landing_findings)
+
+
+def landing_refusal_superseded(
+    landing_findings: tuple[Mapping[str, object], ...],
+    *,
+    story_merged_on_main: bool,
+) -> bool:
+    """True when a dispatch landing was refused and its story has since
+    landed on ``main`` by another route (Story 56.1, CAP-266).
+
+    The refusal stays the journal's process fact (AD-5); this reports git's
+    repository fact beside it (AD-33), never in place of it."""
+    return story_merged_on_main and landing_was_refused(landing_findings)
 
 
 # --- Story 28.20 (CAP-4): mechanical land-conflict union -----------------

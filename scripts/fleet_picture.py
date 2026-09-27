@@ -270,6 +270,22 @@ def ledger_story_done(stories: dict[str, str], story: str) -> bool:
     return any(k.startswith(prefix) and v == "done" for k, v in stories.items())
 
 
+_STORY_KEY_STEM = re.compile(r"(\d+)[.-](\d+)([a-z]?)(?:-|$)")
+
+
+def ledger_story_key_done(stories: dict[str, str], story: str) -> bool:
+    """True when the tracked ledger marks exactly ``story`` done -- a key
+    given as ``30.3``, ``30-3`` or ``30-3-<title>``, with an optional letter
+    suffix (``6.1a``). Unlike ``ledger_story_done``'s epic-seq fallback, a
+    suffixed story never matches its base story's row, and anything that
+    does not parse is not done (Story 56.1, review 2)."""
+    m = _STORY_KEY_STEM.match(story.strip())
+    if not m:
+        return False
+    stem = f"{m.group(1)}-{m.group(2)}{m.group(3)}"
+    return any(v == "done" and (k == stem or k.startswith(stem + "-")) for k, v in stories.items())
+
+
 def story_ledger_status(stories: dict[str, str], story: str) -> str | None:
     """Ledger status for ``story``'s epic-seq key, if any."""
     if not story:
@@ -824,6 +840,13 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 # findings (MRS-DISP-047/048), same visibility rationale as
                 # `scope_advisories` above.
                 "landing_findings": r.get("dispatch_landing_findings") or [],
+                # Story 56.1 (CAP-266): the refused landing's story is on
+                # `main` -- marshal status reports it beside the unchanged
+                # findings, set only on a corroborated merge -- and the
+                # dispatch run's own story, which `current_story` is not
+                # (review 1, medium).
+                "landing_superseded": r.get("dispatch_landing_superseded") is True,
+                "landing_story": r.get("dispatch_story") or "",
                 "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
                 "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
                 "dispatch_stranded_work": r.get("dispatch_stranded_work"),
@@ -972,7 +995,7 @@ def main() -> int:
     open_prs_by_head = _open_prs_by_head_ref()
     for (
         slug, n, done, _cmpl, _proj, blkd, _ep, _epn, _epc, _epp, run, hstate, back,
-        awaiting, _stories, _qb, _in_flight,
+        awaiting, stories, _qb, _in_flight,
     ) in rows:
         live_row = live.get(slug, {}) or {}
         story = current.get(slug, live_row.get("story") or "")
@@ -1091,8 +1114,25 @@ def main() -> int:
                 codes = ",".join(dict.fromkeys(
                     str(f.get("code") or "?") for f in errors
                 ))
-                needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
-                             f"-- {codes}")
+                # Story 56.1 (CAP-266): marshal status marks a refusal whose
+                # story is on `main` (a git fact). It is history only when the
+                # tracked ledger -- this report's own source -- also reads the
+                # story `done`: a finalize (promote + ledger) that failed
+                # AFTER the merge journals the same MRS-DISP-020 and still
+                # owes that work (review 1, high).
+                landed = str(live_row.get("landing_story") or "")
+                on_main = live_row.get("landing_superseded") is True
+                if on_main and ledger_story_key_done(stories, landed):
+                    watch.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes} -- but {landed} has since landed on main "
+                                 f"and reads done, not waiting on you")
+                elif on_main:
+                    needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes} -- {landed or 'its story'} is on main but "
+                                 f"its ledger key is not done: finish the promote + ledger")
+                else:
+                    needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes}")
             if warns:
                 codes = ",".join(dict.fromkeys(
                     str(f.get("code") or "?") if isinstance(f, dict) else "?"

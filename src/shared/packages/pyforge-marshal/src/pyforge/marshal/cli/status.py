@@ -122,10 +122,11 @@ from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import dispatch_fleet, layer_savings_sources, promotion
+from ..core import dispatch as dispatch_core
+from ..core import dispatch_fleet, dispatch_landing, layer_savings_sources, promotion
 from ..core import policy as policy_core
 from ..core import status as status_core
-from ..core.identity import MalformedStoryKeyError, normalize
+from ..core.identity import MalformedStoryKeyError, StoryKey, normalize
 from ..core.journal import Phase, fold
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import Verdict, classify, compute_verdict, exit_code_for
@@ -1395,7 +1396,12 @@ def _name_patches(named: list[tuple[str, dict[str, object]]]) -> str:
     return f"{len(keys)} patch(es) ({', '.join(keys)})"
 
 
-def _merged_keys_for_slug(slug: str, main_subjects: tuple[str, ...]) -> tuple[frozenset[str], tuple[Finding, ...]]:
+def _merged_keys_for_slug(
+    slug: str,
+    main_subjects: tuple[str, ...],
+    *,
+    spec_status_for: promotion.SpecStatusReader | None = None,
+) -> tuple[frozenset[str], tuple[Finding, ...]]:
     """``slug``'s own durably-merged story keys, as canonical dot-form
     ``str``s, plus every ``Finding`` raised while resolving ``slug``'s own
     ``merge_subject_template`` (Story 4.14) -- the ONE policy-read-then-
@@ -1432,7 +1438,13 @@ def _merged_keys_for_slug(slug: str, main_subjects: tuple[str, ...]) -> tuple[fr
     automatically here via the ``slug`` already passed to
     ``merged_story_keys`` below. So the honest reading now: ABSENT still
     proves nothing (the squash-merge blind spot below remains real), but
-    PRESENT is no longer cross-project blind."""
+    PRESENT is no longer cross-project blind.
+
+    ``spec_status_for`` (Story 56.1, CAP-266): when given, the keys come from
+    ``promotion.corroborated_merged_story_keys`` -- the form ``dispatch
+    land`` uses for ALREADY_LANDED, where a station-branch PR merge counts
+    only if the key's tracked spec reads ``done`` on ``origin/main`` (Story
+    51.7/CAP-255). Omitted, the uncorroborated form is unchanged."""
     findings: list[Finding] = []
     project_data: Mapping[str, object] = {}
     if policy_core._is_valid_project_slug(slug):
@@ -1449,8 +1461,85 @@ def _merged_keys_for_slug(slug: str, main_subjects: tuple[str, ...]) -> tuple[fr
     effective, policy_findings = policy_core.compose(project_slug=slug, project=project_data, flags={})
     findings.extend(policy_findings)
     template = effective.merge_subject_template.value
-    merged = frozenset(str(key) for key in promotion.merged_story_keys(main_subjects, template, slug))
+    if spec_status_for is None:
+        keys = promotion.merged_story_keys(main_subjects, template, slug)
+    else:
+        keys = promotion.corroborated_merged_story_keys(main_subjects, template, slug, spec_status_for=spec_status_for)
+    merged = frozenset(str(key) for key in keys)
     return merged, tuple(findings)
+
+
+@dataclass
+class _MainSubjects:
+    """``main``'s commit subjects, read at most once per status sweep and
+    shared by every consumer in it: Story 4.14's failed-patch check and
+    Story 56.1's landing-superseded check. ``subjects`` is ``None`` until a
+    read succeeds; ``error`` keeps a failed read's cause for the caller that
+    reports it (the failed-patch check's ``MRS-STATUS-011``)."""
+
+    attempted: bool = False
+    subjects: tuple[str, ...] | None = None
+    error: VcsCommandError | None = None
+
+    def read(self, vcs: VcsPort, root: Path) -> tuple[str, ...] | None:
+        if not self.attempted:
+            self.attempted = True
+            try:
+                self.subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+            except VcsCommandError as exc:
+                self.error = exc
+        return self.subjects
+
+
+def _landing_superseded(
+    facts: status_core.FleetHomeFacts,
+    *,
+    slug: str,
+    main: _MainSubjects,
+    vcs: VcsPort,
+    repo_root: Path,
+) -> bool:
+    """Story 56.1 (CAP-266): is this row's refused dispatch landing's story
+    on ``main``?
+
+    A git fact only. It does not say the landing's post-merge finalize ran
+    -- a finalize (promote + ledger) failure journals the same
+    ``MRS-DISP-020`` after the merge -- so whether anything is still owed
+    needs the tracked ledger too, which this summary must not read (AD-5)
+    and ``fleet-picture`` does.
+
+    Reads ``main`` only for a row that carries a refusal. Fails closed: an
+    unparseable story key, an unreadable ``main``, or a policy finding that
+    would change the exit code all answer ``False``, so the refusal stays
+    actionable rather than being hidden on a guess. The spec-status reader
+    answers only for this row's own key -- the one membership asked about --
+    so other keys' station-branch merges cost nothing; it runs one ``git
+    show`` per station-branch merge that names this key."""
+    if not facts.dispatch_story or not dispatch_landing.landing_was_refused(facts.dispatch_landing_findings):
+        return False
+    try:
+        story_key = str(normalize(facts.dispatch_story))
+    except MalformedStoryKeyError:
+        return False
+    subjects = main.read(vcs, repo_root)
+    if subjects is None:
+        return False
+
+    def _spec_status_for(candidate_key: StoryKey) -> str | None:
+        if str(candidate_key) != story_key:
+            return None
+        try:
+            spec_text = dispatch_core.spec_text_at_ref(vcs, repo_root, slug, story_key)
+        except VcsCommandError:
+            return None
+        return promotion.read_spec_status(spec_text)
+
+    merged, keys_findings = _merged_keys_for_slug(slug, subjects, spec_status_for=_spec_status_for)
+    if any(classify(f.code) not in (Verdict.CLEAN, Verdict.WARN) for f in keys_findings):
+        return False
+    return dispatch_landing.landing_refusal_superseded(
+        facts.dispatch_landing_findings, story_merged_on_main=story_key in merged
+    )
 
 
 def run_status(
@@ -1631,10 +1720,10 @@ def run_status(
     # purely so a fleet with genuinely zero failed patches never pays for
     # it at all -- that is a degenerate-case optimization, NOT the common
     # path: measured 2026-08-10, 7 of 8 live loop homes carry at least one
-    # patch, so a real sweep performs this read essentially always.
-    main_subjects_attempted = False
-    main_subjects_available = False
-    main_subjects: tuple[str, ...] = ()
+    # patch, so a real sweep performs this read essentially always. Story
+    # 56.1 (CAP-266) shares the same single read for its landing-superseded
+    # check, through `_MainSubjects`.
+    main = _MainSubjects()
     # `_MRS_STATUS_011`'s cause 1 is recorded here and reported ONCE after
     # the whole per-home loop, so the single sweep-wide WARN can NAME every
     # patch it degraded (the intent contract's Always bullet) -- it cannot
@@ -1696,6 +1785,11 @@ def run_status(
         stranded = status_core.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed_by_ref)
         if stranded is not None:
             facts = replace(facts, dispatch_stranded_work=stranded)
+        # Story 56.1 (CAP-266): a refused landing whose story is on `main`
+        # carries that git fact beside its unchanged findings -- never
+        # deleted, never a gate.
+        if _landing_superseded(facts, slug=slug, main=main, vcs=vcs, repo_root=git_repo_root):
+            facts = replace(facts, dispatch_landing_superseded=True)
 
         # Story 4.14 (FR-176): the failed-story patch safety net -- a
         # session-timeout-killed story's preserved diff, glob'd off this
@@ -1705,22 +1799,18 @@ def run_status(
         # and this gate never opens for a directory named `changes.patch`.
         patch_paths = _gather_failed_patches(home) if home is not None else ()
         if patch_paths:
-            if not main_subjects_attempted:
-                main_subjects_attempted = True
-                try:
-                    main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE_BRANCH)
-                    main_subjects_available = True
-                except VcsCommandError as exc:
-                    # `_MRS_STATUS_011`'s cause 1: an unreadable `main`.
-                    # Recorded here, REPORTED once after the whole sweep --
-                    # see the emission site below the per-home loop. The
-                    # read itself is still attempted at most once.
-                    main_read_error = exc
+            main_subjects = main.read(vcs, git_repo_root)
+            if main_subjects is None and main_read_error is None:
+                # `_MRS_STATUS_011`'s cause 1: an unreadable `main`.
+                # Recorded here, REPORTED once after the whole sweep --
+                # see the emission site below the per-home loop. The
+                # read itself is still attempted at most once.
+                main_read_error = main.error
 
             merged_keys: frozenset[str] = frozenset()
-            keys_available = main_subjects_available
+            keys_available = main_subjects is not None
             withheld_codes: tuple[str, ...] = ()
-            if main_subjects_available:
+            if main_subjects is not None:
                 merged_keys, keys_findings = _merged_keys_for_slug(slug, main_subjects)
                 # `_MRS_STATUS_011`'s cause 2 (review finding, 2026-08-10,
                 # Blind Hunter): a malformed project-policy file for `slug`

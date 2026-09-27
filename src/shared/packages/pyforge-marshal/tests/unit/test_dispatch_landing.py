@@ -13,6 +13,8 @@ from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
     blocked_twin_promotion_text,
+    landing_refusal_superseded,
+    landing_was_refused,
     ledger_status_precedence,
     may_attempt_dispatch_landing,
     merge_subject_is_marshal_native,
@@ -50,6 +52,27 @@ def test_may_attempt_only_when_verified_and_not_merged() -> None:
     assert may_attempt_dispatch_landing(DispatchVerificationVerdict.VERIFIED, story_merged_on_main=False)
     assert not may_attempt_dispatch_landing(DispatchVerificationVerdict.REFUSED, story_merged_on_main=False)
     assert not may_attempt_dispatch_landing(DispatchVerificationVerdict.VERIFIED, story_merged_on_main=True)
+
+
+_REFUSAL = ({"code": "MRS-DISP-020", "severity": "error", "message": "merge of PR #1585 failed"},)
+_WARN_ONLY = ({"code": "MRS-DISP-047", "severity": "warn", "message": "reconciled"},)
+
+
+def test_only_an_error_severity_finding_is_a_refusal() -> None:
+    """Story 56.1 (CAP-266)."""
+    assert landing_was_refused(_REFUSAL)
+    assert landing_was_refused((*_WARN_ONLY, *_REFUSAL))
+    assert not landing_was_refused(_WARN_ONLY)
+    assert not landing_was_refused(())
+
+
+def test_a_refusal_is_superseded_only_once_its_story_is_on_main() -> None:
+    """Story 56.1 (CAP-266): both a refusal and the merge are required; a
+    WARN-only landing is never superseded, whatever `main` says."""
+    assert landing_refusal_superseded(_REFUSAL, story_merged_on_main=True)
+    assert not landing_refusal_superseded(_REFUSAL, story_merged_on_main=False)
+    assert not landing_refusal_superseded(_WARN_ONLY, story_merged_on_main=True)
+    assert not landing_refusal_superseded((), story_merged_on_main=True)
 
 
 def test_merge_subject_is_marshal_native_with_policy_template() -> None:

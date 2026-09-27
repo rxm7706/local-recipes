@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-26"   # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
+updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-212 / CAP-266 (Epic 56). No AD amended. See § 23. Prior 2026-09-26
+# 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
 # 2026-09-14  # currency reconciliation (§ 19): `spec-pyforge-marshal` moved to 2026-09-13 while this PRD sat at 2026-09-08. The Spec's 2026-09-09 OPERATOR ANSWERING PASS closed six items that this PRD still carried as open under its OWN numbering — Q-4 (fleet budgets), Q-5 (OTel), Q-6 (ACP trigger), Q-7 (idle threshold) — plus the trust-model declaration (Spec F-4) and the freeze-writer clause (Spec F-5). Those four § 13 entries are amended in place with dated ANSWERED text, § 8's fleet-budget Non-Goal is amended, and § 11 gains C-11 (the declared, advisory-in-v1 trust model). This is a CONTENT change, not a re-stamp.
@@ -2566,3 +2567,33 @@ one test accepts both wordings. Two facts recorded for the record, neither an FR
 (2026-09-20, not this repo's) ships `__unix`-gated builds that strict channel priority would
 otherwise prefer; and the § 22 Stack literal above is corrected in place, the same way the
 2026-08-26 reconcile corrected `<0.10` → `<0.12`. `updated:` bumped to record that the check ran.
+
+## 23. Currency reconciliation — 2026-09-27
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-266 on 2026-09-27 while this PRD sat at
+2026-09-26. Same-day reconcile; FR derived from the CAP per `one-chain-per-station`'s rule that the
+PRD is the Spec's decomposition, never an independent namespace.*
+
+### 23.1 The FR space: FR-212 registered
+
+The 2026-09-25..27 fleet pictures kept `landing refused -- MRS-DISP-020` in ATTENTION for doctor
+30.3 (PR #1585) and marshal 46.6 (PR #1597) after both PRs had merged by another route and both
+keys read `done` in their tracked ledgers. FR-212 decomposes into **Epic 56** (Story 56.1) — a new
+epic because Epic 53, whose Story 53.2 review first surfaced landing findings in status, is `done`.
+
+#### FR-212: A landing refusal whose story has since landed is reported as superseded ← CAP-266
+`marshal status` keeps the newest dispatch run's landing findings verbatim and, when one is
+ERROR-severity and the row's story key is among `main`'s corroborated merged keys (the check
+`dispatch land` already uses for ALREADY_LANDED), adds `dispatch_landing_superseded: true` to the
+JSON row — a git fact — with the run's own story as `dispatch_story`; `main` is read at most once
+per sweep, and an unreadable `main` or a policy ERROR leaves the marker off. Because a post-merge
+promote + ledger failure journals the same `MRS-DISP-020`, `fleet-picture` lists a refusal as not
+waiting on the operator only when the marker is set AND the tracked ledger reads the story `done`;
+otherwise it stays in ATTENTION (amended 2026-09-27 after the story's review). Fixture: doctor
+30.3 / marshal 46.6. Story 56.1.
+
+**ONE FR space now FR-1..FR-212** (FR-213 = next free id).
+
+**Content changed:** § 23 added (FR-212 registered). No FR renumbered or removed. No AD amended —
+the marker is the journal fact and the git fact reported side by side (AD-5, AD-33), with no new
+port or decision boundary.
