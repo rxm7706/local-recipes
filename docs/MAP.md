@@ -220,6 +220,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | Page | Owner | Kind |
 |---|---|---|
 | [`reference/README.md`](reference/README.md) | fleet | pointer |
+| [`reference/agent-instruction-notes.md`](reference/agent-instruction-notes.md) | scribe | authored |
 | [`reference/agent-memory-lifecycle.md`](reference/agent-memory-lifecycle.md) | fleet | authored |
 | [`reference/antigravity-developer-startup.md`](reference/antigravity-developer-startup.md) | fleet | pointer |
 | [`reference/conda-forge-packaging-inventory-operations_prompt.md`](reference/conda-forge-packaging-inventory-operations_prompt.md) | fleet | authored |
