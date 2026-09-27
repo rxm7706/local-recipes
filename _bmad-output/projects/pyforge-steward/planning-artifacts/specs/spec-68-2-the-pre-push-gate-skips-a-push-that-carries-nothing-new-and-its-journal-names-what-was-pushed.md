@@ -18,7 +18,7 @@ declared_low_risk: false
 
 **Problem:** every `.steward/preflight-skips.log` line `scripts/pre_push_preflight.sh` (CAP-154) writes records the checked-out branch and its HEAD — `main`, eight times, for the 2026-09-27 loop-home refresh — not the refs pushed, so the journal cannot say what left the machine unchecked; and the delete skip is not journaled at all. The refresh itself paid ~80 minutes of preflight for eight fast-forwards to `origin/main`.
 
-**Approach (after review 1):** one `journal_skip` helper writes every skip line — branch delete, `dispatch/*`, the manual `PYFORGE_PREFLIGHT_SKIP=1` — with the pushed remote ref(s) and local sha(s), falling back to the checked-out branch and HEAD only when the hook received no ref information. The hook adds **no** skip of its own: the "nothing new" skip this story first shipped was refused in review, because under pre-commit the hook receives only the first ref of a multi-ref push and cannot prove what the others carry. The refresh's cost is fixed where the proof lives — `marshal refresh` sets the journaled opt-out for its own proven fast-forward push (marshal Story 57.1, spec-pyforge-marshal CAP-267). This story's title is the ledger key of record and is kept.
+**Approach (after review 1):** one `journal_skip` helper writes every skip line — branch delete, `dispatch/*`, the manual `PYFORGE_PREFLIGHT_SKIP=1` — with the pushed remote ref(s) and local sha(s), falling back to the checked-out branch and HEAD only when the hook received no ref information. The hook adds **no** skip of its own: the "nothing new" skip this story first shipped was refused in review, because under pre-commit the hook receives only the first ref of a multi-ref push and cannot prove what the others carry. The refresh's cost is fixed where the proof lives — `marshal refresh` sets the journaled opt-out for its own proven fast-forward push (marshal Story 57.1, pyforge-marshal:CAP-267). This story's title is the ledger key of record and is kept.
 
 Ledger key: `68-2-the-pre-push-gate-skips-a-push-that-carries-nothing-new-and-its-journal-names-what-was-pushed`.
 Ledger status (do not edit the ledger): `done`.
@@ -26,7 +26,7 @@ Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
 
-- `spec-pyforge-steward` CAP-156 (extends CAP-154); the refresh skip is `spec-pyforge-marshal` CAP-267.
+- `spec-pyforge-steward` CAP-156 (extends CAP-154); the refresh skip is `spec-pyforge-marshal` pyforge-marshal:CAP-267.
 
 ## Acceptance Criteria
 

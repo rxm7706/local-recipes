@@ -4497,7 +4497,7 @@ skip journal that names the checked-out branch instead of what was pushed. **HAR
 stands (work still archives; only reinstallable env dirs are left out); a record the sweep cannot decide is kept,
 never dropped; the pre-push hook gains NO skip of its own (review 1: under pre-commit it sees only the first ref
 of a multi-ref push) -- a loop-home refresh's proven nothing-new push is `marshal refresh`'s own opt-out, marshal Story
-57.1 (spec-pyforge-marshal CAP-267).
+57.1 (pyforge-marshal:CAP-267).
 
 ### Story 68.1: A workspace archive holds the work, not the environments, and one bad record never stops the sweep
 
