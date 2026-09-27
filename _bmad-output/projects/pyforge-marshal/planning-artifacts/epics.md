@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 56  # 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 325  # 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-27"   # RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
+epicCount: 57  # 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 326  # 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-27"   # RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
 mode: headless
@@ -7020,6 +7020,33 @@ So that a ledger-only conflict is unioned and retried, and any other conflict is
 **When** `merge_tree_conflict_paths` runs
 **Then** it returns all three paths; a clean merge returns none; an unknown branch, or a conflict that names no file, raises `VcsCommandError`
 **And** the heal over a real conflict outside the ledger returns it in `escalated_paths`; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+## Epic 59: The ledger union heal merges the base, so the merge it retries is clean (spec-pyforge-marshal CAP-269)
+
+Minted 2026-09-27 (evening) from the follow-up on the station Dream's (evening) entry, raised by Story 58.1's review:
+with conflicts visible, the union heal was reachable and fell short — a single-parent union commit clears a same-row
+status conflict but not adjacent added rows, and it was pushed regardless. A new epic because Epic 58 rolled up to
+`done`. **HARD boundaries:** a conflict outside the landing project's ledger is never committed or pushed — it aborts
+the merge and escalates by name; the local-`main` advance is unchanged; a conflicted merge still never lands.
+
+### Story 59.1: A ledger-only conflict is healed by a merge of `origin/main`, not a union commit
+
+As the operator whose dispatch landings race other landings on the sprint ledger,
+I want the heal to merge `origin/main` into the dispatch branch with the ledger resolved by union,
+So that the retried merge is actually clean, and nothing but the landing project's own ledger is ever resolved mechanically.
+
+**Type:** fix • **Effort:** M • **Deps:** 58.1 • **FR/AD:** spec-pyforge-marshal CAP-269 (FR-215) • Story 28.20 (spec-marshal-drain-self-resolution CAP-3)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py` (the union as a merge; the probe
+ref), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (fetch, then pass `refs/remotes/origin/main`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` + `.../adapters/vcs_git.py` (`merge_ref_resolving`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/chain_regen.py` (`render_ledger_statuses`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` (the project's ledger path), tests:
+`src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py`.
+**Given** a bare remote where `main` and a dispatch branch each add a ledger row next to each other, and a forge fake that merges only when a real `merge-tree` is clean
+**When** the landing's forge merge fails and the heal runs with the real `GitVcs`
+**Then** the pushed head is a merge commit whose second parent is `origin/main`, its ledger holds both rows, and the retried forge merge succeeds
+**And** a same-row conflict heals to the precedence winner; `main`'s own `blocked` flip and retired row survive; a refused retry or a rejected push leaves remote `main` untouched and the PR open; a ledger-plus-other conflict escalates the other path with nothing committed or pushed; another project's ledger conflict escalates by name; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

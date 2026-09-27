@@ -1008,17 +1008,36 @@ class HealCapableVcs(FakeVcs):
         self.main_ledger = main_ledger
         self.branch_ledger = branch_ledger
         self.commits: list[tuple[Path, tuple[Path, ...], str]] = []
+        self.merges: list[tuple[Path, str, dict[str, str]]] = []
+        self.probed: list[str] = []
         self._head_sha = "abc123"
+
+    def merge_tree_conflict_paths(self, repo_root: Path, base: str, branch: str):
+        self.probed.append(base)
+        return super().merge_tree_conflict_paths(repo_root, base, branch)
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        return "base000"
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
         if path.endswith("sprint-status-ledger.yaml"):
-            if ref == "main":
+            if ref == "base000":
+                return ""
+            if ref == "refs/remotes/origin/main":
                 return self.main_ledger
             return self.branch_ledger
         return None
 
     def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str):
         self.commits.append((repo_root, paths, message))
+        self._head_sha = "healed222"
+        return self._head_sha
+
+    def merge_ref_resolving(self, worktree_path: Path, ref: str, *, resolutions, message: str) -> str:
+        self.merges.append((worktree_path, ref, dict(resolutions)))
+        for rel, text in resolutions.items():
+            (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
+            (worktree_path / rel).write_text(text, encoding="utf-8")
         self._head_sha = "healed222"
         return self._head_sha
 
@@ -1109,11 +1128,56 @@ def test_execute_dispatch_land_heals_ledger_only_conflict(tmp_path: Path) -> Non
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert envelope.data.get("ledger_union_heal") is True
     assert forge.merge_calls == 2
-    assert len(vcs.commits) == 1
-    assert vcs.commits[0][0] == worktree
+    # Story 59.1 (CAP-269): probed and merged against the fetched full refname, as a merge.
+    assert vcs.probed == ["refs/remotes/origin/main"]
+    assert vcs.commits == []
+    assert [(wt, ref) for wt, ref, _ in vcs.merges] == [(worktree, "refs/remotes/origin/main")]
     written = (worktree / ledger_rel).read_text(encoding="utf-8")
     assert "28-19-x: done" in written
     assert "28-20-y: backlog" in written
+
+
+class _HealFetchFailsVcs(HealCapableVcs):
+    """The landing's first fetch (the 51.1 preview gate) succeeds; the heal's fetch fails."""
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.fetches = 0
+
+    def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        self.fetches += 1
+        if self.fetches > 1:
+            raise VcsCommandError("could not read from remote repository")
+
+
+def test_execute_dispatch_land_skips_the_heal_when_its_fetch_fails(tmp_path: Path) -> None:
+    """Story 59.1 (CAP-269): the heal never measures against a ref it could not refresh -- the
+    landing refuses with MRS-DISP-020 as it would have without a heal."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    vcs = _HealFetchFailsVcs(
+        conflict_paths=(ledger_rel,),
+        main_ledger=_ledger_yaml(("28-19-x", "done")),
+        branch_ledger=_ledger_yaml(("28-20-y", "backlog")),
+    )
+    forge = HealRetryForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge,
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    refusal = [f for f in envelope.findings if f.code == "MRS-DISP-020"]
+    assert refusal and "heal skipped: could not fetch refs/remotes/origin/main" in refusal[0].message
+    assert vcs.fetches == 2
+    assert vcs.probed == [] and vcs.merges == []
+    assert forge.merge_calls == 1
 
 
 def test_execute_dispatch_land_skips_when_already_on_main(tmp_path: Path) -> None:

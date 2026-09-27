@@ -575,6 +575,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   mode, which `merge_tree_write` already requires; a conflicted merge still never lands. Kinships:
   Story 28.20 (`spec-marshal-drain-self-resolution` CAP-3, folded here); owner
   `spec-pyforge-marshal`.
+  **Follow-up, same evening (Story 58.1 review):** seeing the conflict was half of it. The
+  union heal, reachable at last, rewrote the ledger in a single-parent commit on the PR branch —
+  which clears a same-row status conflict but not the common one, both sides adding rows next to
+  each other, where the three-way merge still conflicts. It also probed the local `main`, not
+  `origin/main`, and took any project's ledger for its own. **Real means:** the union is a real
+  merge of `origin/main` into the dispatch branch, the landing project's ledger resolved by union
+  and any other conflict aborting the merge before it is committed; the probe reads `origin/main`
+  after a fetch; another project's ledger escalates by name.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
