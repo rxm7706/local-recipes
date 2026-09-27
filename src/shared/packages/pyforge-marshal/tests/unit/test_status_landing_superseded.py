@@ -230,3 +230,23 @@ def test_the_row_carries_the_marker_beside_unchanged_findings() -> None:
     assert marked["dispatch_landing_superseded"] is True
     assert marked["dispatch_landing_findings"] == plain["dispatch_landing_findings"] == list(_DOCTOR_REFUSAL)
     assert {k: v for k, v in marked.items() if k != "dispatch_landing_superseded"} == plain
+
+
+def test_the_row_names_the_dispatch_story_when_current_story_does_not() -> None:
+    """Review 1 (medium): a run whose completion reads `completed` keeps the
+    loop home's `current_story` (here none), so the landing's story travels
+    on the row as `dispatch_story`."""
+    facts = FleetHomeFacts(
+        slug="pyforge-marshal",
+        branch="loop/pyforge-marshal",
+        has_run=False,
+        dispatch_story="46.6",
+        dispatch_engine_alive=False,
+        dispatch_completion_verdict="completed",
+        dispatch_landing_findings=_MARSHAL_REFUSAL,
+        dispatch_landing_superseded=True,
+    )
+    row, _ = build_fleet_row(facts)
+    assert row["dispatch_story"] == "46.6"
+    assert row.get("current_story") != "46.6"
+    assert row["dispatch_landing_superseded"] is True

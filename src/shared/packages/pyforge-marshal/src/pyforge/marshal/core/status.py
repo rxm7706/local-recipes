@@ -1001,9 +1001,13 @@ class FleetHomeFacts:
     # (MRS-DISP-047/048) -- visible here too, matching the scope-advisories
     # precedent immediately above.
     dispatch_landing_findings: tuple[dict[str, object], ...] = ()
-    # Story 56.1 (CAP-266): the refused landing's story has since landed on
-    # `main` by another route -- git's fact reported beside the journal's
-    # unchanged findings (AD-33), set only on a positive corroborated merge.
+    # Story 56.1 (CAP-266): the refused landing's story is on `main` -- git's
+    # fact reported beside the journal's unchanged findings (AD-33), set only
+    # on a positive corroborated merge. It does not say the landing's
+    # post-merge finalize ran: a finalize failure journals the same
+    # MRS-DISP-020 after the merge, so "nothing owed" also needs the tracked
+    # ledger's `done`, which fleet-picture reads (AD-5 keeps story state out
+    # of this summary).
     dispatch_landing_superseded: bool = False
     # Story 22.6 (dispatch operator survival, FR-193 CAP-6): supervision and
     # per-story timing / preserve refs from the dispatch journal alone.
@@ -1201,6 +1205,12 @@ def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) ->
     patched = dict(row)
     if facts.dispatch_run_id is not None:
         patched["dispatch_run_id"] = facts.dispatch_run_id
+    # Story 56.1 (CAP-266, review 1): the dispatch run's own story. The
+    # row's `current_story` carries it only on a live run or a terminal dead
+    # tail, so a consumer naming the story the run's findings belong to
+    # (fleet-picture's landing line) reads this, never `current_story`.
+    if facts.dispatch_story is not None:
+        patched["dispatch_story"] = facts.dispatch_story
     if facts.dispatch_completion_verdict is not None:
         patched["dispatch_completion_verdict"] = facts.dispatch_completion_verdict
     if facts.dispatch_verification_verdict is not None:

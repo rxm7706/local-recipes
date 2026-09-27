@@ -1499,16 +1499,22 @@ def _landing_superseded(
     vcs: VcsPort,
     repo_root: Path,
 ) -> bool:
-    """Story 56.1 (CAP-266): has this row's refused dispatch landing been
-    overtaken by its story landing on ``main`` another way?
+    """Story 56.1 (CAP-266): is this row's refused dispatch landing's story
+    on ``main``?
+
+    A git fact only. It does not say the landing's post-merge finalize ran
+    -- a finalize (promote + ledger) failure journals the same
+    ``MRS-DISP-020`` after the merge -- so whether anything is still owed
+    needs the tracked ledger too, which this summary must not read (AD-5)
+    and ``fleet-picture`` does.
 
     Reads ``main`` only for a row that carries a refusal. Fails closed: an
     unparseable story key, an unreadable ``main``, or a policy finding that
     would change the exit code all answer ``False``, so the refusal stays
     actionable rather than being hidden on a guess. The spec-status reader
-    answers only for this row's own key -- it is the one membership asked
-    about, so every other station-branch match may stay uncorroborated and
-    the check costs at most one ``git show``."""
+    answers only for this row's own key -- the one membership asked about --
+    so other keys' station-branch merges cost nothing; it runs one ``git
+    show`` per station-branch merge that names this key."""
     if not facts.dispatch_story or not dispatch_landing.landing_was_refused(facts.dispatch_landing_findings):
         return False
     try:
@@ -1779,9 +1785,9 @@ def run_status(
         stranded = status_core.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed_by_ref)
         if stranded is not None:
             facts = replace(facts, dispatch_stranded_work=stranded)
-        # Story 56.1 (CAP-266): a refused landing whose story has since
-        # landed on `main` is reported as superseded beside its unchanged
-        # findings -- never deleted, never a gate.
+        # Story 56.1 (CAP-266): a refused landing whose story is on `main`
+        # carries that git fact beside its unchanged findings -- never
+        # deleted, never a gate.
         if _landing_superseded(facts, slug=slug, main=main, vcs=vcs, repo_root=git_repo_root):
             facts = replace(facts, dispatch_landing_superseded=True)
 

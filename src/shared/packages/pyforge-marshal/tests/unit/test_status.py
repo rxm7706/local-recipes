@@ -6307,3 +6307,51 @@ class TestLandingRefusalSupersededInTheSweep:
         assert "dispatch_landing_superseded" not in home
         assert "MRS-STATUS-011" not in {f["code"] for f in payload["findings"]}
         assert exit_code == 0
+
+    def _run_with_patch_home(self, tmp_path, capsys, monkeypatch, vcs_kwargs):
+        """A loop home carrying a failed patch AND a refused dispatch
+        landing: both consumers of `main` in one sweep (review 1, low)."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        loop_home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(loop_home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        self._seed_refused_run(tmp_path)
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=loop_home, branch="loop/acme"),),
+            **vcs_kwargs,
+        )
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        return vcs, exit_code, payload, payload["data"]["homes"][0]
+
+    def test_the_landing_check_and_the_patch_check_share_one_main_read(self, tmp_path, capsys, monkeypatch):
+        vcs, exit_code, _payload_, home = self._run_with_patch_home(
+            tmp_path,
+            capsys,
+            monkeypatch,
+            {"commit_subjects_value": ("Merge pull request #7 from rxm7706/dispatch/acme/30.3",)},
+        )
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert home["dispatch_landing_superseded"] is True
+        assert home["dispatch_story"] == "30.3"
+        assert len(home["failed_patches"]) == 1
+        assert exit_code == 0
+
+    def test_an_unreadable_main_still_warns_once_for_the_patch_and_marks_nothing(self, tmp_path, capsys, monkeypatch):
+        """The landing check reads `main` first; `MRS-STATUS-011` still fires
+        exactly once, for the patch-carrying home, as before the shared read."""
+        vcs, exit_code, payload, home = self._run_with_patch_home(
+            tmp_path, capsys, monkeypatch, {"commit_subjects_raises": True}
+        )
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert "dispatch_landing_superseded" not in home
+        assert [f["code"] for f in payload["findings"]].count("MRS-STATUS-011") == 1
+        assert home["failed_patches"][0]["done"] is None
+        assert exit_code == 0

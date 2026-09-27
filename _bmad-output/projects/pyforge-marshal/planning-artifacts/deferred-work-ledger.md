@@ -6742,7 +6742,8 @@ status: open
   location: scripts/fleet_picture.py
   severity: low
   fix: when composing `landing_findings`, drop (or render as "reconciled") a refusal whose story key reads `done` in the tracked ledger and whose PR is merged; alternatively have `sprint-ledger-sync` append a `dispatch-land` reconciliation OUTCOME to the run journal when it promotes the key, so the journal itself stops lying.
-  status: open
+  status: closed
+  resolved: 2026-09-27 (Story 56.1, spec-pyforge-marshal CAP-266) — `marshal status` marks a refused landing whose story is on `main` (`dispatch_landing_superseded`, beside the unchanged findings, with the run's own `dispatch_story`); `fleet-picture` lists it as not waiting on the operator when the tracked ledger also reads the story `done`, and keeps a merged-but-unpromoted one in ATTENTION. Live: doctor 30.3 and marshal 46.6 both moved out of ATTENTION. The fix sits in `cli/status.py` + `scripts/fleet_picture.py` rather than `fleet_picture.py` alone, and neither of the entry's two suggested mechanisms was taken as written: the journal is never rewritten (AD-33).
 
 ## DW-marshal-bmad-loop-0-12-cap-2026-09-26 — pyforge-marshal caps `bmad-loop <0.12` while the channel now serves bmad-loop 0.12.0; the pixi floor cannot follow the published build until marshal is re-verified against 0.12.x
 
@@ -6763,4 +6764,14 @@ status: open
   location: scripts/promote_sprint_status.py
   severity: medium
   fix: split the feed at the `development_status:` block's end (the first following line that starts a top-level key), not only at its start, and write `head + block + tail`; add a regression test with trailing metadata. Home: Story 54.1, which already names `scripts/promote_sprint_status.py`'s repair path in its Surface — land the fix there before the repair runs unattended.
+  status: open
+
+## DW-marshal-disp020-two-meanings-2026-09-27 — `MRS-DISP-020` names two different failures: a PR that could not be merged, and a promote + ledger finalize that failed after the PR merged
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-266; AD-15, findings are coded, never free-text-only)
+  summary: `dispatch_land.py` emits ERROR `MRS-DISP-020` when `forge.merge_pr` fails and again when the `dispatch_land_finalize` subprocess fails after `data["merged"] = True`. The journaled land outcome carries no `merged` flag, so a consumer can tell the two apart only by message text. Story 56.1's review found the consequence: a git-only "landed since" predicate would call a finalize failure "not waiting on you". 56.1 closes that with the tracked ledger's `done` in `fleet-picture`, but the code itself still conflates the two.
+  evidence: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — the `if not heal.healed:` branch (merge failure) and the `except ProcessError` branch after `data["merged"] = True` (finalize failure) both append `code="MRS-DISP-020"`; `dispatch_supervisor/__main__.py`'s KIND_DISPATCH_LAND outcome payload has `pr_number`, `merge_sha`, `land_findings`, no `merged`.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  severity: low
+  fix: register a new code (e.g. `MRS-DISP-0xx` "dispatch land finalize failed after merge") in `core/findings.py` + `core/verdict.py`, emit it from the finalize branch, and journal `merged` on the land outcome; `fleet-picture` can then name "finish the promote + ledger" from the code rather than from the ledger fallback. Needs its own Story (the 56.1 Boundaries forbid touching `dispatch_land.py`).
   status: open

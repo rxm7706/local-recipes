@@ -6952,20 +6952,23 @@ So that ATTENTION names only decisions still owed, and a station with no backlog
 **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` (pure `landing_refusal_superseded`:
 true only when a landing finding is ERROR-severity and the story is corroborated merged on `main`),
 `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py` (`FleetHomeFacts.dispatch_landing_superseded`; the JSON
-row carries `dispatch_landing_superseded: true` beside the unchanged findings),
+row carries `dispatch_landing_superseded: true` beside the unchanged findings, and the run's own story as `dispatch_story`),
 `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py` (the fleet sweep sets the marker from `main`'s subjects,
 read at most once per sweep and shared with the failed-patch check; `_merged_keys_for_slug` gains the corroborated form behind an
-optional spec-status reader), `scripts/fleet_picture.py` (a superseded refusal renders in the not-blocking list naming the story),
+optional spec-status reader), `scripts/fleet_picture.py` (a marked refusal whose story reads `done` in the tracked ledger renders
+in the not-blocking list naming `dispatch_story`; a marked one whose key is not `done` stays in ATTENTION),
 tests: `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py`,
 `src/shared/packages/pyforge-marshal/tests/unit/test_status_landing_superseded.py` (new),
+`src/shared/packages/pyforge-marshal/tests/unit/test_status.py` (the sweep wiring and the shared `main` read),
 `src/shared/packages/pyforge-marshal/tests/meta/test_fleet_picture_landing_findings.py`.
 **Given** doctor 30.3 and marshal 46.6 each carry an `MRS-DISP-020` refusal as their station's newest dispatch-land OUTCOME, and each
 story has since landed on `main` (PRs #1585 / #1597 merged, keys `done`)
 **When** `marshal status --format json` runs
 **Then** both rows keep `dispatch_landing_findings` unchanged and carry `dispatch_landing_superseded: true`, and `fleet-picture`
 lists both as landed since, with no `landing refused` line in ATTENTION
-**And** a refusal whose story is not on `main`, or a sweep whose `main` read fails, still shows `landing refused` in ATTENTION; a
-WARN-only landing finding carries no marker
+**And** a refusal whose story is not on `main`, a sweep whose `main` read fails, and a post-merge finalize (promote + ledger) failure
+whose ledger key is not `done` all still show `landing refused` in ATTENTION; a WARN-only landing finding carries no marker; the
+line names the dispatch run's own story, never an unrelated `current_story` (amended 2026-09-27, review 1)
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

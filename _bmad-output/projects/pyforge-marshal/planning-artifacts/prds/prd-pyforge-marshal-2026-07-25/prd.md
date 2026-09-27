@@ -2585,9 +2585,12 @@ epic because Epic 53, whose Story 53.2 review first surfaced landing findings in
 `marshal status` keeps the newest dispatch run's landing findings verbatim and, when one is
 ERROR-severity and the row's story key is among `main`'s corroborated merged keys (the check
 `dispatch land` already uses for ALREADY_LANDED), adds `dispatch_landing_superseded: true` to the
-JSON row; `main` is read at most once per sweep, and an unreadable `main` or a policy ERROR leaves
-the marker off. `fleet-picture` lists a superseded refusal among the lines not waiting on the
-operator, never in ATTENTION. Fixture: doctor 30.3 / marshal 46.6. Story 56.1.
+JSON row — a git fact — with the run's own story as `dispatch_story`; `main` is read at most once
+per sweep, and an unreadable `main` or a policy ERROR leaves the marker off. Because a post-merge
+promote + ledger failure journals the same `MRS-DISP-020`, `fleet-picture` lists a refusal as not
+waiting on the operator only when the marker is set AND the tracked ledger reads the story `done`;
+otherwise it stays in ATTENTION (amended 2026-09-27 after the story's review). Fixture: doctor
+30.3 / marshal 46.6. Story 56.1.
 
 **ONE FR space now FR-1..FR-212** (FR-213 = next free id).
 
