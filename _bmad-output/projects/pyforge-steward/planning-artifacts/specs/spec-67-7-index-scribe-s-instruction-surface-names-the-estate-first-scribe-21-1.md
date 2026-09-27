@@ -2,7 +2,7 @@
 title: '67.7: Index — scribe''s instruction surface names the estate first (scribe 21.1)'
 type: 'docs'
 created: '2026-09-25'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -63,3 +63,12 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Manual checks:**
 - scribe ledger shows `21-1-agents-md-opens-with-what-this-repository-is: done`.
+
+## Outcome
+
+Flipped `done` 2026-09-26, on operator confirmation. AGENTS.md requires that confirmation before a `blocked` key moves.
+- Scribe Story 21.1 landed through PR #1621, merge `b031a4d695` ("Merge pyforge-scribe/21-1 into main").
+  - `git merge-base --is-ancestor` confirms its commits are on `main`.
+  - Scribe's tracked ledger on `main` reads `21-1-agents-md-opens-with-what-this-repository-is: done` and `epic-21: done`.
+- Steward changed only its own index row: this spec, the Story 67.7 status line in `epics.md`, and the ledger row through `sprint-ledger-sync`. No scribe artifact was edited.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: 1695 passed, 2 skipped.
