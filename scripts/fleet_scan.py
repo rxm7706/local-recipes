@@ -692,9 +692,11 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
     `project_keys` seeds the buckets from the LIVE project set rather than a
     literal, so a newly provisioned smith is never missing one.
     """
-    ref = branch
+    # Marshal Story 61.1: the branch by its full refname -- a tag named `main`
+    # would otherwise stand in for it and its history would lack every landing.
+    ref = f"refs/heads/{branch}"
     if subprocess.run(
-        ["git", "rev-parse", "--verify", "--quiet", branch], capture_output=True
+        ["git", "rev-parse", "--verify", "--quiet", ref], capture_output=True
     ).returncode != 0:
         ref = "HEAD"  # detached checkout (e.g. some CI) — HEAD is the branch tip
     log = subprocess.run(
@@ -3469,7 +3471,7 @@ def build_status(data: dict, source: str) -> dict:
 
     shipped = None
     out = subprocess.run(
-        ["git", "log", MAIN_BRANCH, "--format=%H%x1f%ct%x1f%s", "-n", "400"],
+        ["git", "log", f"refs/heads/{MAIN_BRANCH}", "--format=%H%x1f%ct%x1f%s", "-n", "400"],  # Story 61.1
         capture_output=True, text=True, cwd=REPO_ROOT).stdout
     for line in out.splitlines():
         parts = line.split("\x1f")

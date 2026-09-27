@@ -104,6 +104,7 @@ from ..core.conformance import (
 )
 from ..core.egress import to_redacted
 from ..core.model import Finding, Severity, build_envelope
+from ..core.refs import local_branch_ref
 from ..core.skill_projection import CANONICAL_SKILL_TREE_REL, plan_projection
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
@@ -1443,7 +1444,7 @@ def _add_smoke_worktree(vcs: VcsPort, repo_root: Path, adapter_name: str) -> tup
     home = _loop_home_root() / slug
     branch = f"loop/{slug}"
     try:
-        vcs.add_worktree(repo_root, home, branch, base="main")
+        vcs.add_worktree(repo_root, home, branch, base=local_branch_ref("main"))
     except VcsCommandError as exc:
         # A timeout can leave a REGISTERED, partial worktree/branch behind
         # (see GitVcs.add_worktree's own docstring) -- ordinarily left as-is

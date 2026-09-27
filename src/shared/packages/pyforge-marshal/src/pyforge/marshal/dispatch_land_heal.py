@@ -19,6 +19,7 @@ from .core.dispatch_landing import (
     three_way_ledger_statuses,
     unknown_conflict_paths,
 )
+from .core.refs import local_branch_ref
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef, PrInfo
 from .ports.fs import FsPort
 from .ports.vcs import VcsPort
@@ -66,13 +67,15 @@ def try_heal_dispatch_land_merge(
     ``probe_ref`` is what conflicts are measured against and what the ledger union merges --
     ``dispatch land`` passes ``refs/remotes/origin/main`` right after fetching it, the ref GitHub
     merges against (Story 59.1). ``base`` stays the local branch the local-merge fallback merges
-    into and pushes. ``probe_ref`` defaults to ``base``. Only the landing project's own sprint
-    ledger is mechanical; any other conflicted path escalates by name."""
+    into and pushes. ``probe_ref`` defaults to ``base``'s full ref. Every git read of ``base`` or
+    ``head_branch`` names ``refs/heads/<branch>``, so a tag of the same name cannot stand in
+    (Story 61.1). Only the landing project's own sprint ledger is mechanical; any other
+    conflicted path escalates by name."""
     del head_sha, fs
-    probe = probe_ref if probe_ref is not None else base
+    probe = probe_ref if probe_ref is not None else local_branch_ref(base)
     ledger_rel = _ledger_path(project_slug)
     try:
-        conflict_paths = vcs.merge_tree_conflict_paths(git_repo_root, probe, head_branch)
+        conflict_paths = vcs.merge_tree_conflict_paths(git_repo_root, probe, local_branch_ref(head_branch))
     except VcsCommandError:
         return DispatchLandHealResult(healed=False)
 
@@ -149,10 +152,11 @@ def _try_ledger_union_heal(
     and precedence settles only a row both sides changed. Any other conflicted path aborts the
     merge inside ``merge_ref_resolving``: nothing is committed or pushed."""
     try:
-        base_sha = vcs.merge_base(git_repo_root, probe, head_branch)
+        head_ref = local_branch_ref(head_branch)
+        base_sha = vcs.merge_base(git_repo_root, probe, head_ref)
         base_text = vcs.file_text_at_ref(git_repo_root, base_sha, ledger_rel) or ""
         main_text = vcs.file_text_at_ref(git_repo_root, probe, ledger_rel) or ""
-        branch_text = vcs.file_text_at_ref(git_repo_root, head_branch, ledger_rel) or ""
+        branch_text = vcs.file_text_at_ref(git_repo_root, head_ref, ledger_rel) or ""
     except VcsCommandError:
         return False
     merged_map = three_way_ledger_statuses(
@@ -197,7 +201,7 @@ def _try_local_main_advance(
     forge: ForgePort,
 ) -> bool:
     try:
-        vcs.merge_branch(git_repo_root, head_branch, into=base, subject=subject)
+        vcs.merge_branch(git_repo_root, local_branch_ref(head_branch), into=base, subject=subject)
     except VcsCommandError:
         return False
 

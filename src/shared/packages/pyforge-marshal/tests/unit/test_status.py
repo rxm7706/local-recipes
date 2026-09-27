@@ -5350,7 +5350,7 @@ class TestFailedPatches:
             clock=_FakeClock(now=_FIXED_NOW),
         )
 
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
         assert exit_code == 0
 
     def test_main_is_never_read_when_no_home_carries_a_patch(self, tmp_path, capsys, monkeypatch):
@@ -6289,7 +6289,7 @@ class TestLandingRefusalSupersededInTheSweep:
         exit_code, _payload_, home = self._home(tmp_path, capsys, monkeypatch, vcs)
         assert home["dispatch_landing_findings"] == [self._REFUSAL]
         assert home["dispatch_landing_superseded"] is True
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
         assert exit_code == 0
 
     def test_a_refusal_whose_story_has_not_landed_is_not_marked(self, tmp_path, capsys, monkeypatch):
@@ -6338,7 +6338,7 @@ class TestLandingRefusalSupersededInTheSweep:
             monkeypatch,
             {"commit_subjects_value": ("Merge pull request #7 from rxm7706/dispatch/acme/30.3",)},
         )
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
         assert home["dispatch_landing_superseded"] is True
         assert home["dispatch_story"] == "30.3"
         assert len(home["failed_patches"]) == 1
@@ -6350,7 +6350,7 @@ class TestLandingRefusalSupersededInTheSweep:
         vcs, exit_code, payload, home = self._run_with_patch_home(
             tmp_path, capsys, monkeypatch, {"commit_subjects_raises": True}
         )
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
         assert "dispatch_landing_superseded" not in home
         assert [f["code"] for f in payload["findings"]].count("MRS-STATUS-011") == 1
         assert home["failed_patches"][0]["done"] is None

@@ -6804,4 +6804,15 @@ status: open
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/ (cli/deploy.py, cli/dispatch.py, dispatch_land.py, core/policy.py)
   severity: low
   fix: extend `core/refs.py` with `local_branch_ref(branch) -> "refs/heads/<branch>"` and read every git-facing local branch through it (keeping `branch -D`/`checkout` arguments that must stay bare); make `_valid_landing_base_branch` refuse a value containing `/` that is not a plain branch name; extend the Story 60.1 meta test's matcher to local branches. Its own Dream append + CAP + Story on marshal.
+  status: closed
+  resolved: 2026-09-27 (Story 61.1, spec-pyforge-marshal CAP-271) — `core/refs.local_branch_ref` names every git read of a local branch `refs/heads/<branch>`: the landing subjects, merge bases, wave ranges, diff bases, the loop-home mint's start point, the supervisor's station-branch check, the heal's reads and merge; `GitVcs.push` names both sides and takes its target from the branch config, `GitVcs.fetch` names the remote's branch (a tag `main` on the remote left `refs/remotes/origin/main` stale), and the five repo-root scripts marshal owns or runs follow suit (fleet_scan, bmad-loop-worktree, fleet_picture, unpushed_work_check, worktree_sweep). `_valid_landing_base_branch` refuses a full refname, a ref namespace or `origin/…` (not every `/`: `release/2026` stays valid), and `land` / `batch-pr` refuse to run on a refused value rather than fall back to `main`. A new meta test (not the 60.1 one extended — local branches carry no text of their own) pins the rule. Three independent reviews. The dispatch gate's `"main"` named here was `cli/gate.py`'s scope-check base; `cli/dispatch.py` already read `refs/remotes/origin/main`.
+
+## DW-marshal-doctor-route3-short-main-2026-09-27 — doctor's marshal source reads the landing history as the short name `main`, which a tag named `main` shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-271 — Story 61.1 reviews 2 and 3)
+  summary: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` route 3 reads marshal's landing history as `log … main`. A tag `main` on an OLDER commit hides landings (more findings, nothing lost); a stray tag `main` on a FEATURE commit (review 3's case) reads that feature's subjects as landed — an advisory false "landed" (doctor findings never gate; route 2 already reads `--all`, so the added exposure is small). Doctor's source is another station's code (61.1's spec: Ask First). `scripts/worktree_sweep.py`, first listed here, was fixed inside 61.1 after review 3 showed the same stray tag made it delete a feature's worktree and branch.
+  evidence: Story 61.1 reviews 2 and 3 (2026-09-27); review 3's probe (`scratchpad/review3/test_probe_tag_ahead.py`): with a tag `main` on a feature commit, `merge-base --is-ancestor feature main` exits 0 and `refs/heads/main` answers 1.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
+  severity: low
+  fix: name `refs/heads/main` in route 3, through doctor's own chain (a doctor Dream append).
   status: open

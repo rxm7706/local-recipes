@@ -1118,7 +1118,7 @@ def derive_dispatch_stranded_work(
             "story": story_key,
             "files": finding.get("files"),
             "stat": finding.get("stat"),
-            "remedy": finding.get("remedy") or f"git push origin {ref}",
+            "remedy": finding.get("remedy") or f"git push origin refs/heads/{ref}:refs/heads/{ref}",
         }
     return None
 

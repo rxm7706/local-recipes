@@ -55,6 +55,9 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+# Marshal Story 61.1 (review 3): `main` by its full refname -- a stray tag `main` on a feature
+# commit made that feature read as merged, its worktree swept and its branch deleted.
+MAIN_REF = "refs/heads/main"
 HOME = Path.home()
 LOOP_HOMES_ROOT = HOME / ".bmad-loops"
 DEFAULT_PRESERVE_DIR = HOME / ".local" / "state" / "pyforge-marshal" / "worktree-preserve"
@@ -221,12 +224,12 @@ def gather(wt: Worktree, cwds: list[str], ledgers: dict, heads: set[str]) -> Wor
     wt.live_cwd = any(c == wt.path or c.startswith(wt.path.rstrip("/") + "/") for c in cwds)
     st, _ = _git("status", "--porcelain", "--untracked-files=normal", cwd=p)
     wt.dirty_files = [l for l in st.splitlines() if l.strip()]
-    _, rc = _git("merge-base", "--is-ancestor", "HEAD", "main", cwd=p)
+    _, rc = _git("merge-base", "--is-ancestor", "HEAD", MAIN_REF, cwd=p)
     wt.merged = rc == 0
-    cnt, _ = _git("rev-list", "--count", "main..HEAD", cwd=p)
+    cnt, _ = _git("rev-list", "--count", f"{MAIN_REF}..HEAD", cwd=p)
     wt.unmerged_commits = int(cnt or 0)
     if wt.unmerged_commits:
-        subj, _ = _git("log", "--format=%s", "main..HEAD", cwd=p)
+        subj, _ = _git("log", "--format=%s", f"{MAIN_REF}..HEAD", cwd=p)
         wt.unmerged_subjects = subj.splitlines()[:3]
     wt.last_commit, _ = _git("log", "-1", "--format=%ad", "--date=short", cwd=p)
     wt.station = station_of(wt.path, wt.branch)
@@ -244,7 +247,7 @@ def preserve(wt: Worktree, preserve_dir: Path) -> Path:
     dest.mkdir(parents=True, exist_ok=True)
     p = Path(wt.path)
     if wt.unmerged_commits:
-        subprocess.run(["git", "format-patch", "-o", str(dest), "main..HEAD"], capture_output=True, text=True, cwd=str(p))
+        subprocess.run(["git", "format-patch", "-o", str(dest), f"{MAIN_REF}..HEAD"], capture_output=True, text=True, cwd=str(p))
     diff, _ = _git("diff", cwd=p)
     if diff:
         (dest / "uncommitted.diff").write_text(diff + "\n", encoding="utf-8")
@@ -271,13 +274,13 @@ def remove_worktree(wt: Worktree) -> bool:
 
 
 def delete_merged_local_branches() -> tuple[int, list[str]]:
-    out, _ = _git("branch", "--merged", "main", "--format=%(refname:short) %(worktreepath)")
+    out, _ = _git("branch", "--merged", MAIN_REF, "--format=%(refname:lstrip=2) %(worktreepath)")
     deleted, kept = 0, []
     for line in out.splitlines():
         name, _, wtpath = line.partition(" ")
         if name == "main" or wtpath.strip() or name.startswith(PROTECTED_BRANCH_PREFIXES):
             continue
-        _, rc = _git("merge-base", "--is-ancestor", name, "main")
+        _, rc = _git("merge-base", "--is-ancestor", f"refs/heads/{name}", MAIN_REF)
         if rc != 0:
             kept.append(name)
             continue

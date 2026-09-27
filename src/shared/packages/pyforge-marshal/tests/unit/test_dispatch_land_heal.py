@@ -82,7 +82,7 @@ class FakeVcsHeal:
         if path.endswith("sprint-status-ledger.yaml"):
             if ref == "base000":
                 return ""  # the merge base had no ledger rows: every row is one side's addition
-            if ref == "main":
+            if ref == "refs/heads/main":
                 return self.main_ledger
             return self.branch_ledger
         return None
@@ -191,7 +191,7 @@ def test_heal_unions_ledger_only_conflict_and_retries_merge(tmp_path: Path) -> N
     assert vcs.commits == []
     assert len(vcs.merges) == 1
     merged_into, merged_ref, resolutions, _message = vcs.merges[0]
-    assert (merged_into, merged_ref, list(resolutions)) == (worktree, "main", [ledger_rel])
+    assert (merged_into, merged_ref, list(resolutions)) == (worktree, "refs/heads/main", [ledger_rel])
     written = (worktree / ledger_rel).read_text(encoding="utf-8")
     assert "28-19-x: done" in written
     assert "28-20-y: backlog" in written
@@ -224,7 +224,7 @@ def test_heal_advances_main_locally_when_merge_tree_clean_and_github_dirty(
     )
 
     assert result == DispatchLandHealResult(healed=True, landed_via_local_merge=True)
-    assert vcs.merged == [("dispatch/pyforge-marshal/28.20", "main", "Merge 28.20 into main")]
+    assert vcs.merged == [("refs/heads/dispatch/pyforge-marshal/28.20", "main", "Merge 28.20 into main")]
     assert vcs.pushed == ["main"]
     assert forge.closed == [985]
     assert vcs.deleted == ["dispatch/pyforge-marshal/28.20"]

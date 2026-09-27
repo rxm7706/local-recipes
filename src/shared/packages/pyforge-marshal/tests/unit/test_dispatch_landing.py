@@ -1100,7 +1100,7 @@ def test_execute_dispatch_land_advances_main_when_merge_tree_clean_and_github_di
     )
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert envelope.data.get("local_main_advance") is True
-    assert vcs.merged == [("dispatch/pyforge-marshal/28.20", "main", result.subject)]
+    assert vcs.merged == [("refs/heads/dispatch/pyforge-marshal/28.20", "main", result.subject)]
     assert "main" in vcs.pushed
     assert forge.closed == [42]
 

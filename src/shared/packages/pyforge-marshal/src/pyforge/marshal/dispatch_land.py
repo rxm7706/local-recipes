@@ -34,7 +34,7 @@ from .core.identity import StoryKey, normalize, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
 from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
-from .core.refs import ORIGIN_MAIN_SHORT
+from .core.refs import ORIGIN_MAIN_SHORT, local_branch_ref
 from .core.verdict import compute_verdict
 from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
 from .dispatch_verify import (
@@ -684,7 +684,7 @@ def execute_dispatch_land(
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
 
     try:
-        main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE)
+        main_subjects = vcs.commit_subjects(git_repo_root, local_branch_ref(_MERGE_BASE))
     except VcsCommandError as exc:
         findings.append(
             Finding(

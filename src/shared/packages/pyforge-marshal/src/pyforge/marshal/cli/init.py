@@ -239,6 +239,7 @@ from ..core.journal import (
     prepare_for_write,
 )
 from ..core.model import Finding, Severity, build_envelope
+from ..core.refs import local_branch_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -722,7 +723,7 @@ def run_init(
         return _emit(args, data, findings)
     else:
         try:
-            vcs.add_worktree(repo_root, home, branch, base="main")
+            vcs.add_worktree(repo_root, home, branch, base=local_branch_ref("main"))
             steps["worktree"] = "done"
         except VcsCommandError as exc:
             findings.append(_op_failed_finding(str(exc)))
@@ -1331,17 +1332,17 @@ def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[F
         # NOTHING while its unit tests passed: the fake returned whatever it was
         # told and never modelled the real semantics. `worktree_head_sha` is the
         # port method that actually answers "what is this home at".
-        base = vcs.resolve_ref(repo_root, "main")
+        main_sha = vcs.resolve_ref(repo_root, "main")
         head = vcs.worktree_head_sha(home)
     except VcsCommandError, OSError, subprocess.SubprocessError:
         return findings, data
     data["home_head"] = head[:10]
-    data["main_head"] = base[:10]
-    data["home_current_with_main"] = head == base
-    if head == base:
+    data["main_head"] = main_sha[:10]
+    data["home_current_with_main"] = head == main_sha
+    if head == main_sha:
         return findings, data
     try:
-        behind = vcs.merge_base(repo_root, head, base) == head
+        behind = vcs.merge_base(repo_root, head, main_sha) == head
     except VcsCommandError, OSError, subprocess.SubprocessError:
         behind = True
     if behind:
@@ -1350,7 +1351,7 @@ def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[F
                 code="MRS-PREFLIGHT-014",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home {slug!r} is BEHIND main ({head[:10]} vs {base[:10]}) "
+                    f"loop home {slug!r} is BEHIND main ({head[:10]} vs {main_sha[:10]}) "
                     f"-- spinning now would run stories against a stale baseline and "
                     f"the spec-surface guard would silently stop biting (measured "
                     f"2026-08-09: a current home self-reconciled 4/4, a stale one 0/3, "

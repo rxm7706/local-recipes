@@ -119,7 +119,7 @@ from ..core.identity import MalformedStoryKeyError, StoryKey
 from ..core.journal import Phase
 from ..core.landing import rule_applies
 from ..core.model import Finding, Severity, build_envelope
-from ..core.refs import remote_tracking_ref
+from ..core.refs import local_branch_ref, remote_tracking_ref
 from ..core.status import is_run_live, render_ledger_advancements
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
@@ -383,6 +383,8 @@ def run_land(
         _evaluate_hygiene,
         _gather_gate_verdicts,
         _land_redact_text,
+        _malformed_landing_fallback,
+        _malformed_landing_policy_key,
         _reconcile_open_intents,
         reconcile_feed,
     )
@@ -465,17 +467,20 @@ def run_land(
     # verbatim from `batch-pr`'s own P1 review fix (`cli/deploy.py::
     # run_batch_pr`): `core/policy.py::compose` never raises, so a
     # malformed `landing_rules` layer degrades to an EMPTY rule set unless
-    # refused here, before that empty set is ever trusted.
-    if any(finding.severity is Severity.ERROR and "'landing_rules'" in finding.message for finding in policy_findings):
+    # refused here, before that empty set is ever trusted. Story 61.1
+    # (CAP-271): a malformed `landing_base_branch` degrades to `main` -- a
+    # landing onto a base nobody declared -- and refuses the same way.
+    malformed = _malformed_landing_policy_key(policy_findings)
+    if malformed is not None:
         findings.append(
             Finding(
                 code=_MRS_LAND_002,
                 severity=Severity.ERROR,
                 message=(
                     f"refusing to land {head_branch!r}: policy composition "
-                    "reported a malformed 'landing_rules' layer above -- "
-                    "proceeding would silently evaluate against an EMPTY "
-                    "rule set instead of the project's declared rules; fix "
+                    f"reported a malformed {malformed!r} layer above -- "
+                    f"proceeding would silently use {_malformed_landing_fallback(malformed, effective)} "
+                    "instead of the project's declared one; fix "
                     "the malformed layer and re-run land"
                 ),
             )
@@ -491,8 +496,11 @@ def run_land(
     data["base"] = base
 
     # --- wave discovery (byte-for-byte batch-pr's own sequence) ---------
+    # Both branches by their full refname (Story 61.1): a tag named like
+    # either would otherwise stand in for it.
+    head_ref, base_ref = local_branch_ref(head_branch), local_branch_ref(base)
     try:
-        merge_base_sha = vcs.merge_base(git_repo_root, head_branch, base)
+        merge_base_sha = vcs.merge_base(git_repo_root, head_ref, base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -503,7 +511,7 @@ def run_land(
         )
         return _emit(args, data, findings)
     try:
-        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_branch}")
+        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_ref}")
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -530,7 +538,7 @@ def run_land(
         return _emit(args, data, findings)
 
     try:
-        base_subjects = vcs.commit_subjects(git_repo_root, base)
+        base_subjects = vcs.commit_subjects(git_repo_root, base_ref)
     except VcsCommandError:
         base_subjects = ()
     already_landed_keys = promotion.merged_story_keys(base_subjects, template, slug)
@@ -655,7 +663,7 @@ def run_land(
         return _emit(args, data, findings)
 
     try:
-        changed_paths = vcs.changed_files(git_repo_root, home, base=base)
+        changed_paths = vcs.changed_files(git_repo_root, home, base=base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(

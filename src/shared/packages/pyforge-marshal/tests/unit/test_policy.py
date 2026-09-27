@@ -913,6 +913,51 @@ def test_landing_keys_default_values():
         assert getattr(effective, key).layer is PolicyLayer.DEFAULT
 
 
+# --- landing_base_branch validation (Story 61.1, CAP-271) ---------------------
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "origin/main",  # a remote's branch: every read would name refs/heads/origin/main
+        "refs/heads/main",  # a full refname: refs/heads/refs/heads/main
+        "refs/remotes/origin/main",
+        "bad..name",
+        "main.lock",
+        "feature/.hidden",
+        "trailing/",
+        "trailing.",
+        "-leading-dash",
+        "has space",
+        "tab\tname",
+        "tilde~1",
+        "caret^",
+        "colon:x",
+        "star*",
+        "at@{1}",
+        "HEAD",
+        "@",
+        "",
+        "double//slash",
+        "heads/main",  # review 1: a ref namespace -- refs/heads/heads/main
+        "tags/v1",
+        "remotes/origin/main",
+    ],
+)
+def test_landing_base_branch_refuses_what_is_not_a_plain_branch_name(value):
+    effective, findings = compose(project_slug="acme", project={"landing_base_branch": value}, flags={})
+    assert effective.landing_base_branch.value == "main"
+    assert effective.landing_base_branch.layer is PolicyLayer.DEFAULT
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+
+
+@pytest.mark.parametrize("value", ["main", "release/2026", "trunk", "origin", "v2.x", "feature/a-b_c", "nb\u00a0sp"])
+def test_landing_base_branch_accepts_a_plain_branch_name(value):
+    effective, findings = compose(project_slug="acme", project={"landing_base_branch": value}, flags={})
+    assert findings == ()
+    assert effective.landing_base_branch.value == value
+
+
 def test_landing_rules_valid_rule_with_both_label_and_required_check():
     """The I/O & Edge-Case Matrix's 'valid landing_rules with both label and
     required_check set' row."""

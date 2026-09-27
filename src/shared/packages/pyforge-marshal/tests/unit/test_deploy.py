@@ -109,7 +109,7 @@ class _FakeVcs:
             if self.origin_raises:
                 raise VcsCommandError("no origin remote configured")
             return self.origin_subjects
-        if ref == "main":
+        if ref == "refs/heads/main":
             if self.main_raises:
                 raise VcsCommandError("corrupted repo, no main")
             return self.main_subjects
@@ -1621,7 +1621,7 @@ def test_land_story_rerun_against_a_converged_system_is_zero_changes(tmp_path, c
     capsys.readouterr()
     journal_lines_after_first = _find_land_journal_lines(tmp_path, "acme")
 
-    # The second run's own `_FakeVcs.commit_subjects("main", ...)` must now
+    # The second run's own `_FakeVcs.commit_subjects("refs/heads/main", ...)` must now
     # report the story as merged for the already-merged short-circuit to
     # fire -- exactly what a REAL git repo would show after a real merge.
     landed_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
@@ -2007,6 +2007,26 @@ landing_rules = "not-a-list-of-rules"
     # Never even reached wave discovery/the forge -- refused before either.
     assert forge.find_calls == []
     assert forge.create_calls == []
+
+
+@pytest.mark.parametrize("value", ["origin/release/2026", "refs/heads/release/2026"])
+def test_batch_pr_refuses_on_a_malformed_landing_base_branch(tmp_path, capsys, monkeypatch, value):
+    """Story 61.1 review 1: the refused value falls back to `main`, so proceeding opened the PR
+    against a base nobody declared -- refused like a malformed `landing_rules` instead."""
+    policy_path = _write_batch_pr_project_policy(tmp_path, f'landing_base_branch = "{value}"\n')
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+    forge = _FakeForge()
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    refusal = [f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-015"]
+    assert [f["code"] for f in payload["findings"]] == ["MRS-POLICY-002", "MRS-DEPLOY-015"]
+    assert "'landing_base_branch'" in refusal[0]["message"] and "'main'" in refusal[0]["message"]
+    assert exit_code != 0
+    assert forge.find_calls == [] and forge.create_calls == []
 
 
 def test_batch_pr_p2_add_labels_failure_does_not_claim_labels_applied(tmp_path, capsys, monkeypatch):

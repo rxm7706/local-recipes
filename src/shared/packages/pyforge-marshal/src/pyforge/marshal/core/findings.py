@@ -509,7 +509,9 @@ back to ``DEFAULT_POLICY``'s empty rule set) HARD REFUSES the entire
 forge is ever touched: proceeding on a malformed ``landing_rules`` layer
 would silently evaluate against ZERO rules instead of the project's declared
 ones, letting a config typo -- not a deliberate decision -- bypass the
-hygiene gate entirely. Classifies ``Verdict.ERROR``, the same tier as
+hygiene gate entirely. Story 61.1 (CAP-271) widens it to a malformed
+``landing_base_branch`` layer, whose fallback is ``main``: proceeding would
+open the PR against a base nobody declared. Classifies ``Verdict.ERROR``, the same tier as
 ``MRS-TEARDOWN-005``'s identical "this refusal must be at least as strict as
 a real violation, never a softer UNEVALUABLE" reasoning. ``MRS-DEPLOY-016``
 (P4: the head branch moved between the hygiene preflight's own read of its
@@ -580,7 +582,8 @@ Story 4.8's ``cli/land.py::run_land`` adds the twelfth real caller's own NEW
 area, ``MRS-LAND-*`` (FR-60/AD-40, "marshal land -- the last mile lands
 itself"): seven codes. ``MRS-LAND-001`` (the loop-home station branch
 ``loop/<slug>`` could not be resolved or does not exist -- refused before
-any forge call) and ``MRS-LAND-002`` (a malformed ``landing_rules`` policy
+any forge call) and ``MRS-LAND-002`` (a malformed ``landing_rules`` or,
+since Story 61.1, ``landing_base_branch`` policy
 layer -- the SAME hard-refuse-before-any-forge-call precondition
 ``MRS-DEPLOY-015`` already established for ``batch-pr``, copied verbatim
 for ``land``) both classify ``Verdict.ERROR`` -- a precondition failure,
@@ -979,7 +982,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `marshal deploy batch-pr`: MRS-DEPLOY-013 (an unsatisfied blocking
 # hygiene rule) and MRS-DEPLOY-014 (a ForgePort/gh command failure).
 # Code review (2026-08-06) adds four more MRS-DEPLOY-* codes for
-# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules
+# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules --
+# or, since Story 61.1, landing_base_branch --
 # policy layer hard-refuses the whole invocation), MRS-DEPLOY-016 (P4: the
 # head branch moved between hygiene evaluation and the PR write),
 # MRS-DEPLOY-017 (P5: the loop-home worktree's checkout does not match the
@@ -1001,7 +1005,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # silent empty FoldResult).
 # Story 4.8's cli/land.py adds the twelfth real caller's own NEW area,
 # MRS-LAND-* (seven codes): MRS-LAND-001 (the station branch could not be
-# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules policy
+# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules or, since
+# Story 61.1, landing_base_branch policy
 # layer), MRS-LAND-003 (an already-landed wave's own branch retirement
 # could not be confirmed), MRS-LAND-004 (a fired required_check resolved to
 # a real failure or could not be read), MRS-LAND-005 (a fired

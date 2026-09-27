@@ -72,7 +72,7 @@ primitives:
   for "merged or not"; this method is that authority's one read
   primitive) to answer AD-29's "pushed to the remote" route
   (``ref="refs/remotes/origin/main"``) and "merged to the integration branch" route
-  (``ref="main"``) -- the caller decides which ``ref`` each route needs;
+  (``ref="refs/heads/main"``, Story 61.1) -- the caller decides which ``ref`` each route needs;
   this method has no branch-name opinion of its own.
 - ``commit_paths`` -- the one write: stages EXACTLY ``paths`` (an
   individual ``git add -- <path>`` per entry, never ``git add -A``) and
@@ -286,9 +286,14 @@ class VcsPort(Protocol):
         """A plain ``git push`` of ``branch`` (Story 3.8, AD-46), naming
         ``branch`` explicitly rather than relying on ``repo_root``'s own
         checked-out HEAD: if ``branch`` already has a configured upstream,
-        ``git push <remote> <branch>:<remote_branch>``; otherwise
-        ``git push origin <branch>`` (the branch's first push, no ``-u`` --
-        this never rewrites the caller's own tracking config). ``repo_root``
+        ``git push <remote> refs/heads/<branch>:refs/heads/<remote_branch>``
+        with ``<remote>``/``<remote_branch>`` read from the branch's own
+        config; otherwise ``git push origin
+        refs/heads/<branch>:refs/heads/<branch>`` (the branch's first push, no
+        ``-u`` -- this never rewrites the caller's own tracking config).
+        ``branch`` is a branch NAME the adapter qualifies (Story 61.1: a tag
+        named like it, locally or on the remote, never makes the push
+        ambiguous). ``repo_root``
         need not have ``branch`` checked out (refs are shared across every
         worktree of one repo). Never ``--force``/``--force-with-lease``,
         never a rewrite -- the durability watcher's push is read-only
@@ -405,7 +410,10 @@ class VcsPort(Protocol):
         failure (``into`` moved concurrently), or other git failure -- a
         caller treats that as a hard stop: never retried, never
         auto-resolved. The temp worktree used internally is always removed
-        before this returns or raises, on every exit path."""
+        before this returns or raises, on every exit path. ``branch`` is a
+        revision -- a sha or a full ``refs/heads/<branch>`` (Story 61.1: a
+        bare name lets a tag of that name stand in); ``into`` is a branch
+        name, which this method qualifies itself."""
         ...
 
     def worktree_head_sha(self, worktree_path: Path) -> str:
@@ -424,11 +432,14 @@ class VcsPort(Protocol):
         ...
 
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
-        """Story 4.12 (FR-173): ``git fetch <remote> <ref>`` against
+        """Story 4.12 (FR-173): ``git fetch <remote> refs/heads/<ref>`` against
         ``repo_root`` -- a NETWORK read updating ONLY the remote-tracking
-        ref ``refs/remotes/<remote>/<ref>``, never any local branch.
-        Raises ``VcsCommandError`` on any git failure (no network, an
-        unknown remote, an unresolvable ``ref``)."""
+        ref ``refs/remotes/<remote>/<ref>``, never any local branch. ``ref``
+        is the remote's branch NAME, which the adapter qualifies (Story 61.1:
+        a short source resolves to the remote's tag of that name first, which
+        updates nothing but ``FETCH_HEAD``) -- never a tag, a sha or a full
+        ref. Raises ``VcsCommandError`` on any git failure (no network, an
+        unknown remote, no such branch on the remote)."""
         ...
 
     def fast_forward(self, worktree_path: Path, ref: str) -> str:

@@ -132,7 +132,10 @@ class _FakeVcs:
         worktree_path_map: dict[str, Path | None] | None = None,
         worktree_path_raises_for: frozenset[str] = frozenset(),
         delete_raises_for: frozenset[str] = frozenset(),
+        subjects_raise: bool = False,
     ) -> None:
+        self.subjects_raise = subjects_raise
+        self.subject_refs: list[str] = []
         self.repo_root_value = repo_root_value
         self.worktrees = worktrees
         self.worktrees_raise = worktrees_raise
@@ -153,6 +156,9 @@ class _FakeVcs:
         return self.worktrees
 
     def commit_subjects(self, repo_root, ref):
+        self.subject_refs.append(ref)
+        if self.subjects_raise:
+            raise VcsCommandError("fatal: bad revision")
         return ()
 
     def is_branch_merged(self, repo_root, branch, *, into):
@@ -702,6 +708,102 @@ def test_project_flag_scopes_to_one_slug(tmp_path, capsys, monkeypatch):
     assert len(payload["data"]["proposals"]) == 1
     assert payload["data"]["proposals"][0]["slug"] == "beta"
     assert exit_code == 0
+
+
+# --- Story 61.1 (CAP-271): the landing base by its full ref; evidence failures; text -------
+
+
+def test_the_landing_base_subjects_are_read_by_the_full_ref_once_per_base(tmp_path, capsys, monkeypatch):
+    """A tag named like the base would otherwise stand in for the branch's history."""
+    _patch_repo(monkeypatch, tmp_path)
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),), merged_map={"acme-4-10": True})
+
+    retire_module.run_retire(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    assert vcs.subject_refs == ["refs/heads/main"]
+    assert _payload(capsys)["verdict"] == "clean"
+
+
+def test_an_unreadable_landing_base_leaves_the_grammar_route_empty_not_a_crash(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        worktree_path_map={"acme-4-10": None},
+        subjects_raise=True,
+    )
+
+    exit_code = retire_module.run_retire(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    payload = _payload(capsys)
+    assert payload["data"]["proposals"] == []
+    assert payload["data"]["insufficient_evidence"][0]["missing"] == ["merged_by_patch_id"]
+    assert exit_code == 0
+
+
+def test_an_unreadable_worktree_listing_refuses_as_not_concluded_and_warns(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        merged_map={"acme-4-10": True},
+        worktree_path_raises_for=frozenset({"acme-4-10"}),
+    )
+
+    retire_module.run_retire(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    payload = _payload(capsys)
+    assert [f["code"] for f in payload["findings"]] == ["MRS-RETIRE-002"]
+    assert "no live worktree" in payload["findings"][0]["message"]
+    assert payload["data"]["insufficient_evidence"][0]["missing"] == ["run_concluded"]
+    assert payload["verdict"] == "warn"
+
+
+def test_the_text_format_projects_proposals_refusals_deletions_and_findings(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    _stub_run_discovery(monkeypatch, run_dir_map={"acme": tmp_path / "runs" / "acme-run1"})
+    home = tmp_path / "loop-homes" / "acme"
+    tasks = (
+        TaskPhaseSnapshot(story_key="4.10", phase="done", commit_sha="sha1", branch="acme-4-10"),
+        TaskPhaseSnapshot(story_key="4.11", phase="done", commit_sha="sha2", branch="acme-4-11"),
+        TaskPhaseSnapshot(story_key="4.12", phase="done", commit_sha="sha3", branch="acme-4-12"),
+    )
+    harness = _FakeHarness(snapshots={str(home): _snapshot(tasks)})
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        merged_map={"acme-4-10": True, "acme-4-12": True},
+        delete_raises_for=frozenset({"acme-4-12"}),
+    )
+
+    exit_code = retire_module.run_retire(_args(execute=True, format="text"), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    text = capsys.readouterr().out
+    assert "retire: '(whole fleet)'" in text
+    assert "executed: True" in text
+    assert "proposals: 2" in text
+    assert "  acme/'acme-4-10' (story 4.10, merge_sha 'sha1')" in text
+    assert "insufficient evidence: 1" in text
+    assert "  acme/'acme-4-11': missing merged_by_patch_id" in text
+    assert "deleted: 1\n  acme/'acme-4-10'" in text
+    assert "findings:\n  MRS-RETIRE-003 [warn] cannot delete 'acme-4-12'" in text
+    assert exit_code == 0
+
+
+def test_a_journal_that_cannot_be_written_is_reported_after_the_deletes(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),), merged_map={"acme-4-10": True})
+    runs_parent = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    runs_parent.mkdir(parents=True)
+    (runs_parent / "runs").write_text("not a directory", encoding="utf-8")
+
+    retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    payload = _payload(capsys)
+    assert vcs.delete_calls == [("acme-4-10", True)]
+    assert [f["code"] for f in payload["findings"]] == ["MRS-RETIRE-003"]
+    assert "could not be journaled" in payload["findings"][0]["message"]
 
 
 # --- main.py wiring smoke test -------------------------------------------

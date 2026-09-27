@@ -118,11 +118,16 @@ def provision(root: Path, slug: str) -> Path | None:
     home = home_path(root, slug)
     branch = f"loop/{slug}"
     if not home.exists():
+        # Marshal Story 61.1: detect the branch and mint from `main` by full
+        # refname -- a same-named tag made the check true (attaching detached at
+        # the tag) and made the mint refuse as ambiguous. Attaching an existing
+        # branch stays bare: `worktree add` reads it as a branch name there.
         has_branch = run(["git", "-C", str(root), "rev-parse", "--verify", "--quiet",
-                          branch]).returncode == 0
+                          f"refs/heads/{branch}"]).returncode == 0
         add = (["git", "-C", str(root), "worktree", "add", str(home), branch]
                if has_branch else
-               ["git", "-C", str(root), "worktree", "add", "-b", branch, str(home), "main"])
+               ["git", "-C", str(root), "worktree", "add", "-b", branch, str(home),
+                "refs/heads/main"])
         result = run(add)
         if result.returncode != 0:
             sys.stderr.write(f"error: worktree add failed:\n{result.stderr}")

@@ -168,6 +168,7 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import gate, identity, journal, policy, spec_binding
 from ..core.identity import StoryKey, render_filename_slug
 from ..core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
+from ..core.refs import local_branch_ref
 from ..core.spec_low_risk import LowRiskParseError, parse_declared_low_risk
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
@@ -580,7 +581,7 @@ def _run_scope_check(
     home = _home_path(project_slug)
     try:
         git_repo_root = vcs.repo_common_root(home)
-        changed = vcs.changed_files(git_repo_root, home, base=_SCOPE_CHECK_BASE_BRANCH)
+        changed = vcs.changed_files(git_repo_root, home, base=local_branch_ref(_SCOPE_CHECK_BASE_BRANCH))
     except VcsCommandError as exc:
         return (
             {"checked": False, "reason": f"cannot resolve changed files: {exc}"},
@@ -672,7 +673,7 @@ def _gather_review_depth(
     home = _home_path(project_slug)
     try:
         git_repo_root = vcs.repo_common_root(home)
-        changed = vcs.changed_files(git_repo_root, home, base=_SCOPE_CHECK_BASE_BRANCH)
+        changed = vcs.changed_files(git_repo_root, home, base=local_branch_ref(_SCOPE_CHECK_BASE_BRANCH))
     except VcsCommandError as exc:
         return {
             "checked": False,

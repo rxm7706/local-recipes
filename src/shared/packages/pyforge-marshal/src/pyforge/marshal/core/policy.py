@@ -200,6 +200,7 @@ from types import MappingProxyType
 
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
+from .refs import ORIGIN
 
 # --- the closed 33-key vocabulary -------------------------------------------
 
@@ -351,6 +352,13 @@ _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
 
 _STAGE_NAMES: frozenset[str] = frozenset({"dev", "review", "triage"})
 _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-approval"})
+
+#: Characters git's branch-name rules refuse anywhere in a name (besides a
+#: space and control characters) -- ``_valid_landing_base_branch``.
+_BRANCH_NAME_BAD: frozenset[str] = frozenset("~^:?*[\\\x7f")
+#: A first path segment that spells a ref's namespace or the remote, not a
+#: branch -- ``_valid_landing_base_branch`` (Story 61.1).
+_REF_NAMESPACES: frozenset[str] = frozenset({"refs", "heads", "tags", "remotes", ORIGIN})
 # Story 28.15's closed 3-value vocabulary (CAP-17): the per-station
 # scope-violation enforcement mode `core/gate.py::check_scope_with_mode`
 # consumes. `_valid_scope_violation_mode` mirrors `_valid_gate_mode`'s own
@@ -1252,15 +1260,33 @@ def _valid_merge_subject_template(value: object) -> str | None:
 
 
 def _valid_landing_base_branch(value: object) -> str | None:
-    """``landing_base_branch``: a non-empty ``str`` only -- the same shape
-    ``_valid_merge_subject_template`` validates, deliberately a separate
-    function rather than a shared alias: the two fields answer unrelated
-    questions (a subject template vs. a branch name), and a future
-    branch-name-specific check (e.g. rejecting whitespace) must not silently
-    apply to the subject template too."""
-    if isinstance(value, str) and value != "":
-        return value
-    return None
+    """``landing_base_branch``: a plain local branch name -- deliberately a
+    separate function from ``_valid_merge_subject_template``: the two fields
+    answer unrelated questions (a subject template vs. a branch name).
+
+    Story 61.1 (CAP-271): every git read of this value names
+    ``refs/heads/<value>``, so a ref spelled with its namespace (``refs/...``,
+    ``heads/...``, ``tags/...``, ``remotes/...``) or a remote's branch
+    (``origin/...``) can only mean something marshal cannot do -- the forge's
+    PR base is a branch name too. Refused as well: whatever git's branch-name
+    rules refuse (``git check-ref-format``: ``..``, ``@{``, a space, control
+    characters, ``~^:?*[\\``, a leading ``-``, an empty, dot-led or ``.lock``
+    component, a trailing ``/`` or ``.``, ``HEAD``, ``@``). Pure: no git
+    call, so a name is judged the same with or without a repository at hand
+    -- which is also why another remote's name (``upstream/...``) cannot be
+    told from a branch here. ``release/2026`` stays a valid name. ``land``
+    and ``batch-pr`` refuse to run on a refused value rather than fall back
+    to ``main`` (MRS-LAND-002 / MRS-DEPLOY-015)."""
+    if not isinstance(value, str) or value in ("", "HEAD", "@"):
+        return None
+    first, slash, _rest = value.partition("/")
+    if (slash and first in _REF_NAMESPACES) or value.startswith("-") or value.endswith(("/", ".")):
+        return None
+    if ".." in value or "@{" in value or any(ch == " " or ord(ch) < 0x20 or ch in _BRANCH_NAME_BAD for ch in value):
+        return None
+    if any(part == "" or part.startswith(".") or part.endswith(".lock") for part in value.split("/")):
+        return None
+    return value
 
 
 def _valid_gate_mode(value: object) -> str | None:

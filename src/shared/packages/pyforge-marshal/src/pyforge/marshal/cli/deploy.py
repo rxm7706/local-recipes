@@ -231,7 +231,7 @@ import os
 import re
 import secrets
 import shlex
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -257,7 +257,7 @@ from ..core.journal import (
 from ..core.landing import LandingRule, rule_applies
 from ..core.model import Finding, Severity, Status, Verdict, build_envelope, status_for
 from ..core.promotion import PromotionPlan, SpecCandidate
-from ..core.refs import ORIGIN_MAIN
+from ..core.refs import ORIGIN_MAIN, local_branch_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
@@ -303,6 +303,27 @@ _MRS_DEPLOY_024 = "MRS-DEPLOY-024"
 _MRS_DEPLOY_025 = "MRS-DEPLOY-025"
 _MRS_DEPLOY_026 = "MRS-DEPLOY-026"
 _MRS_DEPLOY_027 = "MRS-DEPLOY-027"
+
+#: The landing policy keys `batch-pr` and `land` refuse to run past when malformed
+#: (MRS-DEPLOY-015 / MRS-LAND-002): each silently falls back to a lower layer's value.
+_MALFORMED_LANDING_KEYS = ("landing_rules", "landing_base_branch")  # the second: Story 61.1 (CAP-271)
+
+
+def _malformed_landing_policy_key(policy_findings: Sequence[Finding]) -> str | None:
+    """The first landing policy key an ERROR policy finding reports malformed, if any --
+    matched on the policy's own ``policy key '<key>'`` wording, not a bare quoted name."""
+    for key in _MALFORMED_LANDING_KEYS:
+        if any(f.severity is Severity.ERROR and f"policy key '{key}'" in f.message for f in policy_findings):
+            return key
+    return None
+
+
+def _malformed_landing_fallback(key: str, effective: policy.EffectivePolicy) -> str:
+    """What ``key`` fell back to, for the refusal message."""
+    if key == "landing_base_branch":
+        return f"the base branch {effective.landing_base_branch.value!r}"
+    return "an EMPTY rule set" if not effective.landing_rules.value else "a lower layer's rule set"
+
 
 # Story 5.9's own local copies of `cli/status.py`'s ledger-path/status
 # literals -- mirrors this module's own established "each module owns its
@@ -729,7 +750,7 @@ def _scan_promotions(
     # finding, never a silently-empty merged_keys (which would read as
     # "nothing merged yet" and promote nothing without saying why).
     try:
-        main_subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+        main_subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -1988,7 +2009,7 @@ def run_land_story(
     since_ref = args.since
     if since_ref is None:
         try:
-            since_ref = vcs.merge_base(git_repo_root, branch, _MERGE_BASE_BRANCH)
+            since_ref = vcs.merge_base(git_repo_root, local_branch_ref(branch), local_branch_ref(_MERGE_BASE_BRANCH))
         except VcsCommandError as exc:
             findings.append(
                 Finding(
@@ -2037,7 +2058,7 @@ def run_land_story(
     # attempt below (the safety-critical checks -- the gate, and P1/P4's own
     # merge-time guards -- still protect the merge itself).
     try:
-        main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE_BRANCH)
+        main_subjects = vcs.commit_subjects(git_repo_root, local_branch_ref(_MERGE_BASE_BRANCH))
     except VcsCommandError:
         main_subjects = ()
     merged_keys_now = promotion.merged_story_keys(main_subjects, template, slug)
@@ -2612,8 +2633,11 @@ def run_batch_pr(
     # (every rule evaluates against zero declared rules, `applies` is never
     # even checked). Refused HERE, before `landing_rules`/`base` are even
     # read below, and before the forge is ever touched -- never a softer
-    # degrade to "ran with whatever policy composed to".
-    if any(finding.severity is Severity.ERROR and "'landing_rules'" in finding.message for finding in policy_findings):
+    # degrade to "ran with whatever policy composed to". Story 61.1 (CAP-271):
+    # a malformed `landing_base_branch` refuses the same way -- its fallback is
+    # `main`, so proceeding would open the PR against a base nobody declared.
+    malformed = _malformed_landing_policy_key(policy_findings)
+    if malformed is not None:
         findings.append(
             Finding(
                 code=_MRS_DEPLOY_015,
@@ -2621,9 +2645,9 @@ def run_batch_pr(
                 message=(
                     "refusing to run the hygiene preflight for "
                     f"{head_branch!r}: policy composition reported a "
-                    "malformed 'landing_rules' layer above -- proceeding "
-                    "would silently evaluate against an EMPTY rule set "
-                    "instead of the project's declared rules; fix the "
+                    f"malformed {malformed!r} layer above -- proceeding "
+                    f"would silently use {_malformed_landing_fallback(malformed, effective)} "
+                    "instead of the project's declared one; fix the "
                     "malformed layer and re-run batch-pr"
                 ),
             )
@@ -2640,9 +2664,11 @@ def run_batch_pr(
     # Wave discovery (reuses Story 4.1's own merged_story_keys/durability
     # machinery, per the story's own Always bullet): every story key
     # reachable in the station branch's own commits since its merge-base
-    # with the configured base branch.
+    # with the configured base branch. Both are read by their full refname
+    # (Story 61.1): a tag named like either would otherwise stand in for it.
+    head_ref, base_ref = local_branch_ref(head_branch), local_branch_ref(base)
     try:
-        merge_base_sha = vcs.merge_base(git_repo_root, head_branch, base)
+        merge_base_sha = vcs.merge_base(git_repo_root, head_ref, base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -2653,7 +2679,7 @@ def run_batch_pr(
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
     try:
-        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_branch}")
+        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_ref}")
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -2687,7 +2713,7 @@ def run_batch_pr(
     # a fresh `create_pr`/`update_pr` attempt. Best-effort: a read failure
     # here never blocks the real attempt below.
     try:
-        base_subjects = vcs.commit_subjects(git_repo_root, base)
+        base_subjects = vcs.commit_subjects(git_repo_root, base_ref)
     except VcsCommandError:
         base_subjects = ()
     already_landed_keys = promotion.merged_story_keys(base_subjects, template, slug)
@@ -2756,7 +2782,7 @@ def run_batch_pr(
     # per the story's own Always bullet) -- the hygiene preflight's own
     # change set.
     try:
-        changed_paths = vcs.changed_files(git_repo_root, home, base=base)
+        changed_paths = vcs.changed_files(git_repo_root, home, base=base_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -3311,7 +3337,7 @@ def reconcile_feed(
     # Merge route: REQUIRED, same as `_scan_promotions` -- its failure means
     # Marshal cannot honestly determine ANY story's durability this run.
     try:
-        main_subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+        main_subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
     except VcsCommandError as exc:
         findings.append(
             Finding(
