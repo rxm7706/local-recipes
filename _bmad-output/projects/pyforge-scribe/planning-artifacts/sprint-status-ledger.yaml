@@ -38,7 +38,7 @@ development_status:
   20-1-the-parity-meta-test-reds-a-todo-inside-the-managed-block: done
   21-1-agents-md-opens-with-what-this-repository-is: done
   21-2-agents-md-says-what-runs-governance-currency: done
-  22-1-scribe-pg-up-succeeds-from-a-long-path-worktree: backlog
+  22-1-scribe-pg-up-succeeds-from-a-long-path-worktree: done
   23-1-the-skf-managed-block-lives-in-agents-md-only: done
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
@@ -85,7 +85,7 @@ development_status:
   epic-20-retrospective: optional
   epic-21: done
   epic-21-retrospective: optional
-  epic-22: backlog
+  epic-22: done
   epic-22-retrospective: optional
   epic-23: done
   epic-23-retrospective: optional
