@@ -1931,3 +1931,13 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   fix: filter the post-PIN warn path by `_LIVE_STATUSES` (or by the same status read the extract uses); add a fixture with an `absorbed` post-PIN Spec that must not warn.
 
   status: open
+
+## DW-doctor-coverage-gates-ci-short-base-2026-09-27 — `scripts/coverage_gates_ci.py` defaults its diff base to the short name `origin/main`, which a local branch or tag of that name shadows
+
+- source_spec: `docs/governance/spec-coverage-gate-independence/` (the coverage gate's guild-owned Spec; Doctor Story 24.1 moved the script out of every station) — found by doctor Story 31.1 (spec-pyforge-doctor CAP-85)
+  summary: `--base` defaults to `$GITHUB_BASE_REF` or `origin/main`, and the pixi `*-coverage-gate` tasks pass `--base origin/main` by name. Git resolves the short name to a local branch or tag `origin/main` first, so the touched-module list — which modules the 80% floor judges — can come from the wrong diff: a stray shadow at HEAD makes it empty and the gate passes having judged nothing. CAP-85 covers Doctor's package only; this script is guild governance, not Doctor's.
+  evidence: `grep -n origin/main scripts/coverage_gates_ci.py` (line 260); the git resolution order marshal Stories 60.1 / 61.1 recorded by probe.
+  location: scripts/coverage_gates_ci.py; pixi.toml `pyforge-*-coverage-gate` tasks
+  severity: low
+  fix: default to `refs/remotes/origin/main` (and qualify a bare `$GITHUB_BASE_REF` as `refs/remotes/origin/<name>`), through the governance Spec's own chain.
+  status: open

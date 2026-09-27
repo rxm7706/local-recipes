@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-09-24'   # RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -570,3 +570,11 @@ task tables, a station CLI's `--help`, `scripts/detectors.py`'s registry, `SKILL
 frontmatter, `[environments]`) and writes one page plus a stamp — the same
 gather-then-render paradigm this spine already names; no new component, no new station
 boundary crossed. No AD added or changed. `updated:` bumped to record the cascade.*
+
+## Currency reconciliation — 2026-09-27
+
+*`prd→arch` cascade for FR-18 / CAP-85 (Epic 31, Doctor names the refs it judges by their full
+refname). A pure `pyforge.doctor.refs` module (`local_branch_ref`, `remote_tracking_ref`, `display_ref`,
+`MAIN`, `ORIGIN_MAIN`) is the one source the git-reading sources draw their refs from; it is Doctor's
+own, since Doctor imports no station's internals (marshal's `core/refs.py` stays marshal's). No
+new component, port or station boundary. No AD added or changed. `updated:` bumped.*

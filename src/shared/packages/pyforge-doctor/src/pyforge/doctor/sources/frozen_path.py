@@ -71,6 +71,7 @@ import yaml
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..refs import ORIGIN_MAIN
 from . import degrade_on_exception
 
 __all__ = ("gather",)
@@ -127,7 +128,7 @@ def _load_capabilities(path: Path) -> list[dict]:
     return data["capabilities"]
 
 
-def _changed_paths(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> set[str] | None:
+def _changed_paths(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> set[str] | None:
     """The set of paths changed between ``base`` and ``head``, or ``None`` on
     any git failure (unresolvable ref, non-repo target, ...).
 

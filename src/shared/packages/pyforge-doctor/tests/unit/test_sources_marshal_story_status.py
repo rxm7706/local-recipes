@@ -1135,6 +1135,56 @@ def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
     assert "1 whose git landing evidence could not be queried" in findings[0].message
 
 
+def test_route3_reads_the_branch_main_never_a_tag_named_main(tmp_path: Path) -> None:
+    """Story 31.1 (CAP-85): Route 3 reads ``refs/heads/main``. With the branch renamed away and a
+    tag ``main`` left on the fixture's first commit, the short name read the TAG's history as
+    though it were the branch -- "queried main, nothing there" -- and fell through to Route 4,
+    vouching for the story on evidence never seen on ``main``. The full refname knows ``main``
+    is gone and says so."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    first = _git(target, "rev-parse", "HEAD").strip()
+    _write_feed(target, "warden", ["1-1-foo"])
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
+    loop_root = tmp_path / "loop_root"
+    _write_state(loop_root, "warden", "run1", {"1-1-foo": {"phase": "deferred", "commit_sha": None}})
+    _git(target, "branch", "-m", "main", "pr-branch")
+    _git(target, "tag", "main", first)
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert "1 whose git landing evidence could not be queried" in findings[0].message
+
+
+def test_route3_asks_git_for_refs_heads_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 31.1 review 1: with a tag ``main`` merely OLDER than the branch, Route 4 over
+    ``--all`` vouches either way, so the verdict cannot show which ref Route 3 read -- the argv
+    does."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _git(target, "tag", "main", "HEAD")
+    _write_feed(target, "warden", ["1-1-foo"])
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
+    loop_root = tmp_path / "loop_root"
+    _write_state(loop_root, "warden", "run1", {"1-1-foo": {"phase": "deferred", "commit_sha": None}})
+    calls: list[tuple[str, ...]] = []
+    real_git = marshal._git
+
+    def recording_git(repo: Path, *args: str, timeout: float | None = None) -> str | None:
+        calls.append(args)
+        return real_git(repo, *args, timeout=timeout)
+
+    monkeypatch.setattr(marshal, "_git", recording_git)
+
+    marshal.gather_story_status(target, loop_root=loop_root)
+
+    main_reads = [args for args in calls if args[:1] == ("log",) and "--all" not in args]
+    assert main_reads == [("log", "--format=%H%x00%s", "refs/heads/main")]
+
+
 def test_a_story_with_a_record_but_no_evidence_is_not_vouched_for(
     tmp_path: Path,
 ) -> None:
