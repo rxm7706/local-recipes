@@ -6206,3 +6206,104 @@ class TestDispatchOnlyCheckoutRows:
 
     def test_checkout_without_projects_dir_yields_no_dispatch_only_rows(self, tmp_path):
         assert status_cli._dispatch_only_slugs(tmp_path) == ()
+
+
+class TestLandingRefusalSupersededInTheSweep:
+    """Story 56.1 (spec-pyforge-marshal CAP-266): the fleet sweep marks a
+    refused dispatch landing whose story has since landed on ``main`` --
+    beside the journal's unchanged findings, on the sweep's single ``main``
+    read. Unit coverage of the decision lives in
+    ``test_status_landing_superseded.py``; this class proves the wiring."""
+
+    _RUN = "acme-20260924T110838338Z-84c5006a"
+    _REFUSAL = {
+        "code": "MRS-DISP-020",
+        "severity": "error",
+        "message": "merge of PR #7 failed: the merge commit cannot be cleanly created.",
+    }
+
+    def _seed_refused_run(self, tmp_path: Path) -> None:
+        """A stopped run whose last act was a refused landing -- the shape
+        of the live doctor 30.3 / marshal 46.6 journals."""
+        run_dir = tmp_path / "_bmad-output/projects/acme/implementation-artifacts/dispatch-runs" / self._RUN
+        run_dir.mkdir(parents=True)
+        entries = (
+            build_entry(
+                id=JournalEntryId("w", 0),
+                ts="2026-09-24T11:08:38.338Z",
+                run_id=self._RUN,
+                kind="dispatch-launch",
+                phase=Phase.INTENT,
+                payload={"harness_profile": "claude", "story_key": "30.3"},
+            ),
+            build_entry(
+                id=JournalEntryId("w", 1),
+                ts="2026-09-24T11:08:39.000Z",
+                run_id=self._RUN,
+                kind="dispatch-launch",
+                phase=Phase.OUTCOME,
+                intent_id=JournalEntryId("w", 0),
+                payload={"session_pid": 999999},
+            ),
+            build_entry(
+                id=JournalEntryId("w", 2),
+                ts="2026-09-24T15:00:00.000Z",
+                run_id=self._RUN,
+                kind="dispatch-land",
+                phase=Phase.INTENT,
+                payload={"verdict": "refused"},
+            ),
+            build_entry(
+                id=JournalEntryId("w", 3),
+                ts="2026-09-24T15:00:01.000Z",
+                run_id=self._RUN,
+                kind="dispatch-land",
+                phase=Phase.OUTCOME,
+                intent_id=JournalEntryId("w", 2),
+                payload={"verdict": "refused", "ok": False, "land_findings": [self._REFUSAL]},
+            ),
+        )
+        (run_dir / "journal.jsonl").write_text(
+            "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in entries), encoding="utf-8"
+        )
+
+    def _home(self, tmp_path, capsys, monkeypatch, vcs):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        self._seed_refused_run(tmp_path)
+        exit_code = status_cli.run_status(
+            _args(project="acme"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        return exit_code, payload, payload["data"]["homes"][0]
+
+    def test_a_refusal_whose_story_landed_since_is_marked(self, tmp_path, capsys, monkeypatch):
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            commit_subjects_value=("Merge pull request #7 from rxm7706/dispatch/acme/30.3",),
+        )
+        exit_code, _payload_, home = self._home(tmp_path, capsys, monkeypatch, vcs)
+        assert home["dispatch_landing_findings"] == [self._REFUSAL]
+        assert home["dispatch_landing_superseded"] is True
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert exit_code == 0
+
+    def test_a_refusal_whose_story_has_not_landed_is_not_marked(self, tmp_path, capsys, monkeypatch):
+        vcs = _FakeVcs(repo_root_value=tmp_path, commit_subjects_value=())
+        _exit, _payload_, home = self._home(tmp_path, capsys, monkeypatch, vcs)
+        assert home["dispatch_landing_findings"] == [self._REFUSAL]
+        assert "dispatch_landing_superseded" not in home
+
+    def test_an_unreadable_main_marks_nothing_and_raises_no_patch_warning(self, tmp_path, capsys, monkeypatch):
+        """No home carries a failed patch, so `MRS-STATUS-011` (the
+        failed-patch check's unreadable-`main` WARN) must not fire just
+        because the landing check tried the shared read."""
+        vcs = _FakeVcs(repo_root_value=tmp_path, commit_subjects_raises=True)
+        exit_code, payload, home = self._home(tmp_path, capsys, monkeypatch, vcs)
+        assert "dispatch_landing_superseded" not in home
+        assert "MRS-STATUS-011" not in {f["code"] for f in payload["findings"]}
+        assert exit_code == 0

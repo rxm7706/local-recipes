@@ -2,7 +2,7 @@
 title: '56.1: A refused landing whose story has since landed reads as superseded'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

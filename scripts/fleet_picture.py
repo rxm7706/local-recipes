@@ -824,6 +824,10 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 # findings (MRS-DISP-047/048), same visibility rationale as
                 # `scope_advisories` above.
                 "landing_findings": r.get("dispatch_landing_findings") or [],
+                # Story 56.1 (CAP-266): the refused landing's story has since
+                # landed on `main` -- marshal status reports it beside the
+                # unchanged findings, set only on a corroborated merge.
+                "landing_superseded": r.get("dispatch_landing_superseded") is True,
                 "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
                 "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
                 "dispatch_stranded_work": r.get("dispatch_stranded_work"),
@@ -1091,8 +1095,17 @@ def main() -> int:
                 codes = ",".join(dict.fromkeys(
                     str(f.get("code") or "?") for f in errors
                 ))
-                needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
-                             f"-- {codes}")
+                # Story 56.1 (CAP-266): a refusal whose story has since
+                # landed on `main` another way is history, not a decision
+                # owed -- the not-blocking list, naming the story.
+                if (live.get(slug, {}) or {}).get("landing_superseded"):
+                    story = (live.get(slug, {}) or {}).get("story") or "its story"
+                    watch.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes} -- but {story} has since landed on main, "
+                                 f"not waiting on you")
+                else:
+                    needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes}")
             if warns:
                 codes = ",".join(dict.fromkeys(
                     str(f.get("code") or "?") if isinstance(f, dict) else "?"

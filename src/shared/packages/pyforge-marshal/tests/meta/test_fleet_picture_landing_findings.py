@@ -8,6 +8,7 @@ same isolation pattern as ``test_fleet_picture_attention_dispatch_refused.py``.
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -132,3 +133,61 @@ def test_main_silent_when_no_landing_findings(fleet, monkeypatch, capsys, tmp_pa
     assert rc == 0
     assert "landing refused" not in out
     assert "landing finding(s)" not in out
+
+
+_REFUSED_1597 = [{"code": "MRS-DISP-020", "severity": "error", "message": "merge of PR #1597 failed"}]
+
+
+def test_main_lists_a_superseded_refusal_as_not_waiting_on_you(fleet, monkeypatch, capsys, tmp_path):
+    """Story 56.1 (CAP-266): a refusal whose story has since landed on
+    `main` (marshal status's `dispatch_landing_superseded`) is history, not
+    a decision owed -- the not-blocking list names the story, and the `>>`
+    block carries no `landing refused` line for it."""
+    rc = _run_main_with_live(
+        fleet,
+        monkeypatch,
+        tmp_path,
+        _marshal_live_row(story="46.6", landing_findings=_REFUSED_1597, landing_superseded=True),
+    )
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert ">> marshal: landing refused" not in out
+    assert (
+        "   - marshal: landing refused (1 finding(s)) -- MRS-DISP-020 -- but 46.6 has since landed on main, "
+        "not waiting on you"
+    ) in out
+
+
+def test_main_keeps_an_unsuperseded_refusal_in_attention(fleet, monkeypatch, capsys, tmp_path):
+    rc = _run_main_with_live(
+        fleet,
+        monkeypatch,
+        tmp_path,
+        _marshal_live_row(landing_findings=_REFUSED_1597, landing_superseded=False),
+    )
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert "  >> marshal: landing refused (1 finding(s)) -- MRS-DISP-020" in out
+    assert "has since landed on main" not in out
+
+
+def test_running_stations_reads_the_superseded_marker_only_when_true(fleet, monkeypatch):
+    """The live-row mapping trusts only a literal `true` from marshal
+    status -- an absent key, or any other value, is not superseded."""
+    rows = [
+        {"slug": "pyforge-doctor", "state": "stopped", "current_story": "30.3", "dispatch_landing_superseded": True},
+        {"slug": "pyforge-marshal", "state": "stopped", "current_story": "46.6"},
+        {"slug": "pyforge-herald", "state": "stopped", "dispatch_landing_superseded": "yes"},
+    ]
+    stdout = json.dumps({"data": {"homes": rows}})
+    monkeypatch.setattr(
+        fleet.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr=""),
+    )
+    _running, info = fleet.running_stations()
+    assert info["doctor"]["landing_superseded"] is True
+    assert info["marshal"]["landing_superseded"] is False
+    assert info["herald"]["landing_superseded"] is False
