@@ -116,6 +116,22 @@ checkout's gitignored `var/scribe-pg/`, and `scribe-pg-up` succeeds from any che
 creates. Port 5433, the DSN the tests hard-code, and the no-container rule do not change.
 `bmad-spec` mints **CAP-31**; Epic 22 / Story 22.1.
 
+## 2026-09-26 — The instruction surface loads once, and says what runs it
+
+Found landing Story 21.1 (PR #1621). Claude Code runs with
+`instructionFiles=claude-md-and-agents-md`, so `AGENTS.md` and `CLAUDE.md` both load every
+session, and `skf-export-skill` writes its 54-line managed block into both: `_bmad/skf/config.yaml`
+lists `ides: [claude-code, other]`, and `claude-code` maps to `CLAUDE.md`. Every session pays for
+the block twice. The same pass wrote a false line into `AGENTS.md`: that neither `detectors-ci`
+nor `pr-preflight` runs `governance-currency`. Both run it, because `scripts/detectors.py`
+discovers `scripts/governance_currency_check.py` by its `*_check.py` glob as `scope=repo`.
+
+The Dream: the SKF block lives in `AGENTS.md` only (`ides: [other]`; snippet paths stay
+`.claude/skills/` through `snippet_skill_root_override`), and `CLAUDE.md` carries no SKF markers,
+so the next export finds no orphan to ask about. `AGENTS.md` says where `governance-currency`
+runs. Both sit under **CAP-27** (one file carries the contract); no new CAP. Story 21.2 corrects
+the line; Epic 23 / Story 23.1 moves the block.
+
 ## Realization log
 
 - **2026-07-23** — Seeded when the crew grew 6 → 8 (Scribe + Steward adopted; `3a50eebfc9`).
