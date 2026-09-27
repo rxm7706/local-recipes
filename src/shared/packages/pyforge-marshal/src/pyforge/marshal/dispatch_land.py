@@ -33,11 +33,10 @@ from .core.egress import Redacted
 from .core.identity import StoryKey, normalize, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
+from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
+from .core.refs import ORIGIN_MAIN_SHORT
 from .core.verdict import compute_verdict
 from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
-from .dispatch_verify import (
-    _SCOPE_BASE as _ORIGIN_MAIN,
-)
 from .dispatch_verify import (
     compose_dispatch_policy,
     run_verify_commands_only,
@@ -49,17 +48,15 @@ from .ports.vcs import VcsPort
 _FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
-# Story 51.1: `_ORIGIN_MAIN` (imported above from `dispatch_verify`'s own
-# `_SCOPE_BASE`, that module's established name for this exact value) is
+# Story 51.1: `_ORIGIN_MAIN` (imported above from `core.refs`, Story 60.1) is
 # deliberately never `_MERGE_BASE` (the LOCAL landing base used everywhere
 # else in this file). Verifying against the local `main` would reproduce
 # the exact blind spot this story fixes: the 50.4/27.5 incident's
 # operator-composed merge commit landed against `origin/main`, not
 # whatever a stale local `main` happened to be.
 _ORIGIN_REMOTE = "origin"
-# Story 59.1 (CAP-269): the full refname the landing heal probes and merges -- never the short
-# `origin/main`, which git resolves to a local branch or tag of that name first (Story 57.1 review).
-_ORIGIN_MAIN_REF = f"refs/remotes/{_ORIGIN_REMOTE}/{_MERGE_BASE}"
+# `_ORIGIN_MAIN` is the full refname (Story 60.1, CAP-270; the heal's probe since 59.1);
+# messages name it `ORIGIN_MAIN_SHORT`, as people read it.
 
 
 @dataclass(frozen=True)
@@ -151,7 +148,7 @@ def _refuse_via_merge_tree_preview(
         return Finding(
             code="MRS-DISP-044",
             severity=Severity.ERROR,
-            message=(f"cannot determine whether {head_branch!r} is behind {_ORIGIN_MAIN!r} before landing: {exc}"),
+            message=(f"cannot determine whether {head_branch!r} is behind {ORIGIN_MAIN_SHORT!r} before landing: {exc}"),
         )
     if behind == 0:
         return None
@@ -162,7 +159,7 @@ def _refuse_via_merge_tree_preview(
         return Finding(
             code="MRS-DISP-044",
             severity=Severity.ERROR,
-            message=(f"cannot preview the merge of {head_branch!r} onto {_ORIGIN_MAIN!r} before landing: {exc}"),
+            message=(f"cannot preview the merge of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r} before landing: {exc}"),
         )
     if tree_oid is None:
         # A real git-detected conflict -- already owned by the existing
@@ -191,7 +188,9 @@ def _refuse_via_merge_tree_preview(
             return Finding(
                 code="MRS-DISP-044",
                 severity=Severity.ERROR,
-                message=(f"cannot materialize the merge-tree preview of {head_branch!r} onto {_ORIGIN_MAIN!r}: {exc}"),
+                message=(
+                    f"cannot materialize the merge-tree preview of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r}: {exc}"
+                ),
             )
 
         reports, verify_findings = run_verify_commands_only(effective, process=process, worktree=preview_home)
@@ -215,7 +214,7 @@ def _refuse_via_merge_tree_preview(
         code="MRS-DISP-044",
         severity=Severity.ERROR,
         message=(
-            f"merge-tree preview of {head_branch!r} onto {_ORIGIN_MAIN!r} "
+            f"merge-tree preview of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r} "
             f"failed verification: {_describe_verify_failures(reports, verify_findings)}"
         ),
     )
@@ -966,7 +965,7 @@ def execute_dispatch_land(
             vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)
         except VcsCommandError as fetch_exc:
             heal = DispatchLandHealResult(healed=False)
-            heal_skipped = f" (heal skipped: could not fetch {_ORIGIN_MAIN_REF}: {fetch_exc})"
+            heal_skipped = f" (heal skipped: could not fetch {ORIGIN_MAIN_SHORT}: {fetch_exc})"
         else:
             heal = try_heal_dispatch_land_merge(
                 project_slug=project_slug,
@@ -983,7 +982,7 @@ def execute_dispatch_land(
                 fs=fs,
                 vcs=vcs,
                 forge=forge,
-                probe_ref=_ORIGIN_MAIN_REF,
+                probe_ref=_ORIGIN_MAIN,
             )
         if heal.escalated_paths:
             paths = ", ".join(heal.escalated_paths)

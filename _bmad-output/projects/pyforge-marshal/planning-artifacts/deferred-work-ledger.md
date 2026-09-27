@@ -6795,3 +6795,13 @@ status: open
   severity: medium
   fix: operator decides, then `bmad-spec` re-derives CAP-1 (memlog first): (a) grounding — add a `mode`/`kind` override to marshal's `ScribeCli.recall()` (marshal surface), drop the mandatory per-station scope for this query, or extend scribe's `_citation_in_scope()` to admit team-memory citations (scribe-owned); (b) whether CAP-1 ends at the `recall-feedback.md` artifact or also wires a reader into bmad-loop's session-context assembly, and at which step; (c) whether `run_resume` also injects. Then flip 47-1 back from `blocked` (operator-confirmed, AGENTS.md § Policy) and re-dispatch.
   status: open
+
+## DW-marshal-local-branch-short-names-2026-09-27 — marshal reads its local landing branch as the short name `main`, which a tag named `main` shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-270 — Story 60.1 closed the same trap for remote-tracking refs)
+  summary: git resolves a short name through `refs/<n>`, `refs/tags/<n>`, `refs/heads/<n>` in that order, so a tag named `main` wins over the branch `main`. Marshal still hands git the local branch by short name — `commit_subjects(root, "main")`, `add_worktree(base="main")`, the dispatch gate's `"main"`, `merge_branch(into=base)` — and `core/policy._valid_landing_base_branch` accepts a value like `origin/main`, which would then reach `merge_base` / `commit_subjects` / `changed_files` by short name. No repo config sets either today.
+  evidence: Story 60.1 review 2 (2026-09-27) — a scratch probe with a tag named `main` had `git log main` return the tag's commit ("refname 'main' is ambiguous"); reasoning for the policy value (no config sets it).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/ (cli/deploy.py, cli/dispatch.py, dispatch_land.py, core/policy.py)
+  severity: low
+  fix: extend `core/refs.py` with `local_branch_ref(branch) -> "refs/heads/<branch>"` and read every git-facing local branch through it (keeping `branch -D`/`checkout` arguments that must stay bare); make `_valid_landing_base_branch` refuse a value containing `/` that is not a plain branch name; extend the Story 60.1 meta test's matcher to local branches. Its own Dream append + CAP + Story on marshal.
+  status: open

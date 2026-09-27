@@ -398,7 +398,7 @@ def loop_home_staleness(
                 cwd=home, capture_output=True, text=True, timeout=60, check=True,
             )
             count = subprocess.run(
-                ["git", "rev-list", "--count", f"{branch}..origin/main"],
+                ["git", "rev-list", "--count", f"{branch}..refs/remotes/origin/main"],  # Story 60.1: never the short name
                 cwd=home, capture_output=True, text=True, timeout=30, check=True,
             ).stdout.strip()
             if count.isdigit() and int(count) >= threshold:
@@ -434,7 +434,7 @@ def primary_checkout_staleness(
             cwd=repo, capture_output=True, text=True, timeout=60, check=True,
         )
         count = subprocess.run(
-            ["git", "rev-list", "--count", f"{branch}..origin/main"],
+            ["git", "rev-list", "--count", f"{branch}..refs/remotes/origin/main"],  # Story 60.1: never the short name
             cwd=repo, capture_output=True, text=True, timeout=30, check=True,
         ).stdout.strip()
         if count.isdigit() and int(count) >= threshold:

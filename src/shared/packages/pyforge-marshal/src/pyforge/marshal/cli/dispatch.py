@@ -107,6 +107,7 @@ from ..core.model_cost import (
     is_harness_default_model,
     provider_declaring_model,
 )
+from ..core.refs import ORIGIN_MAIN
 from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_verdict
@@ -180,7 +181,7 @@ _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "session.log"
 _SUPERVISOR_LOG_FILENAME = "dispatch-supervisor.log"
 _FLEET_SUPERVISOR_LOG_FILENAME = "fleet-drain-supervisor.log"
-_BASE_REF = "origin/main"
+_BASE_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 
 #: How long the detached campaign supervisor waits between cycles -- passed
 #: to it, never slept on here. A cycle is cheap (ledger reads + git/process
@@ -3020,7 +3021,7 @@ def _station_ledger_statuses(
         # silently defeat the fallback in exactly the scenario it exists
         # to fix. Same swallow-and-fall-back handling as the read itself.
         vcs.fetch(repo_root, "origin", "main")
-        remote_text = vcs.file_text_at_ref(repo_root, "origin/main", rel_path)
+        remote_text = vcs.file_text_at_ref(repo_root, _BASE_REF, rel_path)
     except VcsCommandError, ValueError:
         remote_text = None
     if remote_text is None:

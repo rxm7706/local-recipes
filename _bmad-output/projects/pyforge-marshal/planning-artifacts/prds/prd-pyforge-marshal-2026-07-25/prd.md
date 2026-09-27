@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
+updated: "2026-09-27"   # RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
@@ -2673,3 +2673,24 @@ project's ledger is mechanical. Story 59.1.
 
 **Content changed:** § 26 added (FR-215 registered). No AD amended — one additive `VcsPort` method
 (`merge_ref_resolving`); the heal stays outside `core/` (AD-4) and its classification stays pure.
+
+## 27. Currency reconciliation — 2026-09-27 (night)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-270 the night of 2026-09-27. Same-day
+reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 27.1 The FR space: FR-216 registered
+
+After Stories 57.1 and 59.1 closed the short-name shadowing trap in `refresh` and the landing heal,
+a sweep and two reviews found ten more call sites handing git `origin/<branch>`, one of them a push. FR-216 decomposes into
+**Epic 60** (Story 60.1) — a new epic because Epic 59 is `done`.
+
+#### FR-216: Every remote-tracking read names the full ref ← CAP-270
+Every place marshal hands git a remote-tracking ref names it `refs/remotes/<remote>/<branch>`,
+through one pure helper (`core/refs.py`); a local branch or tag named like the remote changes
+nothing marshal reads, diffs, fast-forwards to or pushes. Messages keep the short name. Story 60.1.
+
+**ONE FR space now FR-1..FR-216** (FR-217 = next free id).
+
+**Content changed:** § 27 added (FR-216 registered). No AD amended — a pure helper in `core/`
+and constant values; no new port, adapter or decision boundary.

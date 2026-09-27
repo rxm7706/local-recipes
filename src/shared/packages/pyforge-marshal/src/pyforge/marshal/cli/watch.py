@@ -29,6 +29,7 @@ from ..core.context import MarshalContext
 from ..core.dispatch import DispatchJournalFacts
 from ..core.dispatch_completion import DispatchSessionVerdict
 from ..core.model import Finding, Severity, build_envelope
+from ..core.refs import remote_tracking_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
 
@@ -628,13 +629,20 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
     def loop_sha(slug: str) -> str | None:
         try:
             process.run(["git", "fetch", "origin", "--quiet"], cwd=root, timeout_s=_WATCH_TIMEOUT_S)
+            # Story 60.1 review 2: `--verify --quiet` and `^{commit}`, so a missing loop branch is
+            # `None` (exit 1, no stderr) instead of the ref's own text echoed back as a "SHA".
+            ref = remote_tracking_ref(f"loop/{slug}")
             result = process.run(
-                ["git", "rev-parse", f"origin/loop/{slug}"],
+                ["git", "rev-parse", "--verify", "--quiet", "--end-of-options", f"{ref}^{{commit}}"],
                 cwd=root,
                 timeout_s=_WATCH_TIMEOUT_S,
             )
         except ProcessError as exc:
             raise ProbeError("git rev-parse", str(exc)) from exc
+        if result.returncode != 0:
+            if not (result.stderr or "").strip():
+                return None
+            raise ProbeError("git rev-parse", (result.stderr or "").strip())
         sha = (result.stdout or "").strip()
         if not sha:
             raise ProbeError("git rev-parse", "empty stdout")

@@ -72,7 +72,9 @@ def git(*args: str, cwd: pathlib.Path = ROOT) -> str:
 
 
 def default_remote_head() -> str:
-    for ref in ("origin/main", "origin/master"):
+    # Full refnames (marshal Story 60.1, CAP-270): a local branch or tag named `origin/main` would
+    # shadow the short name and make unpushed work read as already on the remote.
+    for ref in ("refs/remotes/origin/main", "refs/remotes/origin/master"):
         if git("rev-parse", "--verify", "--quiet", ref):
             return ref
     return ""

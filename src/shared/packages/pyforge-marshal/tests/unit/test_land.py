@@ -762,7 +762,7 @@ def test_resync_home_branch_no_op_wave_still_fast_forwards_home(tmp_path, capsys
     assert exit_code == 0
     assert vcs.fetch_calls == [(Path("/fake-repo-root"), "origin", "main")]
     assert len(vcs.fast_forward_calls) == 1
-    assert vcs.fast_forward_calls[0][1] == "origin/main"
+    assert vcs.fast_forward_calls[0][1] == "refs/remotes/origin/main"
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-009" not in codes
 
@@ -802,7 +802,7 @@ def test_resync_home_branch_full_merge_path_sets_home_current_true(tmp_path, cap
     assert payload["data"]["home_current"] is True
     assert exit_code == 0
     assert len(vcs.fast_forward_calls) == 1
-    assert vcs.fast_forward_calls[0][1] == "origin/main"
+    assert vcs.fast_forward_calls[0][1] == "refs/remotes/origin/main"
 
 
 def test_resync_home_branch_diverged_reports_warn_and_home_current_false(tmp_path, capsys, monkeypatch):

@@ -1174,7 +1174,7 @@ def test_execute_dispatch_land_skips_the_heal_when_its_fetch_fails(tmp_path: Pat
     )
     assert result.verdict == DispatchLandingVerdict.REFUSED
     refusal = [f for f in envelope.findings if f.code == "MRS-DISP-020"]
-    assert refusal and "heal skipped: could not fetch refs/remotes/origin/main" in refusal[0].message
+    assert refusal and "heal skipped: could not fetch origin/main" in refusal[0].message
     assert vcs.fetches == 2
     assert vcs.probed == [] and vcs.merges == []
     assert forge.merge_calls == 1

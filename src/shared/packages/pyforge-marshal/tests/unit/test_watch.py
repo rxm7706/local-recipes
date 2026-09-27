@@ -1178,7 +1178,25 @@ def test_default_ports_loop_sha_fetches_then_rev_parses(tmp_path: Path):
     ports = watch_mod._default_ports(process, tmp_path)
     assert ports.loop_sha("acme") == "cafebabe"
     assert process.calls[0][0] == ["git", "fetch", "origin", "--quiet"]
-    assert process.calls[1][0] == ["git", "rev-parse", "origin/loop/acme"]
+    assert process.calls[1][0] == [
+        "git",
+        "rev-parse",
+        "--verify",
+        "--quiet",
+        "--end-of-options",
+        "refs/remotes/origin/loop/acme^{commit}",
+    ]
+
+
+def test_default_ports_loop_sha_is_none_when_the_loop_branch_is_missing(tmp_path: Path):
+    """Story 60.1 review 2: `rev-parse` without `--verify` echoed a missing ref back as its "SHA"."""
+    process = _RecordingProcess(
+        {
+            "fetch": ProcessResult(returncode=0, stdout="", stderr=""),
+            "rev-parse": ProcessResult(returncode=1, stdout="", stderr=""),
+        }
+    )
+    assert watch_mod._default_ports(process, tmp_path).loop_sha("acme") is None
 
 
 def test_default_ports_loop_sha_probe_failures_become_probe_errors(tmp_path: Path):
@@ -1186,10 +1204,18 @@ def test_default_ports_loop_sha_probe_failures_become_probe_errors(tmp_path: Pat
     with pytest.raises(ProbeError, match="no git") as excinfo:
         watch_mod._default_ports(launch_fail, tmp_path).loop_sha("acme")
     assert excinfo.value.command == "git rev-parse"
+    failed = _RecordingProcess(
+        {
+            "fetch": ProcessResult(returncode=0, stdout="", stderr=""),
+            "rev-parse": ProcessResult(returncode=128, stdout="  \n", stderr="fatal: not a git repository"),
+        }
+    )
+    with pytest.raises(ProbeError, match="not a git repository"):
+        watch_mod._default_ports(failed, tmp_path).loop_sha("acme")
     empty = _RecordingProcess(
         {
             "fetch": ProcessResult(returncode=0, stdout="", stderr=""),
-            "rev-parse": ProcessResult(returncode=128, stdout="  \n", stderr="unknown revision"),
+            "rev-parse": ProcessResult(returncode=0, stdout="  \n", stderr=""),
         }
     )
     with pytest.raises(ProbeError, match="empty stdout"):
