@@ -5596,10 +5596,11 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py": "c09e271257afe028aa58ce322ba7a4e23186c1cc",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "ef39121a6dd7f8769d63626aa214378ff81f89f0",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "f907e99e68a577a12af54ffb9331de383eb932e8",
+   "src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py": "90afeb34ce837d39b56157299f352f863ea39356",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "0234f9f1c32c32a2bc784ad028d3cb1cca523a30",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "ae090048a1d3600ce97b1dbfb71be23b79ac599b"
   },
-  "memlog": "db43088665478288a09c1fb1ef2341aed60b3254"
+  "memlog": "aeea286b62be3e494b1c511d190c28b8af94c930"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
