@@ -125,6 +125,14 @@ Where each former `CLAUDE.md` section went; the full former text follows the tab
 | Project Documentation Reference | `docs/MAP.md`; the legacy spec index in `CLAUDE.md` and, in full, in this file |
 | conda-forge-expert v7.0.0 layout | this file; `AGENTS.md` § *Read on trigger* for the three-place rule |
 
+### SKF skills block (the line only `CLAUDE.md`'s copy carried)
+
+Story 23.1 (2026-09-26) points the SKF export at `AGENTS.md` only and removes the block from
+`CLAUDE.md`. Every other line of it is in `AGENTS.md`'s copy; this one was not, and its rule
+stands in `AGENTS.md` § *Policy* (never mint a `.claude/skills/pyforge-mason/` path):
+
+|Mason is the eighth PyForge Guild station but deliberately has no SKF skill — recipe work uses `conda-forge-expert` instead (see `AGENTS.md` governance-currency policy on never minting `.claude/skills/pyforge-mason/`).
+
 ### Project Overview
 
 This repository is an **AI-assisted, semi-autonomous packaging factory** for conda-forge recipes. It mirrors the workflow of `conda-forge/staged-recipes` but is supercharged with a suite of custom tools that enable Claude to handle nearly the entire recipe lifecycle, from generation and security scanning to building, debugging, and maintenance.
