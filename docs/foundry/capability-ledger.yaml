@@ -4193,7 +4193,13 @@ capabilities:
   - id: pyforge-steward:CAP-156
     spec: pyforge-steward
     station: pyforge-steward
-    heading: "the pre-push gate preflights only what is new, and its journal names what was pushed"
+    heading: "the pre-push gate's journal names what was pushed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-157
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "workspace clean keeps a note, not a tarball, for a worktree already on its source"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 

@@ -582,7 +582,12 @@ def list_workspaces(
 
 
 def _worktree_dirty(wt: Path) -> bool:
-    result = _git_ok("status", "--porcelain", cwd=wt)
+    # Pinned, not read from config (Story 69.1 review 1): `status.showUntrackedFiles=no` hid an
+    # untracked file and a submodule `ignore=all` hid a submodule's local commit -- both then read
+    # as clean. Marshal's `has_uncommitted_changes` pins the same way.
+    result = _git_ok(
+        "-c", "status.showUntrackedFiles=normal", "status", "--porcelain", "--ignore-submodules=none", cwd=wt
+    )
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
         raise WorkspaceError(f"git status --porcelain failed in {wt} (exit {result.returncode}): {detail}")
@@ -717,6 +722,94 @@ def _without_reinstallable_envs(arcroot: str):
     return _filter
 
 
+#: A git-ignored path under one of these prefixes that is a real file or directory -- not a
+#: backlink symlink -- can hold Tier-3 work (story drafts, sprint feeds) that exists nowhere
+#: else, so it forces a tarball (Story 69.1 review 1).
+_IGNORED_WORK_PREFIXES: tuple[str, ...] = ("_bmad-output/",)
+#: How many git-ignored paths a note lists before it counts the rest.
+_NOTE_IGNORED_LIMIT = 200
+
+
+def _resolve_commit(ref: str, *, cwd: Path) -> str | None:
+    """``ref``'s commit, or None when git cannot resolve it unambiguously: a local branch or
+    tag named ``origin/main`` shadows the remote-tracking ref with only a warning on stderr,
+    and a warning is no proof (Story 69.1 review 1)."""
+    result = _git_ok("rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}", cwd=cwd)
+    if result.returncode != 0 or "ambiguous" in (result.stderr or ""):
+        return None
+    return result.stdout.strip()
+
+
+def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str | None:
+    """Story 69.1 (CAP-157): the note a worktree leaves instead of a tarball, or None when git
+    cannot prove it holds nothing unlanded -- then it archives exactly as CAP-155 does. The
+    proof, all of it (review 1 found each gap by probe):
+
+    - ``status --porcelain`` is empty, pinned against config (``_worktree_dirty``);
+    - no index entry is marked skip-worktree or assume-unchanged (``ls-files -v``) -- both hide
+      an edited file from ``status``;
+    - HEAD and the recorded branch (when it exists) are both ancestors of the source: cleanup
+      deletes the branch, not HEAD, so a detached HEAD proves nothing about the branch;
+    - the git-ignored listing succeeds, and none of it is Tier-3 work under ``_bmad-output/``
+      other than a backlink symlink.
+
+    Any command that fails or answers ambiguously is no proof. Raises only if git cannot be
+    launched at all, which the sweep reports as an error row and keeps the record."""
+    wt = Path(record.path)
+    try:
+        if _worktree_dirty(wt):
+            return None
+    except WorkspaceError:
+        return None
+    flags = _git_ok("ls-files", "-v", cwd=wt)
+    if flags.returncode != 0 or any(
+        line[:1].islower() or line[:1] == "S" for line in (flags.stdout or "").splitlines()
+    ):
+        return None
+    head_sha = _resolve_commit("HEAD", cwd=wt)
+    source_sha = _resolve_commit(record.source, cwd=root)
+    if head_sha is None or source_sha is None:
+        return None
+    tips = [head_sha]
+    if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
+        branch_sha = _resolve_commit(f"refs/heads/{record.branch}", cwd=root)
+        if branch_sha is None:
+            return None
+        tips.append(branch_sha)
+    for tip in tips:
+        if _git_ok("merge-base", "--is-ancestor", tip, source_sha, cwd=root).returncode != 0:
+            return None
+    listed = _git_ok(
+        "-c",
+        "status.showUntrackedFiles=normal",
+        "-c",
+        "core.quotePath=false",
+        "status",
+        "--ignored",
+        "--porcelain",
+        cwd=wt,
+    )
+    if listed.returncode != 0:
+        return None
+    ignored = [line[3:] for line in (listed.stdout or "").splitlines() if line.startswith("!! ")]
+    if any(path.startswith(_IGNORED_WORK_PREFIXES) and not (wt / path.rstrip("/")).is_symlink() for path in ignored):
+        return None
+    shown = ignored[:_NOTE_IGNORED_LIMIT]
+    lines = [
+        f"workspace {record.slug!r} cleaned {stamp}: nothing unlanded, so no archive was kept (Story 69.1).",
+        f"branch: {record.branch}",
+        f"path: {record.path}",
+        f"HEAD: {head_sha}",
+        f"on source: {record.source} at {source_sha}",
+        "working tree: clean (no tracked change, no untracked file, no hidden index entry)",
+        f"git-ignored paths not kept ({len(ignored)}):",
+        *(f"  {path}" for path in shown),
+    ]
+    if len(ignored) > len(shown):
+        lines.append(f"  ... and {len(ignored) - len(shown)} more")
+    return "\n".join(lines) + "\n"
+
+
 def _archive_worktree(
     record: WorkspaceRecord,
     *,
@@ -728,13 +821,19 @@ def _archive_worktree(
     After a successful remove/prune, also best-effort deletes the local branch
     so a later ``start`` with the same slug can recreate ``-b`` cleanly. The
     tar (or missing marker) is retained — archive-not-delete of tree content.
+    A worktree git proves already landed keeps a ``.landed.txt`` note instead
+    of a tar (Story 69.1, CAP-157): there is no unlanded content to archive.
     """
     try:
         archive_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         safe = record.slug.replace("/", "-")
         wt = Path(record.path)
-        if wt.is_dir():
+        note = _landed_note_text(record, root=root, stamp=stamp) if wt.is_dir() else None
+        if note is not None:
+            archive_path = archive_dir / f"{safe}-{stamp}.landed.txt"
+            archive_path.write_text(note, encoding="utf-8")
+        elif wt.is_dir():
             archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
             try:
                 with tarfile.open(archive_path, "w:gz") as tar:
@@ -771,8 +870,14 @@ def _archive_worktree(
         else:
             _git_ok("worktree", "prune", cwd=root)
 
-        # Branch may still exist after worktree remove; drop it so slug reuse works.
-        _git_ok("branch", "-D", record.branch, cwd=root)
+        # Branch may still exist after worktree remove; drop it so slug reuse works -- but only
+        # when it is on the source. An unmerged branch's commits exist nowhere else (a tarball
+        # holds files, never history), so it is kept (Story 69.1 review 1).
+        source_sha = _resolve_commit(record.source, cwd=root)
+        if source_sha is not None and (
+            _git_ok("merge-base", "--is-ancestor", f"refs/heads/{record.branch}", source_sha, cwd=root).returncode == 0
+        ):
+            _git_ok("branch", "-D", record.branch, cwd=root)
         return archive_path
     except OSError as exc:
         raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc

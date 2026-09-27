@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+import pyforge.steward.workspace as ws_module
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.workspace import (
     WorkspaceError,
@@ -282,6 +283,7 @@ def test_an_interrupt_mid_tar_leaves_no_partial_archive(repo: Path, tmp_path: Pa
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     archive_dir = tmp_path / "archive"
     start_workspace("a", root=repo, bookkeeping=bookkeeping, path=tmp_path / "a", from_ref="origin/main")
+    (tmp_path / "a" / "unlanded.txt").write_text("work\n", encoding="utf-8")  # so it tars (Story 69.1)
 
     def _interrupt(self, *args, **kwargs):
         raise KeyboardInterrupt
@@ -709,3 +711,201 @@ def test_status_unknown_slug_via_cli_exits_failed(repo: Path, monkeypatch, capsy
     assert rc == EXIT_FAILED
     err = json.loads(capsys.readouterr().err)
     assert "not in bookkeeping" in err["error"]
+
+
+# --- Story 69.1 (CAP-157): a worktree already on its source keeps a note, not a tarball ---
+
+
+def _clean_one(repo: Path, tmp_path: Path, slug: str, *, source: str = "origin/main") -> Path:
+    """Clean the single workspace `slug` (confirmed) and return what it left in the archive dir."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    cleaned = clean_workspaces(
+        slug=slug, root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive", confirm=lambda s: True
+    )
+    assert [row["slug"] for row in cleaned["archived"]] == [slug], cleaned
+    return Path(cleaned["archived"][0]["archive"])
+
+
+def test_a_clean_worktree_on_its_source_leaves_a_note_naming_what_it_did_not_keep(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "landed"
+    start_workspace("landed", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    exclude = Path(_git("rev-parse", "--git-common-dir", cwd=repo).stdout.strip())
+    exclude = (exclude if exclude.is_absolute() else repo / exclude) / "info" / "exclude"
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    exclude.write_text("*.local\n", encoding="utf-8")
+    (wt / "dev-secret.local").write_text("token\n", encoding="utf-8")  # ignored: not unlanded work
+    head = _git("rev-parse", "HEAD", cwd=wt).stdout.strip()
+
+    left = _clean_one(repo, tmp_path, "landed")
+
+    assert left.name.endswith(".landed.txt")
+    assert list((tmp_path / "archive").glob("*.tar.gz")) == []
+    note = left.read_text(encoding="utf-8")
+    assert f"HEAD: {head}" in note and "on source: origin/main at " in note
+    assert "dev-secret.local" in note  # a dropped local file is named, never silently gone
+    assert not wt.exists()
+
+
+def test_a_worktree_with_an_unlanded_commit_still_archives(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "ahead"
+    start_workspace("ahead", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    (wt / "work.txt").write_text("work\n", encoding="utf-8")
+    _git("add", "work.txt", cwd=wt)
+    _git("commit", "-m", "not on main", cwd=wt)
+
+    assert _clean_one(repo, tmp_path, "ahead").name.endswith(".tar.gz")
+
+
+def test_a_worktree_with_an_uncommitted_edit_still_archives(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "dirty"
+    start_workspace("dirty", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    (wt / "README.md").write_text("edited, not committed\n", encoding="utf-8")
+
+    assert _clean_one(repo, tmp_path, "dirty").name.endswith(".tar.gz")
+
+
+def test_a_worktree_whose_source_git_cannot_resolve_still_archives(repo: Path, tmp_path: Path):
+    """A proof git cannot give is no proof: the worktree archives, it is never dropped."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "unproven"
+    start_workspace("unproven", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    records = [
+        r if r.slug != "unproven" else WorkspaceRecord(r.slug, r.path, r.branch, "origin/gone", r.created_at)
+        for r in load_bookkeeping(bookkeeping)
+    ]
+    save_bookkeeping(bookkeeping, tuple(records))
+
+    assert _clean_one(repo, tmp_path, "unproven").name.endswith(".tar.gz")
+
+
+def test_a_worktree_with_an_untracked_file_still_archives(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "untracked"
+    start_workspace("untracked", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    (wt / "notes.md").write_text("never committed\n", encoding="utf-8")
+
+    assert _clean_one(repo, tmp_path, "untracked").name.endswith(".tar.gz")
+
+
+# --- Story 69.1 review 1: every way `status` alone could certify unlanded work as landed ---
+
+
+def _exclude(repo: Path, pattern: str) -> None:
+    common = Path(_git("rev-parse", "--git-common-dir", cwd=repo).stdout.strip())
+    exclude = (common if common.is_absolute() else repo / common) / "info" / "exclude"
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    with exclude.open("a", encoding="utf-8") as handle:
+        handle.write(pattern + "\n")
+
+
+def _started(repo: Path, tmp_path: Path, slug: str) -> Path:
+    wt = tmp_path / slug
+    start_workspace(slug, root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main")
+    return wt
+
+
+def test_an_untracked_file_archives_even_when_config_hides_untracked_files(repo: Path, tmp_path: Path):
+    _git("config", "status.showUntrackedFiles", "no", cwd=repo)
+    wt = _started(repo, tmp_path, "hidden-untracked")
+    (wt / "precious.txt").write_text("work\n", encoding="utf-8")
+
+    assert _clean_one(repo, tmp_path, "hidden-untracked").name.endswith(".tar.gz")
+
+
+def test_a_skip_worktree_edit_archives(repo: Path, tmp_path: Path):
+    wt = _started(repo, tmp_path, "skip-worktree")
+    _git("update-index", "--skip-worktree", "README.md", cwd=wt)
+    (wt / "README.md").write_text("local override\n", encoding="utf-8")
+
+    assert _clean_one(repo, tmp_path, "skip-worktree").name.endswith(".tar.gz")
+
+
+def test_an_assume_unchanged_edit_archives(repo: Path, tmp_path: Path):
+    wt = _started(repo, tmp_path, "assume-unchanged")
+    _git("update-index", "--assume-unchanged", "README.md", cwd=wt)
+    (wt / "README.md").write_text("local override\n", encoding="utf-8")
+
+    assert _clean_one(repo, tmp_path, "assume-unchanged").name.endswith(".tar.gz")
+
+
+def test_a_detached_head_on_main_does_not_prove_the_branch_and_the_branch_is_kept(repo: Path, tmp_path: Path):
+    """Cleanup deletes the recorded branch, not HEAD: a branch commit behind a detached HEAD on
+    `origin/main` is unlanded -- it archives, and the unmerged branch survives cleanup."""
+    wt = _started(repo, tmp_path, "detached")
+    (wt / "work.txt").write_text("work\n", encoding="utf-8")
+    _git("add", "work.txt", cwd=wt)
+    _git("commit", "-m", "on the branch only", cwd=wt)
+    branch_tip = _git("rev-parse", "HEAD", cwd=wt).stdout.strip()
+    _git("checkout", "-q", "--detach", "origin/main", cwd=wt)
+
+    assert _clean_one(repo, tmp_path, "detached").name.endswith(".tar.gz")
+    assert _git("rev-parse", "refs/heads/detached", cwd=repo).stdout.strip() == branch_tip
+
+
+def test_a_local_ref_shadowing_the_source_is_no_proof(repo: Path, tmp_path: Path):
+    wt = _started(repo, tmp_path, "shadowed")
+    (wt / "work.txt").write_text("work\n", encoding="utf-8")
+    _git("add", "work.txt", cwd=wt)
+    _git("commit", "-m", "unlanded", cwd=wt)
+    _git("branch", "origin/main", "HEAD", cwd=wt)  # a LOCAL branch named like the source
+
+    assert _clean_one(repo, tmp_path, "shadowed").name.endswith(".tar.gz")
+
+
+def test_ignored_tier3_work_that_is_not_a_backlink_archives(repo: Path, tmp_path: Path):
+    _exclude(repo, "_bmad-output/projects/*/implementation-artifacts")
+    wt = _started(repo, tmp_path, "tier3")
+    drafts = wt / "_bmad-output" / "projects" / "demo" / "implementation-artifacts"
+    drafts.mkdir(parents=True)
+    (drafts / "spec-1-1-draft.md").write_text("a story draft nowhere else\n", encoding="utf-8")
+
+    assert _clean_one(repo, tmp_path, "tier3").name.endswith(".tar.gz")
+
+
+def test_a_backlinked_tier3_symlink_does_not_block_the_note(repo: Path, tmp_path: Path):
+    """As in this repo, `_bmad-output/` holds tracked planning artifacts, so git names the
+    ignored backlink symlink itself (an all-ignored `_bmad-output/` collapses to the directory,
+    which conservatively tars)."""
+    _exclude(repo, "_bmad-output/projects/*/implementation-artifacts")
+    tracked = repo / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "epics.md"
+    tracked.parent.mkdir(parents=True)
+    tracked.write_text("# epics\n", encoding="utf-8")
+    _git("add", "_bmad-output", cwd=repo)
+    _git("commit", "-m", "tracked planning artifact", cwd=repo)
+    _git("push", "-q", "origin", "main", cwd=repo)
+    wt = _started(repo, tmp_path, "backlinked")
+    shared = tmp_path / "primary-tier3"
+    shared.mkdir()
+    link = wt / "_bmad-output" / "projects" / "demo" / "implementation-artifacts"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(shared, target_is_directory=True)
+
+    assert _clean_one(repo, tmp_path, "backlinked").name.endswith(".landed.txt")
+
+
+def test_a_failed_ignored_listing_archives_instead_of_writing_an_empty_note(repo: Path, tmp_path: Path, monkeypatch):
+    wt = _started(repo, tmp_path, "listing-fails")
+    real = ws_module._git_ok
+
+    def _fail_ignored(*args, cwd):
+        if "--ignored" in args:
+            return subprocess.CompletedProcess(args, 128, stdout="", stderr="fatal: simulated")
+        return real(*args, cwd=cwd)
+
+    monkeypatch.setattr(ws_module, "_git_ok", _fail_ignored)
+    assert _clean_one(repo, tmp_path, "listing-fails").name.endswith(".tar.gz")
+    assert not wt.exists()
+
+
+def test_the_note_lists_at_most_200_ignored_paths_and_counts_the_rest(repo: Path, tmp_path: Path):
+    _exclude(repo, "*.cache")
+    wt = _started(repo, tmp_path, "many-ignored")
+    for n in range(250):
+        (wt / f"f{n:03d}.cache").write_text("x\n", encoding="utf-8")
+
+    note = _clean_one(repo, tmp_path, "many-ignored").read_text(encoding="utf-8")
+    assert "git-ignored paths not kept (250):" in note
+    assert "  ... and 50 more" in note

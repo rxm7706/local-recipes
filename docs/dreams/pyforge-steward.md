@@ -286,6 +286,20 @@ Drift — orphaned between stations.
   `scratch-worktree-lifecycle`) and CAP-154 (the pre-push gate); the preflight-under-a-minute
   entry above; marshal's `refresh` (the proven loop-home skip is its CAP-267, marshal Dream
   2026-09-27). Owner: steward.
+- **2026-09-27 (evening) — Proposed: an archive only for work that has not landed.** Story 68.1
+  took the environments out of `workspace clean`'s archives, but it still tars every worktree it
+  cleans — ~120 MB each — even when every file is already on `main`. A deep audit of the 25
+  archives left after that cleanup (3.1 GB) found none holding work `main` lacks: 19 were
+  byte-identical to a `main` commit, the rest earlier drafts of work `main` carries in a later
+  form. Two of them held stray copies of local secrets (a platform dev key, atlas's local
+  credentials), kept for nothing. The operator deleted all 25.
+  **What it looks like when real:** `clean` asks git for proof first — a clean tree, HEAD on the
+  worktree's source — and when it has it, keeps a short note instead of a tarball: the landed
+  sha, the source, and the git-ignored paths it did not keep. A worktree with an unlanded commit,
+  an uncommitted edit or an untracked file still archives as before.
+  **Constraints:** the proof is git's own (ancestry and a clean `status`), never a guess; a proof
+  git cannot give archives; the note names the git-ignored paths it drops. Kinships: CAP-155 (Story 68.1),
+  CAP-107 (archive-not-delete). Owner: steward.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
