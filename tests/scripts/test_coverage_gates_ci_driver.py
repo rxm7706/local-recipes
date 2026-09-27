@@ -45,13 +45,18 @@ def test_normalize_base_keeps_revisions_and_names_the_remote_tracking_ref(driver
     assert driver._normalize_base("origin/main") == "refs/remotes/origin/main"
     assert driver._normalize_base("origin/release/2026") == "refs/remotes/origin/release/2026"
     assert driver._normalize_base("refs/remotes/origin/main") == "refs/remotes/origin/main"
+    assert driver._normalize_base("origin/main~1") == "refs/remotes/origin/main~1"
+    assert driver._normalize_base("origin/main@{1}") == "refs/remotes/origin/main@{1}"
+    assert driver._normalize_base("user@feature") == "refs/remotes/origin/user@feature"
     assert driver._normalize_base("HEAD~1") == "HEAD~1"
+    assert driver._normalize_base("HEAD^") == "HEAD^"
+    assert driver._normalize_base("@{u}") == "@{u}"
     assert driver._normalize_base("upstream/main") == "upstream/main"
     assert driver._normalize_base("") == ""
 
 
 @pytest.mark.parametrize("kind", ["branch", "tag"])
-@pytest.mark.parametrize("given", ["origin/main", "main"])
+@pytest.mark.parametrize("given", ["origin/main", "main", "origin/main~0"])
 def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(driver, tmp_path, monkeypatch, kind, given):
     """The trap CAP-4 closes: a local branch or tag `origin/main` at HEAD made `origin/main...HEAD` empty, so the
     gate judged no module. The normalized base reads the remote-tracking ref instead."""

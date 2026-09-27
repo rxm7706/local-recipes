@@ -2494,7 +2494,7 @@ event's sha still passes through.
 **Surface:** `scripts/coverage_gates_ci.py` (`_normalize_base`, the `--base` help), `tests/scripts/test_coverage_gates_ci_driver.py`,
 `.github/workflows/coverage-gates.yml` (the pull_request `BASE`, which the station-selection diff reads directly).
 **Given** a repository whose `refs/remotes/origin/main` is the fork point and a local branch or tag named `origin/main` at HEAD
-**When** the driver runs on its default base, on a pixi task's `--base origin/main`, or on CI's bare `$GITHUB_BASE_REF`
+**When** the driver runs on its default base, on a pixi task's `--base origin/main`, or on a bare `GITHUB_BASE_REF` name
 **Then** its touched-module list is the one `refs/remotes/origin/main` gives, never the shadow's empty diff
 **And** a sha and a full ref pass through unchanged, and with no shadow every list is unchanged
 **And** the workflow's station selection diffs `refs/remotes/origin/${GITHUB_BASE_REF}`, never the short name

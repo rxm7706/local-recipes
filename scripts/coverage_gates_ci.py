@@ -62,13 +62,17 @@ def _normalize_base(base: str) -> str:
     independence CAP-4, doctor Story 32.1): git resolves a short name to a
     local branch or tag of that name before ``refs/remotes/<name>``, so a
     stray local ``origin/main`` at HEAD made the diff empty and the gate pass
-    having judged nothing."""
-    if not base or base.startswith("refs/") or any(ch in base for ch in "~^@:"):
-        return base
-    if re.fullmatch(r"[0-9a-f]{7,40}", base):
+    having judged nothing. An ``origin/<name>`` revision expression
+    (``origin/main~1``) is qualified the same way: its prefix is the part a
+    shadow wears."""
+    if not base or base.startswith("refs/"):
         return base
     if base.startswith("origin/"):
         return f"refs/remotes/{base}"
+    if base.startswith("@") or "@{" in base or any(ch in base for ch in "~^:"):
+        return base
+    if re.fullmatch(r"[0-9a-f]{7,40}", base):
+        return base
     if "/" in base:
         return base  # another remote's branch or a local branch with a slash: not ours to guess
     return f"refs/remotes/origin/{base}"

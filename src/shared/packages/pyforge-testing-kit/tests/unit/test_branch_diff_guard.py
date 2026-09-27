@@ -182,7 +182,9 @@ def test_every_guard_reads_the_remote_past_a_local_origin_main(repo: Path, kind:
     assert changed_paths_since(repo, pathspec="src", **base) == ["src/new.py"]
     assert "+y = 2" in diff_text_since(repo, pathspec="src", **base)
     assert [commit_subject(repo, sha) for sha in commits_since(repo, **base)] == ["story: add src/new.py"]
-    assert existed_at_ref(repo, "src/new.py", **({"ref": "origin/main"} if explicit else {})) is False
+    ref = {"ref": "origin/main"} if explicit else {}
+    assert existed_at_ref(repo, "base.py", **ref) is True  # the ref resolves: the False below is not a miss
+    assert existed_at_ref(repo, "src/new.py", **ref) is False
     assert unsanctioned_commits(repo, pathspec="src", changelog_path="src/CHANGELOG.md", **base) != []
 
 

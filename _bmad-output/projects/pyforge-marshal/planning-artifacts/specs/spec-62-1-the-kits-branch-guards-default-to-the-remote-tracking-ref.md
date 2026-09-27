@@ -40,7 +40,7 @@ Type / Effort / Deps: fix / S / —.
 
 **Always:** the kit stays a leaf (no station import); `pytest` is imported only on the skip path.
 
-**Never:** change a caller; change what a guard returns when no shadow exists.
+**Never:** change a caller; change what a guard returns when no shadow exists -- one carve-out: a local branch literally named `origin/<x>` is no longer reachable by that short name (the guard reads `refs/remotes/origin/<x>`); a caller that means it passes `refs/heads/origin/<x>`.
 
 ## I/O & Edge-Case Matrix
 
@@ -65,7 +65,15 @@ Ledger status at mint: `backlog`.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-guild pytest src/shared/packages/pyforge-testing-kit/tests -q` — expected: pass.
+- `pixi run -e pyforge-testing-kit pyforge-testing-kit-test` — expected: pass.
 - `pixi run -e pyforge-guild pyforge-station-tests` — expected: pass (every station suite imports the kit).
 
 ## Review Triage Log
+
+- **Review 1 (2026-09-27, independent agent) — FAIL, then fixed:**
+  - [fixed] MEDIUM: the charter memlog never recorded the kit's surface reconcile the Approach names -- appended; scoped stamp at landing.
+  - [fixed] LOW: a local branch literally named `origin/<x>` stops being reachable by that short name -- stated as the one carve-out under **Never**.
+  - [fixed] nit: the shadow test's `existed_at_ref(...) is False` also held for an unresolvable ref -- it now asserts `base.py` existed first.
+  - [fixed] nit: the Verification command ran the kit suite in `pyforge-guild`, which lacks the kit's test deps -- now `pyforge-testing-kit-test`.
+  - [deferred] LOW: the platform's deliberate copy of the guard reads the short `origin/main` -- steward's surface: `DW-steward-platform-diff-guard-short-origin-main-2026-09-27`.
+
