@@ -4534,6 +4534,28 @@ sha(s), falling back to the checked-out branch only when no ref arrived; the del
 **Then** the first still runs the preflight (env and stdin forms); the second's line names the pushed ref and sha, not `main`; the `dispatch/*` and delete lines name their refs
 **And** CAP-154's refusal of a red push is unchanged; `tests/scripts/test_lint_types_gate.py` green
 
+## Epic 69: An archive only for work that has not landed (spec-pyforge-steward CAP-157)
+
+Minted 2026-09-27 (evening) from the station Dream's entry of the same name, after the operator deleted the 25 archives a
+deep audit proved held nothing `main` lacked. A new epic because Epic 68 is `done`. **HARD boundaries:** the proof is
+git's own — a clean `status` and HEAD an ancestor of the source — never a guess; anything unproven still archives
+(archive-not-delete, CAP-155); the note names the git-ignored paths it does not keep.
+
+### Story 69.1: `workspace clean` keeps a note, not a tarball, for a worktree already on its source
+
+As the operator whose `.steward/workspace-archive/` filled with tarballs of work already on `main`,
+I want `workspace clean` to leave a short note instead of a tarball when git proves the worktree holds nothing unlanded,
+So that the archive folder only ever holds work that could otherwise be lost, and a dropped local file is still named.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-157 (extends CAP-155 / CAP-107)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_landed_note_text`, `_source_commit`, `_git_bytes`; `_archive_worktree`
+writes `<slug>-<stamp>.landed.txt` when proven and keeps an unmerged branch; `format_clean` reports it), tests: `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py`,
+`src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py`.
+**Given** a clean worktree whose HEAD is on its source, holding one git-ignored file
+**When** `workspace clean` removes it
+**Then** it leaves a `.landed.txt` note naming the HEAD sha, the source and that ignored file, and no tarball
+**And** a worktree with an unlanded commit, an uncommitted edit, an untracked file (whatever the config), a skip-worktree or assume-unchanged edit, a detached HEAD over an unlanded branch commit (its branch kept), a shadowed or unresolvable source, or ignored Tier-3 work that is not a backlink still archives to a tarball; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
