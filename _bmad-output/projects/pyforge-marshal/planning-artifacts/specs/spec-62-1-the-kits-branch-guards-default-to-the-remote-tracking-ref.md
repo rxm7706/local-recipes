@@ -2,7 +2,7 @@
 title: "62.1: The kit's branch guards default to the remote-tracking ref"
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -22,7 +22,7 @@ declared_low_risk: false
 **Approach:** the kit gains `ORIGIN_MAIN = "refs/remotes/origin/main"`, the five functions default to it, and one private normalizer reads an explicit `origin/<branch>` as `refs/remotes/origin/<branch>` (any other ref — a full ref, `HEAD`, a sha, a local branch name — passes through). The base-absent skip names the ref it looked for. No caller changes. The kit's surface is co-governed by `spec-pyforge-testing-charter` (its memlog records the reconcile); the capability is marshal's (the kit's seed station; the charter's Dream is archived).
 
 Ledger key: `62-1-the-kits-branch-guards-default-to-the-remote-tracking-ref`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -76,4 +76,5 @@ Ledger status at mint: `backlog`.
   - [fixed] nit: the shadow test's `existed_at_ref(...) is False` also held for an unresolvable ref -- it now asserts `base.py` existed first.
   - [fixed] nit: the Verification command ran the kit suite in `pyforge-guild`, which lacks the kit's test deps -- now `pyforge-testing-kit-test`.
   - [deferred] LOW: the platform's deliberate copy of the guard reads the short `origin/main` -- steward's surface: `DW-steward-platform-diff-guard-short-origin-main-2026-09-27`.
+- **Review 2 (2026-09-27, same agent, delta) — PASS:** every review-1 fix verified; no 62.1 finding remains.
 

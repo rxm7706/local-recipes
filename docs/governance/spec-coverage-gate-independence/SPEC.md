@@ -101,8 +101,9 @@ in an AD-3/AD-4 import-linter contract, so the move amends a declared layering r
 - **CAP-4 — the gate diffs against the remote-tracking ref, never a name a local ref can wear.** *(minted 2026-09-27 (late); kinships `marshal:CAP-270`, `pyforge-doctor:CAP-85`; doctor Story 32.1)*
   - *intent:* `scripts/coverage_gates_ci.py`'s base normalizer names `refs/remotes/origin/<name>` for a bare
     branch name (what `GITHUB_BASE_REF` holds) and for `origin/<name>` (what the pixi tasks pass) -- an
-    `origin/<name>` expression such as `origin/main~1` too -- and leaves a sha, a full ref and any other revision
-    expression alone. Git resolves a short name to a local branch or tag of that
+    `origin/<name>` expression such as `origin/main~1` too -- and leaves a sha, a full ref, any other revision
+    expression and a slash-named bare name alone (`release/2026` has `upstream/main`'s shape; CI passes the full
+    ref). Git resolves a short name to a local branch or tag of that
     name before `refs/remotes/<name>`, so a stray `origin/main` at HEAD emptied the touched-module diff and the
     gate passed having judged nothing.
   - *success:* with a local branch or tag named `origin/main` at HEAD, the driver's touched-module list is the

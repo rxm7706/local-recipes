@@ -1597,12 +1597,12 @@ status: open
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-## DW-mason-ci-workflows-short-base-ref-2026-09-27 — the station-tests lane and the recipe CI workflows diff from `origin/<base_ref>`, a short name a local ref or tag of that name shadows
+## DW-mason-recipe-ci-short-base-ref-2026-09-27 — the recipe CI workflows pick changed recipes from `origin/<base_ref>...HEAD`, a short name a local ref or tag of that name shadows
 
-- source_spec: `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md` (its surface names `.github/workflows/pyforge-station-tests.yml`) and the recipe factory's CI (`.github/workflows/test-{all,linux,macos,windows}.yml`); found by doctor Story 32.1 and its review while fixing the coverage gate's identical base
-  summary: `pyforge-station-tests.yml` picks the station suites to run from `git diff "$BASE"...HEAD` with `BASE="origin/${GITHUB_BASE_REF}"`, and each recipe workflow runs `git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*'` to choose which recipes to build. `actions/checkout` with `fetch-depth: 0` fetches tags, so a pushed tag named `origin/main` lands as `refs/tags/origin/main` and wins over `refs/remotes/origin/main`: the selection comes out empty and the PR runs no station suite or builds no recipe. `coverage-gates.yml` ("same rule as pyforge-station-tests.yml, deliberately") now names the full ref, so the two lanes differ until this closes.
-  evidence: `grep -n 'BASE=' .github/workflows/pyforge-station-tests.yml` (line 99); `grep -n base_ref .github/workflows/test-linux.yml` (line 132); the git resolution order marshal Stories 60.1 / 61.1 recorded by probe; the coverage gate's fix in doctor Story 32.1.
-  location: .github/workflows/pyforge-station-tests.yml; .github/workflows/test-all.yml; .github/workflows/test-linux.yml; .github/workflows/test-macos.yml; .github/workflows/test-windows.yml
-  severity: medium
-  fix: `BASE="refs/remotes/origin/${GITHUB_BASE_REF}"` in the station-tests lane and `refs/remotes/origin/${{ github.base_ref }}...HEAD` in the four recipe workflows, through mason's chain.
+- source_spec: the recipe factory's CI (`.github/workflows/test-{all,linux,macos,windows}.yml`, under the `.github/**` line of `scripts/spec_surface_allowlist.txt`); found by doctor Story 32.1 while fixing the coverage gate's identical base
+  summary: each workflow runs `git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*'` to choose which recipes to build. `actions/checkout` with `fetch-depth: 0` fetches tags, so a pushed tag named `origin/main` lands as `refs/tags/origin/main` and wins over `refs/remotes/origin/main`: the changed-recipe set comes out empty and the PR builds nothing.
+  evidence: `grep -n base_ref .github/workflows/test-linux.yml` (line 132); the git resolution order marshal Stories 60.1 / 61.1 recorded by probe; the coverage gate's fix in doctor Story 32.1.
+  location: .github/workflows/test-all.yml; .github/workflows/test-linux.yml; .github/workflows/test-macos.yml; .github/workflows/test-windows.yml
+  severity: low
+  fix: `refs/remotes/origin/${{ github.base_ref }}...HEAD` in all four, through the recipe factory's chain.
   status: open

@@ -2,7 +2,7 @@
 title: "32.1: The gate's base normalizer names the remote-tracking ref"
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -21,7 +21,7 @@ declared_low_risk: false
 **Approach:** `_normalize_base` names `refs/remotes/origin/<name>` for a bare branch name and for `origin/<name>`; an `origin/<name>` revision expression (`origin/main~1`) is qualified the same way; a sha, a full ref (`refs/...`) and any other revision expression (containing `~`, `^`, `:` or `@{`, or starting with `@`) pass through, as does a slash-named bare name (`upstream/main`, `release/2026` -- not the normalizer's to guess; CI passes the full ref). The default and the pixi tasks go through it, so no task argument changes. `coverage-gates.yml`'s `changes` job diffs `$BASE` itself to pick stations -- outside the driver -- so its pull_request `BASE` (both jobs, kept alike) names `refs/remotes/origin/${GITHUB_BASE_REF}`. Doctor is the mechanism Smith (Epic 24's relay shape); the gate stays outside every station.
 
 Ledger key: `32-1-the-gates-base-normalizer-names-the-remote-tracking-ref`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -74,5 +74,6 @@ Ledger status at mint: `backlog`.
   - [fixed] LOW: the expression check ran before the `origin/` check, so `origin/main~1` stayed short and a shadow still emptied `--base origin/main~0` -- `origin/` is qualified first; `@` alone no longer marks an expression (`@{` or a leading `@` does), so `user@feature` is qualified again. Tests pin both.
   - [fixed] nit: the DW closure and Story 32.1's text said CI passed a bare `$GITHUB_BASE_REF` with no argument changed -- the workflow's `BASE` did change; reworded.
   - [accepted] LOW: a slash-named bare name (`release/2026`) on the default path is not qualified -- it predates this story, CI passes the full ref, and `upstream/main` shows why the normalizer cannot guess; recorded in the matrix.
-  - [deferred] MEDIUM: `pyforge-station-tests.yml` picks stations from the same short `origin/${GITHUB_BASE_REF}` -- mason's surface, filed with the recipe workflows: `DW-mason-ci-workflows-short-base-ref-2026-09-27`.
+  - [deferred] MEDIUM: `pyforge-station-tests.yml` picks stations from the same short `origin/${GITHUB_BASE_REF}` -- spec-pyforge-core CAP-8's lane (marshal Epic 52): `DW-marshal-station-tests-short-base-ref-2026-09-27`; the recipe workflows' same shape: `DW-mason-recipe-ci-short-base-ref-2026-09-27`.
+- **Review 2 (2026-09-27, same agent, delta) — PASS:** two LOW wording fixes applied -- the station-tests lane's owner is spec-pyforge-core, not mason (row split out), and the rendered CAP-4 line now names the slash-name exception its memlog records.
 

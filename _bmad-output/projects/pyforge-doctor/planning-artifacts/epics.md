@@ -2498,7 +2498,7 @@ event's sha still passes through.
 **Then** its touched-module list is the one `refs/remotes/origin/main` gives, never the shadow's empty diff
 **And** a sha and a full ref pass through unchanged, and with no shadow every list is unchanged
 **And** the workflow's station selection diffs `refs/remotes/origin/${GITHUB_BASE_REF}`, never the short name
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
