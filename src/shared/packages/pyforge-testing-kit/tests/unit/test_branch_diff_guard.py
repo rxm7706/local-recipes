@@ -149,3 +149,56 @@ def test_unsanctioned_commits_flags_uncommitted_dirt(repo: Path):
     (repo / changelog).write_text("v2\n", encoding="utf-8")  # uncommitted edit, not staged
     bad = unsanctioned_commits(repo, pathspec=surface, changelog_path=changelog)
     assert any(entry.startswith("uncommitted:") for entry in bad)
+
+
+# --- marshal Story 62.1 (CAP-272): a local `origin/main` never stands in for the remote ------------
+
+
+def _branch_work_with_a_shadow(repo: Path, kind: str) -> None:
+    """`refs/remotes/origin/main` at the fork point; one commit of branch work adding
+    `src/new.py`; and the trap -- a local branch or tag named `origin/main` at HEAD."""
+    _make_origin_main(repo)
+    (repo / "src").mkdir()
+    (repo / "src" / "new.py").write_text("y = 2\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "story: add src/new.py")
+    _git(repo, kind, "origin/main", "HEAD")
+
+
+def test_the_default_base_is_the_remote_tracking_ref() -> None:
+    from pyforge.testing_kit import ORIGIN_MAIN
+
+    assert ORIGIN_MAIN == "refs/remotes/origin/main"
+
+
+@pytest.mark.parametrize("kind", ["branch", "tag"])
+@pytest.mark.parametrize("explicit", [False, True])
+def test_every_guard_reads_the_remote_past_a_local_origin_main(repo: Path, kind: str, explicit: bool) -> None:
+    _branch_work_with_a_shadow(repo, kind)
+    base = {"base": "origin/main"} if explicit else {}
+
+    # The trap, for the record: the short name is the shadow, so the branch's work vanishes.
+    assert _git(repo, "diff", "--name-only", "origin/main").strip() == ""
+    assert changed_paths_since(repo, pathspec="src", **base) == ["src/new.py"]
+    assert "+y = 2" in diff_text_since(repo, pathspec="src", **base)
+    assert [commit_subject(repo, sha) for sha in commits_since(repo, **base)] == ["story: add src/new.py"]
+    ref = {"ref": "origin/main"} if explicit else {}
+    assert existed_at_ref(repo, "base.py", **ref) is True  # the ref resolves: the False below is not a miss
+    assert existed_at_ref(repo, "src/new.py", **ref) is False
+    assert unsanctioned_commits(repo, pathspec="src", changelog_path="src/CHANGELOG.md", **base) != []
+
+
+def test_a_full_ref_head_or_local_branch_passes_through(repo: Path) -> None:
+    _make_origin_main(repo)
+    (repo / "a.py").write_text("a = 1\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "add a.py")
+
+    assert changed_paths_since(repo, base="refs/remotes/origin/main") == ["a.py"]
+    assert changed_paths_since(repo, base="main") == ["a.py"]  # the fixture's local `main`, at the base
+    assert changed_paths_since(repo, base="HEAD") == []
+
+
+def test_the_skip_names_the_full_ref_it_looked_for(repo: Path) -> None:
+    with pytest.raises(pytest.skip.Exception, match="refs/remotes/origin/main is not available"):
+        changed_paths_since(repo)

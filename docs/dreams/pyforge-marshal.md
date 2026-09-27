@@ -616,6 +616,19 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   arguments git reads as a branch *name* (`branch -D`, attaching an existing branch to a
   worktree, `<branch>@{upstream}`) stay bare. Kinships: CAP-270 (60.1); owner
   `spec-pyforge-marshal`.
+- **2026-09-27 (late, cont.) — Proposed: the shared test kit's branch guards diff against the
+  remote.** Doctor Story 31.1's review found the same trap in `pyforge-testing-kit`, which marshal
+  seeded and every station's meta tests import: `branch_diff_guard` defaults its base to the short
+  name `origin/main` (`diff_text_since`, `changed_paths_since`, `existed_at_ref`, `commits_since`,
+  `unsanctioned_commits`). A local branch or tag named `origin/main` at HEAD empties every "this
+  branch does not add X" guard, which then passes having checked nothing
+  (`DW-marshal-testing-kit-short-origin-main-2026-09-27`). **What it looks like when real:** the
+  guards default to `refs/remotes/origin/main` and read an explicit `origin/<branch>` the same
+  way; a stray ref changes nothing a guard sees; the skip when the base is absent still names what
+  was missing. **Constraints:** no caller changes; the kit stays importable without git
+  (`pytest` only inside the skip path). The kit's charter (`spec-pyforge-testing-charter`, its
+  Dream archived) co-governs the surface; the capability is marshal's, the kit's seed station.
+  Kinships: CAP-270 (60.1), CAP-271 (61.1), `pyforge-doctor:CAP-85`; owner `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

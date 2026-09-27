@@ -110,6 +110,19 @@ Measured 2026-09-14, not remembered:
 
 ## Realization log
 
+- **2026-09-27 (late)** — **Proposed: the gate diffs against the remote-tracking ref, never a name a
+  local ref can wear.** Marshal Stories 60.1 / 61.1 and doctor Story 31.1 found that git resolves a
+  short name through `refs/<n>`, `refs/tags/<n>`, `refs/heads/<n>`, then `refs/remotes/<n>`; doctor
+  31.1's sweep left this gate's driver (`DW-doctor-coverage-gates-ci-short-base-2026-09-27`).
+  `scripts/coverage_gates_ci.py` normalizes its base to `origin/<name>` and diffs `<base>...HEAD` to
+  pick the touched modules the 80% floor judges: with a local branch or tag named `origin/main`
+  at HEAD, the diff is empty and the gate passes having judged nothing. **What it looks like when
+  real:** the normalizer names `refs/remotes/origin/<name>` for the bare branch name CI passes and
+  for an `origin/<name>` a task passes, and leaves a sha or a full ref alone; a stray ref changes no
+  touched-module list, and the workflow's own station-selection diff reads the full ref too.
+  **Constraints:** the gate stays outside every station (CAP-1); no pixi task argument has to
+  change; a push event's sha still passes through. Kinships:
+  `marshal:CAP-270`, `pyforge-doctor:CAP-85`; mechanism Smith doctor (Epic 24's precedent).
 - **2026-09-14 (later the same day)** — **Ruled and `specified`.** The operator answered all five
   questions with one decision: the narrow Charter §5 amendment (`owner: guild` widens to "a gate
   that judges all eight Smiths"; the test is structural — no Smith *can* be accountable, not merely

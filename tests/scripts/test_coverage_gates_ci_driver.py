@@ -32,16 +32,52 @@ def driver():
     return _load_driver()
 
 
-def test_normalize_base_keeps_revisions_and_prefixes_bare_branch_names(driver):
+def test_normalize_base_keeps_revisions_and_names_the_remote_tracking_ref(driver):
     """A bare sha (the push workflow's `git rev-parse HEAD~1`) is a revision
-    already; only a bare branch name (GITHUB_BASE_REF) gets `origin/`."""
+    already; a bare branch name (GITHUB_BASE_REF) and `origin/<name>` (the
+    pixi tasks) become `refs/remotes/origin/<name>` -- doctor Story 32.1
+    (spec-coverage-gate-independence CAP-4): never the short name a local ref
+    can wear."""
     sha = "f619eae05a233024bf43cc6b68d717fcfffefbaa"
     assert driver._normalize_base(sha) == sha
     assert driver._normalize_base(sha[:10]) == sha[:10]
-    assert driver._normalize_base("main") == "origin/main"
-    assert driver._normalize_base("origin/main") == "origin/main"
+    assert driver._normalize_base("main") == "refs/remotes/origin/main"
+    assert driver._normalize_base("origin/main") == "refs/remotes/origin/main"
+    assert driver._normalize_base("origin/release/2026") == "refs/remotes/origin/release/2026"
+    assert driver._normalize_base("refs/remotes/origin/main") == "refs/remotes/origin/main"
+    assert driver._normalize_base("origin/main~1") == "refs/remotes/origin/main~1"
+    assert driver._normalize_base("origin/main@{1}") == "refs/remotes/origin/main@{1}"
+    assert driver._normalize_base("user@feature") == "refs/remotes/origin/user@feature"
+    assert driver._normalize_base("HEAD~1") == "HEAD~1"
+    assert driver._normalize_base("HEAD^") == "HEAD^"
+    assert driver._normalize_base("@{u}") == "@{u}"
     assert driver._normalize_base("upstream/main") == "upstream/main"
     assert driver._normalize_base("") == ""
+
+
+@pytest.mark.parametrize("kind", ["branch", "tag"])
+@pytest.mark.parametrize("given", ["origin/main", "main", "origin/main~0"])
+def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(driver, tmp_path, monkeypatch, kind, given):
+    """The trap CAP-4 closes: a local branch or tag `origin/main` at HEAD made `origin/main...HEAD` empty, so the
+    gate judged no module. The normalized base reads the remote-tracking ref instead."""
+    import subprocess
+
+    def git(*args: str) -> str:
+        return subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True).stdout.strip()
+
+    git("init", "-q", "--initial-branch=main")
+    git("config", "user.email", "t@example.com")
+    git("config", "user.name", "T")
+    git("commit", "-q", "--allow-empty", "-m", "base")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    (tmp_path / "touched.py").write_text("x = 1\n", encoding="utf-8")
+    git("add", "touched.py")
+    git("commit", "-q", "-m", "touch a module")
+    git(kind, "origin/main", "HEAD")  # the shadow
+    monkeypatch.setattr(driver, "REPO", tmp_path)
+
+    assert driver._git_diff_names("origin/main", "HEAD") == []  # the trap, for the record
+    assert driver._git_diff_names(driver._normalize_base(given), "HEAD") == ["touched.py"]
 
 
 def test_suite_test_paths_skips_missing_integration(driver, tmp_path: Path):

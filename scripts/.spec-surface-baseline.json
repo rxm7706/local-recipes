@@ -4103,25 +4103,23 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "d52234d9adcf0f20cab6b4e4b2033730bb10beaa",
-   "scripts/coverage_gates_ci.py": "5564b181d0f84cecffebc2fa66be8900d29eb745",
-   "scripts/run_station_coverage_gate.py": "a0e4044cf82545f34103822e3152105b82be14de",
    "src/shared/packages/pyforge-testing-kit/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-testing-kit/README.md": "9f5ec344f2daec5bf4d851dd3c397d64b2a1d2f0",
    "src/shared/packages/pyforge-testing-kit/pixi.toml": "503c4dfd85df11b09e0dd7a008bf3c7b4317a80a",
    "src/shared/packages/pyforge-testing-kit/pyproject.toml": "58eb8aacaf228b759f400d03e9b6e8a8aef46eb0",
-   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/__init__.py": "0ef1a459d666c9a98d72467e103d2261f3877904",
+   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/__init__.py": "3daeac36cec2f19cbdf23d253c3ff2c1cf53608e",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/auth_http_time.py": "5e26b429b5e710365e5f8bcd142382f2ac95041b",
-   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py": "22fc50d8fe103352d9775633f3cec908a2cc1b2f",
+   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py": "17bfb0bd8ab8dcf107dc28ac8403051a62c54697",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/cli_runner.py": "afc0e8a9e1f7f76616ba73ed9de7fe03dbc11943",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/db_factory.py": "d4b33fc17f7a0fa2726f395a1512d4a3b4cbe3b6",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/page_object.py": "e141b68dd6f3ef35cf33bdec7c0cf507be3c0c7a",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-testing-kit/tests/conftest.py": "d15f83c9fddf3d9e1b88cd7038797eed52b2cf14",
-   "src/shared/packages/pyforge-testing-kit/tests/unit/test_branch_diff_guard.py": "cef0b4d87efec08f64d38ecc0f7c98777ff1800c",
+   "src/shared/packages/pyforge-testing-kit/tests/unit/test_branch_diff_guard.py": "e50da87a30f5ef7052719865f161ac23a26677e0",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_families.py": "38003507640139348c885bd4d15e0b3602fadfa5",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py": "f3191c31cb02585a8927cd9cb6ec50872a11ae66"
   },
-  "memlog": "e170c31d1693175d63b5e20a9ea062418f1da88b"
+  "memlog": "10fc6182c98cfd1dbf5122df5b124dfc4690e45d"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {

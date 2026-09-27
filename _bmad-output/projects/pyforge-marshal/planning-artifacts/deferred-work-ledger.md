@@ -6826,4 +6826,15 @@ status: open
   location: src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py; pixi.toml `tea-test-review`
   severity: low
   fix: default to `refs/remotes/origin/main` in the kit (callers passing nothing follow), through the testing charter's chain; the steward task's `--base` likewise.
+  status: closed
+  resolved: 2026-09-27 (marshal Story 62.1, spec-pyforge-marshal CAP-272) — `branch_diff_guard` defaults to `refs/remotes/origin/main` (the kit's `ORIGIN_MAIN`) in all five guards and reads an explicit `origin/<branch>` by its full refname; no caller changed; one shadow test asserts all five guards, each of which fails on the old kit. The TEA half of this row (warden's `tea_advisory` and steward's `tea-test-review` task pass `--base origin/main` to the external TEA binary) is another owner's: `DW-warden-tea-advisory-short-base-2026-09-27`.
+
+## DW-marshal-station-tests-short-base-ref-2026-09-27 — the station-tests lane picks the suites to run from `origin/${GITHUB_BASE_REF}`, a short name a local ref or tag of that name shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md` CAP-8 (Story 52.2 made `.github/workflows/pyforge-station-tests.yml` the conformance PR gate); found by doctor Story 32.1's review
+  summary: the lane's `changes` job diffs `"$BASE"...HEAD` with `BASE="origin/${GITHUB_BASE_REF}"` to choose which station suites run. `actions/checkout` with `fetch-depth: 0` fetches tags, so a pushed tag named `origin/main` wins over `refs/remotes/origin/main`, the selection comes out empty, and the PR runs no station suite. `coverage-gates.yml` ("same rule as pyforge-station-tests.yml, deliberately") now names the full ref (doctor Story 32.1), so the two lanes differ until this closes.
+  evidence: `grep -n 'BASE=' .github/workflows/pyforge-station-tests.yml` (line 99); `coverage-gates.yml` lines 73 and 193; the git resolution order marshal Stories 60.1 / 61.1 recorded by probe.
+  location: .github/workflows/pyforge-station-tests.yml
+  severity: medium
+  fix: `BASE="refs/remotes/origin/${GITHUB_BASE_REF}"`, through spec-pyforge-core's chain.
   status: open

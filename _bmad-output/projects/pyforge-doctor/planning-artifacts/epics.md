@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2478,6 +2478,27 @@ keep the short names people read. **FRs covered:** FR-18 (minted 2026-09-27 on t
 **And** no Doctor module hands git a bare `main` or `origin/…`; findings still say `main` / `origin/main`; `pixi run -e pyforge-doctor pyforge-doctor-test` green
 **Status:** done
 **Outcome (2026-09-27):** landed with two independent reviews (FAIL, PASS with lows, both fixed); tracked spec `specs/spec-31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname.md`.
+
+## Epic 32: The coverage gate diffs against the remote-tracking ref (spec-coverage-gate-independence CAP-4)
+
+Minted 2026-09-27 (late) from `docs/governance/spec-coverage-gate-independence/SPEC.md` CAP-4 (owner Dream
+`docs/dreams/coverage-gate-independence.md`, `owner: guild`), whose mechanism Smith is Doctor — Epic 24's relay shape; the
+citations here are the only place the governance Spec's stories are enumerated. Doctor Story 31.1's sweep found the gate's
+driver resolving its base by short name (`DW-doctor-coverage-gates-ci-short-base-2026-09-27`). A new epic because Epic 31
+is `done`. **HARD boundaries:** the gate stays outside every station (CAP-1); no pixi task argument changes; a push
+event's sha still passes through.
+
+### Story 32.1: The gate's base normalizer names the remote-tracking ref
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-coverage-gate-independence CAP-4 • `pyforge-doctor:CAP-85`
+**difficulty:** low
+**Surface:** `scripts/coverage_gates_ci.py` (`_normalize_base`, the `--base` help), `tests/scripts/test_coverage_gates_ci_driver.py`,
+`.github/workflows/coverage-gates.yml` (the pull_request `BASE`, which the station-selection diff reads directly).
+**Given** a repository whose `refs/remotes/origin/main` is the fork point and a local branch or tag named `origin/main` at HEAD
+**When** the driver runs on its default base, on a pixi task's `--base origin/main`, or on a bare `GITHUB_BASE_REF` name
+**Then** its touched-module list is the one `refs/remotes/origin/main` gives, never the shadow's empty diff
+**And** a sha and a full ref pass through unchanged, and with no shadow every list is unchanged
+**And** the workflow's station selection diffs `refs/remotes/origin/${GITHUB_BASE_REF}`, never the short name
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

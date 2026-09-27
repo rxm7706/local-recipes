@@ -4817,3 +4817,13 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   fix: (a) `_default_autotick` picks the updater from the recipe's `cfe-upstream-registry` (npm → `npm_updater.py`, github → `github_updater.py`) and runs inside a `steward workspace start` worktree; (b) `_default_open_pr` creates the branch, commits the recipe diff, pushes, then `gh pr create --repo rxm7706/local-recipes` and adds the `maintenance` label when non-recipe files moved; (c) `_default_publish` stays refuse-by-default but gains a documented credential hook (`ANACONDA_API_TOKEN` + `anaconda -s https://api.anaconda.org upload`) the operator opts into per run; (d) after publish, `generate-bmad-suite` and the `pixi.toml` floors follow the published builds (G117 floor rule), never the recipe. Chain: Dream append on `docs/dreams/pyforge-steward.md` → CAP amendment → Story under Epic 14 or a new epic, before code.
   status: open
+
+## DW-steward-platform-diff-guard-short-origin-main-2026-09-27 — the platform's copy of the branch diff guard reads the short `origin/main`, which a local branch or tag of that name shadows
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` (its surface governs `src/platform/tests/`); found by marshal Story 62.1's review
+  summary: `src/platform/tests/test_warden_portal_audit_start_get.py` keeps a deliberate copy of the testing kit's guard (it may not import `pyforge.*`, `pap:AD-2`) and runs `git rev-parse --verify origin/main^{commit}` and `git diff --name-only origin/main -- src/platform`. The kit now reads `refs/remotes/origin/main` (marshal Story 62.1); the copy does not, so a local `origin/main` at HEAD empties its diff and the guard passes having checked nothing. CI fetches with `--no-tags`, so only local runs are exposed.
+  evidence: `grep -n origin/main src/platform/tests/test_warden_portal_audit_start_get.py` (lines 424-437); the kit's fix in marshal Story 62.1.
+  location: src/platform/tests/test_warden_portal_audit_start_get.py
+  severity: low
+  fix: `refs/remotes/origin/main` in both git calls and the skip text, through steward's chain; run `platform-ci-local -- --test`.
+  status: open
