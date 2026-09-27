@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 57  # 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 326  # 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-27"   # RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
+epicCount: 58  # 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 327  # 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-27"   # RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
 mode: headless
@@ -7047,6 +7047,28 @@ ref), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py`
 **When** the landing's forge merge fails and the heal runs with the real `GitVcs`
 **Then** the pushed head is a merge commit whose second parent is `origin/main`, its ledger holds both rows, and the retried forge merge succeeds
 **And** a same-row conflict heals to the precedence winner; `main`'s own `blocked` flip and retired row survive; a refused retry or a rejected push leaves remote `main` untouched and the PR open; a ledger-plus-other conflict escalates the other path with nothing committed or pushed; another project's ledger conflict escalates by name; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+## Epic 60: Marshal names the remote's branch, never a name something local can wear (spec-pyforge-marshal CAP-270)
+
+Minted 2026-09-27 (night) from the station Dream's entry of the same name: Stories 57.1 and 59.1 each closed the short-name
+shadowing trap in one place; a sweep found eight more. A new epic because Epic 59 is `done`. **HARD boundaries:** no
+behaviour change when no shadowing ref exists; one helper in `core/`, not eight spellings; messages keep `origin/main`.
+
+### Story 60.1: Every remote-tracking read names the full ref
+
+As the operator whose dispatches, landings and refreshes read `origin/main`,
+I want marshal to ask git for `refs/remotes/origin/main` everywhere it means the remote,
+So that a local branch or tag named `origin/main` can never stand in for what the remote holds.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-270 (FR-216) • CAP-267 (57.1), CAP-269 (59.1)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refs.py` (new), `dispatch_verify.py`, `dispatch_land.py`,
+`dispatch_supervisor/__main__.py`, `cli/dispatch.py`, `cli/deploy.py`, `cli/land.py`, `cli/refresh.py`, `cli/watch.py`, `cli/init.py`,
+`core/dispatch.py`, `adapters/vcs_git.py` (incl. the `commit_paths_onto_remote_tip` publish), `ports/vcs.py` (all under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`), tests under
+`src/shared/packages/pyforge-marshal/tests/unit/`.
+**Given** a repository with a local branch named `origin/main` on an unverified commit
+**When** dispatch computes its scope diff, dispatch land counts behind and previews the merge, and land fast-forwards a loop home
+**Then** each uses the remote-tracking tip, never the shadow's commit, and publishing the ledger onto the remote tip never pushes the shadow's commit
+**And** no call site outside `core/refs.py` spells `origin/<branch>` as a git ref; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

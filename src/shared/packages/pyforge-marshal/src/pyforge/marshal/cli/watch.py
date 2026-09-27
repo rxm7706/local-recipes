@@ -29,6 +29,7 @@ from ..core.context import MarshalContext
 from ..core.dispatch import DispatchJournalFacts
 from ..core.dispatch_completion import DispatchSessionVerdict
 from ..core.model import Finding, Severity, build_envelope
+from ..core.refs import remote_tracking_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
 
@@ -629,7 +630,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         try:
             process.run(["git", "fetch", "origin", "--quiet"], cwd=root, timeout_s=_WATCH_TIMEOUT_S)
             result = process.run(
-                ["git", "rev-parse", f"origin/loop/{slug}"],
+                ["git", "rev-parse", remote_tracking_ref(f"loop/{slug}")],
                 cwd=root,
                 timeout_s=_WATCH_TIMEOUT_S,
             )

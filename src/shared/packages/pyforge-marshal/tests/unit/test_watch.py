@@ -1178,7 +1178,7 @@ def test_default_ports_loop_sha_fetches_then_rev_parses(tmp_path: Path):
     ports = watch_mod._default_ports(process, tmp_path)
     assert ports.loop_sha("acme") == "cafebabe"
     assert process.calls[0][0] == ["git", "fetch", "origin", "--quiet"]
-    assert process.calls[1][0] == ["git", "rev-parse", "origin/loop/acme"]
+    assert process.calls[1][0] == ["git", "rev-parse", "refs/remotes/origin/loop/acme"]
 
 
 def test_default_ports_loop_sha_probe_failures_become_probe_errors(tmp_path: Path):

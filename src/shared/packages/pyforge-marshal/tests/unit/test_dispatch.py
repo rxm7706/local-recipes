@@ -304,7 +304,7 @@ def test_spec_text_at_ref_reads_the_resolved_path_at_the_given_ref(tmp_path: Pat
     spec = specs / f"spec-{story}-mint.md"
     spec.write_text("---\nstatus: ready\n---\n", encoding="utf-8")
     rel_path = spec.relative_to(dispatch_core.canonical_repo_root(tmp_path)).as_posix()
-    vcs = _FakeVcsForSpecTextAtRef({("origin/main", rel_path): "---\nstatus: done\n---\n"})
+    vcs = _FakeVcsForSpecTextAtRef({("refs/remotes/origin/main", rel_path): "---\nstatus: done\n---\n"})
     assert dispatch_core.spec_text_at_ref(vcs, tmp_path, slug, story) == "---\nstatus: done\n---\n"
 
 

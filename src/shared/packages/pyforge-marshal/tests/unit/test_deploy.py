@@ -105,7 +105,7 @@ class _FakeVcs:
         return self.changed_paths
 
     def commit_subjects(self, repo_root, ref):
-        if ref == "origin/main":
+        if ref == "refs/remotes/origin/main":
             if self.origin_raises:
                 raise VcsCommandError("no origin remote configured")
             return self.origin_subjects

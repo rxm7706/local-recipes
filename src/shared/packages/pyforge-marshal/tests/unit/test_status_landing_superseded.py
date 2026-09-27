@@ -198,7 +198,7 @@ def test_a_station_branch_merge_supersedes_only_when_the_spec_reads_done_on_orig
     _seed_spec(tmp_path)
     vcs = _Vcs((_STATION_BRANCH_MERGE,), spec_texts={_SPEC_REL: f"---\nstatus: '{status_at_origin}'\n---\n"})
     assert _superseded(_facts("pyforge-doctor", "27.4", _DOCTOR_REFUSAL), vcs, tmp_path) is expected
-    assert vcs.file_reads == [("origin/main", _SPEC_REL)]
+    assert vcs.file_reads == [("refs/remotes/origin/main", _SPEC_REL)]
 
 
 def test_the_spec_reader_answers_only_for_the_rows_own_key(tmp_path: Path) -> None:

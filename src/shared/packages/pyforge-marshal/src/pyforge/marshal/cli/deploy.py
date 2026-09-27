@@ -13,7 +13,7 @@ candidate's story is DURABLE is answered ONLY from git
 never from ``sprint-status.yaml``'s process-level ``development_status``.
 
 **Two of AD-29's three reachability routes.** "Pushed to the remote" is
-``commit_subjects(root, "origin/main")``, best-effort: a missing/unfetched
+``commit_subjects(root, "refs/remotes/origin/main")``, best-effort: a missing/unfetched
 ``origin`` is the ordinary case and falls back to the "merged to the
 integration branch" route (``commit_subjects(root, "main")``) silently, no
 finding -- AD-29's own "durability must not require the network" amendment
@@ -257,6 +257,7 @@ from ..core.journal import (
 from ..core.landing import LandingRule, rule_applies
 from ..core.model import Finding, Severity, Status, Verdict, build_envelope, status_for
 from ..core.promotion import PromotionPlan, SpecCandidate
+from ..core.refs import ORIGIN_MAIN
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
@@ -277,7 +278,7 @@ from .config import (
 # the pre-existing, story-2.3-logged "no --base override" limitation this
 # inherits, not introduces).
 _MERGE_BASE_BRANCH = "main"
-_PUSH_REF = "origin/main"
+_PUSH_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 
 _MRS_DEPLOY_003 = "MRS-DEPLOY-003"
 _MRS_DEPLOY_004 = "MRS-DEPLOY-004"

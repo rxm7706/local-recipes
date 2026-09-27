@@ -54,6 +54,7 @@ from ..core.refresh import (
     is_incomplete_refresh,
     ordered_steps,
 )
+from ..core.refs import display_ref, remote_tracking_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.vcs import VcsPort
 from .config import (
@@ -453,10 +454,10 @@ def run_refresh(
     if vcs is None:
         vcs = GitVcs()
 
-    tip_ref = f"origin/{base}"
+    tip_ref = display_ref(base)  # messages only; git reads tip_full_ref (Story 60.1)
     # Full refname for every git operation: a local branch or tag named `origin/<base>`
     # must never stand in for the remote-tracking ref (Story 57.1 review 2).
-    tip_full_ref = f"refs/remotes/origin/{base}"
+    tip_full_ref = remote_tracking_ref(base)
     proves_main = base == _DEFAULT_BASE
 
     if args.project is not None and not policy_core._is_valid_project_slug(args.project):

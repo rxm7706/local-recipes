@@ -1793,7 +1793,7 @@ def test_preflight_refuses_a_loop_home_that_is_behind_main(repo_root, tmp_path, 
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-014" in out, out
     assert "BEHIND main" in out
-    assert "merge --ff-only origin/main" in out, "the remedy must be runnable as printed"
+    assert "merge --ff-only refs/remotes/origin/main" in out, "the remedy must be runnable as printed"
     assert code != EXIT_OK, "spinning a stale home is what this exists to prevent"
 
 

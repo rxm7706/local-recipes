@@ -21,11 +21,12 @@ from .core.dispatch_verification import reclassify_pre_existing_gate_findings
 from .core.identity import StoryKey, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
+from .core.refs import ORIGIN_MAIN
 from .core.spec_surface import SurfaceParseError, parse_declared_surface
 from .core.verdict import compute_verdict
 from .ports.vcs import VcsPort
 
-_SCOPE_BASE = "origin/main"
+_SCOPE_BASE = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 _SHELL_METACHARACTERS = frozenset("&|<>;()")
 
 

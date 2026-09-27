@@ -583,6 +583,19 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   merge of `origin/main` into the dispatch branch, the landing project's ledger resolved by union
   and any other conflict aborting the merge before it is committed; the probe reads `origin/main`
   after a fetch; another project's ledger escalates by name.
+- **2026-09-27 (night) — Proposed: marshal names the remote's branch, never a name something
+  local can wear.** Stories 57.1 and 59.1 each found the same trap: git resolves a short name like
+  `origin/main` to a local branch or tag of that name before the remote-tracking ref, so a stray
+  local `origin/main` could stand in for the remote. They closed it in `refresh` and the landing
+  heal. A sweep the same night found eight more places marshal hands git the short name — the
+  dispatch scope diff, the landing's behind-count, merge preview and changed files, the
+  supervisor's scope base, the dispatch worktree base and its landing subjects, deploy's
+  push-route subjects, spec reads at a ref, and land's ledger read and loop-home fast-forward.
+  **What it looks like when real:** every one of them asks git for `refs/remotes/<remote>/<branch>`,
+  from one place; a local ref named like the remote changes nothing marshal reads, diffs or
+  fast-forwards to; messages people read still say `origin/main`.
+  **Constraints:** no behaviour changes when no shadowing ref exists; one helper, not eight
+  spellings. Kinships: CAP-267 (57.1), CAP-269 (59.1); owner `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

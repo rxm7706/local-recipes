@@ -71,6 +71,7 @@ from ..core.journal import (
 )
 from ..core.model import Finding, Severity
 from ..core.publish import dispatch_complete_result, shape_dispatch_publish
+from ..core.refs import ORIGIN_MAIN
 from ..core.supervise import resolve_terminal_session_verdict
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
@@ -90,7 +91,7 @@ _JOURNAL_FILENAME = "journal.jsonl"
 _SESSION_LOG_FILENAME = "session.log"
 _TICK_SECONDS = 60
 _FETCH_EVERY_N_TICKS = 5
-_BASE_REF = "origin/main"
+_BASE_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 _MERGE_INTO = "main"
 
 

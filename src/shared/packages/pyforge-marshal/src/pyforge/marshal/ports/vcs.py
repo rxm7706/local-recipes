@@ -71,7 +71,7 @@ primitives:
   ``core.promotion.merged_story_keys`` (AD-33: git is the sole authority
   for "merged or not"; this method is that authority's one read
   primitive) to answer AD-29's "pushed to the remote" route
-  (``ref="origin/main"``) and "merged to the integration branch" route
+  (``ref="refs/remotes/origin/main"``) and "merged to the integration branch" route
   (``ref="main"``) -- the caller decides which ``ref`` each route needs;
   this method has no branch-name opinion of its own.
 - ``commit_paths`` -- the one write: stages EXACTLY ``paths`` (an
@@ -343,7 +343,7 @@ class VcsPort(Protocol):
         subject that isn't a story-merge subject at all, so this method's
         job is exhaustive enumeration, not classification. Raises
         ``VcsCommandError`` if ``ref`` does not resolve (e.g. no ``origin``
-        remote configured for ``ref="origin/main"``, or a corrupted repo
+        remote configured for ``ref="refs/remotes/origin/main"``, or a corrupted repo
         with no ``main``) or on any other git failure."""
         ...
 

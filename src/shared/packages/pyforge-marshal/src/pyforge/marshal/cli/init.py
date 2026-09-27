@@ -1355,7 +1355,7 @@ def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[F
                     f"the spec-surface guard would silently stop biting (measured "
                     f"2026-08-09: a current home self-reconciled 4/4, a stale one 0/3, "
                     f"with nothing reported). Fix: git -C {home} merge --ff-only "
-                    f"origin/main && marshal config --project {slug} "
+                    f"refs/remotes/origin/main && marshal config --project {slug} "
                     f"--write-harness-policy {home}"
                 ),
             )

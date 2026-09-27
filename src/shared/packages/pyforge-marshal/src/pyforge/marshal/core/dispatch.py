@@ -32,6 +32,7 @@ from pyforge.core.landing_evidence import DISPATCH_BRANCH_PREFIX
 
 from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
+from .refs import ORIGIN_MAIN
 from .tier_routing import TierLaunchResolution, resolve_tier_launch
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -170,7 +171,7 @@ def spec_text_at_ref(
     slug: str,
     story: str,
     *,
-    ref: str = "origin/main",
+    ref: str = ORIGIN_MAIN,
 ) -> str | None:
     """A story's tracked spec content as it stood at ``ref`` (Story 51.7/
     CAP-255) -- the impure half of ``core.promotion.corroborated_merged_

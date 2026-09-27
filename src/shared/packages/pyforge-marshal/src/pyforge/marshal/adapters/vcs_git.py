@@ -80,6 +80,7 @@ from pathlib import Path
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
+from ..core.refs import ORIGIN_MAIN, remote_tracking_ref
 from ..ports.vcs import WorktreeEntry
 
 
@@ -120,7 +121,7 @@ _GIT_CHECKOUT_TIMEOUT_S = 600.0
 _GIT_PUSH_TIMEOUT_S = 120.0
 #: The full refname of origin/main -- never the short name, which git resolves to a local
 #: branch or tag called `origin/main` first (Story 57.1 review 2).
-_ORIGIN_MAIN_REF = "refs/remotes/origin/main"
+_ORIGIN_MAIN_REF = ORIGIN_MAIN
 #: A tree/object id as git prints it: 40 hex (SHA-1) or 64 hex (SHA-256 repositories).
 _TREE_OID = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 # `git fetch` is likewise a network round-trip, not a local query -- mirrors
@@ -304,7 +305,7 @@ class GitVcs:
         The mint-new-branch form always passes ``--no-track``: git's own
         ``branch.autoSetupMerge`` default auto-configures the new branch's
         upstream to ``base`` whenever ``base`` is a remote-tracking ref
-        (every dispatch/loop-home caller passes ``origin/main`` or similar).
+        (every dispatch/loop-home caller passes ``refs/remotes/origin/main`` or similar).
         Left alone, that silently makes ``push()``'s already-has-upstream
         path push ``<branch>:main`` instead of ``<branch>:<branch>`` --
         rejected by the remote as non-fast-forward, and indistinguishable
@@ -1058,7 +1059,7 @@ class GitVcs:
     def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
         """Story 15.1 (FR-133): ``git rev-list --count HEAD..<tip_ref>``
         inside ``worktree_path`` -- the home's behind-count vs ``tip_ref``
-        (typically ``origin/main`` after ``fetch``). Read-only."""
+        (typically ``refs/remotes/origin/main`` after ``fetch``). Read-only."""
         result = _run(
             ["git", "-C", str(worktree_path), "rev-list", "--count", f"HEAD..{tip_ref}"],
         )
@@ -1270,12 +1271,16 @@ class GitVcs:
         writes: tuple[tuple[str, str], ...],
         message: str,
     ) -> str:
-        """CAP-5: publish path writes onto ``origin/<ref>`` from a throwaway
-        detached worktree. Never checks out or commits in ``repo_root``."""
+        """CAP-5: publish path writes onto ``refs/remotes/<remote>/<ref>`` from a throwaway
+        detached worktree. Never checks out or commits in ``repo_root``. The tip is read by
+        its full refname (Story 60.1 review): the short ``<remote>/<ref>`` resolves to a local
+        branch or tag of that name first, and this path PUSHES -- it published a shadow's
+        unverified commit onto the remote's branch in review."""
         if not writes:
             raise VcsCommandError("commit_paths_onto_remote_tip requires at least one write, got none")
         self.fetch(repo_root, remote, ref)
-        tip_result = _run(["git", "-C", str(repo_root), "rev-parse", "--verify", f"{remote}/{ref}"])
+        tip_ref = f"{remote_tracking_ref(ref, remote)}^{{commit}}"
+        tip_result = _run(["git", "-C", str(repo_root), "rev-parse", "--verify", "--end-of-options", tip_ref])
         if tip_result.returncode != 0:
             raise VcsCommandError(f"cannot resolve {remote}/{ref} after fetch: {tip_result.stderr.strip()}")
         old_sha = tip_result.stdout.strip()

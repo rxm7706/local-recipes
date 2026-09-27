@@ -119,6 +119,7 @@ from ..core.identity import MalformedStoryKeyError, StoryKey
 from ..core.journal import Phase
 from ..core.landing import rule_applies
 from ..core.model import Finding, Severity, build_envelope
+from ..core.refs import remote_tracking_ref
 from ..core.status import is_run_live, render_ledger_advancements
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
@@ -1402,7 +1403,7 @@ def _promote_sprint_ledger(
         ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
         try:
             vcs.fetch(root, "origin", base)
-            remote_text = vcs.file_text_at_ref(root, f"origin/{base}", ledger_rel)
+            remote_text = vcs.file_text_at_ref(root, remote_tracking_ref(base), ledger_rel)
         except VcsCommandError as exc:
             findings.append(
                 Finding(
@@ -1623,7 +1624,7 @@ def _resync_home_branch(
         return _warn(f"could not fetch {base!r} from origin for {head_branch!r}: {exc}")
 
     try:
-        vcs.fast_forward(home, f"origin/{base}")
+        vcs.fast_forward(home, remote_tracking_ref(base))
     except VcsCommandError as exc:
         return _warn(f"could not fast-forward {head_branch!r} in {home} to 'origin/{base}': {exc}")
     return True
