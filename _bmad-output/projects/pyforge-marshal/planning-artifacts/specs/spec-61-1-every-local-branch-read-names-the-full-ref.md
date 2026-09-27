@@ -2,7 +2,7 @@
 title: '61.1: Every local-branch read names the full ref'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 3
 followup_review_recommended: false
 context:
@@ -34,7 +34,7 @@ And `core/policy._valid_landing_base_branch` accepts any non-empty string, so `l
 **Approach:** `core/refs.py` gains `local_branch_ref(branch) -> "refs/heads/<branch>"`. Every call site above wraps the branch it reads in it, at the call — the branch *name* stays a name wherever it is also used as one (`merge_branch(into=)`, `resolve_ref`, `is_branch_merged`, the forge's PR base, messages). `GitVcs.push` names both sides `refs/heads/<branch>`; `<branch>@{upstream}` stays bare (the full form fails there). The scripts spell `refs/heads/<branch>` (or `HEAD`) themselves. `_valid_landing_base_branch` refuses a full refname, a ref namespace (`heads/`, `tags/`, `remotes/`), a remote's branch (`origin/…`), and any value git's branch-name rules refuse; `land` and `batch-pr` refuse to run on a refused value (MRS-LAND-002 / MRS-DEPLOY-015, widened from `landing_rules`) rather than fall back to `main`. A meta test classifies every `str` parameter of every `VcsPort` method and flags a bare local branch name reaching a revision argument, or a full ref reaching a name-taking one.
 
 Ledger key: `61-1-every-local-branch-read-names-the-full-ref`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
