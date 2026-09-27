@@ -153,6 +153,14 @@ costs two stories of rework; deciding it now costs an epic ordering.
     cleared as CAP-6's recorded, tested opt-out: a file-level guard exemption pinned to the
     kit's `dependencies == []` so it self-retires if Q2 changes the declaration (corrected
     2026-09-19 at Story 52.1's review); the touched stations' own suites stay green.
+- **CAP-10 — the station-tests lane picks suites from the remote-tracking ref.** *(minted 2026-09-27)*
+  - **intent:** CAP-8's lane (`.github/workflows/pyforge-station-tests.yml`) chooses which suites run
+    from `git diff "$BASE"...HEAD`; for a pull request `BASE` names `refs/remotes/origin/${GITHUB_BASE_REF}`,
+    never the short `origin/<name>` — its checkout fetches tags, and a pushed tag named `origin/main`
+    wins over the remote-tracking ref, empties the selection and runs no suite.
+  - **success:** the lane's pull_request `BASE` is the full ref (as `coverage-gates.yml`'s is); a
+    scripts-suite test reds any workflow under `.github/workflows/` that builds a diff base from a
+    short `origin/${…}`, and fails on the pre-fix tree; the push path's sha is unchanged.
 
 ## Constraints
 

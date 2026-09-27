@@ -2,7 +2,7 @@
 id: SPEC-pyforge-mason
 spec: pyforge-mason
 status: ready
-updated: "2026-09-17"
+updated: "2026-09-27"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
   - docs/dreams/pyforge-mason.md
@@ -148,6 +148,14 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
 
 - **intent:** One pixi base-layer convention across the estate Containerfiles.
 - **success:** The convention is written and guarded; shipped Containerfiles follow it.
+
+### CAP-28 — the recipe CI picks changed recipes from the remote-tracking ref
+
+- **intent:** The four recipe build workflows (`.github/workflows/test-{all,linux,macos,windows}.yml`)
+  diff from `refs/remotes/origin/${{ github.base_ref }}`, never the short `origin/<base>` a pushed tag
+  of that name shadows (their checkout fetches tags, so the changed-recipe set would come out empty).
+- **success:** All four name the full ref; `pyforge-core:CAP-10`'s workflow test covers them; the
+  manual `recipes` input path is unchanged. (Minted 2026-09-27.)
 
 ## Constraints
 

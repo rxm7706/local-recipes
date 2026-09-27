@@ -300,6 +300,25 @@ Drift — orphaned between stations.
   **Constraints:** the proof is git's own (ancestry and a clean `status`), never a guess; a proof
   git cannot give archives; the note names the git-ignored paths it drops. Kinships: CAP-155 (Story 68.1),
   CAP-107 (archive-not-delete). Owner: steward.
+- **2026-09-27 (night) — Proposed: steward reads `origin/main` and its own branches by their full
+  refs.** Steward still hands git short names a local branch or tag can wear. `workspace` passes its
+  recorded source (`origin/main`) and branch to git by short name in `start` (`worktree add`),
+  `status` (ahead/behind, merged) and `clean` (`--merged-only`'s merged check, the branch-drop
+  proof). Probed: with a local branch or tag named `origin/main` at an unmerged workspace's tip,
+  `clean --merged-only` archives the worktree and deletes its branch, whose commits then survive
+  only through the stray ref; `status` reports the branch merged; `start` refuses outright; and a
+  tag named like the branch stands in for it in the merged check. Two smaller reads: the platform's
+  deliberate copy of the testing kit's diff guard
+  (`src/platform/tests/test_warden_portal_audit_start_get.py`, kept apart by `pap:AD-2`) diffs from
+  `origin/main` and so checks nothing past a shadow; the `tea-test-review` pixi task passes
+  `--base origin/main` (`DW-steward-platform-diff-guard-short-origin-main-2026-09-27`,
+  `DW-warden-tea-advisory-short-base-2026-09-27`). **What it looks like when real:** every git read
+  of a workspace source `origin/<b>` names `refs/remotes/origin/<b>` and every read of its branch
+  `refs/heads/<branch>`; the platform guard and the task name `refs/remotes/origin/main`; a stray
+  ref changes no status, removes no unmerged worktree and deletes no branch. **Constraints:**
+  recorded sources stay as written (old bookkeeping reads correctly); the platform guard still
+  imports no `pyforge.*`. Kinships: CAP-107 / CAP-155 / CAP-157 (workspace), `spec-pyforge-marshal`
+  CAP-272 (the kit the platform guard copies), `spec-pyforge-warden` CAP-23. Owner: steward.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

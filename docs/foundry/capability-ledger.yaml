@@ -3276,6 +3276,12 @@ capabilities:
     heading: "the six accumulated violations are cleared"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-10
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "the station-tests lane picks suites from the remote-tracking ref"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
   # 2026-09-17 steward one-chain fold remints
   - id: pyforge-steward:CAP-1
     spec: pyforge-steward
@@ -4220,6 +4226,12 @@ capabilities:
     heading: "workspace clean keeps a note, not a tarball, for a worktree already on its source"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-158
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "steward reads origin/main and its own branches by their full refs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1
@@ -4363,6 +4375,12 @@ capabilities:
     heading: "deploy gates on the verdict (already true on main — preserve)"
     mode: A-only
     expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-23
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the TEA advisory reviews the diff from the remote-tracking ref"
+    mode: rebuild
     path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
   # atlas one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-atlas:CAP-1
@@ -4886,6 +4904,12 @@ capabilities:
     spec: pyforge-mason
     station: pyforge-mason
     heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-28
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "the recipe CI picks changed recipes from the remote-tracking ref"
     mode: rebuild
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 

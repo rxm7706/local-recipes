@@ -629,6 +629,19 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   (`pytest` only inside the skip path). The kit's charter (`spec-pyforge-testing-charter`, its
   Dream archived) co-governs the surface; the capability is marshal's, the kit's seed station.
   Kinships: CAP-270 (60.1), CAP-271 (61.1), `pyforge-doctor:CAP-85`; owner `spec-pyforge-marshal`.
+- **2026-09-27 (night) — Proposed: the station-tests lane picks suites from the remote-tracking
+  ref.** Doctor Story 32.1's review found the coverage gate's sibling lane with the same short base:
+  `.github/workflows/pyforge-station-tests.yml` — the conformance lane `spec-pyforge-core` CAP-8 made a
+  PR gate — chooses which station suites run from `git diff "$BASE"...HEAD` with
+  `BASE="origin/${GITHUB_BASE_REF}"`. Its checkout fetches tags (`fetch-depth: 0`), so a pushed tag
+  named `origin/main` wins over `refs/remotes/origin/main`, the selection comes out empty and the PR
+  runs no station suite (`DW-marshal-station-tests-short-base-ref-2026-09-27`). **What it looks like
+  when real:** the lane names `refs/remotes/origin/${GITHUB_BASE_REF}`, as `coverage-gates.yml` now
+  does ("same rule, deliberately"), and a test reds any workflow that diffs from a short
+  `origin/${…}` base. **Constraints:** the lane still runs the pixi tasks (CAP-8); the push path's
+  sha is unchanged. Owner `spec-pyforge-core` (hosted on marshal; its Dream is archived here).
+  Kinships: `spec-coverage-gate-independence` CAP-4, `spec-pyforge-mason` CAP-28 (the recipe
+  workflows the same test covers).
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

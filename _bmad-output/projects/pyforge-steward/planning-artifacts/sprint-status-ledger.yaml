@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 426
+# stories: 428
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -290,6 +290,7 @@ development_status:
   7-3-credentials-never-enter-image-layers: done
   7-4-state-outlives-the-container: done
   7-5-the-image-proves-itself-at-build-time: done
+  70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs: backlog
   8-1-bidirectional-propagation: done
   8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: done
@@ -436,6 +437,7 @@ development_status:
   epic-69: done
   epic-7: done
   epic-7-retrospective: optional
+  epic-70: backlog
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done
