@@ -281,7 +281,7 @@ class VcsPort(Protocol):
         git failure."""
         ...
 
-    def push(self, repo_root: Path, branch: str) -> None:
+    def push(self, repo_root: Path, branch: str, *, proven_on_main_sha: str | None = None) -> None:
         """A plain ``git push`` of ``branch`` (Story 3.8, AD-46), naming
         ``branch`` explicitly rather than relying on ``repo_root``'s own
         checked-out HEAD: if ``branch`` already has a configured upstream,
@@ -296,7 +296,17 @@ class VcsPort(Protocol):
         push performs). Raises ``VcsCommandError`` on any git failure
         (rejected non-fast-forward, no network, no configured remote) -- the
         caller treats that as a registered ``WARN``, never a run-halting
-        condition."""
+        condition.
+
+        ``proven_on_main_sha`` (Story 57.1, CAP-267): the commit a caller has
+        itself fast-forwarded ``branch`` to. The adapter re-checks that it is
+        an ancestor of ``refs/remotes/origin/main`` (raising
+        ``VcsCommandError`` when not), pushes exactly that commit, and runs the
+        push with the repo's journaled pre-push opt-out
+        (``PYFORGE_PREFLIGHT_SKIP=1`` and a reason naming the branch and sha)
+        where the platform can set it -- otherwise through the preflight. The
+        hook cannot prove a push carries nothing new under pre-commit
+        (steward 68.2); only the caller that made the fast-forward can."""
         ...
 
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:

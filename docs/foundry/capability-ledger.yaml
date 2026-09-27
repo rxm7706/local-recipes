@@ -3185,6 +3185,12 @@ capabilities:
     heading: "a landing refusal whose story has since landed is reported as superseded, never as work owed"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-267
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a loop-home refresh sends its proven fast-forward past the pre-push preflight, journaled"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
@@ -4164,6 +4170,18 @@ capabilities:
     spec: pyforge-steward
     station: pyforge-steward
     heading: "the pre-commit set: attribution lines and un-preflighted pushes are refused by hooks, not prose"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-155
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "workspace clean archives the work, never the environments, and one undecidable record never stops the sweep"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-156
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the pre-push gate preflights only what is new, and its journal names what was pushed"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 

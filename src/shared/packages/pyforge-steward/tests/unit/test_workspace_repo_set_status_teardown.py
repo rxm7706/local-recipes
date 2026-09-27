@@ -281,3 +281,31 @@ def test_cli_status_and_clean_repo_set(
     err = json.loads(captured.err or captured.out)
     assert "dirty member" in err["error"]
     assert dirty_name in err["error"]
+
+
+def test_cli_clean_repo_set_exits_failed_when_a_member_errored(
+    open_set: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """Story 68.1 review 2 (L-A): a member that cannot be archived is reported and kept, and
+    the repo-set clean exits non-zero like the single-worktree and fleet forms."""
+    import pyforge.steward.workspace as ws
+
+    primary, _secondary, config = open_set
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
+    real_archive = ws._archive_worktree
+    failing = open_repo_set_members("fleet-feature")[1].record.path
+
+    def _archive(record, **kwargs):
+        if record.path == failing:
+            raise ws.WorkspaceError(f"could not archive {record.path}: simulated disk full")
+        return real_archive(record, **kwargs)
+
+    monkeypatch.setattr(ws, "_archive_worktree", _archive)
+
+    rc = main(["workspace", "clean", "fleet-feature", "--merged-only", "--json"])
+
+    assert rc == EXIT_FAILED
+    captured = capsys.readouterr()
+    payload = json.loads(captured.err or captured.out)
+    assert any(row["reason"].startswith("error: could not archive") for row in payload["skipped"])

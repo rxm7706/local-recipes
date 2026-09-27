@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-09-19"
+updated: "2026-09-27"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -591,6 +591,12 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-154 — the pre-commit set: attribution lines and un-preflighted pushes are refused by hooks, not prose** ← spec-pyforge-steward CAP-154 (ready 2026-09-20)
   - **intent:** `.pre-commit-config.yaml` at the repo root with a `commit-msg` hook that refuses `Co-Authored-By:` and AI-attribution trailers, and a `pre-push` hook that runs `pixi run -e pyforge-guild pr-preflight` (opt-out only by an explicit env var, journaled; `dispatch/*` branches are supervisor-gated and skip it, journaled); `steward setup` / `initrepo` install it through the existing hooks step (`bootstrap._run_pre_commit_install`, waiting on this file since Story 17.2); a CI check reds a missing file or a missing hook.
   - **success:** a commit carrying `Co-Authored-By:` is refused locally with the rule named; a push from a branch whose `pr-preflight` is red is refused; the two `TODO:` lines in `AGENTS.md`'s managed block retire under bmad-project-context ground 2 in the same landing.
+- **CAP-155 — `workspace clean` archives the work, never the environments, and one undecidable record never stops the sweep** ← spec-pyforge-steward CAP-155 (ready 2026-09-27; amended 2026-09-27, Story 68.1 review 1)
+  - **intent:** `_archive_worktree` leaves reinstallable pixi dirs (`.pixi/envs`, `.pixi/solve-group-envs`, `.pixi/bld`) out of the tar while every other file — the tracked `.pixi/config.toml` included — archives as before; a tar that fails removes its partial archive and raises `WorkspaceError`. In `clean_workspaces` a record whose merge check or archive raises is reported as skipped with the reason and kept in bookkeeping, the sweep continues, and a record in flight when any other exception escapes (a Ctrl-C at the confirm prompt) is still saved back; a sweep that reported an error row exits non-zero. (Found 2026-09-27: `.steward/workspace-archive/` held 75 GB in 62 archives; a fleet `clean --merged-only` raised on a record whose branch was gone, examined nothing after it, and its `finally`-save dropped the failing record.)
+  - **success:** a worktree carrying populated `.pixi/envs`, `.pixi/solve-group-envs` and `.pixi/bld` archives without them and still carries `.pixi/config.toml`; a fleet `clean --merged-only` over [a record with a missing branch, a merged record] archives the merged one, reports the other skipped with its git error, keeps it in bookkeeping and exits non-zero; an unreadable file leaves no partial archive and keeps the record; an interrupt mid-sweep loses no record; `pyforge-steward-test` green.
+- **CAP-156 — the pre-push gate's journal names what was pushed** ← spec-pyforge-steward CAP-156 (ready 2026-09-27; amended 2026-09-27, Story 68.2 review 1)
+  - **intent:** every `.steward/preflight-skips.log` line `scripts/pre_push_preflight.sh` writes — branch delete, `dispatch/*`, the manual `PYFORGE_PREFLIGHT_SKIP=1` — records the pushed remote ref(s) and local sha(s), falling back to the checked-out branch and HEAD only when the hook received no ref information; the delete skip is journaled too. The hook adds no skip of its own: under pre-commit it receives only the FIRST ref of a multi-ref push, so it cannot prove a push carries nothing new — a tool that can prove it sets the journaled opt-out with that proof as its reason (`marshal refresh`, spec-pyforge-marshal CAP-267). (Found 2026-09-27: the manual opt-out journaled `main` for eight `loop/*` pushes; a hook-side nothing-new skip was tried and refused in review — it let a multi-ref push carry a new commit unchecked.)
+  - **success:** the manual opt-out's line names the pushed ref and sha, not the checked-out branch; the `dispatch/*` and delete lines name theirs; a push already on `origin/main` still runs the preflight in both the pre-commit (env) and bare-git (stdin) forms; CAP-154's refusal of a red push is unchanged; `tests/scripts/test_lint_types_gate.py` green.
 
 ## Constraints
 

@@ -541,6 +541,23 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   Kinships: the Story 53.2 review finding (I1) that first surfaced landing findings in status;
   the Story 28.25 rule that a resolved finalize failure is not an active escalation; owner
   `spec-pyforge-marshal`.
+- **2026-09-27 (later) — Proposed: a loop-home refresh does not pay a preflight for `main`'s own
+  commits.** `marshal refresh` fast-forwarded all eight `loop/<slug>` homes to `origin/main`
+  (67 commits each) and pushed each branch; the repo's `pre-push` hook (steward CAP-154) ran the
+  full ~10-minute `pr-preflight` per push — ~80 minutes to re-check commits `main` had already
+  passed CI on — unless the operator set `PYFORGE_PREFLIGHT_SKIP=1` by hand. Steward first tried a
+  hook-side "nothing new" skip (Story 68.2); review refused it: under pre-commit the hook sees only
+  the first ref of a multi-ref push, so it cannot prove what the others carry, and a new commit got
+  through. The proof belongs to the tool that makes the push. `refresh` has it: it fast-forwarded
+  the branch to `origin/main` itself a moment before pushing.
+  **What it looks like when real:** a refresh against `main` pushes each loop home with the
+  journaled opt-out, its reason naming the branch, `origin/main` and the sha it now points at —
+  seconds, not minutes, and the skip journal says exactly why; a refresh against any other
+  `--base` pushes through the preflight as before.
+  **Constraints:** only a fast-forward `refresh` performed itself counts as proof, and only to
+  `origin/main` (the one tip whose commits all passed CI); the opt-out is the existing one, set for
+  that single `git push` process and nowhere else. Kinships: steward's 2026-09-27 (later) entry
+  and CAP-154/156; owner `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

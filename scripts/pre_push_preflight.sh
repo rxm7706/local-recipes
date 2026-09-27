@@ -6,8 +6,10 @@
 #
 # The one opt-out is explicit and journaled, never silent:
 #   PYFORGE_PREFLIGHT_SKIP=1 git push ...
-# appends branch, head SHA, timestamp and reason ($PYFORGE_PREFLIGHT_SKIP_REASON)
-# to .steward/preflight-skips.log (gitignored) and lets the push through.
+# appends timestamp, the pushed ref(s) and sha(s), and the reason
+# ($PYFORGE_PREFLIGHT_SKIP_REASON) to .steward/preflight-skips.log (gitignored) and lets
+# the push through. Automatic, journaled skips: branch deletes and `dispatch/*` branches.
+# Every journal line names the pushed ref(s) and sha(s) (Story 68.2).
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -30,9 +32,21 @@ if [ -z "$remote_ref" ]; then
   fi
 fi
 
+# Every skip is journaled with WHAT was pushed -- the remote ref(s) and local sha(s) -- falling back
+# to the checked-out branch and HEAD only when no ref information arrived (Story 68.2, CAP-156;
+# the journal used to record the checked-out branch, e.g. `main` for eight `loop/*` pushes).
+journal_skip() {
+  local refs="${remote_ref:-$branch}" shas=""
+  local s
+  for s in $local_sha; do shas="${shas:+$shas }${s:0:10}"; done
+  mkdir -p .steward
+  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$refs" "${shas:-$head_sha}" "$1" >> .steward/preflight-skips.log
+}
+
 # A branch delete (`git push --delete`, local sha all zeros) pushes no commits: nothing to preflight.
 if [ -n "$local_sha" ] && ! printf '%s\n' $local_sha | grep -qvE '^0+$'; then
-  echo "[pre-push] branch delete -- nothing to preflight" >&2
+  journal_skip "branch delete: nothing to preflight"
+  echo "[pre-push] branch delete -- nothing to preflight (journaled)" >&2
   exit 0
 fi
 
@@ -40,16 +54,17 @@ fi
 # minutes and its landing is gated by the station's verify_commands, the S-13.7 guard and CI --
 # a full preflight per checkpoint would stall every drain. Skipped, journaled, never silent.
 if [ -n "$remote_ref" ] && ! printf '%s\n' $remote_ref | grep -qvE '^refs/heads/dispatch/'; then
-  mkdir -p .steward
-  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$branch" "$head_sha" "dispatch/* branch: supervisor-gated" >> .steward/preflight-skips.log
+  journal_skip "dispatch/* branch: supervisor-gated"
   echo "[pre-push] dispatch/* branch -- pr-preflight left to the supervisor gate and CI (journaled)" >&2
   exit 0
 fi
 
+# No "nothing new" skip lives here (Story 68.2 review 1): under pre-commit this hook sees only the
+# FIRST ref of a multi-ref push, so it cannot prove what the others carry. A tool that proves a
+# push carries nothing new -- `marshal refresh` fast-forwarding a loop home to origin/main -- sets
+# the journaled opt-out below with that proof as its reason (marshal Story 57.1).
 if [ "${PYFORGE_PREFLIGHT_SKIP:-}" = "1" ]; then
-  mkdir -p .steward
-  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$branch" "$head_sha" \
-    "${PYFORGE_PREFLIGHT_SKIP_REASON:-no reason given}" >> .steward/preflight-skips.log
+  journal_skip "${PYFORGE_PREFLIGHT_SKIP_REASON:-no reason given}"
   echo "[pre-push] pr-preflight SKIPPED by PYFORGE_PREFLIGHT_SKIP=1 -- journaled in .steward/preflight-skips.log" >&2
   exit 0
 fi

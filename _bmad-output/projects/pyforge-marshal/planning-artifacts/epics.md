@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 54  # 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 323  # 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
+epicCount: 55  # 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 324  # 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-27"   # RE-STAMPED (later): chain-currency cascade for FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
 mode: headless
@@ -6969,6 +6969,34 @@ lists both as landed since, with no `landing refused` line in ATTENTION
 **And** a refusal whose story is not on `main`, a sweep whose `main` read fails, and a post-merge finalize (promote + ledger) failure
 whose ledger key is not `done` all still show `landing refused` in ATTENTION; a WARN-only landing finding carries no marker; the
 line names the dispatch run's own story, never an unrelated `current_story` (amended 2026-09-27, review 1)
+
+## Epic 57: A loop-home refresh does not pay a preflight for `main`'s own commits (spec-pyforge-marshal CAP-267)
+
+Minted 2026-09-27 from the station Dream's entry of the same name: `marshal refresh` fast-forwarded eight `loop/<slug>`
+homes to `origin/main` and each push ran the repo's ~10-minute pre-push preflight (steward CAP-154). Steward's hook-side
+"nothing new" skip (Story 68.2) was refused in review -- under pre-commit the hook sees only the first ref of a multi-ref
+push -- so the proof moves to the tool that made the push. A new epic because Epic 56 is `done`. **HARD boundaries:**
+only a fast-forward `refresh` performed itself counts as proof, and only to `origin/main`; the opt-out is the existing
+journaled one, set for that single `git push` process; every other push caller is unchanged.
+
+### Story 57.1: A refresh pushes its own fast-forward to `main` with the journaled preflight opt-out
+
+As the operator resyncing the loop homes before a drain,
+I want `marshal refresh` to push each loop home it just fast-forwarded to `origin/main` with the journaled pre-push opt-out and its proof as the reason,
+So that a resync costs seconds instead of eight preflights, and the skip journal records exactly why each push skipped.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-267 (FR-213) • cross-station: steward Story 68.2 (the hook adds no skip of its own)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` (`VcsPort.push` gains keyword-only
+`proven_on_main_sha`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` (`GitVcs.push` re-checks the
+sha against `refs/remotes/origin/main`, pushes exactly it, and sets `PYFORGE_PREFLIGHT_SKIP=1` + a reason for the one
+`git push` process via the POSIX `env` utility),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py` (fast-forwards on `refs/remotes/origin/<base>`; passes
+the sha only after its own fast-forward to `origin/main`), tests: `src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py`.
+**Given** a clean loop home behind `origin/main`, refreshed with the default base
+**When** `marshal refresh` fast-forwards and pushes it
+**Then** the push carries `PYFORGE_PREFLIGHT_SKIP=1` and a reason naming `loop/<slug>`, `origin/main` and the new sha, and a real pre-push hook receives both
+**And** a refresh with any other `--base` pushes with no opt-out; a push given no proof sets neither variable; a proof not on `refs/remotes/origin/main` (a local branch named `origin/main` included) is refused and nothing is pushed; a commit made after the fast-forward stays local; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

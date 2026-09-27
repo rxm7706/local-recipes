@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -212,6 +213,152 @@ def test_clean_archives_not_deletes(repo: Path, tmp_path: Path):
     with tarfile.open(archive, "r:gz") as tar:
         names = tar.getnames()
     assert any(n.endswith("marker.txt") for n in names)
+
+
+def test_clean_archive_leaves_out_reinstallable_envs_but_keeps_pixi_config(repo: Path, tmp_path: Path):
+    """Story 68.1 (CAP-155): `.pixi/envs` and `.pixi/solve-group-envs` are
+    rebuilt from the lock on demand (~13 GB after a preflight) -- never
+    archived; the rest of `.pixi/` (the tracked `config.toml`) still is."""
+    import tarfile
+
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    dest = tmp_path / "with-envs"
+    start_workspace("with-envs", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    (dest / "marker.txt").write_text("keep-me\n", encoding="utf-8")
+    (dest / ".pixi" / "envs" / "default" / "bin").mkdir(parents=True)
+    (dest / ".pixi" / "envs" / "default" / "bin" / "python").write_text("env\n", encoding="utf-8")
+    (dest / ".pixi" / "solve-group-envs" / "g").mkdir(parents=True)
+    (dest / ".pixi" / "solve-group-envs" / "g" / "lib").write_text("env\n", encoding="utf-8")
+    (dest / ".pixi" / "config.toml").write_text("[pypi-config]\n", encoding="utf-8")
+    (dest / ".pixi" / "envs-notes.txt").write_text("not an env dir\n", encoding="utf-8")
+    (dest / ".pixi" / "bld" / "pyforge-core" / "work").mkdir(parents=True)
+    (dest / ".pixi" / "bld" / "pyforge-core" / "work" / "wheel.whl").write_text("build cache\n", encoding="utf-8")
+
+    result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+
+    archive = Path(result["archived"][0]["archive"])
+    with tarfile.open(archive, "r:gz") as tar:
+        names = tar.getnames()
+    assert "with-envs/marker.txt" in names
+    assert "with-envs/.pixi/config.toml" in names
+    assert "with-envs/.pixi/envs-notes.txt" in names
+    assert not [n for n in names if "/.pixi/envs" in n and not n.endswith("envs-notes.txt")]
+    assert not [n for n in names if "/.pixi/solve-group-envs" in n]
+    assert not [n for n in names if "/.pixi/bld" in n]
+    assert not dest.exists()
+
+
+def test_a_failed_archive_leaves_no_partial_file_and_keeps_the_record(repo: Path, tmp_path: Path):
+    """Story 68.1 review 1 (M2): an unreadable file makes the tar fail; the half-written
+    archive is removed (a kept record is retried every sweep, so leaving it leaked one per
+    sweep), the worktree stays, and the record stays in bookkeeping with its error."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    dest = tmp_path / "unreadable"
+    start_workspace("unreadable", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    secret = dest / "root-owned.bin"
+    secret.write_text("x\n", encoding="utf-8")
+    secret.chmod(0)
+    try:
+        if secret.stat().st_mode & 0o444 or os.access(secret, os.R_OK):
+            pytest.skip("running with privileges that ignore file modes")
+        result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+    finally:
+        secret.chmod(0o644)
+
+    assert result["archived"] == []
+    assert result["skipped"][0]["reason"].startswith("error: could not archive")
+    assert list(archive_dir.glob("*.tar.gz")) == []
+    assert dest.is_dir()
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["unreadable"]
+
+
+def test_an_interrupt_mid_tar_leaves_no_partial_archive(repo: Path, tmp_path: Path, monkeypatch):
+    """Story 68.1 review 2 (L-E): whatever stops the tar -- a Ctrl-C included -- the
+    half-written archive is removed; the interrupt still propagates and the record stays."""
+    import tarfile
+
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    start_workspace("a", root=repo, bookkeeping=bookkeeping, path=tmp_path / "a", from_ref="origin/main")
+
+    def _interrupt(self, *args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(tarfile.TarFile, "add", _interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+
+    assert list(archive_dir.glob("*.tar.gz")) == []
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["a"]
+
+
+def test_an_interrupt_mid_sweep_never_drops_the_record_in_flight(repo: Path, tmp_path: Path):
+    """Story 68.1 review 1 (M1): not only WorkspaceError -- a Ctrl-C at the confirm prompt
+    must not lose the popped record from bookkeeping."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    start_workspace("a", root=repo, bookkeeping=bookkeeping, path=tmp_path / "a", from_ref="origin/main")
+    start_workspace("b", root=repo, bookkeeping=bookkeeping, path=tmp_path / "b", from_ref="origin/main")
+
+    def _interrupt(slug: str) -> bool:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        clean_workspaces(
+            merged_only=False, root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive", confirm=_interrupt
+        )
+
+    assert sorted(r.slug for r in load_bookkeeping(bookkeeping)) == ["a", "b"]
+
+
+def test_clean_via_cli_exits_failed_when_a_record_errored(repo: Path, tmp_path: Path, monkeypatch, capsys):
+    """Story 68.1 review 1 (L3): the sweep finishes past an undecidable record, but the
+    run still reports failure."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    save_bookkeeping(
+        bookkeeping,
+        (
+            WorkspaceRecord(
+                "stale", str(tmp_path / "gone"), "deleted-branch", "origin/deleted", "2026-09-16T13:01:19+00:00"
+            ),
+        ),
+    )
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping)
+    monkeypatch.setattr("pyforge.steward.workspace.default_archive_dir", lambda: tmp_path / "archive")
+
+    rc = main(["workspace", "clean", "--merged-only", "--json"])
+
+    assert rc == EXIT_FAILED
+    payload = json.loads(capsys.readouterr().err)  # a failed duty's summary goes to stderr
+    assert payload["skipped"][0]["reason"].startswith("error: ")
+
+
+def test_fleet_clean_reports_and_keeps_a_record_whose_branch_is_gone(repo: Path, tmp_path: Path):
+    """Story 68.1 (CAP-155): a record the sweep cannot decide no longer stops
+    it -- the live 2026-09-27 case raised on `git merge-base --is-ancestor` for
+    a deleted branch -- and is kept in bookkeeping, not dropped by the save."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    stale = WorkspaceRecord(
+        slug="stale",
+        path=str(tmp_path / "stale-gone"),
+        branch="branch-that-was-deleted",
+        source="origin/source-that-was-deleted",
+        created_at="2026-09-16T13:01:19+00:00",
+    )
+    save_bookkeeping(bookkeeping, (stale,))
+    merged = tmp_path / "merged"
+    start_workspace("merged", root=repo, bookkeeping=bookkeeping, path=merged, from_ref="origin/main")
+
+    result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=archive_dir)
+
+    assert [row["slug"] for row in result["archived"]] == ["merged"]
+    assert [row["slug"] for row in result["skipped"]] == ["stale"]
+    assert result["skipped"][0]["reason"].startswith("error: git merge-base --is-ancestor branch-that-was-deleted")
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["stale"]
+    assert not merged.exists()
 
 
 def test_clean_json_via_cli(repo: Path, tmp_path: Path, monkeypatch, capsys):

@@ -250,6 +250,42 @@ Drift — orphaned between stations.
   gates); `spec-pyforge-core` CAP-8 (the station-tests shared-surface rule, Story 52.2);
   mason's CFE suite (`test-ci`).
   Owner: steward. Not yet specced — the next `bmad-spec` pass on this chain.
+- **2026-09-27 (later) — Proposed: housekeeping that leaks, and a gate that re-checks what
+  `main` already checked.** Landing marshal 56.1 and resyncing the loop homes the same morning
+  turned up four defects in two steward tools, each measured:
+  - **`workspace clean` archives reinstallable environments.** `_archive_worktree` tars the
+    whole worktree, `.pixi/envs` included. A worktree that has run `pr-preflight` carries
+    ~13 GB of environments; its archive was 1.2 GB and growing after 5 minutes, where the same
+    tree without `.pixi/envs` archives to ~225 MB in ~30 s. `.steward/workspace-archive/` in
+    the primary checkout held **75 GB in 62 archives**, the largest 4.9 GB.
+  - **One stale record stops the sweep and erases itself.** `clean --merged-only` over the
+    fleet raised on a record whose branch no longer exists (`git merge-base --is-ancestor
+    steward-pyforge-guild-env origin/steward-guild-env-frames-regrounding` → exit 128), and no
+    later record was examined. Worse: the record is popped from `pending` before the check, so
+    the `finally` that saves bookkeeping keeps neither it nor its reason — the failing row is
+    silently deleted. 18 of the 19 bookkeeping rows pointed at worktrees that no longer existed.
+  - **The pre-push gate preflights commits `main` already verified.** `marshal refresh`
+    fast-forwards eight `loop/<slug>` branches to `origin/main` and pushes each; every pushed
+    commit is already on `main` and passed CI there, yet the hook runs the full ~10-minute
+    `pr-preflight` per push — ~80 minutes for nothing. Only `dispatch/*` and deletes are exempt,
+    so the refresh needed the manual `PYFORGE_PREFLIGHT_SKIP=1`.
+  - **The skip journal names the wrong branch.** `.steward/preflight-skips.log` records the
+    checked-out branch and its HEAD (`main` for all eight refresh pushes), not the refs being
+    pushed, so the journal cannot say what left the machine unchecked.
+  **What it looks like when real:** an archive holds the work, never the environments, so
+  archive-not-delete stays affordable; a fleet sweep reports each record it could not decide
+  and keeps it, and finishes; a push its own tool proves carries nothing `main` lacks (a
+  loop-home fast-forward to `origin/main`) skips the preflight, journaled with that proof; and
+  every journal line names the refs and commits that were pushed.
+  **Constraints:** the tracked `.pixi/config.toml` still archives (only reinstallable pixi dirs
+  are left out); a record the sweep cannot decide is kept, never dropped; the hook itself never
+  skips on a guess — under pre-commit it sees only the first ref of a multi-ref push (found in
+  review of the first cut, which let a new commit through), so the proof has to come from the
+  tool that made the push.
+  Kinships: CAP-107 (`workspace clean`, archive-not-delete, absorbed from
+  `scratch-worktree-lifecycle`) and CAP-154 (the pre-push gate); the preflight-under-a-minute
+  entry above; marshal's `refresh` (the proven loop-home skip is its CAP-267, marshal Dream
+  2026-09-27). Owner: steward.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

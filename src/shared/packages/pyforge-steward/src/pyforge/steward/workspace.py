@@ -695,6 +695,28 @@ def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
     raise WorkspaceError(f"git merge-base --is-ancestor {branch} {into} failed (exit {result.returncode}): {detail}")
 
 
+#: Reinstallable pixi dirs, relative to a worktree root: the environments
+#: (rebuilt from `pixi.lock`) and the path-dependency build cache (rebuilt on
+#: demand). They run to ~13 GB and 1-2 GB in a worktree that has run
+#: `pr-preflight`, so an archive leaves them out; every other file under
+#: `.pixi/` (the tracked `config.toml`) still archives (Story 68.1, CAP-155).
+REINSTALLABLE_ENV_DIRS: tuple[str, ...] = (".pixi/envs", ".pixi/solve-group-envs", ".pixi/bld")
+
+
+def _without_reinstallable_envs(arcroot: str):
+    """A ``tarfile`` filter dropping ``REINSTALLABLE_ENV_DIRS`` (and everything
+    beneath them) from an archive whose members are rooted at ``arcroot``."""
+    prefixes = tuple(f"{arcroot}/{d}" for d in REINSTALLABLE_ENV_DIRS)
+
+    def _filter(info: tarfile.TarInfo) -> tarfile.TarInfo | None:
+        name = info.name
+        if any(name == p or name.startswith(p + "/") for p in prefixes):
+            return None
+        return info
+
+    return _filter
+
+
 def _archive_worktree(
     record: WorkspaceRecord,
     *,
@@ -714,8 +736,17 @@ def _archive_worktree(
         wt = Path(record.path)
         if wt.is_dir():
             archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
-            with tarfile.open(archive_path, "w:gz") as tar:
-                tar.add(wt, arcname=wt.name)
+            try:
+                with tarfile.open(archive_path, "w:gz") as tar:
+                    tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
+            except BaseException as exc:
+                # A half-written archive is not an archive -- whatever stopped the tar,
+                # a Ctrl-C included; the record is kept and retried by the next sweep,
+                # so leaving it would leak one per sweep (Story 68.1 reviews 1 and 2).
+                archive_path.unlink(missing_ok=True)
+                if isinstance(exc, (OSError, tarfile.TarError)):
+                    raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
+                raise
         else:
             # Path already gone — still write a marker so clean is recoverable.
             archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
@@ -792,23 +823,42 @@ def clean_workspaces(
     remaining: list[WorkspaceRecord] = list(others)
     pending = list(records)
 
+    # The record being decided right now: popped from `pending` but not yet placed
+    # in `remaining` or `archived`. The `finally` saves it back, so no exception --
+    # not even a Ctrl-C at the confirm prompt -- can drop it (Story 68.1 review 1).
+    in_flight: WorkspaceRecord | None = None
     try:
         while pending:
             record = pending.pop(0)
-            if merged_only and not _branch_merged_into(root, record.branch, record.source):
-                skipped.append({**record.to_dict(), "reason": "not-merged"})
+            in_flight = record
+            # Story 68.1 (CAP-155): a record this sweep cannot decide (its branch
+            # gone, an archive that fails) is reported and KEPT, and the sweep
+            # goes on -- it used to abort here, and the `finally` below then
+            # saved bookkeeping without the popped record, silently dropping it.
+            try:
+                if merged_only and not _branch_merged_into(root, record.branch, record.source):
+                    skipped.append({**record.to_dict(), "reason": "not-merged"})
+                    remaining.append(record)
+                    in_flight = None
+                    continue
+                if not merged_only and not confirm_fn(record.slug):
+                    skipped.append({**record.to_dict(), "reason": "declined"})
+                    remaining.append(record)
+                    in_flight = None
+                    continue
+                archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
+            except WorkspaceError as exc:
+                skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
+                in_flight = None
                 continue
-            if not merged_only and not confirm_fn(record.slug):
-                skipped.append({**record.to_dict(), "reason": "declined"})
-                remaining.append(record)
-                continue
-            archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
+            in_flight = None
             archived.append({**record.to_dict(), "archive": str(archive_path)})
     finally:
         # Persist removals already archived even if a later record fails —
         # otherwise archived trees stay listed in bookkeeping.
-        save_bookkeeping(bookkeeping, tuple(remaining + pending))
+        kept_in_flight = [in_flight] if in_flight is not None else []
+        save_bookkeeping(bookkeeping, tuple(remaining + kept_in_flight + pending))
 
     return {"archived": archived, "skipped": skipped}
 
@@ -941,11 +991,15 @@ class WorkspaceDuty:
             # clean — optional slug targets a repo set or a single owned worktree
             slug = getattr(ns, "slug", None)
             merged_only = bool(getattr(ns, "merged_only", False))
+            # Story 68.1 review 1/2: a sweep finishes past a record it could not
+            # decide, but that record is still a failure -- the exit code says so,
+            # for a repo-set feature as for a single worktree or the fleet.
             if slug is not None and slug in load_repo_sets():
-                result = clean_repo_set(slug, merged_only=merged_only)
-                return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
-            result = clean_workspaces(merged_only=merged_only, slug=slug)
-            return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
+                cleaned = clean_repo_set(slug, merged_only=merged_only)
+            else:
+                cleaned = clean_workspaces(merged_only=merged_only, slug=slug)
+            errored = any(row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
+            return DutyResult(ok=not errored, summary=format_clean(cleaned, as_json=as_json))
         except WorkspaceError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
         except RuntimeError as exc:
