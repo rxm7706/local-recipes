@@ -126,3 +126,80 @@ def test_the_diff_base_is_the_remote_tracking_ref(repo: Path, changed_paths, kin
 
     assert list(changed_paths(repo, base="origin/main")) == []  # the trap
     assert list(changed_paths(repo)) == ["frozen.txt"]
+
+
+# --- no stray ref: the full-ref defaults change no finding (review 1) --------------------------
+
+
+def _shape(finding) -> tuple:
+    evidence = {k: v for k, v in finding.evidence.items() if k != "remedy"}
+    return (finding.source, finding.check, finding.status, finding.message, evidence)
+
+
+def _regression_pr(repo: Path) -> None:
+    """PR-shaped: origin/main advanced past the fork point; the branch un-finishes a story."""
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done", "1-2-bar": "backlog"})
+    fork = _commit(repo, "seed")
+    _git(repo, "checkout", "-q", "-b", "work")
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "in-progress", "1-2-bar": "backlog"})
+    _commit(repo, "un-finish on the branch")
+    _git(repo, "checkout", "-q", "--detach", fork)
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done", "1-2-bar": "done"})
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "main moves on"))
+    _git(repo, "checkout", "-q", "work")
+
+
+def _push_to_main(repo: Path) -> None:
+    """Push-shaped: origin/main == HEAD, compared against HEAD^."""
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done"})
+    _commit(repo, "seed")
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "in-progress"})
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "un-finish on main"))
+
+
+def _root_only(repo: Path) -> None:
+    """origin/main == HEAD and HEAD has no parent: the no-parent WARN."""
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done"})
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "only"))
+
+
+def _unrelated(repo: Path) -> None:
+    """No common ancestor: the merge-base WARN."""
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done"})
+    _commit(repo, "ours")
+    _git(repo, "checkout", "-q", "--orphan", "other")
+    _git(repo, "rm", "-rq", "--cached", ".")
+    _git(repo, "update-ref", "refs/remotes/origin/main", _commit(repo, "theirs"))
+    _git(repo, "checkout", "-q", "-f", "main")
+
+
+def _no_remote(repo: Path) -> None:
+    """No origin/main at all: the unresolvable-base WARN."""
+    _ledger(repo, "pyforge-doctor", {"1-1-foo": "done"})
+    _commit(repo, "seed")
+
+
+@pytest.mark.parametrize("build", [_regression_pr, _push_to_main, _root_only, _unrelated, _no_remote])
+def test_ledger_regression_findings_are_unchanged_without_a_stray_ref(repo: Path, build) -> None:
+    build(repo)
+
+    full, short = ledger.gather(repo), ledger.gather(repo, base="origin/main")
+
+    assert [_shape(f) for f in full] == [_shape(f) for f in short]
+    for finding in full:
+        if "remedy" in finding.evidence and finding.evidence["base"] == "origin/main":
+            assert finding.evidence["remedy"].startswith("git checkout refs/remotes/origin/main -- ")
+
+
+def test_ledger_direction_findings_are_unchanged_without_a_stray_ref(repo: Path) -> None:
+    _ledger(repo, "pyforge-marshal", {"15-2-landing-promotes": "in-progress", "15-3-other": "backlog"})
+    _commit(repo, "seed")
+    _commit(repo, "Merge pull request #1 from rxm7706/marshal/15-2-landing-promotes")
+    _git(repo, "checkout", "-q", "-b", "work")
+    _ledger(repo, "pyforge-marshal", {"15-2-landing-promotes": "in-progress", "15-3-other": "done"})
+    _commit(repo, "flip on the branch only")
+
+    full, short = ledger.gather_direction(repo), ledger.gather_direction(repo, base_ref="main")
+
+    assert sorted(f.status.value for f in full) == sorted([DoctorStatus.WARN.value, DoctorStatus.FAIL.value])
+    assert [_shape(f) for f in full] == [_shape(f) for f in short]

@@ -6816,4 +6816,14 @@ status: open
   severity: low
   fix: name `refs/heads/main` in route 3, through doctor's own chain (a doctor Dream append).
   status: closed
-  resolved: 2026-09-27 (doctor Story 31.1, spec-pyforge-doctor CAP-85) — route 3 reads `refs/heads/main` through Doctor's own `pyforge.doctor.refs`; the sweep that scoped it found four more Doctor sources of the same class and fixed them in the same story (`ledger-direction`'s base `main`, `ledger-regression`'s, `frozen-path-changed`'s and `live-proof-surface`'s base `origin/main` — the first two are `detectors-ci` merge-gate detectors). A route-3 test with a tag `main` left behind a renamed branch; a meta test pins the rule package-wide.
+  resolved: 2026-09-27 (doctor Story 31.1, spec-pyforge-doctor CAP-85) — route 3 reads `refs/heads/main` through Doctor's own `pyforge.doctor.refs`; the sweep that scoped it found four more Doctor sources of the same class and fixed them in the same story (`ledger-direction`'s base `main`, `ledger-regression`'s, `frozen-path-changed`'s and `live-proof-surface`'s base `origin/main` — all run in `detectors-ci`, `ledger-regression` as a blocking gate). A route-3 test with a tag `main` left behind a renamed branch; a meta test pins the rule package-wide.
+
+## DW-marshal-testing-kit-short-origin-main-2026-09-27 — `pyforge-testing-kit`'s branch-diff guards default to the short name `origin/main`, which a local branch or tag of that name shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md` (the kit's charter; found by doctor Story 31.1 review 1, CAP-85)
+  summary: `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py` defaults `base` / `ref` to `"origin/main"` (lines 64, 79, 106, 142, 173); every station's "this branch does not add X" meta tests call it on that default (doctor's `test_station_persona.py`, `test_portal_fleet_pulse.py`, `test_skf_domain_skill.py` among them). A local branch or tag `origin/main` at HEAD empties the diff and the guard passes having judged nothing. Steward's `tea-test-review` pixi task passes `--base origin/main` the same way. Out of CAP-85's scope (Doctor's package); the kit is a cross-station seam with its own charter.
+  evidence: doctor Story 31.1 review 1 (2026-09-27), by reading the defaults and the callers; the git resolution order marshal Stories 60.1 / 61.1 recorded by probe.
+  location: src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py; pixi.toml `tea-test-review`
+  severity: low
+  fix: default to `refs/remotes/origin/main` in the kit (callers passing nothing follow), through the testing charter's chain; the steward task's `--base` likewise.
+  status: open

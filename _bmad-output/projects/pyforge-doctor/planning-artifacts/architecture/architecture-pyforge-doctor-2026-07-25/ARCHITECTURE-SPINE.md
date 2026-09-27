@@ -574,7 +574,7 @@ boundary crossed. No AD added or changed. `updated:` bumped to record the cascad
 ## Currency reconciliation — 2026-09-27
 
 *`prd→arch` cascade for FR-18 / CAP-85 (Epic 31, Doctor names the refs it judges by their full
-refname). A pure `pyforge.doctor.refs` module (`local_branch_ref`, `remote_tracking_ref`, `MAIN`,
-`ORIGIN_MAIN`) is the one source the git-reading sources draw their refs from; it is Doctor's
+refname). A pure `pyforge.doctor.refs` module (`local_branch_ref`, `remote_tracking_ref`, `display_ref`,
+`MAIN`, `ORIGIN_MAIN`) is the one source the git-reading sources draw their refs from; it is Doctor's
 own, since Doctor imports no station's internals (marshal's `core/refs.py` stays marshal's). No
 new component, port or station boundary. No AD added or changed. `updated:` bumped.*

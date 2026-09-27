@@ -9,6 +9,8 @@ from pathlib import Path
 
 from pyforge.testing_kit import changed_paths_since
 
+from pyforge.doctor.refs import ORIGIN_MAIN
+
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 
 
@@ -159,7 +161,7 @@ def test_story_does_not_add_pyforge_under_src_platform():
         # not this story's doing -- a branch that merely touches the file
         # (2026-09-04, PR #1043: a Ruff fix on station_port.py) must not trip it.
         before = subprocess.run(
-            ["git", "show", f"origin/main:{rel}"], cwd=root, capture_output=True, text=True, check=False
+            ["git", "show", f"{ORIGIN_MAIN}:{rel}"], cwd=root, capture_output=True, text=True, check=False
         )
         if before.returncode == 0:
             base_tree = ast.parse(before.stdout)

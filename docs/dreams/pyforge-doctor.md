@@ -94,14 +94,14 @@ forward. That dream is archived; this one is the real record.
   and a sweep of Doctor found five: the story-status source's route 3 (`log main`), the
   `ledger-direction` source (`log`, `show` and `ls-tree` of `main`), the `ledger-regression` source
   (its `origin/main` base, rev-parsed, merge-based, listed and shown), and the `frozen-path-changed`
-  and `live-proof-surface` sources' diff base (`origin/main`). Two of those are merge-gate detectors
-  (`detectors-ci`): with a stray ref they judge the wrong history — a regression missed, a landing
+  and `live-proof-surface` sources' diff base (`origin/main`). All five run in `detectors-ci`, and
+  `ledger-regression` blocks a merge: with a stray ref they judge the wrong history — a regression missed, a landing
   unseen, a story read as landed that never was. **What it looks like when real:** every git read
   Doctor makes of a branch names `refs/heads/<branch>` or `refs/remotes/<remote>/<branch>`, from one
   Doctor-local helper (Doctor never imports a station's internals); a stray ref named like a branch
   changes no verdict; findings people read still say `main` / `origin/main`. **Constraints:** no
-  verdict changes when no stray ref exists; the sources keep their signatures. Kinships: marshal
-  CAP-270 (60.1), CAP-271 (61.1); owner `spec-pyforge-doctor`.
+  verdict changes when no stray ref exists; the sources keep their signatures. Kinships: marshal:CAP-270
+  (60.1), marshal:CAP-271 (61.1); owner `spec-pyforge-doctor`.
 - **2026-09-19 (night)** — **Proposed: the documentation is right, and refreshing it is repeatable
   — by the change that invalidated it, not by a campaign.** Seeded at the review of PR #1529 (a
   parallel session's "persona-based documentation" PR: 14 authored pages, 130 identical

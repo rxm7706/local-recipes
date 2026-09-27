@@ -99,10 +99,6 @@ def _origin_main_at(repo: Path, sha: str) -> None:
     _git(repo, "update-ref", "refs/remotes/origin/main", sha)
 
 
-def _branch_at(repo: Path, name: str, sha: str) -> None:
-    _git(repo, "branch", name, sha)
-
-
 # --- Clean revision range --------------------------------------------------
 
 
@@ -587,7 +583,7 @@ def test_both_warn_paths_carry_the_same_evidence_keys(tmp_path: Path) -> None:
     _init_repo(no_parent)
     _write_ledger(no_parent, "doctor", {"1-1-foo": "done"})
     only_sha = _commit_all(no_parent, "the only commit")
-    _branch_at(no_parent, "origin/main", only_sha)
+    _origin_main_at(no_parent, only_sha)
 
     a = ledger.gather(unresolvable, base="origin/main", head="HEAD")[0]
     b = ledger.gather(no_parent, base="origin/main", head="HEAD")[0]
@@ -644,7 +640,7 @@ def test_ok_finding_reports_how_many_ledgers_were_compared(tmp_path: Path) -> No
     _init_repo(empty)
     (empty / "x.txt").write_text("x\n", encoding="utf-8")
     empty_base = _commit_all(empty, "no ledgers at all")
-    _branch_at(empty, "origin/main", empty_base)
+    _origin_main_at(empty, empty_base)
     (empty / "y.txt").write_text("y\n", encoding="utf-8")
     _commit_all(empty, "still no ledgers")
 

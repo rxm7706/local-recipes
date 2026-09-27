@@ -2462,12 +2462,12 @@ generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the 
 Minted 2026-09-27 (late) from the station Dream's entry of the same name: marshal Stories 60.1 and 61.1 closed the
 short-name shadowing trap inside marshal's package, and 61.1's third review left one reader in Doctor
 (`DW-marshal-doctor-route3-short-main-2026-09-27`); a sweep found four more Doctor sources reading a branch by short
-name, two of them `detectors-ci` merge-gate detectors. A new epic because Epic 30 is `done`. **HARD boundaries:** no
+name, all of them in `detectors-ci`, `ledger-regression` a blocking one. A new epic because Epic 30 is `done`. **HARD boundaries:** no
 verdict changes when no stray ref exists; one Doctor-local helper, never an import of a station's internals; findings
 keep the short names people read. **FRs covered:** FR-18 (minted 2026-09-27 on the PRD, citing CAP-85).
 
 ### Story 31.1: Every Doctor source names the branch it reads by its full refname
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** FR-18, spec-pyforge-doctor CAP-85 • marshal CAP-270, CAP-271
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** FR-18, spec-pyforge-doctor CAP-85 • marshal:CAP-270, marshal:CAP-271
 **difficulty:** low
 **Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/refs.py` (new), `sources/marshal.py` (route 3),
 `sources/ledger.py` (`gather`'s and `gather_direction`'s bases), `sources/frozen_path.py`, `sources/live_proof_surfaces.py`

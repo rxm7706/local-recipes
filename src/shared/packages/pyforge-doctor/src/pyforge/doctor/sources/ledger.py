@@ -554,7 +554,9 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
                     "keys": item["keys"][:20],
                     **({"transitions": item["transitions"][:20]} if "transitions" in item else {}),
                     **range_evidence,
-                    "remedy": f"git checkout {shown_base} -- {item['path']}",
+                    # The remedy is a command handed to git, so it names the full ref (Story 31.1
+                    # review 1): `origin/main` there restored a local shadow's blob, not the base's.
+                    "remedy": f"git checkout {effective_base} -- {item['path']}",
                 },
             )
         )
