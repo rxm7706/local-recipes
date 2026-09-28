@@ -2,7 +2,7 @@
 title: '64.1: The dispatch worktree carries its own scope, never the shared marker'
 type: 'fix'
 created: '2026-09-27'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -123,3 +123,47 @@ Ledger status at mint: `backlog`.
 
 **Manual checks (operator, after landing — never run from inside a dispatched session, which would launch a second one):**
 - With the primary checkout's marker on another station, the next real `marshal factory dispatch` on a non-marker station launches with no `MRS-DISP-041`, and `cat _bmad/custom/.active-project` and `readlink _bmad-output/planning-artifacts` on the primary read the same before and after.
+
+## Review Triage Log
+
+### 2026-09-28 — Review pass
+- verdicts: 12 findings — high 0, medium 6, low 3, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Edge Case Hunter: a corner write that fails partway through `_seed_dispatch_worktree_scope` could leave the worktree triangle inconsistent on retry — refuted: each corner is written and checked independently and idempotently (a corner already agreeing with the slug is never rewritten), so a partial failure self-heals on the next attempt; no state a retry cannot recover.
+  - `[false]` `[reject]` Blind Hunter #1: a compatibility symlink seeded under the dispatch worktree could resolve to a different path than the physical `_bmad-output/projects/<slug>/` helpers use, risking a Tier-3-style backlink/dangling-symlink split — refuted: `dispatch_core.planning_specs_dir`/`dispatch_runs_dir` and the seeded `projects/<slug>/{planning,implementation}-artifacts` link targets resolve to the identical physical path; read both side by side.
+  - `[false]` `[reject]` Blind Hunter #5: the new/changed tests don't assert `verify_scope`'s drift-detection precisely enough (exact marker shape, link-target shape) to trust the launch tests' `MRS-DISP-041` absence — refuted: `verify_scope` (`scope.py`) is the pre-existing, spec-mandated oracle this story is explicitly barred from changing ("Never: do not change scope.py"), and it already carries its own dedicated strict coverage in `test_scope.py`/`test_verify_scope.py`, independent of this story's diff.
+  - `[low]` `[patch]` Blind Hunter #2: the `MRS-DISP-041` catalog comment in `core/findings.py` still cited only Story 33.9's retired primary-checkout check, and implied the primary checkout's marker is still read — fix applied: comment now names both the worktree-triangle check and the parent-environment check, and drops the stale claim.
+  - `[low]` `[patch]` Blind Hunter #3: `test_dispatch_completion.py`'s comment above its `verify_scope` monkeypatch still attributed the check to the retired `_dispatch_scope_refusal` primary-checkout call — fix applied: comment now attributes it to `_seed_dispatch_worktree_scope`.
+  - `[low]` `[patch]` Blind Hunter #4: no test exercised a "mixed" worktree triangle (marker and one link already agreeing with the slug, the other link entirely absent) to confirm `_seed_dispatch_worktree_scope` seeds only the truly-missing corner and leaves the agreeing corners untouched — fix applied: added `test_dispatch_worktree_with_marker_but_missing_link_seeds_only_that_corner`, asserting the pre-existing marker bytes and link target are unchanged and the missing link is seeded correctly.
+  - `[medium]` `[patch]` Blind Hunter #6: no test drives `execute_fleet_cycle` (the fleet-drain entry point) against a primary triangle naming another station, so AC #3's literal scenario rested on a structural argument alone — fix applied (shared with the next two rows): added `test_execute_fleet_cycle_dispatches_despite_primary_triangle_naming_another_station`.
+  - `[medium]` `[patch]` Verification Gap Reviewer (other finding), same root cause: `test_dispatch_fleet.py`'s shared `_cycle` helper always repoints the primary triangle to agree via `point_scope_triangle`/`BMAD_ACTIVE_PROJECT` before every dispatch, so every pre-existing fleet-cycle test structurally cannot produce a disagreeing primary — fix applied (shared): the new test drives `execute_fleet_cycle` directly, bypassing `_cycle`.
+  - `[medium]` `[patch]` Intent Alignment Auditor, AC #3 divergence, same root cause: the spec requires the fleet-cycle scenario be demonstrated and nothing did — fix applied (shared): same new test; also corrected `_cycle`'s stale docstring, which still cited the retired Story 33.9 primary-checkout guard.
+  - `[medium]` `[patch]` Intent Alignment Auditor, AC #1 under-asserted: `test_dispatch_launches_despite_primary_triangle_naming_another_station` didn't confirm the fake harness recorded exactly one launch whose `project_slug` is `pyforge-marshal` — fix applied (shared with the next row): added a `FakeBuildHarness.calls` assertion plus primary marker-bytes/readlink-target identity checks.
+  - `[medium]` `[patch]` Intent Alignment Auditor, AC #2 under-asserted: the same test didn't confirm every write landed under the dispatch worktree or `_bmad-output/projects/pyforge-marshal/` — fix applied (shared with the row above): added a `FakeFs.repointed` write log and asserted `fake_fs.files`/`fake_fs.repointed` write-scope, plus a `verify_scope(worktree, slug) is None` check.
+  - `[medium]` `[patch]` Intent Alignment Auditor, AC #5 under-asserted: `test_dispatch_refuses_worktree_side_foreign_marker` didn't assert the worktree marker stayed byte-identical or that no run directory was created — fix applied: added a `dispatch_core.dispatch_runs_dir` non-existence check and a marker byte-identity assertion.
+
+## Auto Run Result
+
+**Summary:** Story 64.1 (`spec-pyforge-marshal` CAP-273, FR-219) moved the dispatch scope check from the primary checkout to the dispatch worktree itself. `_dispatch_scope_refusal` now checks only `BMAD_ACTIVE_PROJECT` parent-environment agreement; a new `_seed_dispatch_worktree_scope` writes each missing corner of the worktree's own triangle through `FsPort` (never an existing corner, however shaped) and then calls the unmodified `verify_scope(worktree, slug)`. The primary checkout's marker and links are never read or written by dispatch. This review pass verified all four reviewer layers' findings against the code, found no `intent_gap` or `bad_spec` root cause, and applied six `patch`-routed fixes (three `low`, three grouped `medium` entries) directly; three findings were refuted (`false`) and rejected.
+
+**Files changed (this story, cumulative through review):**
+- `src/pyforge/marshal/cli/dispatch.py` — narrowed `_dispatch_scope_refusal` to the env-only check; added `_seed_dispatch_worktree_scope`, wired into `dispatch_once` after worktree resolution.
+- `src/pyforge/marshal/core/findings.py` — review pass: corrected the stale `MRS-DISP-041` catalog comment.
+- `tests/unit/test_dispatch.py` — real-disk-backed `FakeFs`, retired/replaced the Story 33.9 refusal test, added the worktree-triangle test suite; review pass: strengthened the AC #1/#2 and AC #5 tests, added the mixed-triangle test, added `FakeFs.repointed`.
+- `tests/unit/test_dispatch_completion.py` — real-disk-backed `FakeFs`; review pass: corrected a stale comment.
+- `tests/unit/test_dispatch_station_guard.py` — real-disk-backed `FakeFs` symlink methods.
+- `tests/unit/test_dispatch_fleet.py` — real-disk-backed `FakeFs` symlink methods; review pass: added the `execute_fleet_cycle` primary-disagreement test, corrected `_cycle`'s docstring.
+
+**Review findings breakdown:**
+- Patches applied: 6 (3 `low`, 3 `medium`) — see Review Triage Log above for each fix.
+- Deferred: 0.
+- Rejected (`false`): 3 — Edge Case Hunter's partial-write-failure concern (self-healing, per-corner idempotent); Blind Hunter #1's Tier-3 backlink/dangling-symlink concern (physical helper and seeded link resolve identically); Blind Hunter #5's assertion-strength concern (`verify_scope` is the unchanged, independently-tested oracle).
+
+**Follow-up review recommendation:** `false`. Three `medium` entries were patched this pass, which meets the mechanical "two or more medium entries patched" trigger, but each of the three is a verification-gap finding (a real scenario the diff already handled correctly but no test exercised) closed by a new or strengthened test that now passes and directly exercises exactly the previously-unverified scenario (AC #3's fleet-cycle path, AC #1/#2's launch write-scope, AC #5's foreign-marker preservation). No specific unverified risk remains to name, so the recommendation is `false` per the rule's naming requirement.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 8836 passed, 1 skipped, 12 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped.
+- Each new/changed test run in isolation immediately after being written, all passing on first attempt.
+
+**Residual risks:** None specific to this story's diff. The Verification Gap Reviewer noted 2 pre-existing, unrelated slow-test failures elsewhere in the suite (excluded by `pyforge-marshal-test`'s own deselection) — not caused by or related to this change, and out of this story's scope to fix.
