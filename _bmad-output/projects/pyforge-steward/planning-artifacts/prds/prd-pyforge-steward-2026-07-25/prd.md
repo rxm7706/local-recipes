@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
+updated: "2026-09-28"   # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (brief->prd, spec->prd) — the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; no FR added. Prior 2026-09-24
@@ -2316,8 +2316,10 @@ consequences, changes). Story 72.2, minted `blocked` behind mason Story 19.1.
 #### FR-34: The Guild environment answers `pyforge mason` ← CAP-161
 `pyforge-guild`, the session default (CAP-5), installs `pyforge-mason`, so `pyforge mason …` resolves and `mason` is on
 `PATH` there. **Consequences:** `pixi run -e pyforge-guild pyforge mason --help` and `… pyforge mason doctor --format json`
-exit 0; a meta-test reds the feature without `pyforge-mason`; the Guild still installs under 1 GB from cold; the front door
-(`pyforge-core`) is unchanged; warden stays out of the Guild. Story 72.1.
+exit 0; a meta-test reds the feature without `pyforge-mason`; the Guild still installs under CAP-5's bound from cold
+*(amended in place 2026-09-28, operator ruling: the bound is restated at 2 GB, was 1 GB; see § Currency reconciliation —
+2026-09-28 (operator rulings))*; the Guild's resolved pixi does not move when Mason joins *(amended 2026-09-28;
+`spec-pyforge-mason:CAP-30`)*; the front door (`pyforge-core`) is unchanged; warden stays out of the Guild. Story 72.1.
 
 **ONE kernel FR space now FR-1..FR-34** (FR-35 = next free id; the `canopy:`, `suite:` and other prefixed satellite FR
 spaces are unchanged).
@@ -2359,4 +2361,24 @@ measurement; whether CAP-5's bound moves is the operator's call. FR-34 itself is
 spaces are unchanged).
 
 **Content changed:** this section added (FR-35 registered; FR-34's dated note). No FR renumbered or removed. `updated:`
+bumped.
+
+## Currency reconciliation — 2026-09-28 (operator rulings)
+
+`spec→prd` edge: the operator ruled on both questions the note above left open, and `spec-pyforge-steward`'s memlog records
+them (two decision entries; CAP-5's success and CAP-161 re-rendered). FR-34 is amended in place; no FR is added.
+
+- **CAP-5's size bound is restated, not silently loosened.** It becomes the measured size plus headroom, dated, so the
+  criterion checks growth instead of failing on day one: **1 GB → 2 GB** for a cold `pixi install -e pyforge-guild`. Old:
+  1 GB (859 MB measured 2026-09-16, Story 63.1). Measured 2026-09-28 before mason: 1.5 GB by `du -sh`, 1,461 MiB by
+  `du -sm`, 243 packages. Estimated with mason: +50 packages, ~146 MB. Story 72.1 measures the Guild with mason and records
+  it against the new bound; a measurement at or over 2 GB stops the story. Story 63.1's done record keeps its 1 GB text as
+  history.
+- **The Guild's pixi does not move.** No station or environment caps pixi: `spec-pyforge-mason:CAP-30` (mason Story 20.1)
+  makes Mason's run-dependency `pixi >=0.80.0`. FR-34 gains the consequence; Story 72.1 lands after 20.1.
+- **virtualenv 21 → 20 (and filelock 4 → 3) is accepted,** recorded in Story 72.1: conda-lock's own upstream
+  `virtualenv <21` (and virtualenv 20's `filelock <4`); the Guild's only virtualenv consumer is `pre-commit`, whose hooks here
+  build no virtualenv, and `pyforge-foundry-full` already locks the pair.
+
+**Content changed:** this section added; FR-34's consequences amended in place. No FR renumbered or removed. `updated:`
 bumped.

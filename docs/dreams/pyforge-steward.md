@@ -341,6 +341,13 @@ Drift — orphaned between stations.
   `-e local-recipes`. Kinships: [[pyforge-mason]] (the 2026-09-27 entry; `spec-pyforge-mason:CAP-29`),
   CAP-5 (the Guild), `canopy:AD-14` and `canopy:AD-17`. Owner: steward. → CAP-161 / Story 72.1 (FR-34)
   and CAP-160 / Story 72.2 (FR-33), specced 2026-09-28.
+  **Amended 2026-09-28 (operator rulings):** "under 1 GB from cold" no longer holds — the Guild measured 1.5 GB cold before
+  mason — so CAP-5's bound is restated at the measured size plus headroom, **2 GB**, dated, and the criterion checks growth
+  from here (the memlog records old and new). Mason joining must not move the Guild's pixi: no station or environment caps
+  pixi, and `spec-pyforge-mason:CAP-30` (mason Story 20.1) drops Mason's `<0.81` ceiling first. Conda-lock's own
+  `virtualenv <21` still takes the Guild's virtualenv 21 → 20 (and filelock 4 → 3); that is accepted on evidence — the
+  Guild's only virtualenv consumer, `pre-commit`, builds no virtualenv here, and `pyforge-foundry-full` already locks the
+  pair. → CAP-5 and CAP-161 amended, Story 72.1.
 - **2026-09-28 (later) — Proposed: `steward session check` reads the seed check it asks.** Every
   `marshal factory dispatch` warns `MRS-DISP-049` because `pixi run --frozen -e pyforge-guild steward
   session check --json` exits 1 with `token-kit` and `codegraph-index` both `ok: false`, detail
