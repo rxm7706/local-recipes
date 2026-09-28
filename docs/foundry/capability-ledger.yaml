@@ -5751,3 +5751,9 @@ capabilities:
     heading: "the deck pipeline runs from the Guild env"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-52
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the docs site matches BMAD-METHOD's pattern"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

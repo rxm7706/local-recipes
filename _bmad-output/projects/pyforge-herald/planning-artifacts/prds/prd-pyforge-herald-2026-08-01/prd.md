@@ -4,7 +4,8 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
+updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
+# 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -1078,3 +1079,57 @@ sat at 2026-09-20.
 `pyforge.core.roster.STATIONS` instead of declaring its own tuple. Same eight stations, one
 declared source; no herald behaviour or requirement changes. `updated:` bumped to record that the
 check ran.
+
+## Currency reconciliation — 2026-09-27
+
+*Chain-currency sweep: `spec-pyforge-herald` gained CAP-52 on 2026-09-27 while this PRD sat at
+2026-09-25. Reconciled the same day. The FRs derive from the CAP, following
+`one-chain-per-station`'s rule that the PRD is the Spec's decomposition, never an independent
+namespace.*
+
+**What moved in the Spec.** The 2026-09-20 seed (§ Currency reconciliation — 2026-09-20 above:
+"input for `bmad-spec`, not yet a capability") became CAP-52 — *the docs site matches
+BMAD-METHOD's pattern*. The operator asked on 2026-09-20 (09:55Z) to *"design our docs and docs
+deployment to GitHub Pages to match what BMAD-METHOD itself does, so that we can reuse their
+patterns, skills and workflows."* The research's six decisions are D1–D6 on the Spec memlog. Four
+were refined after checking them against this repo: the sidebar is generated from `docs/map.yaml`
+at build time instead of being written into pages; the deploy workflow keeps its `dashboard.yml`
+path; `nodejs` joins the existing `site` feature; titles and quadrant indexes are resolved at build
+time.
+
+### Feature Group 8: The documentation site (registered 2026-09-27)
+
+This group is new, not an amendment. The CLI and web surfaces in Groups 1–2 are Herald's own
+station portal. The docs site is the public Pages publication of the repo's Diátaxis shelf, and the
+dossier and the Kedro-Viz dashboard ride in the same artifact.
+
+**FR-8.1: The shelf builds in place** ← CAP-52
+- `docs-site/` is Astro + Starlight in BMAD-METHOD's layout, vendored byte-identical at one recorded upstream commit
+- It reads `docs/` through a symlink. No page moves; `docs/index.md` and `docs/404.md` are the only new pages
+- Titles come from frontmatter or the page's first heading, and a quadrant's `README.md` is its index — both resolved at build time
+- Node comes from pixi's `site` feature; `environment.yaml` stays byte-identical. Story 27.1.
+
+**FR-8.2: One Pages artifact, one deploy caller** ← CAP-52
+- The artifact has the Starlight site at the root, docsite's whole output (the dossier, infographics and deck families) under `/herald/`, and the `docs/dashboard/` tree under `/dashboard/`, with `/kedro-viz/` kept as a redirect
+- Every HTML path the dossier site served at the root before gets a redirect page to its `/herald/` home. The set is derived from the build, never hand-kept (44 on 2026-09-27). `/` is the one named exception, because Starlight's landing owns it and links to `/herald/`. Non-HTML files (the stylesheet, the deck downloads) cannot redirect on static Pages, so their old paths return 404 and never serve different content (operator ruling 2026-09-27, D7)
+- One owner per path prefix; a collision, a missing mount or a missing redirect fails `pages-check`
+- `dashboard.yml` stays the only `deploy-pages` caller, reshaped into upstream `docs.yaml`'s build and deploy jobs. `docsite-check.yml` predicts it, path-filtered on the docs. `pr-preflight` is not changed here (FR-8.5). Supersedes CAP-44's root and path clauses. Story 27.2.
+
+**FR-8.3: The sidebar is the map's order** ← CAP-52
+- The sidebar is generated from `docs/map.yaml` at build time: every mapped page once, grouped by quadrant, in map order
+- A reorder in `map.yaml` alone reorders the site, and no page carries a second copy of the order. Story 27.3.
+
+**FR-8.4: The validators gate the docs** ← CAP-52
+- Upstream's `validate-doc-links.js` and `validate-sidebar-order.js` run unchanged as pixi tasks, in `docsite-check.yml` on PRs touching `docs/**` or `docs-site/**`, and in `pr-preflight`
+- The 16 findings they raised over `docs/` on 2026-09-27 are fixed in the pages, never in the validators. Story 27.4.
+
+**FR-8.5: The local preflight builds the site only when the docs move** ← CAP-52
+- `pr-preflight` runs `pages-check` (in place of `site-check`, which it subsumes) only when a diff touches `docsite-check.yml`'s own `paths`
+- The selection is read from the workflow file by steward Story 71.2 (`spec-pyforge-steward:CAP-159`); no second path list exists. A diff touching only `src/shared/packages/pyforge-marshal/` leaves it unselected, and one touching `docs/how-to/x.md` selects it (operator ruling 2026-09-27, D8). Story 27.5, whose ledger key is `blocked` until 71.2 lands; the operator flips it.
+
+**ONE FR space now Feature Groups 1–8** (FR-9.1 is the next free id).
+
+**Content changed:** this section only; no FR renumbered or removed. The architecture gains AD-21
+(one Pages artifact, one owner per path prefix, one deploy caller, content read in place); see the
+spine's § Currency reconciliation — 2026-09-27. § Success Metrics is unchanged, because a docs site
+that builds is not yet a measured audience.

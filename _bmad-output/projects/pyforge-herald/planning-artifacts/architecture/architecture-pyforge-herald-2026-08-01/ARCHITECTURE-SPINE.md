@@ -3,7 +3,8 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
+updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
+# 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 altitude: feature
 ---
 
@@ -682,3 +683,61 @@ check ran.*
 `prd→arch` edge after the PRD re-stamp of 2026-09-25 (steward 59.6's roster re-export in
 `progress.py`). The roster is read from `pyforge-core`, the shared leaf every station already
 depends on — no new import boundary, no AD added, changed or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-27
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27,
+the docs site matches BMAD-METHOD's pattern). Until now no AD covered GitHub Pages. The dossier
+site's rules (one deploy caller, `build.py` deleting only the outputs it owns, Kedro-Viz at
+`/kedro-viz/`) lived only in the folded `spec-pyforge-pages` CAPs (CAP-43..47) and in
+`dashboard.yml`'s header comment. CAP-52 puts three producers into one artifact, which is an
+architectural decision, so it is recorded here as AD-21.*
+
+### AD-21 — One Pages artifact: one owner per path prefix, one deploy caller, content read in place
+
+**Binds**: The repository publishes exactly one GitHub Pages artifact, `docs-site/build/site/`,
+assembled from three producers, each owning one path prefix. The Astro + Starlight docs site owns
+the root and renders the Diátaxis shelf by reading `docs/` in place through a symlink. The
+`docsite/build.py` dossier site owns `/herald/` (the dossier page is `/herald/dossier/`), and each
+HTML path it served at the root before holds a redirect page to its `/herald/` home. The tracked
+`docs/dashboard/` tree owns `/dashboard/` (Kedro-Viz at `/dashboard/kedro-viz/`, with a redirect
+from `/kedro-viz/`). One workflow,
+`.github/workflows/dashboard.yml`, builds the artifact in the pixi `site` env and deploys it
+through `upload-pages-artifact` → `deploy-pages`, in upstream `docs.yaml`'s build and deploy
+jobs. The site's sidebar derives from doctor's `docs/map.yaml` at build time.
+
+**Prevents**:
+- A second `deploy-pages` caller racing the first and wiping another producer's tree (the reason
+  `dashboard.yml`'s header gives, carried forward from CAP-44/CAP-49)
+- Two producers writing one path, and the later one silently winning
+- Copying or rewriting pages for the site, which would let a second copy of the shelf drift from
+  the one doctor's detectors read
+- A second registry for page order beside `docs/map.yaml`
+
+**Rule**:
+1. **Prefix ownership** — the assembler refuses, and `pages-check` exits 1, when a producer writes
+   outside its prefix or a mount is missing.
+   **Redirects** (operator ruling 2026-09-27, D7): a moved HTML URL keeps its meaning through a
+   redirect page at its old path. The set is derived from what the producer built, never
+   hand-kept. A redirect that would land on a path another producer owns is refused like any other
+   collision; the one named exception is `/`, which Starlight owns and which links to `/herald/`.
+   A non-HTML file cannot carry a redirect on static Pages, so its old path returns 404 and never
+   serves different content.
+2. **One deploy caller** — exactly one workflow uses `actions/deploy-pages`. It keeps the path
+   `dashboard.yml`, because other stations' tests read that path.
+3. **Content in place** — no page under `docs/` is moved, copied or rewritten for the site.
+   Titles and quadrant indexes are resolved at build time; the only new pages are `docs/index.md`
+   and `docs/404.md`.
+4. **Built outputs are regenerated, never tracked** — this lands beside AD-4: `docs-site/build/`,
+   `docs-site/node_modules/`, `docs-site/.astro/` and the generated sidebar are gitignored.
+5. **Re-vendor, never fork** — files vendored from BMAD-METHOD's `docs-site/` are byte-identical
+   to one recorded upstream commit, and local behaviour lives in separate local files.
+
+**[PROPOSED 2026-09-27]** — realized by Stories 27.1–27.4. Story 27.5 (the `pr-preflight` lane,
+selected from the workflow's own paths by steward Story 71.2) lands on this AD without changing
+it. AD-12 (Herald's four-tab web surface) is untouched: that is the station portal on the Canopy
+host, not Pages.
+
+**Content changed:** this section only. `updated:` bumped. AD-21 is added; no existing AD is
+amended or removed. The one prior rule this supersedes is CAP-44's (the Pages root is the dossier
+landing page), a Spec-level clause that no AD carried.
