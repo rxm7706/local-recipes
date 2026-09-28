@@ -6837,4 +6837,5 @@ status: open
   location: .github/workflows/pyforge-station-tests.yml
   severity: medium
   fix: `BASE="refs/remotes/origin/${GITHUB_BASE_REF}"`, through spec-pyforge-core's chain.
-  status: open
+  status: closed
+  resolved: 2026-09-27 (marshal Story 63.1, spec-pyforge-core CAP-10) — the lane's pull_request `BASE` names `refs/remotes/origin/${GITHUB_BASE_REF}`, matching `coverage-gates.yml` again; `tests/scripts/test_workflow_diff_bases_name_full_refs.py` reds any workflow that builds a diff base from a short `origin/...` (quoted or not, `format('origin/{0}')`, a literal range) and finds exactly the five pre-fix lines on the old tree.

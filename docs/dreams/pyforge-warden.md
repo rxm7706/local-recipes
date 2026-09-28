@@ -58,6 +58,15 @@ the host or the source.
   gate: warden is the sole PR verdict and `platform-deploy` reads it. Two ledger-vs-in-effect
   gaps found on OTHER warden Dreams — the web face's engine import and the eligibility CLI
   — recorded on their own Dreams and Specs, not here.
+- **2026-09-27 (night) — Proposed: the TEA advisory reviews the diff from the remote-tracking ref.**
+  `tea_advisory` runs TEA's `tea-test-review --base origin/main`, and the CLI diffs `<base>...HEAD`
+  (`cli/lib/changed-tests.js`, `cli/lib/diff-evidence.js`), so a local branch or tag named
+  `origin/main` at HEAD empties the changed-test set and the advisory reviews nothing — found by
+  doctor Story 31.1's review (`DW-warden-tea-advisory-short-base-2026-09-27`). **What it looks like
+  when real:** warden passes `--base refs/remotes/origin/main`; a stray ref changes nothing TEA
+  reviews. **Constraints:** advisory only — never a finding, a rung or the exit code; TEA's own
+  default (`origin/main`) is upstream's and not changed here. Kinships: `spec-pyforge-steward`
+  CAP-158 (steward's `tea-test-review` task passes the same base). Owner: warden.
 
 ## Folded Dreams (2026-09-17)
 

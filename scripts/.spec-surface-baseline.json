@@ -5512,7 +5512,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py": "1c35bed459ad6edd28a6404692d7df7bc5932381",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "8fef58d49b2962ec52ec7d2c1e14af3563f4b28d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/track.py": "f979f40049b232a1e96d66bdeba038fa3cd976d5",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "ab7a28a8b53051cb9fcebd0ef2f19486163763f4",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "4bbed1ffe9d1d98b1121207f58008377e20bd53c",
    "src/shared/packages/pyforge-steward/tests/fixtures/plaintext_secret_candidate/leaked_key.txt": "3032a639b61ac7dd31b029c4549d8645ed0fa497",
    "src/shared/packages/pyforge-steward/tests/fixtures/track-run-sparse/journal.jsonl": "f7e2e2fe793f5328707b39afe5cc11d2efbda3c7",
    "src/shared/packages/pyforge-steward/tests/fixtures/track-run/gate-record.json": "b5a27e3a6f74d1cf01a334dd38cb366ccc49aa74",
@@ -5605,12 +5605,13 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "99147ea328cee8c68150228310e3f68472cfc0aa",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py": "c09e271257afe028aa58ce322ba7a4e23186c1cc",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "ef39121a6dd7f8769d63626aa214378ff81f89f0",
-   "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "07fbf6e91e18cbe769b703ace309a0f54e1229e0",
+   "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "a27c21ea55a94ed47af28eb4b01ed6087c685550",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py": "90afeb34ce837d39b56157299f352f863ea39356",
+   "src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py": "f787da69d75466e931ec5856d597ecd5bf5f6bb5",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "0234f9f1c32c32a2bc784ad028d3cb1cca523a30",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "de924bb0a3041e73f29142deead519d00d836254"
   },
-  "memlog": "5d7b96b0095e54e64966a87b07ecdb22f53efd61"
+  "memlog": "414eef0f805037be74105e9516a54f10a4289c71"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
@@ -5654,7 +5655,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "de5a9c92bf0f03cb3e07f9226963c0ac0cf9e226",
+   "pixi.toml": "0c1a50bf37677edec8f7622fe0e8429510d465b4",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -6019,7 +6020,7 @@
    "src/platform/tests/test_validation_errors_render_inline.py": "c9b431b0bdade1feb379e2bfdc57f7d4bd1db155",
    "src/platform/tests/test_warden_fabric_phases.py": "c25b384d4432c0b102b83a5ccd7e62f4494244dc",
    "src/platform/tests/test_warden_fabric_rename.py": "a72ac8033b408bba94c8130ea1b85a0f6e2929f7",
-   "src/platform/tests/test_warden_portal_audit_start_get.py": "44435a7de16d45d2e12d65b877a08cd6ea58fadd",
+   "src/platform/tests/test_warden_portal_audit_start_get.py": "cbe19471547710ba00f6de2112e63e37414c2e31",
    "src/platform/tests/test_ws_events.py": "0b42b3b411400e159158134a7cffdd4b91e9d76a",
    "src/platform/utility/install_os_dependencies.sh": "bef4a6b36e028175010152eb749fb4ecd38e031c",
    "src/platform/utility/install_python_dependencies.sh": "959319d2c40d478211010f34c691a113315cef90",
@@ -6637,7 +6638,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "311fc1b2bedc55e916bbf40bb9c8001a86783d87"
+  "memlog": "6b4f332ebffec04920339f99b83689b86cc0ace1"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},

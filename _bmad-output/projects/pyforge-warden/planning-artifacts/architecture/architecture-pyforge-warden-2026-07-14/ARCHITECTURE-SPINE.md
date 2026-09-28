@@ -1,5 +1,4 @@
 ---
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
 name: 'Warden (pyforge-warden)'
 altitude: feature   # added 2026-09-08 for fleet consistency; the other seven spines all declare it
 stepsCompleted:
@@ -42,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
+updated: "2026-09-27"   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -532,3 +531,11 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-27
+
+*Trigger: the PRD's re-stamp for CAP-23 (`prd→arch`).* CAP-23 changes one constant in `tea_advisory` — the base ref
+the advisory hands TEA, now `refs/remotes/origin/main` — and a test pinning it. No AD is added, changed or removed:
+suite:AD-4 (an advisory contributes a note, never a verdict) and suite:AD-10 (fail-closed when the roster lacks `tea`)
+hold as written. Housekeeping in the same pass: this spine's frontmatter carried two `updated:` keys; the first was
+dead under YAML last-wins and is removed, its history kept in the surviving key's comment.

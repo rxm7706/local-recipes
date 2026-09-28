@@ -96,7 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="origin/${GITHUB_BASE_REF}"
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # spec-pyforge-core CAP-10: never a name a local ref or tag can wear
           elif [ "${{ github.event_name }}" = "push" ]; then
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           else

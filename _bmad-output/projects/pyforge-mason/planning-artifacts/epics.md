@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-27"   # RE-STAMPED 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -1989,6 +1989,29 @@ Examples / Current State
 own 2026-09-09 realization-gate note): all three companions' last-touch commits still
 match their documented dates (`1aeaf12cee` 2026-07-02, `1bdd5a2f02` 2026-06-28); the
 criterion held when waves ran (Track A Waves B–F)
+
+## Epic 18: The recipe CI picks changed recipes from the remote-tracking ref (spec-pyforge-mason CAP-28)
+
+Minted 2026-09-27 (night) from the station Dream's entry of the same name, closing
+`DW-mason-recipe-ci-short-base-ref-2026-09-27` (found by doctor Story 32.1). Hardening: the pull_request branch is
+dormant today (no recipe workflow runs on `pull_request`). **HARD boundaries:** the manual
+`workflow_dispatch` `recipes` input path is untouched; no recipe and no CFE surface changes; the regression test is
+`pyforge-core:CAP-10`'s workflow scan (marshal Story 63.1), not a second one.
+
+### Story 18.1: The recipe CI picks changed recipes from the remote-tracking ref
+
+As a recipe maintainer whose pull request the recipe CI builds,
+I want the four recipe workflows to choose recipes from a diff against `refs/remotes/origin/${{ github.base_ref }}`,
+So that, when a pull_request trigger returns, a pushed tag named `origin/main` can never empty the changed-recipe set.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-28
+**Surface:** `.github/workflows/test-all.yml`, `.github/workflows/test-linux.yml`, `.github/workflows/test-macos.yml`,
+`.github/workflows/test-windows.yml` (the pull_request changed-recipe `git diff`).
+**Given** a pull request that touches `recipes/<name>/`
+**When** a recipe workflow picks what to build
+**Then** it diffs `refs/remotes/origin/${{ github.base_ref }}...HEAD`, never the short `origin/<base>`
+**And** marshal Story 63.1's workflow test passes over all four, and the manual `recipes` input path is unchanged
+**Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 

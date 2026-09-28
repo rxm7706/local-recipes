@@ -2,7 +2,7 @@
 id: SPEC-pyforge-warden
 spec: pyforge-warden
 status: ready
-updated: "2026-09-17"
+updated: "2026-09-27"
 owner-dream: docs/dreams/pyforge-warden.md
 covers-dreams:
   - docs/dreams/pyforge-warden.md
@@ -119,6 +119,12 @@ serves.
 - **CAP-22 — deploy gates on the verdict (already true on main — preserve)** ← spec-golden-path-conda-blind-spot CAP-5 (shipped 2026-09-09)
   - **intent:** `platform-deploy` promotes a digest only when its recorded
   - **success:** the verifier refuses `indeterminate` / `warn` / `fail` and a
+- **CAP-23 — the TEA advisory reviews the diff from the remote-tracking ref** ← spec-pyforge-warden CAP-23 (ready 2026-09-27)
+  - **intent:** `tea_advisory` passes `--base refs/remotes/origin/main` to TEA's `tea-test-review`,
+    whose CLI diffs `<base>...HEAD`; a local branch or tag named `origin/main` at HEAD no longer
+    empties the changed-test set. Advisory only: never a finding, a rung or the exit code.
+  - **success:** the argv the default runner builds carries `--base refs/remotes/origin/main`; the
+    advisory's fail-open and fail-closed paths are unchanged.
 
 ## Constraints
 

@@ -74,11 +74,15 @@ from .hooks import PR_GATE_SCAN
 
 TEA_TEST_REVIEW_BINARY = "tea-test-review"
 
-# steward 46.3's own pixi task defaults ("tea-test-review --base origin/main
-# --min-score 80") -- this module never gates on --min-score (AD-4: the
-# advisory contributes a note, never a verdict), so it is deliberately not
-# passed here. --agent claude mirrors the CLI's own documented default.
-_DEFAULT_BASE_REF = "origin/main"
+# steward 46.3's own pixi task defaults ("tea-test-review --base
+# refs/remotes/origin/main --min-score 80") -- this module never gates on
+# --min-score (AD-4: the advisory contributes a note, never a verdict), so it
+# is deliberately not passed here. --agent claude mirrors the CLI's own
+# documented default. The base is the full refname, never the short
+# `origin/main`: TEA diffs `<base>...HEAD`, and a short name resolves to a
+# local branch or tag of that name first, so a stray `origin/main` at HEAD
+# emptied the review (warden Story 13.1, spec-pyforge-warden CAP-23).
+_DEFAULT_BASE_REF = "refs/remotes/origin/main"
 _DEFAULT_AGENT = "claude"
 _DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
 
@@ -147,10 +151,11 @@ def _default_runner(binary: str, target: Path, json_path: Path) -> subprocess.Co
     """Shell out to the real ``tea-test-review`` binary. Both the markdown
     report and the JSON verdict are written into ``json_path``'s own
     scratch directory -- never into ``target`` -- an advisory scanner must
-    not litter the scanned tree with a stray ``test-review.md``. NEVER
-    exercised inside this repo's own test suite: the "TEA absent" test
-    relies on the real absent binary, and the "low score"/"runner errors"
-    tests inject their own ``runner`` instead."""
+    not litter the scanned tree with a stray ``test-review.md``. The real
+    binary is NEVER run inside this repo's own test suite: the "TEA absent"
+    test relies on the real absent binary, the "low score"/"runner errors"
+    tests inject their own ``runner``, and the one test that calls this
+    function (Story 13.1: the argv's ``--base``) replaces ``subprocess.run``."""
     report_path = json_path.with_name("test-review.md")
     return subprocess.run(
         [

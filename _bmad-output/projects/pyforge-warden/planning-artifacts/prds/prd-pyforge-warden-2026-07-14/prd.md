@@ -15,7 +15,7 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-27"   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
@@ -892,3 +892,16 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-27
+
+*Trigger: the chain-currency sweep's `spec→prd` edge — `spec-pyforge-warden`'s `.memlog.md` moved 2026-09-27 for
+CAP-23 (Story 13.1) while this PRD sat at 2026-09-20. Reconciled against the as-built `pyforge.warden.tea_advisory`
+and the installed TEA 1.27.2 CLI.*
+
+CAP-23 refines the TEA advisory lens recorded in § Currency reconciliation — 2026-09-07 (Epic 11 / Story 11.2): the
+advisory now asks TEA for `--base refs/remotes/origin/main`, not the short `origin/main`. TEA diffs `<base>...HEAD`,
+and git resolves a short name to a local branch or tag of that name first, so a stray `origin/main` at HEAD emptied
+the review. The lens stays inside the FR20/J9 verdict contract as written — a note, never a finding, a rung or the
+exit code — and the DW-FU-11-2 fail-closed posture is untouched. No FR text requires correction and none is minted:
+the lens is post-v1 advisory surface, recorded in these sections rather than FR1–FR40; Epic 13 / Story 13.1 carries it.

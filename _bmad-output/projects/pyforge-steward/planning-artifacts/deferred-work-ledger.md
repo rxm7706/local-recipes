@@ -4826,4 +4826,5 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   location: src/platform/tests/test_warden_portal_audit_start_get.py
   severity: low
   fix: `refs/remotes/origin/main` in both git calls and the skip text, through steward's chain; run `platform-ci-local -- --test`.
-  status: open
+  status: closed
+  resolved: 2026-09-27 (steward Story 70.1, spec-pyforge-steward CAP-158) — the guard's `rev-parse`, skip text and `diff` name `refs/remotes/origin/main` (literal argv, as ruff's S603 wants); `platform-ci-local -- --test` 7/7 PASS and the guard runs rather than skips. The same story fixed a worse steward read found on the way: `workspace clean --merged-only` past a shadow at an unmerged tip removed the worktree and deleted its branch.

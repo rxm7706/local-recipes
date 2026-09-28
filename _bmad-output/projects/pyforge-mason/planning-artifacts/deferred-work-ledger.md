@@ -1605,4 +1605,5 @@ status: open
   location: .github/workflows/test-all.yml; .github/workflows/test-linux.yml; .github/workflows/test-macos.yml; .github/workflows/test-windows.yml
   severity: low
   fix: `refs/remotes/origin/${{ github.base_ref }}...HEAD` in all four, through the recipe factory's chain.
-  status: open
+  status: closed
+  resolved: 2026-09-27 (mason Story 18.1, spec-pyforge-mason CAP-28) — all four diff from `refs/remotes/origin/${{ github.base_ref }}...HEAD`. Correction found in review: the branch is dormant today (no recipe workflow runs on `pull_request`; `test-all.yml` is dispatch-only and calls the other three), so no PR could have built nothing from it; this is hardening, kept by pyforge-core:CAP-10's workflow scan.

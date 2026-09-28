@@ -845,7 +845,11 @@ def test_a_detached_head_on_main_does_not_prove_the_branch_and_the_branch_is_kep
     assert _git("rev-parse", "refs/heads/detached", cwd=repo).stdout.strip() == branch_tip
 
 
-def test_a_local_ref_shadowing_the_source_is_no_proof(repo: Path, tmp_path: Path):
+def test_a_local_ref_shadowing_the_source_does_not_hide_an_unlanded_commit(repo: Path, tmp_path: Path):
+    """Story 69.1 read a shadowed source as no proof at all; since Story 70.1 (CAP-158) the proof reads
+    `refs/remotes/origin/main` itself, so the shadow at the unlanded tip is simply not consulted -- the
+    unlanded commit still archives and the branch is kept (a landed worktree past a shadow now leaves a
+    note: test_workspace_full_refs.py)."""
     wt = _started(repo, tmp_path, "shadowed")
     (wt / "work.txt").write_text("work\n", encoding="utf-8")
     _git("add", "work.txt", cwd=wt)
@@ -853,6 +857,7 @@ def test_a_local_ref_shadowing_the_source_is_no_proof(repo: Path, tmp_path: Path
     _git("branch", "origin/main", "HEAD", cwd=wt)  # a LOCAL branch named like the source
 
     assert _clean_one(repo, tmp_path, "shadowed").name.endswith(".tar.gz")
+    assert _git("rev-parse", "--verify", "refs/heads/shadowed", cwd=repo).returncode == 0
 
 
 def test_ignored_tier3_work_that_is_not_a_backlink_archives(repo: Path, tmp_path: Path):
@@ -926,7 +931,9 @@ def test_a_non_utf8_ignored_name_neither_crashes_the_sweep_nor_goes_unnamed(repo
     assert "caf\\xe9.local" in note
 
 
-def test_a_shadowing_ref_is_no_proof_even_with_ambiguity_warnings_off(repo: Path, tmp_path: Path):
+def test_a_shadowing_ref_hides_no_unlanded_commit_even_with_ambiguity_warnings_off(repo: Path, tmp_path: Path):
+    """As above with `core.warnAmbiguousRefs=false` (Story 69.1 review 2): no warning is read either way,
+    because the proof names the full ref (Story 70.1)."""
     _git("config", "core.warnAmbiguousRefs", "false", cwd=repo)
     wt = _started(repo, tmp_path, "quiet-shadow")
     (wt / "work.txt").write_text("work\n", encoding="utf-8")
@@ -935,6 +942,7 @@ def test_a_shadowing_ref_is_no_proof_even_with_ambiguity_warnings_off(repo: Path
     _git("branch", "origin/main", "HEAD", cwd=wt)
 
     assert _clean_one(repo, tmp_path, "quiet-shadow").name.endswith(".tar.gz")
+    assert _git("rev-parse", "--verify", "refs/heads/quiet-shadow", cwd=repo).returncode == 0
 
 
 def test_quoted_tier3_paths_still_force_a_tarball(repo: Path, tmp_path: Path):
