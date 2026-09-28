@@ -323,6 +323,24 @@ Drift — orphaned between stations.
   recorded sources stay as written (old bookkeeping reads correctly); the platform guard still
   imports no `pyforge.*`. Kinships: CAP-107 / CAP-155 / CAP-157 (workspace), `spec-pyforge-marshal`
   CAP-272 (the kit the platform guard copies), `spec-pyforge-warden` CAP-23. Owner: steward.
+- **2026-09-28 — Proposed: Mason's skill cell is two skills, and the Guild environment answers
+  `pyforge mason`.** The operator answered the Mason Dream's 2026-09-27 entry (*Mason has its own
+  skills, and `conda-forge-expert` is one of them*) on 2026-09-28; two of its pieces are steward code.
+  (1) `five_tier.py:104-106` counts Mason's `skill` cell present when `conda-forge-expert/SKILL.md`
+  exists ("Mason 11.1: CFE is the domain skill. Do not require pyforge-mason/"); the ruling is that
+  it requires both, Mason's SKF station skill `pyforge-mason` and CFE. (2) Measured the same day:
+  `pixi run -e pyforge-guild pyforge mason --help` answers `unknown station 'mason'; known: doctor,
+  herald, marshal, scribe, steward`, and `mason` is not on `PATH`, yet `bmad-agent-mason` may act only
+  through `pyforge mason …`. The front door is right: `pyforge.core.dispatch` maps a station to the
+  console script of an installed `pyforge-*` distribution (`dispatch.py:94-105`). The Guild's feature
+  (`pixi.toml:841-864`) never installed `pyforge-mason`. **What it looks like when real:** from the
+  session default, `pyforge mason doctor` answers; the five-tier check reads Mason's skill cell present
+  only with both skills; the Guild still installs under 1 GB from cold. **Constraints:** the five-tier
+  change lands after mason Story 19.1 compiles the station skill (a ledger gate the operator flips);
+  `pyforge-warden` stays out of the Guild (its `osv-scanner` pin); recipe work stays in
+  `-e local-recipes`. Kinships: [[pyforge-mason]] (the 2026-09-27 entry; `spec-pyforge-mason:CAP-29`),
+  CAP-5 (the Guild), `canopy:AD-14` and `canopy:AD-17`. Owner: steward. → CAP-161 / Story 72.1 (FR-34)
+  and CAP-160 / Story 72.2 (FR-33), specced 2026-09-28.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

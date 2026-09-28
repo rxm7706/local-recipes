@@ -7,7 +7,8 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; one AD amendment owed, carried by Story 67.8. Prior 2026-09-24
 currency_review: "Reviewed 2026-09-24 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-24 re-stamp reconciled Story 63.4 (`steward session check`, spec-pyforge-steward CAP-5, Epic 63 `environment pyforge-guild`) — a new `session.py` module/duty consolidating seven pre-existing session-precondition findings into one verdict, wired into four existing entry points (`cli.py`, `.claude/hooks/session-start.sh`, `.cursor/environment.json`, `.github/workflows/copilot-setup-steps.yml`) plus `pyforge-marshal`'s `dispatch.py`. Checked against every AD: this adds one new duty adapter inside the existing CLI-package boundary (a thin adapter over pre-existing checks, matching the paradigm this spine already declares) and returns `DutyResult` frozen evidence per AD-8 — no new port, no new external dependency, no change to the hexagonal boundary. **No AD added, changed or removed.** Reconciled in § Currency reconciliation — 2026-09-24. Reviewed 2026-09-17 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-17 re-stamp reconciled the one-chain fold remint (spec-pyforge-steward CAP-1..145). Kernel AD-1..9 and the four-duty CLI package boundary are unchanged; absorbed architecture stays on pointer-folder companion spines. No AD added or altered. Reviewed 2026-09-08 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-08 re-stamp reconciled spec-pyforge-steward's 2026-09-08 memlog motion (the `_persona_mentions` test-helper precision + scan-breadth fix in tests/meta/test_adoption_register.py) and the sibling Story 43.7 authoring (re-homing mason DW-13-2-2's dbgpt-sidecar Celery REST round-trip and SQLite metadata-store validation on Python 3.14, orphaned when Story 43.6 closed done without doing it). Neither touches this spine: the first hardens how an existing obligation is verified in a test, the second decomposes pap:CAP-5/CAP-6 on the platform-image surface, which sits outside this spine's FR-1..18 CLI-package scope — the same boundary Epics 9-38 sit outside. No AD added or altered; no duty module, port or adapter changed. Reviewed 2026-09-05 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-05 re-stamp reconciled spec-pyforge-steward's two 2026-09-05 memlog motions (post-merge follow-up-review landing PR #1056; bmad-suite 2026.9.5 roster change) and the new spec-bmad-eval-quality / Epic 45 — all either inside an existing adapter (suite.py gains the `cli` install class + one probe branch, no new duty module) or outside this spine's FR-1..18 CLI-package scope (recipes, suite manifest); no AD changed. Reviewed 2026-09-02 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-02 re-stamp reconciled spec-pyforge-steward's 2026-09-01 sharded-path landing (no CAP/AD change) and the same-day red-team correct-courses on the unifying chain (Epics 40–43, which bind the unifying spine's AD-7/8/10/15 and add one interpreter AD via Story 43.5 — none of AD-1..9 here change). No AD added or altered. Reviewed 2026-08-29 — cascade pass after the re-cut PRD (spec-surface drift catch-up + retroactive Epic 38); no AD altered, package scope unchanged (FR-1..18); deltas in § Currency reconciliation — 2026-08-29 (prior: 2026-08-26)."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18]
@@ -549,7 +550,7 @@ flowchart LR
 | CAP-12 IdP roles + secrets | allauth + parent canopy:AD-12 mounts | canopy:AD-19, canopy:AD-15 |
 | CAP-13 flags | OpenFeature FILE | canopy:AD-11, canopy:AD-16 |
 | CAP-14 Scribe graph | Port + lexical path; semantic recall on CAP-19 plane driver (34.5). `scribe_schema` pgvector retirement is OQ | parent canopy:AD-1, parent canopy:AD-5 isolation; canopy:AD-22 |
-| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/`; **mason = `conda-forge-expert`** | canopy:AD-14, canopy:AD-17 |
+| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/`; **mason = `pyforge-mason` + `conda-forge-expert`** (both required, FR-33, 2026-09-28; was CFE alone) | canopy:AD-14, canopy:AD-17 |
 | CAP-16 personas | BMAD launcher/agent; consults CAP-15 | canopy:AD-14, canopy:AD-17 |
 | CAP-17 run state | supervisor → PostgreSQL `public.run_state` | canopy:AD-12, canopy:AD-6 |
 | CAP-18 hooks | `pyforge-core` + Warden / station plugins | canopy:AD-21 |
@@ -2160,3 +2161,22 @@ No port or adapter boundary moves: `pr-preflight`'s command line, the `pre-push`
 its skip journal (CAP-156) are unchanged; the diff base is the full ref CAP-158 fixed.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28
+
+`prd→arch` edge after the PRD's 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28: FR-33 ← CAP-160, FR-34 ←
+CAP-161; Epic 72). Checked against every AD; both land as written:
+
+- **FR-33 on canopy:AD-14 and canopy:AD-17.** AD-17's rule is that station skills are SKF content skills, with
+  `conda-forge-expert` the hand-authored exception SKF never replaces. Mason's cell now follows the rule
+  (`pyforge-mason`, SKF-compiled — mason Story 19.1) and keeps the exception as its other required half, so the five-tier
+  check (AD-14) reads the cell present only with both. The CAP-15 row above is updated in place to say so; the
+  2026-08-26 realization note ("mason skill cell is `conda-forge-expert` (canopy:AD-17 exception), not
+  `.claude/skills/pyforge-mason/`") is history.
+- **FR-34 on AD-5 (steward reads `pixi.toml`, never writes it).** The Guild feature gains `pyforge-mason` by the story
+  author's edit, with `pixi.lock` and `environment.yaml` regenerated in the same change — never by steward code. The front
+  door stays `pyforge-core`'s and is unchanged: it already maps every installed station.
+
+No port or adapter boundary moves.
+
+**Content changed:** this section, and the CAP-15 row's mason note. `updated:` bumped. No AD added, amended or removed.

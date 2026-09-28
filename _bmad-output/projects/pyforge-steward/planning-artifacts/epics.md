@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
 currency_review: "Reviewed 2026-09-24 (arch→epics cascade after the spec→prd→arch re-stamps for Story 63.4, `steward session check`) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-24): no AD added or changed. Story 63.4 already carries its own `### Story 63.4` heading (line 4179, Epic 63) with ledger key `63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point`; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-17 (arch→epics cascade after the spec→prd→arch re-stamps for the one-chain steward fold) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-17): no AD added or changed. Fold provenance heading already cites spec-pyforge-steward CAP-1..145; historical stories keep sequential epic numbers 1..64. Every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -4748,6 +4748,58 @@ evaluate, never a silent 0), `pixi.toml` (a `preflight-budget` task in `[feature
 16-core reference laptop journals under 60 s and `preflight-budget` exits 0 (recorded in the story);
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 
+## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
+
+Minted 2026-09-28 from the station Dream's entry of the same name — steward's two pieces of the operator's 2026-09-28
+answers to the Mason Dream (`spec-pyforge-mason:CAP-29`, mason Epic 19). A new epic because Epic 71 decomposes a different
+CAP. **HARD boundaries:** `conda-forge-expert` stays a required half of Mason's skill cell — never dropped from the check;
+the front door (`pyforge-core`'s `dispatch.py`) is not changed, since it works as built; `pyforge-warden` stays out of the
+Guild (its `osv-scanner` pin) and `pyforge-atlas` is not added here; recipe work stays in `-e local-recipes`. Story 72.2
+waits on mason Story 19.1 (it would red the live roster before `.claude/skills/pyforge-mason/` exists): marshal's `Deps:`
+parser is station-local, so its ledger key is minted `blocked` and the operator flips it (AGENTS.md § Known pitfalls;
+the herald 27.5 precedent).
+
+### Story 72.1: The Guild environment answers pyforge mason
+
+As an agent working from the session default,
+I want `pyforge mason …` to resolve in `-e pyforge-guild`,
+So that the Mason persona's only grammar works where every agent runs, instead of answering `unknown station 'mason'`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-161 (FR-34; extends CAP-5); AD-5
+**Surface:** `pixi.toml` (`[feature.pyforge-guild.dependencies]` gains `pyforge-mason = { path = "src/shared/packages/pyforge-mason" }`;
+the feature's banner comment names what the environment carries), `pixi.lock`, `environment.yaml` (regenerated with
+`pixi project export conda-environment -e build`), `docs/reference/station-cheat-sheet.md` and
+`docs/reference/environments.md` (regenerated by `docs-station-cli` / `docs-environments`), tests:
+`src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` (new).
+**Given** `pyforge.core.dispatch` maps a station to the console script of an installed `pyforge-*` distribution
+(`dispatch.py:94-105`) and the Guild's feature never installed `pyforge-mason`
+**When** the feature gains the path dependency and the lock is re-solved
+**Then** `pixi run -e pyforge-guild pyforge mason --help` and `pixi run -e pyforge-guild pyforge mason doctor --format json`
+exit 0, and `mason` is on the Guild's `PATH`
+**And** the new meta-test reds a `[feature.pyforge-guild.dependencies]` without `pyforge-mason`; a cold `pixi install -e pyforge-guild`
+stays under CAP-5's 1 GB bound (measured and recorded in the story); `pyforge-station-tests` and `detectors-ci` green;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
+### Story 72.2: Mason's five-tier skill cell requires its station skill and conda-forge-expert
+
+As the operator who ruled that Mason's skills are its own and CFE is one of them,
+I want the five-tier check to count Mason's skill cell only when both skills are there,
+So that the matrix says what the ruling says, and losing either skill fails CI.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-160 (FR-33); canopy:AD-14, canopy:AD-17 •
+cross-project gate: mason Story 19.1 (`spec-pyforge-mason:CAP-29`) must have landed first — the ledger key is minted
+`blocked` and the operator flips it, per AGENTS.md (marshal's `Deps:` parser is station-local)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` (`detect_tiers`' Mason branch at :104-106
+and the `DECLARED_COMPLETE` comment at :25-27), tests: `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py`.
+**Given** mason Story 19.1 has put `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md` on `main`
+**When** `five_tier.report` runs
+**Then** Mason's `skill` cell is present only when `.claude/skills/pyforge-mason/` holds a `SKILL.md` and
+`.claude/skills/conda-forge-expert/SKILL.md` exists; the live roster stays 40/40
+**And** a fixture tree with only CFE, and one with only `pyforge-mason`, each reads the cell missing and `check` fails naming
+`skill`; every other station's cell rule is unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** blocked
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -4786,3 +4838,15 @@ CAP-159 lands on AD-1, AD-5 and AD-8; no AD added, amended or removed). Validate
 Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key (`71-1`..`71-7` and `epic-71` added at
 `backlog`, `epic-71-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`). Epic 44
 untouched; no blocked ledger key flipped. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28
+
+`arch→epics` edge after the spine's 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28: FR-33 / CAP-160 lands on
+canopy:AD-14 and canopy:AD-17, FR-34 / CAP-161 on AD-5; no AD added, amended or removed). Validated against it: Epic 72
+decomposes both — 72.2 makes Mason's skill cell follow canopy:AD-17's rule (the SKF station skill) while keeping its
+exception (`conda-forge-expert`, hand-authored) as the other required half, and 72.1's `pixi.toml` edit is the story
+author's, never steward code's (AD-5). Story 37.1's AC "mason's skill cell is `conda-forge-expert` (no `pyforge-mason/`
+skill)" is history, superseded by 72.2 once it lands. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml`
+key (`72-1` and `epic-72` at `backlog`, `72-2` minted `blocked` behind mason Story 19.1, `epic-72-retrospective` at
+`optional`, through the Tier-3 feed and `sprint-ledger-sync`). Epic 44 untouched; no existing blocked ledger key flipped.
+`updated:` bumped.

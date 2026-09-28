@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
 status: final
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
@@ -420,3 +420,21 @@ sat at 2026-09-20.
 (`scribe capture`, with its capture hygiene), and the parity meta-test gained two assertions
 guarding it. Both sit inside CAP-27's existing instruction-surface parity contract (FR-16);
 nothing new is required of Scribe. `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-28
+
+`spec→prd` edge: `spec-pyforge-scribe`'s `.memlog.md` moved to 2026-09-28T02:43 while this PRD sat at 2026-09-25.
+
+**What moved, and why the FR delta is none.**
+- 2026-09-26: the surface gained the instruction pointer files (`CLAUDE.md`, `.cursorrules`,
+  `.cursor/rules/specs.mdc`, `.cursor/rules/trunk-worktree-pr.mdc`) under CAP-27, and Stories 21.1, 21.2 and 23.1
+  landed their reconciles (the `bmad:context` block refreshed, `AGENTS.md` saying what runs `governance-currency`, the
+  SKF block kept in `AGENTS.md` only). All sit inside CAP-27's instruction-surface parity contract, which FR-16 already
+  states. Story 22.1 landed CAP-31's socket-directory fix for the local Postgres cluster (`scripts/scribe_pg.py`).
+- 2026-09-28: a surface reconcile for `AGENTS.md` — the Policy line on the foundry target tree gained a dated, expiring
+  exception for `.claude/skills/pyforge-mason/` (operator ruling 2026-09-28, `spec-pyforge-mason:CAP-29`). A change to
+  the contract's content, not to how the contract reaches every harness; FR-16 is unchanged.
+
+CAP-31 (minted 2026-09-25) is the local test cluster's start path and states no requirement of Scribe's users; this
+reconcile registers no FR for it, and leaves that reading to the next scribe `bmad-prd` pass. `updated:` bumped to record
+that the check ran.

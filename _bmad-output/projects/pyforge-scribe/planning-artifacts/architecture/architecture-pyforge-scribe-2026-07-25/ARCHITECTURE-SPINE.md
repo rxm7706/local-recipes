@@ -7,7 +7,7 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (prd -> spine) after the 2026-09-28 PRD re-stamp; no AD change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold remint; no AD added or changed."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
@@ -340,3 +340,9 @@ check ran.*
 `prd→arch` edge after the PRD re-stamp of 2026-09-25 (marshal 46.3's session-close ritual
 statement and its parity assertions). The parity meta-test was already the enforcement point for
 the instruction surface; no AD added, changed or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28
+
+`prd→arch` edge after the PRD re-stamp of 2026-09-28 (the 2026-09-26 instruction-surface landings and the 2026-09-28
+`AGENTS.md` Policy-line reconcile). The parity meta-test stays the enforcement point for the instruction surface, and
+`scripts/scribe_pg.py` stays outside the package boundary; no AD added, changed or removed. `updated:` bumped.

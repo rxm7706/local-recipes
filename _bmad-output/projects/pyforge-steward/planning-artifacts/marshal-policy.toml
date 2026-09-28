@@ -707,6 +707,22 @@ verify_commands = [
   ".claude/skills/conda-forge-expert/**",
   ".claude/skills/pyforge-steward/**",
 ]
+"72" = [  # Mason's skill cell is two skills, and the Guild answers pyforge mason (spec-pyforge-steward CAP-160..161), added 2026-09-28
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  # 72.1: reference pages generated from the Guild's composition
+  "docs/reference/station-cheat-sheet.md",
+  "docs/reference/environments.md",
+  # co-governor reconciles (pixi.toml has several governors; spec-pyforge-core governs every station's src)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

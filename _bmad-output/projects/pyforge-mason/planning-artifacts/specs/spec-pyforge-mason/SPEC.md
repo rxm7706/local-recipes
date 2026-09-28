@@ -2,7 +2,7 @@
 id: SPEC-pyforge-mason
 spec: pyforge-mason
 status: ready
-updated: "2026-09-27"
+updated: "2026-09-28"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
   - docs/dreams/pyforge-mason.md
@@ -158,6 +158,36 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   when a trigger returns.
 - **success:** All four name the full ref; `pyforge-core:CAP-10`'s workflow test covers them; the
   manual `recipes` input path is unchanged. (Minted 2026-09-27.)
+
+### CAP-29 — Mason has its own skills, and `conda-forge-expert` is one of them
+
+- **intent:** Mason's skill tier is five skills. `pyforge-mason`, the station skill, is SKF-compiled from
+  `src/shared/packages/pyforge-mason/` like the other seven stations' (`skf-brief-skill`, `skf-create-skill`,
+  `skf-export-skill`; canopy:AD-17) and documents the `mason` grammar — `recipe {new, validate, build, diagnose,
+  optimize, scan, submit, update}`, `package {build, ship}`, `environment {lock, check}`, `doctor` — as
+  `pyforge mason …` and `POST /stations/mason/mcp`, sending every recipe question to `conda-forge-expert`; it is
+  the eighth entry in `AGENTS.md`'s SKF block. Two hand-authored craft skills teach the crafts Mason builds
+  natively: `mason-package` (`mason package build|ship`) and `mason-environment` (`mason environment lock|check`).
+  The two feedstock campaigns written as how-tos become the campaign skills `mason-feedstock-platform-expansion`
+  and `mason-feedstock-failure-remediation`: each how-to's parameterized body and worked examples move in
+  verbatim, the how-to and its `docs/specs/` stub point at the skill, and the timeless workflow stays in CFE's own
+  guides, linked, never copied. `conda-forge-expert` stays the recipe skill — never replaced, forked or demoted;
+  no Mason skill restates a CFE gotcha or recipe workflow; every conda-forge effort still closes with the CFE
+  retro and its `CHANGELOG.md` semver bump, and this one closes with a retro that teaches CFE it is one of
+  Mason's skills. The Mason persona consults `pyforge-mason` for the grammar and CFE for recipe work. Mode
+  `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds the skills under `skills/stations/`. The
+  five-tier check counts Mason's skill cell only when both `pyforge-mason` and CFE are present
+  (`spec-pyforge-steward:CAP-160`). (Operator rulings 2026-09-28.)
+- **success:** `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md` exists with a `skill-brief.yaml`, a
+  `metadata.json` (`generated_by: create-skill`) and a `provenance-map.json` whose entries resolve to lines under
+  `src/shared/packages/pyforge-mason/`; `skf-validate-frontmatter.py` and `skf-validate-output.py` report no high
+  finding; `AGENTS.md`'s SKF block reads `8 skills` with a `[pyforge-mason v0.1.0]` entry written by
+  `skf-export-skill`; the four hand-authored skills exist, each names the `mason` verbs or the campaign it teaches
+  and links `.claude/skills/conda-forge-expert/`; a mason meta-test reds a Mason skill carrying a CFE gotcha
+  heading (`### G<n>.`) and a CFE that became version-nested SKF; the persona's golden transcript consults
+  `pyforge-mason` and CFE and uses only `pyforge mason …` and `POST /stations/mason/mcp`;
+  `docs/reference/agent-instruction-notes.md` no longer says Mason has no SKF skill; the closing Rule-2 retro
+  lands a CFE `CHANGELOG.md` semver entry; `pyforge-mason-test` green. (Minted 2026-09-28.)
 
 ## Constraints
 

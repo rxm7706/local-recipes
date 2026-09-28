@@ -29,8 +29,8 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Commit messages carry no `Co-Authored-By` line and no AI attribution; the `commit-msg` hook in `.pre-commit-config.yaml` refuses them (`steward setup` installs it; `precommit-config-check` reds the file going missing).
 - Never open a feedstock, staged-recipes or upstream PR without an explicit ask; a green local build ends the task.
 - Never flip a ledger `blocked` key, and never dispatch outward work (a new repo, an upstream PR, disabling CI) without operator confirmation.
-<!-- governance-currency:ignore-start (foundry target tree, not yet built; and a path that must NEVER exist -- mason's skill tier is conda-forge-expert per five_tier.py) -->
-- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` or `.claude/skills/pyforge-mason/` path.
+<!-- governance-currency:ignore-start (the foundry target tree is not built on A; .claude/skills/pyforge-mason/ resolves only once mason Story 19.1 compiles it under the dated A-only exception below -- Mason's skill cell is then pyforge-mason plus conda-forge-expert, operator ruling 2026-09-28) -->
+- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` path. One dated exception (operator ruling 2026-09-28; `docs/dreams/pyforge-mason.md` § Realization log, the 2026-09-27 entry *Mason has its own skills*): `.claude/skills/pyforge-mason/`, Mason's SKF-compiled station skill, is `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds Mason's skills under `skills/stations/`.
 <!-- governance-currency:ignore-end -->
 
 ## Where things are

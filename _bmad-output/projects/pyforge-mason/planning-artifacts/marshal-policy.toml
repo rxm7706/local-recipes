@@ -212,6 +212,41 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
 
+"19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 19.1: the SKF station skill, its export records, the persona, the AGENTS.md SKF block (skf-export-skill only)
+  ".claude/skills/pyforge-mason/**",
+  ".claude/skills/.export-manifest.json",
+  ".claude/skills/export-skill-result-*.json",
+  ".claude/skills/bmad-agent-mason/**",
+  "AGENTS.md",
+  # 19.2-19.4: the hand-authored Mason skills
+  ".claude/skills/mason-package/**",
+  ".claude/skills/mason-environment/**",
+  ".claude/skills/mason-feedstock-platform-expansion/**",
+  ".claude/skills/mason-feedstock-failure-remediation/**",
+  # 19.4: the two campaigns move out of docs/how-to/; stubs and the legacy index repoint
+  "docs/how-to/feedstock-platform-expansion.md",
+  "docs/how-to/feedstock-failure-remediation.md",
+  "docs/specs/feedstock-platform-expansion.md",
+  "docs/specs/feedstock-failure-remediation.md",
+  "CLAUDE.md",
+  "docs/reference/agent-instruction-notes.md",
+  "docs/reference/skills-catalog.md",
+  # 19.5: the closing Rule-2 retro (retro(cfe): commit, CFE surface only)
+  ".claude/skills/conda-forge-expert/**",
+  # co-governor reconciles (scribe governs AGENTS.md / CLAUDE.md, doctor docs/how-to, core every station's src)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO
