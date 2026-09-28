@@ -235,7 +235,12 @@ class FakeFs:
         path.write_text(content, encoding="utf-8")
 
     def read_text(self, path: Path) -> str | None:
-        return self.files.get(path)
+        if path in self.files:
+            return self.files[path]
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
 
     def read_symlink_target(self, path: Path) -> Path | None:
         if not path.is_symlink():
