@@ -143,8 +143,11 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   adopted all six decisions as D1–D6 on the Spec memlog. Four were refined against the repo: the
   sidebar is generated from `map.yaml` at build time, not written into pages; the deploy workflow
   keeps its `dashboard.yml` path, reshaped to upstream's build and deploy jobs; `nodejs` joins the
-  existing `site` feature; titles and quadrant indexes are resolved at build time. → CAP-52 /
-  Epic 27 / Stories 27.1–27.4 (Epic 27, new — 26 is `done`).
+  existing `site` feature; titles and quadrant indexes are resolved at build time. The operator's
+  2026-09-27 rulings added two more. D7: the dossier site mounts under `/herald/`, and every old
+  root HTML URL redirects there. D8: `pr-preflight` builds the site only when the docs change,
+  selected from the workflow file itself. → CAP-52 / Epic 27 / Stories 27.1–27.5 (Epic 27, new —
+  26 is `done`; 27.5 is `blocked` until steward Story 71.2 lands).
 - **2026-09-18** — **Epic 23 drained to zero; what its four landings deferred.**
   The Design sync loop is real: 23.1 (`deck status` enumerates the whole account,
   PR #1459), 23.2 (every presentation twinned, three design systems mirrored

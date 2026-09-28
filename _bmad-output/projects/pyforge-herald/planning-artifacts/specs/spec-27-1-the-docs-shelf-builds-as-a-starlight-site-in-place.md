@@ -77,7 +77,7 @@ Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this
   - `src/content/docs` (a symlink to `../../../docs`)
   - `scripts/validate-doc-links.js`, `scripts/validate-sidebar-order.js` and `scripts/fix-doc-links.js` (byte-identical to upstream)
   - `README.md` (the upstream SHA, the sha256 of each vendored file, the MIT notice, and what is local)
-- `docs/index.md` (new landing page: what the shelf is, the four quadrants, links to `/dossier/` and `/dashboard/kedro-viz/`) and `docs/404.md` (new).
+- `docs/index.md` (new landing page: what the shelf is, the four quadrants, links to `/herald/` (the dossier, infographics and deck families) and `/dashboard/kedro-viz/`) and `docs/404.md` (new).
 - `pixi.toml`:
   - `[feature.site.dependencies]` gains `nodejs` at `[feature.python]`'s pin (`>=24.19.0,<27.0,!=25.*`)
   - new task `docs-site-install` (`npm ci`, `cwd = "docs-site"`)

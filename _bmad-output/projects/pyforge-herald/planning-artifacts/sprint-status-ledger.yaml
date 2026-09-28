@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 164
+# stories: 165
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -101,6 +101,7 @@ development_status:
   27-2-one-pages-artifact-carries-the-docs-site-the-dossier-and-the-dashboard: backlog
   27-3-the-sidebar-is-generated-from-docs-map-yaml-order: backlog
   27-4-the-docs-validators-gate-every-pr: backlog
+  27-5-pr-preflight-runs-the-pages-build-check-only-when-docsite-check-yml-s-paths-change: blocked
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: done

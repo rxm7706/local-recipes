@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. Prior 2026-09-25
+updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 altitude: feature
 ---
@@ -698,8 +698,10 @@ architectural decision, so it is recorded here as AD-21.*
 **Binds**: The repository publishes exactly one GitHub Pages artifact, `docs-site/build/site/`,
 assembled from three producers, each owning one path prefix. The Astro + Starlight docs site owns
 the root and renders the Diátaxis shelf by reading `docs/` in place through a symlink. The
-`docsite/build.py` dossier owns `/dossier/`. The tracked `docs/dashboard/` tree owns `/dashboard/`
-(Kedro-Viz at `/dashboard/kedro-viz/`, with a redirect from `/kedro-viz/`). One workflow,
+`docsite/build.py` dossier site owns `/herald/` (the dossier page is `/herald/dossier/`), and each
+HTML path it served at the root before holds a redirect page to its `/herald/` home. The tracked
+`docs/dashboard/` tree owns `/dashboard/` (Kedro-Viz at `/dashboard/kedro-viz/`, with a redirect
+from `/kedro-viz/`). One workflow,
 `.github/workflows/dashboard.yml`, builds the artifact in the pixi `site` env and deploys it
 through `upload-pages-artifact` → `deploy-pages`, in upstream `docs.yaml`'s build and deploy
 jobs. The site's sidebar derives from doctor's `docs/map.yaml` at build time.
@@ -715,6 +717,12 @@ jobs. The site's sidebar derives from doctor's `docs/map.yaml` at build time.
 **Rule**:
 1. **Prefix ownership** — the assembler refuses, and `pages-check` exits 1, when a producer writes
    outside its prefix or a mount is missing.
+   **Redirects** (operator ruling 2026-09-27, D7): a moved HTML URL keeps its meaning through a
+   redirect page at its old path. The set is derived from what the producer built, never
+   hand-kept. A redirect that would land on a path another producer owns is refused like any other
+   collision; the one named exception is `/`, which Starlight owns and which links to `/herald/`.
+   A non-HTML file cannot carry a redirect on static Pages, so its old path returns 404 and never
+   serves different content.
 2. **One deploy caller** — exactly one workflow uses `actions/deploy-pages`. It keeps the path
    `dashboard.yml`, because other stations' tests read that path.
 3. **Content in place** — no page under `docs/` is moved, copied or rewritten for the site.
@@ -725,8 +733,10 @@ jobs. The site's sidebar derives from doctor's `docs/map.yaml` at build time.
 5. **Re-vendor, never fork** — files vendored from BMAD-METHOD's `docs-site/` are byte-identical
    to one recorded upstream commit, and local behaviour lives in separate local files.
 
-**[PROPOSED 2026-09-27]** — realized by Stories 27.1–27.4. AD-12 (Herald's four-tab web surface)
-is untouched: that is the station portal on the Canopy host, not Pages.
+**[PROPOSED 2026-09-27]** — realized by Stories 27.1–27.4. Story 27.5 (the `pr-preflight` lane,
+selected from the workflow's own paths by steward Story 71.2) lands on this AD without changing
+it. AD-12 (Herald's four-tab web surface) is untouched: that is the station portal on the Canopy
+host, not Pages.
 
 **Content changed:** this section only. `updated:` bumped. AD-21 is added; no existing AD is
 amended or removed. The one prior rule this supersedes is CAP-44's (the Pages root is the dossier

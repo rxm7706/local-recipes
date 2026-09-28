@@ -63,7 +63,7 @@ Parent Spec capability: `spec-pyforge-herald CAP-52` (FR-8.4; decisions D5, D6 i
 Architecture: AD-21.
 Ledger key: `27-4-the-docs-validators-gate-every-pr`.
 Ledger status at mint: `backlog`.
-Deps: S-27.2 (the reshaped `docsite-check.yml` and `pr-preflight` leg this extends), S-27.3 (the map check the sidebar task runs).
+Deps: S-27.2 (the reshaped `docsite-check.yml`, already path-filtered on `docs/**` and `docs-site/**`, that this extends), S-27.3 (the map check the sidebar task runs). Amended 2026-09-27 (D8): no Epic 27 story runs `pages-check` in `pr-preflight` except 27.5; this story's own leg, `docs-site-validate`, is node-only.
 Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this spec.
 
 ## Epic excerpt
@@ -74,7 +74,8 @@ Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this
 - `pixi.toml`:
   - `[feature.site.tasks]` gains `docs-site-validate-links` (`node docs-site/scripts/validate-doc-links.js`), `docs-site-validate-sidebar` (`node docs-site/scripts/validate-sidebar-order.js`, then `python docs-site/scripts/sidebar_from_map.py --check`) and `docs-site-validate` (both)
   - `pr-preflight` gains `{ task = "docs-site-validate", environment = "site" }`, with its description saying why
-- `.github/workflows/docsite-check.yml`: the `pull_request` and `push` path filters gain `docs/**` and `docs-site/**`, and a step runs `pixi run --frozen -e site docs-site-validate`.
+- `.github/workflows/docsite-check.yml`: a step runs `pixi run --frozen -e site docs-site-validate`. The `docs/**` and `docs-site/**` path filters are already there from 27.2 (D8).
+- `pr-preflight`'s `docs-site-validate` leg needs only node (no npm install, no build), so it runs unconditionally until steward Story 71.2 selects it by `docsite-check.yml`'s paths, like every other lane.
 - The 16 link findings the vendored `validate-doc-links.js` reported on 2026-09-27, each fixed in its page, never by editing the validator:
   - `docs/dreams/README.md` (`../../AGENTS.md`, `../specs/`)
   - `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md` (`marshal-token-economy.md`)
@@ -89,7 +90,7 @@ Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this
   - a dead link is repaired or removed, a directory link points at its index page, and a repo file outside `docs/` is linked by its `https://github.com/rxm7706/local-recipes/blob/main/<path>` URL
 - `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py` (new), asserting:
   - the three tasks are registered
-  - `docsite-check.yml` carries both path filters and the step
+  - `docsite-check.yml` carries the step
   - `pr-preflight` carries the leg
   - the vendored validators' sha256 still equals what `docs-site/README.md` records
 
