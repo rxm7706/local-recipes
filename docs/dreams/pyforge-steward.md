@@ -249,7 +249,11 @@ Drift — orphaned between stations.
   doctor's `detectors-ci` and `spec-coverage-gate-independence` (the per-station coverage
   gates); `spec-pyforge-core` CAP-8 (the station-tests shared-surface rule, Story 52.2);
   mason's CFE suite (`test-ci`).
-  Owner: steward. Not yet specced — the next `bmad-spec` pass on this chain.
+  Owner: steward. → CAP-159 / Epic 71 / Stories 71.1–71.7 (FR-32), specced 2026-09-27: the
+  per-lane journal (71.1), the lanes CI's rules select (71.2), concurrent lanes with isolated state
+  (71.3), the coverage gate reusing its suite's run (71.4), the two lanes every branch runs (71.5),
+  the large suites under `pytest-xdist` (71.6), and the budget as a check (71.7). Not taken: making
+  the two slow detectors incremental — concurrency inside the registry reaches the budget first.
 - **2026-09-27 (later) — Proposed: housekeeping that leaks, and a gate that re-checks what
   `main` already checked.** Landing marshal 56.1 and resyncing the loop homes the same morning
   turned up four defects in two steward tools, each measured:

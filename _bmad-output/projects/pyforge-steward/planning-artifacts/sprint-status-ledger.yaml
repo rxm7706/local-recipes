@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 431
+# stories: 440
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -291,6 +291,13 @@ development_status:
   7-4-state-outlives-the-container: done
   7-5-the-image-proves-itself-at-build-time: done
   70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs: done
+  71-1-every-preflight-run-journals-each-lane-s-wall-time-and-exit-code: backlog
+  71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: backlog
+  71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: backlog
+  71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: backlog
+  71-5-the-two-lanes-every-branch-runs-fit-the-budget: backlog
+  71-6-the-large-suites-run-under-pytest-xdist-locally-and-in-ci-alike: backlog
+  71-7-the-one-minute-budget-is-a-check-that-reads-the-journal: backlog
   8-1-bidirectional-propagation: done
   8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: done
@@ -441,6 +448,8 @@ development_status:
   epic-7-retrospective: optional
   epic-70: done
   epic-70-retrospective: optional
+  epic-71: backlog
+  epic-71-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

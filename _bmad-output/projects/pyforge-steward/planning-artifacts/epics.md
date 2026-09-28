@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
+updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
 currency_review: "Reviewed 2026-09-24 (arch→epics cascade after the spec→prd→arch re-stamps for Story 63.4, `steward session check`) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-24): no AD added or changed. Story 63.4 already carries its own `### Story 63.4` heading (line 4179, Epic 63) with ledger key `63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point`; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-17 (arch→epics cascade after the spec→prd→arch re-stamps for the one-chain steward fold) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-17): no AD added or changed. Fold provenance heading already cites spec-pyforge-steward CAP-1..145; historical stories keep sequential epic numbers 1..64. Every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -4580,6 +4580,174 @@ So that a stray local ref can never make an unmerged workspace look merged, lose
 **And** with no shadow every result is unchanged; the platform guard diffs `refs/remotes/origin/main`; the task and the
 review lens pass `--base refs/remotes/origin/main`; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `platform-ci-local -- --test` green
 
+## Epic 71: The preflight answers in under a minute (spec-pyforge-steward CAP-159)
+
+Minted 2026-09-27 from the station Dream's entry of the same name. `pr-preflight` — which CAP-154's `pre-push` hook runs on
+every push — ran its 28 leaf lanes one at a time: 622.8 s on a 16-core laptop for a marshal-only branch, 250.4 s of it
+station suites CI would not run for that diff, and marshal's unit suite twice (the coverage gate re-ran it under coverage).
+A new epic because Epic 70 is `done`. **HARD boundaries:** never weaken what is checked — a lane is skipped only where CI's
+own rule, read from `.github/workflows/`, skips it, and a lane whose rule cannot be evaluated, or that has no CI
+counterpart, runs; verdicts stay each lane's exit code, never a pipe; concurrent lanes share no mutable state
+(`.pixi/bld`, pytest temp dirs and cache, coverage data files, scribe's Postgres on 5433); `PYFORGE_PREFLIGHT_SKIP=1`
+stays the one journaled opt-out, not the speed-up; the not-covered list (container, atlas's Chromium/DuckDB/WASM,
+herald's browser check, scribe's Postgres) does not grow; the budget check never changes `pr-preflight`'s verdict.
+
+### Story 71.1: Every preflight run journals each lane's wall time and exit code
+
+As the operator whose every push waits on `pr-preflight`,
+I want each run to record how long every lane took and how it exited,
+So that the one-minute budget is measured, and a lane that grows is visible the day it grows.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; extends CAP-154); AD-1, AD-5, AD-8
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (new: reads `pixi.toml`, flattens the
+`pr-preflight-lanes` aggregate's `depends-on` into leaf lanes with their environments, runs each as `pixi run --frozen -e <env>
+<task>` in declaration order, stops at the first red lane as pixi does, appends one JSON line per run to
+`.steward/preflight-runs.jsonl`), `pixi.toml` (`[feature.guild-tasks.tasks]`: today's `pr-preflight` aggregate moves unchanged
+to `pr-preflight-lanes`; `pr-preflight` becomes `python -m pyforge.steward.preflight`), `.gitignore` (the journal),
+`src/shared/packages/pyforge-core/tests/meta/test_conformance_lane_wired.py` (reads the lane list's new home),
+`environment.yaml` and `docs/how-to/pixi-tasks.md` (regenerated), tests:
+`src/shared/packages/pyforge-steward/tests/unit/test_preflight_journal.py` (new).
+**Given** a fixture `pixi.toml` whose lane aggregate nests two aggregates, and a lane runner faked to exit 1 on the third leaf
+**When** the preflight runs
+**Then** it runs the leaves in declaration order, each in its declared environment (a bare entry in the invoking one), stops after
+the third, exits 1 naming it, and appends one journal line carrying every lane's seconds, exit code and status (`ok` / `red` / `not-run`)
+**And** against the real `pixi.toml` it lists every leaf of `pr-preflight-lanes` exactly once (28 on the day of mint); a missing
+aggregate exits 2 with no lane run; `pixi run --frozen -e pyforge-guild pr-preflight` stays the hook's command;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 71.2: The preflight runs the lanes CI would run for the diff, read from the workflow files
+
+As the operator pushing a one-station branch,
+I want the preflight to run exactly the lanes CI's own rules would run for my diff,
+So that I never wait on suites CI will not run, and never skip one it will.
+
+**Type:** feature • **Effort:** M • **Deps:** S-71.1 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32); AD-1; spec-pyforge-core CAP-8 / CAP-10 (the station-tests rule and its full-ref base) as Kinship
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (the changed paths: `git diff --name-only
+refs/remotes/origin/main...HEAD` plus staged, unstaged and untracked paths; per lane, its CI counterpart in
+`.github/workflows/*.yml` — a `pull_request` workflow's step that runs the lane's task, a task whose `depends-on` closure holds
+it, or the lane's own command line; the lane runs when that workflow's `on.pull_request.paths` match, by GitHub's pattern rules,
+and the step's job `if:` holds, with `needs.changes.outputs.*` taken from the workflow's own `changes` step run against the same
+base with a scratch `GITHUB_OUTPUT`; the journal line records the selection and the rule that skipped each skipped lane), tests:
+`src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` (new; a fixture git repo carrying copies of the real
+workflow files).
+**Given** fixture diffs: one file under `src/shared/packages/pyforge-marshal/`, `pixi.toml`, one under `.claude/skills/conda-forge-expert/`,
+one under `docsite/`, one under `docs/dreams/`
+**When** the preflight selects lanes for each
+**Then** the marshal diff selects the five lint-types lanes, `detectors-ci`, `pyforge-doctor-scripts-test`, `docs-map-render-test`,
+`docs-gen-test`, `pyforge-core-test`, `pyforge-marshal-test` and the marshal coverage gate, and nothing else; `pixi.toml` selects
+every lane but the eight coverage gates (`coverage-gates.yml` does not trigger on it); the Dream-only diff selects only
+`detectors-ci`, `pyforge-doctor-scripts-test`, `docs-map-render-test` and `docs-gen-test`; and for every fixture the selection equals the one the workflows' own rules compute
+**And** with no `refs/remotes/origin/main`, a `paths-ignore`, an `if:` or matrix the reader cannot evaluate, or a lane with no CI
+counterpart, that lane runs and the journal says why; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 71.3: Selected lanes run concurrently and share no mutable state
+
+As the operator on a 16-core laptop where one core was working,
+I want the selected lanes to run at the same time without stepping on each other,
+So that the preflight is bounded by its slowest lane, not by the sum of all of them.
+
+**Type:** feature • **Effort:** M • **Deps:** S-71.2 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32); AD-1, AD-8
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (an install phase first — each selected
+environment `pixi install --frozen -e <env>`, one at a time, journaled as its own entry, so no two lanes ever build path
+dependencies under `.pixi/bld` at once; then a pool bounded by `--jobs N`, default the machine's logical cores; per lane its own
+scratch directory as `TMPDIR`, pytest `--basetemp` and `cache_dir`, and `COVERAGE_FILE`; lanes whose CI counterpart job declares a
+`services:` container — scribe's Postgres on 5433 — run one at a time among themselves; each lane's output captured to
+`.steward/preflight/<run-id>/<lane>.log` and printed whole when it ends; the first red lane stops the rest, their process groups
+terminated and journaled `cancelled`, unless `--keep-going`), tests:
+`src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` (new).
+**Given** three fake lanes that each sleep one second, and two fake lanes whose counterpart jobs declare a Postgres service
+**When** the preflight runs with `--jobs 3`
+**Then** the three finish in under two seconds of wall clock with overlapping journaled start times, each saw its own `TMPDIR`,
+basetemp, pytest cache and `COVERAGE_FILE`, and the two service lanes never overlapped
+**And** every environment was installed before the first lane started; a red lane exits 1 with the others cancelled and journaled,
+or all run under `--keep-going`; no lane's output interleaves another's; an interrupt leaves no child process running;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 71.4: A station's coverage gate reuses its own suite's run
+
+As the operator who watched marshal's unit suite run twice in one preflight,
+I want a station's suite lane to skip the tests its coverage gate is already running,
+So that every test runs once and the floor is still judged by the gate's own run, exactly as CI judges it.
+
+**Type:** feature • **Effort:** M • **Deps:** S-71.3 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32); AD-1; spec-coverage-gate-independence CAP-1 (the driver) as Kinship
+**Surface:** `scripts/coverage_gates_ci.py` (`--plan`: prints, as JSON and without running pytest, the stations and suites it would
+run for this diff and the test paths and marker expression of each run), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`
+(when `pyforge-<s>-test` and `pyforge-<s>-coverage-gate` are both selected and the driver's plan runs `<s>`'s unit suite, the suite
+lane runs only the rest of its task's own selection — its other test directories under the task's marker expression, plus the
+gate's directories under the task's expression and not the gate's; a task whose command is not one `pytest <tests dir> [args]`
+invocation, mason's two-command task among them, runs whole, journaled — as does a station whose `tests/unit` or `tests/meta`
+imports a `scripts/` module, since the gate's run puts `scripts/` on `PYTHONPATH` and CI's station job does not), tests:
+`src/shared/packages/pyforge-steward/tests/unit/test_preflight_coverage_reuse.py` (new), `tests/scripts/test_coverage_gates_ci_driver.py`.
+**Given** a fixture station package with `tests/unit`, `tests/meta` and `tests/integration`, some tests marked `slow`, and task commands
+with and without `-m "not slow"`
+**When** the preflight derives the reduced suite run from the driver's plan
+**Then** the node ids the gate's run and the reduced suite run collect are disjoint and together equal the station task's own collection
+**And** when the plan does not run the station (an untouched or format-only change, a shared-surface diff) the suite lane runs whole; the
+gate's verdict and exit code are the driver's own, unchanged; marshal's journal line shows the unit suite once;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 71.5: The two lanes every branch runs fit the budget
+
+As the operator whose every push runs the detector sweep and the scripts suite, whatever the diff,
+I want `detectors-ci` to run its detectors concurrently and `pyforge-doctor-scripts-test` to run under pytest-xdist,
+So that the two lanes no path rule can skip stay well inside the minute.
+
+**Type:** feature • **Effort:** M • **Deps:** S-71.1 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32); AD-1; doctor's detector registry and `pyforge-doctor-scripts-test` (spec-pyforge-doctor) as Kinship
+**Surface:** `scripts/detectors.py` (`--jobs N`: the selected script detectors run through `run_one` in a thread pool, each already its
+own subprocess; results reported in selection order; the doctor sources, the verdict and the exit code unchanged; default 1, so
+`detectors.yml`'s invocation is unchanged), `pixi.toml` (`detectors-ci` passes `--jobs` sized to the machine; `pytest-xdist` joins
+`[feature.pyforge-ci.dependencies]` as a test-runner plugin, no runtime library; `pyforge-doctor-scripts-test` passes `-n auto`, which
+`detectors.yml` runs verbatim), `pixi.lock`, `environment.yaml`, `tests/scripts/` tests made xdist-safe or grouped
+(`xdist_group` with `--dist loadgroup`), tests: `tests/scripts/test_detectors_jobs.py` (new).
+**Given** the repo-scope detector registry
+**When** `scripts/detectors.py --scope repo` runs with `--jobs 1` and with `--jobs 8`
+**Then** both report the same per-detector status and findings in the same order and exit with the same code
+**And** `pyforge-doctor-scripts-test` collects the same test count with and without `-n` and passes under `-n auto`; the 71.1 journal
+shows each of the two lanes under 30 s on the reference laptop; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 71.6: The large suites run under pytest-xdist, locally and in CI alike
+
+As the operator pushing an atlas, doctor, warden or marshal branch,
+I want each station suite that alone would take half the minute to run on every core, in the preflight and on the runner alike,
+So that a single-station branch fits the budget whichever station it touches.
+
+**Type:** feature • **Effort:** L • **Deps:** S-71.4, S-71.5 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32); AD-1; co-governed with spec-pyforge-atlas, spec-pyforge-doctor, spec-pyforge-warden, spec-pyforge-marshal
+**Surface:** `pixi.toml` (`pytest-xdist` in each such station's feature dependencies; its `pyforge-<s>-test` task passes `-n auto`, which
+CI's station jobs run verbatim — atlas's through `kedro-test`'s `depends-on`), `pixi.lock`, `environment.yaml`,
+`scripts/coverage_gates_ci.py` (the driver's pytest run carries the station test task's own `-n`, read from `pixi.toml`, so
+`coverage-gates.yml` and the preflight measure the same way), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`
+(each lane's `-n auto` resolves to its share of the machine through `PYTEST_XDIST_AUTO_NUM_WORKERS`, so concurrent lanes do not
+oversubscribe the cores), tests in the four stations' trees made xdist-safe or grouped (`xdist_group` with `--dist loadgroup`),
+never skipped or deselected; tests: `src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py` (new),
+`tests/scripts/test_coverage_gates_ci_driver.py`.
+**Given** the station suites whose serial time in the 71.1 journal exceeds half the budget (measured 2026-09-27: atlas 70.3 s, doctor
+62.0 s, warden 54.0 s, marshal 49.5 s)
+**When** each runs under `-n auto`
+**Then** each collects the same tests as serially and passes, and its journaled wall time is under 30 s on the reference laptop
+**And** the worker counts the preflight hands concurrent lanes sum to no more than the machine's cores; each station's coverage floors
+read the same under xdist; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 71.7: The one-minute budget is a check that reads the journal
+
+As the operator who wants the minute to stay a minute,
+I want a check that reads the preflight journal and reds a single-station run over 60 s, naming its slowest lanes,
+So that the budget is a number something checks, and the lane that grew is named the day it grows.
+
+**Type:** feature • **Effort:** S • **Deps:** S-71.2, S-71.3, S-71.4, S-71.5, S-71.6 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32); AD-8
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`--budget [--seconds 60] [--run <id>]`: judges the
+newest journaled run, or the named one; a run is single-station when its selection holds at most one of the eight
+`pyforge-<station>-test` lanes and not `test-ci`; such a run over the budget exits 1 naming its wall time, core count and three
+slowest lanes; any other run is reported against its slowest lane and exits 0; an empty or unreadable journal exits 2 — cannot
+evaluate, never a silent 0), `pixi.toml` (a `preflight-budget` task in `[feature.guild-tasks.tasks]` — not a `depends-on` of
+`pr-preflight`, not a detector, not a PR gate), `environment.yaml` and `docs/how-to/pixi-tasks.md` (regenerated), tests:
+`src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` (new).
+**Given** journal fixtures: a single-station run at 58 s, one at 61 s, a shared-surface run at 300 s, and an empty journal
+**When** `preflight-budget` runs on each
+**Then** it exits 0, then 1 naming the 61 s run's three slowest lanes, then 0 reporting the shared-surface run against its slowest lane, then 2
+**And** it never runs inside `pr-preflight` and never changes its verdict; a live `pr-preflight` on a marshal-only branch on the
+16-core reference laptop journals under 60 s and `preflight-budget` exits 0 (recorded in the story);
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -4606,3 +4774,15 @@ that the check ran.
 scribe 21.1 are named by index rows 67.6 / 67.7. Every Story heading still maps 1:1 to a
 `sprint-status-ledger.yaml` key (ledger rows added through the Tier-3 feed and
 `sprint-ledger-sync`). No blocked ledger key flipped. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-27
+
+`arch→epics` edge after the spine's 2026-09-27 re-stamp (§ Currency reconciliation — 2026-09-27: FR-32 /
+CAP-159 lands on AD-1, AD-5 and AD-8; no AD added, amended or removed). Validated against it: Epic 71
+(71.1–71.7) decomposes CAP-159, and each story keeps to those decisions — the lane list is read from
+`pixi.toml` (71.1, AD-5: read, never written by steward code), which lanes run is read from
+`.github/workflows/` (71.2, AD-1: no second list), the coverage verdict stays `coverage_gates_ci.py`'s own
+(71.4, AD-1), and the runner's `main()` owns its exit code as `frames.py`'s does (71.1 / 71.7, AD-8). Every
+Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key (`71-1`..`71-7` and `epic-71` added at
+`backlog`, `epic-71-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`). Epic 44
+untouched; no blocked ledger key flipped. `updated:` bumped.
