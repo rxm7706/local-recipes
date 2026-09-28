@@ -12,6 +12,7 @@ import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 from scope_triangle import point_scope_triangle
 
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.cli.dispatch import (
     _surface_session_precondition_findings,
     dispatch_once,
@@ -71,9 +72,27 @@ class FakeFs:
 
     def write_text_atomic(self, path: Path, content: str) -> None:
         self.files[path] = content
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
 
     def read_text(self, path: Path) -> str | None:
         return self.files.get(path)
+
+    def read_symlink_target(self, path: Path) -> Path | None:
+        if not path.is_symlink():
+            return None
+        return path.readlink()
+
+    def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
+        if not path.is_symlink() and path.exists():
+            raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to replace it")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_symlink() or path.exists():
+            path.unlink()
+        path.symlink_to(target)
+
+    def exists(self, path: Path) -> bool:
+        return path.exists()
 
     def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
         # Story 22.11: `dispatch --stories` delegates to `run_fleet_drain`,
