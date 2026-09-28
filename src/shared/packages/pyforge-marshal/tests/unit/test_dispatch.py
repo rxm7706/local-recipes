@@ -2500,9 +2500,9 @@ def test_dispatch_launches_despite_primary_triangle_naming_another_station(
     # `_bmad-output/projects/<slug>/` -- never the primary's own corners.
     allowed_roots = (worktree, tmp_path / "_bmad-output" / "projects" / slug)
     for written in (*fake_fs.files, *(path for path, _target in fake_fs.repointed)):
-        assert any(
-            written == root or root in written.parents for root in allowed_roots
-        ), f"write outside allowed scope: {written}"
+        assert any(written == root or root in written.parents for root in allowed_roots), (
+            f"write outside allowed scope: {written}"
+        )
 
 
 def test_dispatch_refuses_bmad_active_project_env_disagreement(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
