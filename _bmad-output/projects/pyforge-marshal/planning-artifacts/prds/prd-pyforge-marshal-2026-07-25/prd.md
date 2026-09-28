@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
+updated: "2026-09-27"   # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
@@ -2741,3 +2741,51 @@ changes. Story 62.1.
 
 **Content changed:** § 29 added (FR-218 registered). No AD amended — a kit constant and default
 arguments; no new port, adapter or decision boundary.
+
+## 30. Currency reconciliation — 2026-09-27 (late night)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-273 and CAP-274 late on 2026-09-27.
+Same-day reconcile; FRs derived from the CAPs per `one-chain-per-station`.*
+
+### 30.1 The FR space: FR-219 registered
+
+On 2026-09-25 `marshal factory dispatch pyforge-marshal 46.9` was refused `MRS-DISP-041` while
+pyforge-steward held the primary checkout's shared active-project marker and both compatibility
+links; on 2026-09-27 the marker still names pyforge-steward, so only one station is dispatchable at
+a time. FR-219 decomposes into **Epic 64** (Story 64.1) — a new epic because Epic 63 is `done`.
+
+#### FR-219: A dispatch carries its own scope, never the shared marker ← CAP-273
+`marshal factory dispatch` and every `factory drain` cycle stop reading the primary checkout's
+marker and links, which nothing a dispatch launches reads (the session runs in its own fresh
+worktree with `BMAD_ACTIVE_PROJECT` pinned; every launcher path is a physical
+`_bmad-output/projects/<slug>/` path). Before launch the dispatch worktree gets its own marker and
+both links naming the slug — a missing corner written, a foreign corner never repointed — and
+`verify_scope(worktree, slug)` must pass; a contradicting `BMAD_ACTIVE_PROJECT` or a worktree
+triangle naming another project still refuses `MRS-DISP-041`. No lock, no flip. Story 64.1.
+
+### 30.2 The FR space: FR-220 registered
+
+Reading steward's drain queue by hand on 2026-09-27 found 44.4–44.6 parked only in prose in
+`epics.md`, 44.4's Deps `done` and its spec without `## Verification`: a drain would have
+dispatched it, `MRS-GATE-010` would have refused it after a whole session, and the transient
+classification of that gate would have re-dispatched it every cycle. There is no way to ask a drain
+what it would do before it launches. FR-220 decomposes into **Epic 65** (Stories 65.1, 65.2).
+
+#### FR-220: A drain can be asked what it would dispatch before it launches anything ← CAP-274
+`marshal factory drain --plan` computes each station's queue through the same read-only planner a
+drain cycle uses, with no worktree, session, journal, lock or other write, and reports for the next
+story (every queued story on request) each refusal decidable without launching — scope, spec
+presence and status, legacy branch, leftover worktree state, spec binding, verify-command shape,
+merge-subject nativeness, already landed, Deps readiness in both modes, declared skips — plus prose
+parks no `skip_policies` entry mirrors and override lists whose keys are all done. Environment
+probes run only behind `--check-env`. Findings are `MRS-DRAINPLAN-*`; the exit is ERROR-tier when a
+station's next story would not dispatch cleanly (Story 65.1). `dispatch_once` refuses a story whose
+tracked spec cannot bind before it provisions anything, under `MRS-DISP-050`, which re-preflight
+clears when the spec or the verify commands change (Story 65.2).
+
+**ONE FR space now FR-1..FR-220** (FR-221 = next free id).
+
+**Content changed:** § 30 added (FR-219 and FR-220 registered). No AD amended — `verify_scope` stays
+the one triangle check, now called on the dispatch worktree the way `marshal init` calls it on a
+loop home; the seeding writes go through `FsPort`; the plan's predicates are pure in `core/` and its
+reads stay in `cli/`; no new port, adapter or decision boundary.
