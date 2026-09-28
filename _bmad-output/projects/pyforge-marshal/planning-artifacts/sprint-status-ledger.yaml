@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 481
+# stories: 485
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -344,6 +344,8 @@ development_status:
   70-1-seed-check-judges-the-paths-the-manifest-means-never-its-placeholders: backlog
   71-1-the-front-door-names-the-environment-a-roster-station-runs-in: backlog
   72-1-the-dispatch-supervisor-reads-merge-facts-from-origin-main: backlog
+  73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch: backlog
+  73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended: backlog
   8-1-marker-grammar-and-the-per-format-registry: done
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done
@@ -491,6 +493,8 @@ development_status:
   epic-71-retrospective: optional
   epic-72: backlog
   epic-72-retrospective: optional
+  epic-73: backlog
+  epic-73-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

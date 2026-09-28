@@ -764,6 +764,28 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `origin/main` is a failed gather, as today, never a merged story; the port's branch-name form stays
   for its other callers. Kinships: CAP-276 (Story 67.1), CAP-270 (Story 60.1, the full ref);
   owner `spec-pyforge-marshal`.
+- **2026-09-28 — Proposed: a drain runs the follow-up review a landed story recommended.**
+  CAP-275 (Story 66.1) carries `followup_review_recommended: true` into the station's deferred-work
+  ledger as an open `DW-FRR-<story>` row, and then nothing runs the review. A drain never
+  dispatches a `done` key (`station_backlog` drops it; `--stories` refuses it), although
+  `bmad-build-auto` already knows what to do with one: its step 01 routes a `done` spec whose flag is
+  `true` to a fresh review, writing the flag `false` first. Two things stand in the way beyond the
+  queue. The dispatch supervisor judges a run complete as soon as the story's merge subject is on
+  `main` (`judge_dispatch_completion`), and the original landing already put it there, so a review
+  run reads finished before it starts. And `dispatch land` answers ALREADY_LANDED for the same
+  reason, so the review's own branch would never merge.
+  **What it looks like when real:** a run on a `done` spec with the flag `true` is a follow-up review
+  run, marked so in its journal with the row it answers. It is judged and landed by its own branch —
+  merges after its own baseline, its own head on `origin/main` — never by the story's first landing,
+  and a review whose only change is its own spec's record still counts. When it lands, finalize
+  closes the row. A drain queues each open row after the station's implementable backlog, and
+  `drain --plan` lists them.
+  **Constraints (the respawn trap):** the row's state gates a follow-up, never the ledger key — the
+  key stays `done` throughout, is never flipped and never re-enters the backlog; a closed or absent
+  row is never dispatched; an open row whose spec no longer reads `done` with the flag `true` is
+  reported stale, not dispatched; a follow-up's own review never chains a second one (step 04 leaves
+  the flag `false`). Kinships: CAP-275 (Stories 66.1, 66.2), CAP-274 (Story 65.1, `drain --plan`),
+  CAP-280 (Story 72.1, the supervisor's merge reads); owner `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
