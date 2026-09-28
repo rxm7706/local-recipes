@@ -3,10 +3,11 @@ epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
-epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
-storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
-status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-25"   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
+epicCount: 27  # 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
+storyCount: 110  # 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
+status: in-progress  # 2026-09-27: Epic 27 (4 stories) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
+updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.4 / CAP-52; Epic 27 / Stories 27.1-27.4 minted. Prior 2026-09-25
+# 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -40,10 +41,22 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E10** | Moment 4 — operations notices | 6 | 6 |
 | **E11** | Integration testing & automation reliability | 4 | 4 |
 | **E12** | Documentation & operator experience | 4 | 4 |
+| **E13** | The live backend — a ship records itself | 6 | 6 |
+| **E14** | A deck is proven to look right | 3 | 3 |
+| **E15** | Editable decks — the PowerPoint-native pipeline | 2 | 2 |
+| **E16** | Exporter hook spec | 1 | 1 |
+| **E17** | Herald owns its skill, persona, and one portal job | 2 | 2 |
+| **E18** | Herald renders, announces and slides with the suite | 3 | 3 |
+| **E19** | Herald in effect (fleet readiness 2026-09-09) | 4 | 3 |
 | **E20** | The deck family stays current (spec-deck-family-currency) | 14 | 14 |
-| **E21** | The whole deck family moves together (spec-deck-family-lockstep) | 11 | 0 |
-| **E22** | The public Pages root is one dossier (spec-pyforge-pages) | 1 | 0 |
-| **Total** | | **48** | **47** |
+| **E21** | The whole deck family moves together (spec-deck-family-lockstep) | 12 | 12 |
+| **E22** | The public Pages root is one dossier (spec-pyforge-pages) | 1 | 1 |
+| **E23** | The Design sync loop — one command keeps every twin and its family true (spec-design-sync-loop) | 6 | 6 |
+| **E24** | What Epic 23's four landings deferred (spec-pyforge-herald CAP-48..50) | 3 | 3 |
+| **E25** | Herald runs from the Guild env (spec-pyforge-herald CAP-51) | 1 | 1 |
+| **E26** | The dossier states the cutover's control plane (spec-python-foundry-cutover fnd:CAP-14) | 1 | 1 |
+| **E27** | The docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52) | 4 | 0 |
+| **Total** | | **110** | **105** |
 
 
 ---
@@ -917,6 +930,67 @@ So that I read the cutover's state in one place instead of reconstructing it fro
 **When** this story lands
 **Then** the Estate section states A (`local-recipes`: control plane, oracle, root of record until the flip, never archived) and B (`python-foundry`: lasting root, engines rebuilt from Frame + Spec), the modes with "never `move`", and the four campaign verbs each with a done / not-done line; SBOM claims are labelled A-side; the Verified section cites, per claim, `docs/foundry/capability-ledger.yaml`, B's `case-list.md`, or a named CI run
 **And** `pixi run -e site site-check` is green; `test_dossier_structure.py` passes in `pyforge-herald-test` and reds on a planted Verified item without a `source`; no claim reads the cutover as flipped or B as a mirror of A; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
+**Status:** done
+**Outcome (2026-09-26):** landed as `df7a651aa9` (Merge pyforge-herald/26-1 into main); tracked spec `specs/spec-26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact.md` carries the review triage. (Inline status corrected 2026-09-27; it had read `backlog` since the mint.)
+
+## Epic 27: The docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52)
+
+Minted 2026-09-27 from the station Dream's 2026-09-20 entry. The operator's ask (09:55Z) was to *"design our docs and docs deployment to GitHub Pages to match what BMAD-METHOD itself does, so that we can reuse their patterns, skills and workflows"*. The research is `research/docs-site-bmad-method-pattern-2026-09-20.md`, and its six decisions are D1–D6 on the Spec memlog. A new epic, because Epic 26 is `done`. Epic 22 (CAP-43..47, `done`) made the dossier the Pages root; this epic moves the dossier under `/dossier/` and puts the docs shelf at the root, which supersedes CAP-44's root and path clauses. **HARD boundaries:** no page under `docs/` moves or is renamed. A vendored upstream file is byte-identical to the recorded `bmad-code-org/BMAD-METHOD` commit or it is not vendored (re-vendor, never fork). `dashboard.yml` stays the only `actions/deploy-pages` caller and keeps its path, because steward's `tests/meta/test_invariants.py` and `src/platform/tests/test_console_parity_homes.py` read it. Nothing under `src/shared/packages/pyforge-doctor/` or another station's tree is edited: `docs/map.yaml` is doctor's registry, read and never written. A `pixi.toml` change is a hand edit, then `pixi lock` and the `environment.yaml` regeneration in the same PR, because the pre-shell hook refuses a live `pixi add`. Every PR carries the `maintenance` label.
+
+### Story 27.1: The docs shelf builds as a Starlight site in place
+
+As an operator who wants to read the docs shelf outside the repo,
+I want `docs/` to build as a BMAD-METHOD-shaped Astro + Starlight site without moving or editing a page,
+So that upstream's docs tooling applies here and the shelf is readable somewhere other than the repo.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-herald CAP-52 (FR-8.1; D3, D4, D6); AD-21, AD-4
+**Surface:** `docs-site/` (new, vendored from `bmad-code-org/BMAD-METHOD` `docs-site/` at one recorded commit, MIT): `package.json` and `package-lock.json` (upstream's `astro` / `@astrojs/starlight` ranges; the scripts for content this repo does not have are dropped), `.nvmrc`, `astro.config.mjs` (`site`/`base` from `SITE_URL`, unset meaning `/`; no locales; one sidebar group per quadrant, autogenerated until 27.3), `src/content.config.ts` (local: the collection is `docs/{tutorials,how-to,reference,explanation}/**` plus `index.md` and `404.md`; the title comes from frontmatter, else from the page's first `# ` heading, and that heading is not rendered twice; `<quadrant>/README.md` routes to the quadrant index), `src/content/docs` (a symlink to `../../../docs`), `scripts/validate-doc-links.js`, `scripts/validate-sidebar-order.js` and `scripts/fix-doc-links.js` (byte-identical to upstream), and `README.md` (the upstream SHA, the sha256 of each vendored file, the MIT notice, and what is local). Also `docs/index.md` (new landing page: what the shelf is, the four quadrants, links to `/dossier/` and `/dashboard/kedro-viz/`) and `docs/404.md` (new). In `pixi.toml`, `[feature.site.dependencies]` gains `nodejs` at `[feature.python]`'s pin (`>=24.19.0,<27.0,!=25.*`), plus the tasks `docs-site-install` (`npm ci`, `cwd = "docs-site"`) and `docs-site-build` (the Astro build to `docs-site/build/site/`, depending on `docs-site-install`). Then `pixi.lock` (`pixi lock` after the hand edit), `environment.yaml` (regenerated, expected byte-identical), `.gitignore` (`docs-site/node_modules/`, `docs-site/build/`, `docs-site/.astro/`), and `src/shared/packages/pyforge-herald/tests/meta/test_docs_site.py` (new; a structural oracle that needs no Node: the symlink target, the pin equal to `[feature.python]`'s, both tasks with their `cwd`, the `.nvmrc` major inside the pin, `docs/index.md` and `docs/404.md` present, each vendored file's sha256 equal to the value `docs-site/README.md` records, the three ignores).
+**Given** `docs/` holds the Diátaxis shelf — 60 `docs/map.yaml` pages, none with a `title:` key, each opening with a `# ` heading, quadrant indexes named `README.md` — and nothing publishes it
+**When** `pixi run -e site docs-site-build` runs on a clean checkout
+**Then** it exits 0 and `docs-site/build/site/` holds `index.html`, `404.html`, and one page per `docs/map.yaml` entry, each titled from its heading with that heading rendered once; the quadrant indexes are served at `/tutorials/`, `/how-to/`, `/reference/` and `/explanation/`; no page from `docs/{dreams,specs,governance,intake,foundry,dashboard}/` is built
+**And** `git diff --stat origin/main -- docs/` lists only `docs/index.md` and `docs/404.md` as added; `pixi project export conda-environment -e build` leaves `environment.yaml` byte-identical; `test_docs_site.py` passes in `pyforge-herald-test`
+**Status:** backlog
+
+### Story 27.2: One Pages artifact carries the docs site, the dossier and the dashboard
+
+As an operator publishing the estate's pages,
+I want one Pages artifact with the Starlight site at the root, the dossier under `/dossier/` and the dashboard tree under `/dashboard/`, deployed by the one workflow that already deploys Pages,
+So that the docs, the dossier and Kedro-Viz share one site, and no second `deploy-pages` caller races the first.
+
+**Type:** feature • **Effort:** M • **Deps:** S-27.1 • **FR/AD:** spec-pyforge-herald CAP-52 (FR-8.2; D2); AD-21; supersedes CAP-44's root and path clauses, keeps CAP-44/CAP-49's single-deployment rule
+**Surface:** `docsite/tools/assemble_pages.py` (new; a pure `assemble(...)` and a `--check` mode). It mounts docsite's output under `docs-site/build/site/dossier/` (`docsite/build.py --out … --check`) and copies the tracked `docs/dashboard/` tree, minus its `README.md`, under `docs-site/build/site/dashboard/`. It refuses, with exit 1 and the path named, when a mount point already exists in Starlight's output. `--check` asserts `index.html`, `404.html`, `dossier/index.html`, `dashboard/kedro-viz/index.html` and the `kedro-viz/` redirect, and that every relative `href`/`src` in the `dossier/` tree resolves inside the artifact. In `pixi.toml`, `[feature.site.tasks]` gains `pages-build` (`docs-site-build`, then the dossier and dashboard mounts) and `pages-check` (the assembler's `--check`, depending on `pages-build`); `pr-preflight`'s `{ task = "site-check", environment = "site" }` leg becomes `pages-check`, with its description saying why. Also: `docs-site/astro.config.mjs` (`redirects`: `/kedro-viz/` → `/dashboard/kedro-viz/`); `docsite/content/site.yml` (the Kedro-Viz nav `href` becomes `../dashboard/kedro-viz/`, and its comment is updated); `docsite/README.md` and `docs/dashboard/README.md` (the new mount points). `.github/workflows/dashboard.yml` is reshaped into upstream `docs.yaml`'s two jobs with its path kept: a build job (checkout; setup-pixi `environments: site`, one `pixi-version:` pin, registry site `dashboard.yml setup-pixi`; `configure-pages`, whose `base_url` feeds `SITE_URL`; `pixi run --frozen -e site pages-check`; the advisory `site-verify` step, kept `continue-on-error`; `upload-pages-artifact` of `docs-site/build/site`) and a deploy job (`needs: build`, `environment: github-pages`, `deploy-pages`). Its triggers, permissions and `concurrency: pages` stay as they are, and its header keeps the race note. `.github/workflows/docsite-check.yml` replaces its pip-installed `build.py --check` leg with `pixi run --frozen -e site pages-check`, so the PR lane predicts the reshaped deploy. `.gitignore` drops the `docs/dashboard/{index.html,.nojekyll,assets/,dossier/,infographics/,decks/,artifact/}` block once nothing writes there. `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` is new: `dashboard.yml` is the only file under `.github/workflows/` that uses `actions/deploy-pages`; it uploads `docs-site/build/site`; its concurrency group is `pages`; it triggers on `push: main` and `workflow_dispatch`; `pr-preflight` carries `pages-check` in `site`; `docsite-check.yml` runs `pages-check`; and unit tests over a temp tree cover the happy path, a refused collision and a missing mount.
+**Given** the Pages root is the dossier landing page that `dashboard.yml` builds into `docs/dashboard/` (CAP-44), with Kedro-Viz at `/kedro-viz/`, and Story 27.1's site builds to `docs-site/build/site/`
+**When** `pixi run -e site pages-build` and then `pixi run -e site pages-check` run
+**Then** both exit 0, and the artifact holds `index.html` (Starlight), `dossier/index.html`, `dossier/dossier/index.html`, `dashboard/kedro-viz/index.html` and a `kedro-viz/` page that redirects to `/dashboard/kedro-viz/`; a planted collision or a removed mount makes `pages-check` exit 1 and name the path
+**And** `dashboard.yml` is the only workflow using `actions/deploy-pages` and it uploads `docs-site/build/site`; steward's `tests/meta/test_invariants.py` and `src/platform/tests/test_console_parity_homes.py` pass unedited; `pixi run -e pyforge-guild pixi-version-check` is green; `test_pages_artifact.py` passes in `pyforge-herald-test`
+**Status:** backlog
+
+### Story 27.3: The sidebar is generated from docs/map.yaml order
+
+As a docs author,
+I want the site's sidebar to follow `docs/map.yaml`'s page order, generated at build time,
+So that the shelf keeps one registry, doctor's map, and reordering a page takes one edit there.
+
+**Type:** feature • **Effort:** S • **Deps:** S-27.1 • **FR/AD:** spec-pyforge-herald CAP-52 (FR-8.3; D1); AD-21 • Kinship: doctor 30.2 owns `docs/map.yaml` and its schema; this story only reads it
+**Surface:** `docs-site/scripts/sidebar_from_map.py` (new, local). It reads `docs/map.yaml` and writes `docs-site/src/sidebar.generated.json`: one group per quadrant in the order the quadrants first appear in `map.yaml`, each item a page slug in `map.yaml` order, and a quadrant's `README.md` as its group index. Its `--check` mode exits 1, naming the page, when a `map.yaml` path has no file, when a quadrant page is missing from `map.yaml`, or when a page is listed twice. Also: `docs-site/astro.config.mjs` (the sidebar is read from the generated JSON; the per-quadrant autogenerate from 27.1 is removed); `pixi.toml` (a `docs-site-sidebar` task in `[feature.site.tasks]`, which `docs-site-build` depends on); `.gitignore` (`docs-site/src/sidebar.generated.json`, generated and never tracked); and `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_sidebar.py` (new; it imports the generator by path and checks that order is preserved, that swapping two fixture entries swaps the output, that a missing page, an unmapped page or a duplicate exits 1, and that the live `docs/map.yaml` generates with no finding).
+**Given** 27.1's sidebar is autogenerated per quadrant (alphabetical), while `docs/map.yaml` is the shelf's registry with an explicit page order
+**When** `pixi run -e site docs-site-build` runs (it regenerates the sidebar first)
+**Then** the built sidebar lists every `map.yaml` page exactly once, grouped by quadrant, in `map.yaml` order; swapping two entries in `map.yaml` alone swaps them in the built sidebar; no page under `docs/` gains a `sidebar:` key
+**And** `docs-currency-check` and `docs-map-hygiene-check` report no new finding; `test_docs_site_sidebar.py` passes in `pyforge-herald-test`
+**Status:** backlog
+
+### Story 27.4: The docs validators gate every PR
+
+As a reviewer,
+I want upstream's link and sidebar validators to run on every PR that touches the docs, and locally in `pr-preflight`,
+So that a dead link or a broken sidebar order cannot merge while every gate is green.
+
+**Type:** feature • **Effort:** M • **Deps:** S-27.2, S-27.3 • **FR/AD:** spec-pyforge-herald CAP-52 (FR-8.4; D5, D6); AD-21
+**Surface:** In `pixi.toml`, `[feature.site.tasks]` gains `docs-site-validate-links` (`node docs-site/scripts/validate-doc-links.js`), `docs-site-validate-sidebar` (`node docs-site/scripts/validate-sidebar-order.js`, then `python docs-site/scripts/sidebar_from_map.py --check`) and `docs-site-validate` (both); `pr-preflight` gains `{ task = "docs-site-validate", environment = "site" }`, with its description saying why. In `.github/workflows/docsite-check.yml`, the `pull_request` and `push` path filters gain `docs/**` and `docs-site/**`, and a step runs `pixi run --frozen -e site docs-site-validate`. The 16 link findings the vendored `validate-doc-links.js` reported on 2026-09-27 are fixed in their pages, never by editing the validator: `docs/dreams/README.md` (`../../AGENTS.md`, `../specs/`), `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md` (`marshal-token-economy.md`), `docs/how-to/antigravity-developer-startup.md` (a `file:///` path), `docs/how-to/disaster-recovery.md` (`restore.md`), `docs/how-to/feedstock-platform-expansion.md` (two `.claude/skills/…` links), `docs/how-to/ocp-cluster-bringup.md` (`../../../ingest/…`), `docs/how-to/restore-operations.md` (`DR.md` twice), `docs/reference/README.md` (three directory links), `docs/reference/conda-forge-packaging-inventory-operations_replay.md` (`scripts/` and `conf/` links) and `docs/tutorials/getting-started.md` (`../how-to/`). A dead link is repaired or removed, a directory link points at its index page, and a repo file outside `docs/` is linked by its `https://github.com/rxm7706/local-recipes/blob/main/<path>` URL. `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py` is new: the three tasks are registered; `docsite-check.yml` carries both path filters and the step; `pr-preflight` carries the leg; the vendored validators' sha256 still equals what `docs-site/README.md` records.
+**Given** the vendored `validate-doc-links.js` exits 1 over `docs/` (268 files scanned, 16 findings in 10 files, measured 2026-09-27) and no lane runs it
+**When** the findings are fixed in their pages and the validators are wired as pixi tasks, a `docsite-check.yml` step and a `pr-preflight` leg
+**Then** `pixi run -e site docs-site-validate` exits 0 on the story's tree; a planted dead link in any quadrant page makes it exit 1 and name the page; two pages with the same `sidebar.order` in one directory make `docs-site-validate-sidebar` exit 1
+**And** `docsite-check.yml` runs the validators on a PR that touches `docs/**`; `pr-preflight` carries the leg; the vendored validators are byte-identical to the recorded upstream commit; `test_docs_site_validators.py` passes in `pyforge-herald-test`; the fixed pages keep `docs-currency-check` and `docs-map-hygiene-check` free of new findings
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
@@ -939,3 +1013,16 @@ cutover's control plane; steward index row 67.6). Every Story heading still maps
 (stale-slug orphans dropped). Frontmatter repaired: the Fold provenance block had sat inside the
 YAML fence since the 2026-09-17 fold (unparseable); it now follows the H1, as in steward and
 scribe. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-27
+
+`arch→epics` edge after the spine re-stamp of 2026-09-27, which added AD-21. Epic 27 (Stories
+27.1–27.4) was minted from `spec-pyforge-herald` CAP-52 — the docs site matches BMAD-METHOD's
+pattern — which registers FR-8.1..FR-8.4 in the PRD. Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key: the four `27-N` keys, `epic-27` and `epic-27-retrospective` went
+into the Tier-3 feed, and `sprint-ledger-sync` wrote the twin. The feed and the twin carried the
+same 158 keys before the mint, so no repair was needed. Two stale records in this file were fixed
+in the same pass. Story 26.1's inline status read `backlog` for a story that landed on 2026-09-26
+(`df7a651aa9`). The Epic List table stopped at E22 with a 48-story total; it is regenerated from
+the ledger (27 epics, 110 stories, 105 done), and `epicCount`/`storyCount` are re-measured.
+`updated:` bumped.

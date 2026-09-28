@@ -2,7 +2,7 @@
 id: SPEC-pyforge-herald
 spec: pyforge-herald
 status: ready
-updated: '2026-09-20'
+updated: '2026-09-27'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
   - docs/dreams/deck-family-currency.md
@@ -335,6 +335,9 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 - **CAP-51 — the deck pipeline runs from the Guild env** ← spec-pyforge-herald CAP-51 (ready 2026-09-20)
   - **intent:** `deck_pipeline.py`'s `DeckExporter` and `sync_all.py`'s `FactsRefresher` / trio step shell `pixi run -e pyforge-guild deck-export | deck-facts | deck-trio` (registered in `guild-tasks` with their deps in `pyforge-guild` — steward 63.6), never `-e local-recipes`; the pipeline's fakes and the live sync proof keep their shapes.
   - **success:** no `-e local-recipes` string remains in `pyforge-herald/src`; `test_deck_pipeline`'s argv assertions read the Guild env; `deck-sync-proof`'s opt-in live run still passes; steward 63.6's meta-test lists no herald offender; `pyforge-herald-test` green.
+- **CAP-52 — the docs site matches BMAD-METHOD's pattern** ← spec-pyforge-herald CAP-52 (ready 2026-09-27)
+  - **intent:** The Diátaxis shelf under `docs/` publishes to GitHub Pages the way BMAD-METHOD publishes its own docs, so upstream's docs skills, validators and deploy shape apply unchanged. An Astro + Starlight site in `docs-site/` reads `docs/` in place through a symlink: no page moves, and titles and quadrant indexes are resolved at build time. Its sidebar is generated from doctor's `docs/map.yaml` order, and Node comes from pixi's `site` feature. One Pages artifact carries the docs site at the root, the dossier under `/dossier/` and the dashboard tree under `/dashboard/`, with `/kedro-viz/` kept as a redirect. The one `deploy-pages` caller, `dashboard.yml`, deploys it and is reshaped into upstream `docs.yaml`'s build and deploy jobs. Upstream's link and sidebar validators gate every PR that touches the docs. Supersedes CAP-44's root and path clauses and keeps its one-deployment rule. (Operator ask 2026-09-20 09:55Z; research `research/docs-site-bmad-method-pattern-2026-09-20.md` § 3; decisions D1–D6 in `.memlog.md`.)
+  - **success:** `pixi run -e site pages-build` exits 0, and `pixi run -e site pages-check` exits 0 on its output `docs-site/build/site/`, which holds `index.html` (from `docs/index.md`), `404.html`, one page per `docs/map.yaml` entry, `dossier/index.html`, `dashboard/kedro-viz/index.html` and a `kedro-viz/` redirect page; `pages-check` exits 1 on a missing mount or a path collision. The built sidebar lists every `map.yaml` page exactly once, in `map.yaml` order, and reordering `map.yaml` alone reorders it. Upstream's `validate-doc-links.js` and `validate-sidebar-order.js`, byte-identical to the recorded upstream commit, exit 0 as pixi tasks and in `docsite-check.yml`, and a planted dead link reds that lane. Exactly one workflow under `.github/workflows/` uses `actions/deploy-pages`, and it uploads `docs-site/build/site`. No file under `docs/` moves, `environment.yaml` regenerates byte-identical, and `pyforge-herald-test` is green.
 
 ## Fold provenance
 

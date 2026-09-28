@@ -139,7 +139,12 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   source; one Pages artifact with the dossier and dashboard mounted beneath the Starlight site;
   Node via pixi; content moves nothing; validators become detectors; re-vendor never fork).
   **Kinships:** doctor 30.x (`map.yaml` ↔ `sidebar.order`), scribe 19.3 (instruction docs),
-  `dashboard.yml`'s deploy-pages race note. Status: **seed** — `bmad-spec` next session.
+  `dashboard.yml`'s deploy-pages race note. Status: **specified** (2026-09-27) — `bmad-spec`
+  adopted all six decisions as D1–D6 on the Spec memlog. Four were refined against the repo: the
+  sidebar is generated from `map.yaml` at build time, not written into pages; the deploy workflow
+  keeps its `dashboard.yml` path, reshaped to upstream's build and deploy jobs; `nodejs` joins the
+  existing `site` feature; titles and quadrant indexes are resolved at build time. → CAP-52 /
+  Epic 27 / Stories 27.1–27.4 (Epic 27, new — 26 is `done`).
 - **2026-09-18** — **Epic 23 drained to zero; what its four landings deferred.**
   The Design sync loop is real: 23.1 (`deck status` enumerates the whole account,
   PR #1459), 23.2 (every presentation twinned, three design systems mirrored

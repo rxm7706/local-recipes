@@ -264,6 +264,32 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "docsite/**",
 ]
+"27" = [  # the docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52), added 2026-09-27
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docs-site/**",
+  "docsite/**",
+  "docs/index.md",
+  "docs/404.md",
+  "docs/MAP.md",
+  "docs/dashboard/README.md",
+  "docs/tutorials/**",
+  "docs/how-to/**",
+  "docs/reference/**",
+  "docs/explanation/**",
+  "docs/dreams/README.md",
+  "docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md",
+  ".github/workflows/dashboard.yml",
+  ".github/workflows/docsite-check.yml",
+  "scripts/pixi_version_registry.py",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
