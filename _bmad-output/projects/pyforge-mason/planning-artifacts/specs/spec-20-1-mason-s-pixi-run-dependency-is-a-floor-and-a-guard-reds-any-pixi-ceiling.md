@@ -112,3 +112,38 @@ Deps: —.
 - Read `pixi.lock`: every environment that carries `pyforge-mason` resolves pixi 0.81.x.
 
 ## Review Triage Log
+
+- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
+  landing it as `Merge pyforge-mason/20-1-mason-s-pixi-run-dependency-is-a-floor-and-a-guard-reds-any-pixi-ceiling into main`.
+
+## Auto Run Result
+
+Status: done (hand-driven, 2026-09-28; not a harness run).
+
+**Summary:** Mason's pixi run-dependency is the floor `>=0.80.0`; `PIXI_VERSION_RANGE = _floor("0.80.0")` (the unused
+`_minor_range` retired); the sync meta-test checks all five engine ranges as single `>=` floors. The pin is a registered
+`floor` site of `scripts/pixi_version_registry.py` (21 sites). `scripts/pixi_version_check.py` gained the
+`pixi-upper-bound` / `manifest-unreadable` pass over the root `pixi.toml` and every `src/shared/packages/*/pixi.toml` and
+`pyproject.toml` (30 manifests); `tests/scripts/test_pixi_version_check.py` (31 tests) plants capped specs in a root
+feature, a target table, a package `pixi.toml`, a package `pyproject.toml` (`[project] dependencies`,
+`optional-dependencies`, `dependency-groups`) and `requires-pixi`, and reads exit 1; with the pass stubbed out, the two
+planted-cap tests fail. `pixi.lock`: pixi 0.81.0 rehashed the path dependency on its own (`pyforge-mason` records now
+depend on `pixi >=0.80.0`) but kept the still-satisfying locked pixi 0.80.0, so the 10 locked pixi 0.80.0 entries in the
+four Mason environments' package lists were evicted and `pixi lock` re-solved them: only pixi moved (0.80.0 → 0.81.0 in
+`pyforge-mason`, `pyforge-container`, `pyforge-foundry-full` on linux-64 / osx-arm64 / win-64 and
+`pyforge-foundry-full-stack` on linux-64); `pixi lock --check` is clean. Root `pixi.toml` and `environment.yaml` unchanged.
+
+**Healed in passing:** three `ship_pypi` tests in `tests/unit/test_package.py` asked live pypi.org (no `version_exists`
+patch) and redded the touched-module coverage gate once; they now patch it like the rest of the file, and the whole mason
+unit suite passes with every HTTP(S) proxy pointed at a dead port.
+
+**Verification (exit codes):** `pyforge-mason-test` 0 (1589 + 12); `pyforge-mason-test-slow` 0 (3, on pixi 0.81.0);
+`pyforge-mason-coverage-gate` 0; `pixi-version-check` 0; `pyforge-doctor-scripts-test` 0 (801); `pyforge-station-tests` 0;
+`detectors-ci` 0; `lint-types` 0; `spec-surface-check`, `chain-completeness-check`, `dream-chain-check`,
+`dreams-hygiene-check`, `story-status-check`, `ledger-regression-check`, `governance-currency`, `capability-ledger-check`
+0; `chain_currency_sweep_check.py --project pyforge-mason` current; `mason_cfe_surface_check.py` clean (no CFE surface).
+
+**Surface reconcile:** `spec-pyforge-mason` memlog names every governed path, scoped stamp. `spec-surface-check` named no
+co-governor: `engines/__init__.py` (`spec-pyforge-core`) and `pixi.lock` (`spec-pixi-candidate-currency`,
+`spec-platform-image-one-pixi-env`) are cleared by co-governor memlogs that have moved since their last stamps and already
+name those paths, so no other station's memlog was written.
