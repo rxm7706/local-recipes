@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -2535,13 +2535,16 @@ Doctor 24.2 and 24.3 (PRs #1577/#1578, #1579/#1580) each landed cleanly but need
 (13 and 14, respectively). FR-211 decomposes into **Epic 54** (Story 54.1) — a new epic because
 Epic 51 (the `dispatch_land_finalize` reliability thread this continues) is `done`.
 
-#### FR-211: A landing's ledger promotion repairs its own feed drift ← CAP-265
-`dispatch_land_finalize`'s promotion retries with the Tier-3 feed's stale-but-safe keys pulled
-forward from the tracked twin (the same one-directional operation `--repair-feed` already performs
-by hand, safe because the twin is the authoritative record) whenever the regression guard's
-refusal names only keys other than the one being promoted, landing the feed catch-up in the same
-commit as the story it promotes; a refusal naming the promoted story's own key still stops for a
-human, unchanged. Fixture: doctor 24.2/24.3. Story 54.1.
+#### FR-211: The hand ledger sync repairs unrelated feed drift itself ← CAP-265 *(amended 2026-09-28, § 31.7)*
+~~`dispatch_land_finalize`'s promotion retries with the Tier-3 feed's stale-but-safe keys pulled
+forward from the tracked twin … whenever the regression guard's refusal names only keys other than
+the one being promoted.~~ Re-scoped by operator ruling 2026-09-28 (the automatic promotion never
+depended on the feed; its 24.2/24.3 failures were the push timeout, FR-223): `sprint-ledger-sync --
+--project <station>` pulls the twin's `done` / story `blocked` values and twin-only keys forward into
+a stale Tier-3 feed — `--repair-feed`'s own move, never away from `done`, never rewriting a key the
+feed advances — then promotes and names every key it repaired, instead of refusing;
+`--allow-regression` stays the one way out of `done`; the feed's trailing metadata survives.
+Fixture: doctor 24.2's hand-sync shape. Story 54.1.
 
 **ONE FR space now FR-1..FR-211** (FR-212 = next free id).
 
@@ -2854,9 +2857,92 @@ on `origin/main` after its promotion, adds `MRS-DISP-051` (ERROR) and exits non-
 land` turns a non-zero finalize exit into `MRS-DISP-020`, REFUSED; and a failed blocked-twin publish
 is journaled. Story 68.1.
 
-**ONE FR space now FR-1..FR-223** (FR-224 = next free id).
+### 31.4 The FR space: FR-224 registered
 
-**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered). No AD amended — the follow-up row's
+The same day, `scripts/bmad-switch --current` crashed under the system interpreter (Python 3.12.3
+here): the script's shebang is `#!/usr/bin/env python3`, the Story 20.6 primitive it imports lives in
+`pyforge-marshal`, and the source-tree fallback reaches `scope.py`, whose Python 3.14-only
+`except A, B:` form is a `SyntaxError` there. Every document names the bare form. FR-224 decomposes
+into **Epic 69** (Story 69.1).
+
+#### FR-224: The switch script runs where it is documented to run ← CAP-278
+When the scope primitive will not load, `scripts/bmad-switch` re-executes itself once under the Guild
+environment (`pixi run --frozen -e pyforge-guild python <script> <argv>`, guarded against a loop)
+before any verb prints, and returns that run's exit code; with no `pixi`, or a second failure, it
+exits 8 with one line naming the interpreter, the requirement and the command. The switch and
+`--clear` are unchanged; `scope.py` stays the sole primitive. Story 69.1.
+
+### 31.5 The FR space: FR-225 registered
+
+`marshal seed check --json` exits 1 on this repository with HARD `artifact-missing` findings at the
+manifest's own unrendered placeholders (`docs/dreams/{{ slug }}.md` and four more) and at the literal
+glob `.claude/skills/**`, while all eight projects carry every rendered path. Only `seed init` renders
+`{{ slug }}`; Story 10.7 named the gap. FR-225 decomposes into **Epic 70** (Story 70.1).
+
+#### FR-225: Seed check judges the paths the manifest means ← CAP-279
+`seed check` renders `{{ slug }}` with the project it already resolves (`--project`, then
+`BMAD_ACTIVE_PROJECT`, then the target's marker) through the one renderer `seed init` uses; with no
+project, each templated entry is one INFO `slug-unresolved` finding, never a HARD finding at a
+literal placeholder. An `unclassified-deferred` entry is never reported missing. No state key is
+added, and no repository is exempted by name — this repository stays SC-02's oracle. Story 70.1.
+
+### 31.6 The FR space: FR-226 registered (spec-pyforge-core)
+
+`pixi run -e pyforge-guild pyforge warden --help` answers "unknown station 'warden'" and lists five
+stations; atlas and mason answer the same. All three are on the one roster
+(`pyforge.core.roster.STATIONS`) and simply not installed in the Guild environment (warden on
+purpose). FR-226 registers `spec-pyforge-core` CAP-11, hosted on marshal as CAP-8..9 were (§ 21), and
+decomposes into **Epic 71** (Story 71.1).
+
+#### FR-226: The front door names the environment a roster station runs in ← spec-pyforge-core CAP-11
+A token on the roster but not installed is refused as not installed here, naming its environment
+(`-e pyforge-<station>`, the roster's long form) and the command to run it; a token on no roster
+keeps today's "unknown station" message byte-for-byte; the usage listing names the roster stations
+this environment lacks. Exit codes are unchanged, and `pyforge-core` reads no `pixi.toml`.
+Story 71.1.
+
+### 31.7 FR-211 amended (CAP-265 re-scoped)
+
+Operator ruling 2026-09-28: CAP-265's premise was a misread. Doctor 24.2's and 24.3's automatic
+promotions computed the promotion and died on the pre-push push timeout (FR-223, Story 68.1);
+`cli/land._promote_sprint_ledger` advances the landed key in the twin directly and only warns about
+feed drift. Feed drift blocked only the human fallback, `sprint-ledger-sync`, whose regression guard
+refuses a whole sync over keys the operator is not promoting. FR-211 is amended in place (§ 22) to
+that hand path; its number, Epic 54 and Story 54.1's ledger key are kept. No FR renumbered.
+
+### 31.8 The FR space: FR-227 registered
+
+The dispatch supervisor's merge facts read local `main` (`is_branch_merged(…, into="main")`, subjects
+from `refs/heads/main`) while the same gather diffs from `origin/main` and reads spec status there.
+Local `main` moves only when finalize can fast-forward the primary checkout; FR-222 (Story 67.1)
+works around that for the post-land verdict. FR-227 decomposes into **Epic 72** (Story 72.1).
+
+#### FR-227: The dispatch supervisor judges merge facts from origin/main ← CAP-280
+`gather_dispatch_git_facts` reads `branch_merged` and `story_merged_on_main` from
+`refs/remotes/origin/main` (the port's `is_branch_merged` gains a full-ref target; its branch-name form
+stays), and the supervisor fetches `origin main` after its own land before re-reading. The land
+trigger, the stuck-land retry and the exit decision all judge the remote-tracking ref; the landing
+journal still decides first (FR-222); an unreadable `origin/main` is a failed gather. Story 72.1.
+
+### 31.9 The FR space: FR-228 registered
+
+FR-221 (Story 66.1) carries a recommended follow-up review into an open `DW-FRR-<story>` row, and
+nothing runs it: a drain never dispatches a `done` key; the supervisor would judge a review run
+finished on its first tick, because the story's first landing already put its merge subject on
+`main`; and `dispatch land` would answer ALREADY_LANDED for the same reason. FR-228 decomposes into
+**Epic 73** (Stories 73.1, 73.2).
+
+#### FR-228: A drain runs the follow-up review a landed story recommended ← CAP-281
+A run on a `done` spec whose `followup_review_recommended` is true is a follow-up review run,
+journaled with the open row it answers; it is judged and landed by its own branch (merges after its
+own baseline, its own head on `origin/main`, a spec-only review counted), and finalize closes the row
+when it lands (Story 73.1). A drain queues every open row whose spec still qualifies after the
+station's implementable backlog, reports stale rows, and `drain --plan` lists both (Story 73.2). The
+row's state gates a follow-up; the ledger key stays `done` and is never re-queued.
+
+**ONE FR space now FR-1..FR-228** (FR-229 = next free id).
+
+**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered; FR-224 through FR-228 later the same day; FR-211 amended in § 22, recorded in § 31.7). No AD amended — the follow-up row's
 selection and rendering are pure in `core/` and its publish reuses finalize's existing locked write
 onto `origin/main` (AD-4, AD-29, AD-42); the supervisor's verdict reads the process fact it
 journaled while the repository facts stay git's (AD-5, AD-33); the promotion's unpaired INTENT gets
