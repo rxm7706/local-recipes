@@ -31,6 +31,7 @@ from pyforge.marshal.ports.build_harness import (
     HarnessResolution,
 )
 from pyforge.marshal.ports.fs import AdvisoryLock
+from pyforge.marshal.scope import verify_scope
 
 
 def _init_git_repo(path: Path, *, scope_slug: str | None = None) -> None:
@@ -2445,12 +2446,20 @@ def test_resolve_max_parallel_cli_override_wins() -> None:
 # --------------------------------------------------------------------------
 
 
-def test_dispatch_refuses_triangle_drift_before_launch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dispatch_launches_despite_primary_triangle_naming_another_station(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 64.1 (CAP-273, FR-219): the PRIMARY checkout's shared marker
+    naming another station's slug must never block a dispatch launch --
+    only the dispatch WORKTREE's own triangle (seeded fresh by
+    ``_seed_dispatch_worktree_scope``) is checked now. Supersedes the old
+    ``test_dispatch_refuses_triangle_drift_before_launch``, which asserted
+    the opposite (pre-64.1) behaviour on this exact setup."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     point_scope_triangle(tmp_path, "pyforge-steward")
     os.environ["BMAD_ACTIVE_PROJECT"] = slug
-    story = "33-9-scope-guard"
+    story = "64-1-worktree-scope"
     _seed_spec(tmp_path, slug, story)
     monkeypatch.chdir(tmp_path)
     attempt = dispatch_once(
@@ -2461,9 +2470,10 @@ def test_dispatch_refuses_triangle_drift_before_launch(tmp_path: Path, monkeypat
         build_harness=FakeBuildHarness(),
         process=FakeProcess(),
     )
-    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
-    assert "expected 'pyforge-marshal'" in finding.message
-    assert "marker='pyforge-steward'" in finding.message
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+    worktree = Path(str(attempt.data["worktree_path"]))
+    assert verify_scope(worktree, slug) is None
 
 
 def test_dispatch_refuses_bmad_active_project_env_disagreement(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
