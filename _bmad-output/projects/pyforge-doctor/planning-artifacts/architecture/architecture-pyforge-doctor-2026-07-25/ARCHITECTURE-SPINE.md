@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -578,3 +578,13 @@ refname). A pure `pyforge.doctor.refs` module (`local_branch_ref`, `remote_track
 `MAIN`, `ORIGIN_MAIN`) is the one source the git-reading sources draw their refs from; it is Doctor's
 own, since Doctor imports no station's internals (marshal's `core/refs.py` stays marshal's). No
 new component, port or station boundary. No AD added or changed. `updated:` bumped.*
+
+## Currency reconciliation — 2026-09-28
+
+*`prd→arch` cascade for FR-19 / CAP-86 (Epic 33, a done story's recommended follow-up review is carried, checked on every
+PR). The check is one more finding kind in the existing `deferred-work` source (`sources/chain.py`), in the same
+gather → normalize pipeline: it reads the tracked story specs' frontmatter the source already parses (Story 25.6) and the
+tracked ledger text it already reads, and emits a `Finding` like its siblings. Its predicate is marshal Story 66.2's,
+reimplemented in Doctor — Doctor imports no station's internals — and pinned by fixtures. No new component, port or
+station boundary; AD-2's exit domain is unchanged (a FAIL is `2`, as for every other deferred-work violation). No AD added
+or changed. `updated:` bumped.*

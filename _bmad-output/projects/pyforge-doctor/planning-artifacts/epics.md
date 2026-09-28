@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2499,6 +2499,35 @@ event's sha still passes through.
 **And** a sha and a full ref pass through unchanged, and with no shadow every list is unchanged
 **And** the workflow's station selection diffs `refs/remotes/origin/${GITHUB_BASE_REF}`, never the short name
 **Status:** done
+
+## Epic 33: A recommended follow-up review is carried, checked on every PR (spec-pyforge-doctor CAP-86)
+
+Minted 2026-09-28 from the station Dream's entry of the same name (operator ruling of the same date). `spec-pyforge-marshal:CAP-275`
+carries a recommended follow-up review into the deferred-work ledger at landing (Story 66.1) and backfills the ones already
+landed, held by a marshal meta test (Story 66.2) that runs only in marshal's suite. Doctor's `deferred-work` source runs
+in `detectors-ci` on every PR, so the invariant is held there too. A new epic because Epic 31 is `done`. **HARD
+boundaries:** the predicate is marshal 66.2's, reimplemented (Doctor imports no station's internals); the source reads
+tracked files only; `scripts/deferred_work_intake.py` is unchanged; the story waits on marshal Story 66.2 (its backfill
+must land first or the check reds `main`), so its ledger key is minted `blocked` and the operator flips it (marshal's
+`Deps:` parser is station-local; the herald 27.5 / steward 72.2 precedent). **FRs covered:** FR-19 (minted 2026-09-28 on
+the PRD, citing CAP-86).
+
+### Story 33.1: The deferred-work source reds a done story whose recommended follow-up review nothing carries
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-19, spec-pyforge-doctor CAP-86 (extends CAP-36) •
+`spec-pyforge-marshal:CAP-275` • cross-project gate: marshal Story 66.2 must have landed first — the ledger key is minted
+`blocked` and the operator flips it, per AGENTS.md (marshal's `Deps:` parser is station-local)
+**difficulty:** low
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` (`_check_project_deferred_work`: a
+`followup-review-uncarried` kind; `_deferred_work_message`: its message and remedy), tests under
+`src/shared/packages/pyforge-doctor/tests/unit/` (`test_sources_chain_deferred_work.py`).
+**Given** marshal Story 66.2 has backfilled every `done`-and-flagged tracked spec on `main`
+**When** `pixi run -e pyforge-guild deferred-work-check` runs
+**Then** it reports no `followup-review-uncarried` finding and exits 0
+**And** a fixture project with one `done`-and-flagged spec and no carrying row reports exactly one FAIL naming the project
+and the spec; a `dispatch-followup-review` or `review-budget-followup` row naming it clears it; a row under another
+`origin:`, or in another project's ledger, does not; flag `false` / absent / `no` and status `in-review` report nothing;
+`pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+**Status:** blocked
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

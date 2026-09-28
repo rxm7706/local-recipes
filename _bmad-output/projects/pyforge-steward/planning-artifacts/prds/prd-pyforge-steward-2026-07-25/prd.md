@@ -2,7 +2,8 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (brief->prd, spec->prd) — the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; no FR added. Prior 2026-09-24
 status: final
@@ -2323,3 +2324,39 @@ spaces are unchanged).
 
 **Content changed:** this section added (FR-33, FR-34 registered); § 4.13 gains a dated superseded note. No FR renumbered
 or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+`spec→prd` edge: `spec-pyforge-steward` gained CAP-162 later on 2026-09-28, and a decision on its memlog (atlas stays out
+of the Guild). Same-day reconcile; the FR is derived from the CAP (`one-chain-per-station`).
+
+### The FR space: FR-35 registered
+
+Every `marshal factory dispatch` warned `MRS-DISP-049` because `steward session check` reported `token-kit` and
+`codegraph-index` "unparseable". The seed check's output was valid JSON all along: since marshal Story 12.5 (FR-123) it is
+a `{verb, ok, result|error}` envelope, and the check read `kit` at the top level. FR-35 decomposes into **Epic 73**
+(Story 73.1) — a new epic because Epic 63, whose Story 63.4 built the check, is `done`.
+
+#### FR-35: `steward session check` reads `marshal seed check`'s envelope, whatever its exit code ← CAP-162
+The session check reads the kit at `result.kit` of the seed check's envelope whatever the process exit code, and reports
+the kit entries' real statuses. **Consequences:** a document recorded from the live CLI (exit 1, `result.failing: true`)
+yields `token-kit` and `codegraph-index` findings that name the kit's statuses, never "unparseable"; an all-`ok` kit reads
+ok whether the seed check exited 0 or 1; an `ok: false` envelope names the seed error; only stdout that is not JSON reads
+"unparseable output"; a JSON document with no `result.kit` reads "no kit report". Steward shells marshal's CLI and never
+imports it. Story 73.1.
+
+### FR-34: a dated note (2026-09-28, later)
+
+`pyforge-atlas` is not added to the Guild, and `pixi.toml`'s Guild section records why beside warden's (the memlog's
+2026-09-28 decision; Story 72.1's banner rewrite). It solves — `pyforge-foundry-full` locks the union on all three
+platforms — but its run-dependency closure adds 257 packages / ~841 MB installed to a ~1,396 MB Guild, moves the Guild's
+own pins (libabseil, and so nodejs 26 → 24; protobuf 7 → 6; filelock 4 → 3), and would still be partial without its
+feature-level supply. Measured the same day, FR-34's consequence "the Guild still installs under 1 GB from cold" is
+already false before mason joins: a cold `pixi install -e pyforge-guild` is 1.5 GB (`du`). Story 72.1 records the
+measurement; whether CAP-5's bound moves is the operator's call. FR-34 itself is unchanged.
+
+**ONE kernel FR space now FR-1..FR-35** (FR-36 = next free id; the `canopy:`, `suite:` and other prefixed satellite FR
+spaces are unchanged).
+
+**Content changed:** this section added (FR-35 registered; FR-34's dated note). No FR renumbered or removed. `updated:`
+bumped.

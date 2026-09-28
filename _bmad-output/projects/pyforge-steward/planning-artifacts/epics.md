@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-35 / CAP-162; Epic 73 / Story 73.1 minted; Story 72.1 amended (atlas's exclusion documented beside warden's, the Guild's measured size and pins); § Currency reconciliation — 2026-09-28 (later) appended. Earlier 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
 currency_review: "Reviewed 2026-09-24 (arch→epics cascade after the spec→prd→arch re-stamps for Story 63.4, `steward session check`) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-24): no AD added or changed. Story 63.4 already carries its own `### Story 63.4` heading (line 4179, Epic 63) with ledger key `63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point`; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-17 (arch→epics cascade after the spec→prd→arch re-stamps for the one-chain steward fold) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-17): no AD added or changed. Fold provenance heading already cites spec-pyforge-steward CAP-1..145; historical stories keep sequential epic numbers 1..64. Every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -4780,6 +4780,14 @@ exit 0, and `mason` is on the Guild's `PATH`
 stays under CAP-5's 1 GB bound (measured and recorded in the story); `pyforge-station-tests` and `detectors-ci` green;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
+**Amended 2026-09-28 (later):** the banner rewrite also records **atlas's exclusion beside warden's** — a comment in
+`[feature.pyforge-guild.dependencies]` naming why `pyforge-atlas` is not there (the steward memlog's 2026-09-28 decision:
+it solves, but its closure adds 257 packages / ~841 MB installed and moves the Guild's libabseil, nodejs, protobuf and
+filelock pins) and that the atlas seam stays `-e pyforge-atlas`. Two measurements the author must reckon with: a cold
+`pixi install -e pyforge-guild` is already 1.5 GB (`du`, 2026-09-28), past CAP-5's 1 GB bound before mason joins — record
+the before/after sizes and leave the bound's fate to the operator, never loosen it in the story; and `pyforge-mason` caps
+`pixi >=0.80.0,<0.81` and brings conda-lock (`virtualenv <21`), so the re-solve moves the Guild's pixi 0.81.0 → 0.80.0
+and virtualenv 21 → 20 — report both pins in the story.
 
 ### Story 72.2: Mason's five-tier skill cell requires its station skill and conda-forge-expert
 
@@ -4799,6 +4807,40 @@ and the `DECLARED_COMPLETE` comment at :25-27), tests: `src/shared/packages/pyfo
 **And** a fixture tree with only CFE, and one with only `pyforge-mason`, each reads the cell missing and `check` fails naming
 `skill`; every other station's cell rule is unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** blocked
+
+## Epic 73: The session check reads the seed check it asks (spec-pyforge-steward CAP-162)
+
+Minted 2026-09-28 (later) from the station Dream's entry of the same name: every `marshal factory dispatch` warned
+`MRS-DISP-049` because `steward session check` read `marshal seed check --json`'s kit at the top level of the seed check's
+`{verb, ok, result|error}` envelope (marshal FR-123) and named the resulting `KeyError` "unparseable output". A new epic
+because Epic 63, whose Story 63.4 built the check, is `done`. **HARD boundaries:** steward shells marshal's CLI and never
+imports it; the seed check's exit code is data the duty reads, never the verdict; the seed check's own HARD findings
+(manifest paths whose slug placeholder is never rendered) are marshal's, minted in parallel on marshal — not steward's
+to fix or to report as the kit's.
+
+### Story 73.1: `steward session check` reads `marshal seed check`'s envelope, whatever its exit code
+
+As the operator whose every dispatch warned `MRS-DISP-049`,
+I want the session check to read the kit from the seed check's JSON envelope whatever the seed check exits,
+So that `token-kit` and `codegraph-index` report the kit's real state, and "unparseable" means output that is not JSON.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-162 (FR-35; extends CAP-5); AD-1, AD-8 •
+Kinship: marshal FR-123 (the envelope), the parallel marshal mint for the seed check's own HARD findings
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/session.py` (`_seed_kit_findings`: the kit from
+`result.kit`; an `ok: false` envelope's `error`; "unparseable output" only for stdout that is not JSON; "no kit report" for a
+JSON document without `result.kit`), `src/shared/packages/pyforge-steward/tests/unit/test_session.py` (fixtures in the
+envelope shape), `src/shared/packages/pyforge-steward/tests/fixtures/marshal_seed_check_envelope.json` (new: one document
+recorded from the live CLI).
+**Given** `marshal seed check --json` exits 1 with a valid `{verb, ok, result}` document whose `result.failing` is true and
+whose kit reads `missing` / `layer-off` / `instrument-unavailable`
+**When** `steward session check --json` runs
+**Then** `token-kit` is non-ok naming those three kit items and `codegraph-index` is non-ok naming `instrument-unavailable`;
+no detail says "unparseable"
+**And** an all-`ok` kit reads ok whether the seed check exited 0 or 1; an `ok: false` envelope names the seed error's type
+and message; stdout that is not JSON still reads "unparseable output"; a JSON document without `result.kit` reads "no kit
+report"; restoring the top-level `payload["kit"]` read fails the recorded-document test;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
@@ -4850,3 +4892,14 @@ skill)" is history, superseded by 72.2 once it lands. Every Story heading still 
 key (`72-1` and `epic-72` at `backlog`, `72-2` minted `blocked` behind mason Story 19.1, `epic-72-retrospective` at
 `optional`, through the Tier-3 feed and `sprint-ledger-sync`). Epic 44 untouched; no existing blocked ledger key flipped.
 `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+`arch→epics` edge after the spine's later 2026-09-28 re-stamp (FR-35 / CAP-162 lands on AD-1 and AD-8; FR-34's note on
+AD-5; no AD added, amended or removed). Validated against it: Epic 73 decomposes CAP-162 — Story 73.1 keeps shelling the
+seed check and reads its published envelope (AD-1), and `main()` keeps `steward session check`'s exit code (AD-8). Story
+72.1 is amended in place: its banner rewrite also records atlas's exclusion beside warden's (the steward memlog's
+2026-09-28 decision; no CAP), and it carries two measurements — the Guild's cold install is already 1.5 GB, and Mason's
+`pixi <0.81` cap moves the Guild's pixi. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key (`73-1`
+and `epic-73` at `backlog`, `epic-73-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`). No
+existing ledger key changed; no blocked key flipped. `updated:` bumped.
