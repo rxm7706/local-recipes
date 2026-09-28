@@ -1100,6 +1100,11 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   rather than inheriting the accumulated deck-duplication local-recipes was never pruned of.
   No CAP minted, no story touched; a future `bmad-correct-course` pass on
   `spec-python-foundry-cutover` resolves this into a concrete 44.5 sub-decision or a new story.
+  **Specced on herald, 2026-09-28** (operator ruling, independent of the cutover): the "latest
+  deck per topic" half is now `spec-pyforge-herald:CAP-53`, herald Epic 28 / Stories 28.1–28.2.
+  Superseded dated exports are pruned, since git keeps them, and a check stops them regrowing.
+  See [[pyforge-herald]] § Realization log, 2026-09-28. Story 44.5's own estate-move filter is
+  untouched.
 - **2026-09-25 (consolidation)** — **Four outside inputs folded; the chain carried to ready.** PRs
   #1563 (instruction surface), #1564 (laptop SBOM), #1576 (estate dossier) and the BMAD-method
   whitepaper are folded into § *Where next* → *Consolidation — 2026-09-25*, which supersedes the

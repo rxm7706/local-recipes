@@ -4,7 +4,8 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
+updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
@@ -1133,3 +1134,53 @@ dossier and the Kedro-Viz dashboard ride in the same artifact.
 (one Pages artifact, one owner per path prefix, one deploy caller, content read in place); see the
 spine's § Currency reconciliation — 2026-09-27. § Success Metrics is unchanged, because a docs site
 that builds is not yet a measured audience.
+
+## Currency reconciliation — 2026-09-28
+
+*Chain-currency sweep: `spec-pyforge-herald` gained CAP-53 on 2026-09-28 while this PRD sat at
+2026-09-27. Reconciled the same day. The FRs derive from the CAP, following
+`one-chain-per-station`'s rule that the PRD is the Spec's decomposition, never an independent
+namespace.*
+
+**What moved in the Spec.** The steward Dream's 2026-09-25 repo-size seed measured
+`presentations/` at 47% of the working tree. It proposed keeping only the latest deck per topic
+and parked the idea in the cutover's Story 44.5. The operator ruled on 2026-09-28 to spec it now,
+independent of the cutover. It became CAP-53, *each deck keeps one current version of each
+export*. The five decisions are D1–D5 on the Spec memlog:
+- D1: prune, not move.
+- D2: "latest" is the newest date per kind, the rule the four existing pickers already use.
+- D3: a stdlib-only check in the herald package, a CI trigger on `presentations/**`, and writers
+  that retire their predecessor.
+- D4: no exceptions. Story 19.4's tests regenerate their deck.
+- D5: current pointers are corrected; history keeps its filenames.
+
+### Feature Group 9: The deck working set (registered 2026-09-28)
+
+This group is new, not an amendment. This PRD's own *Multi-Format Export Pipeline* section above
+(the Spec's CAP-9) says which formats are tracked. It never said how many dated versions of each
+format stay in the tree, so the superseded exports accumulated to 74 files and 54.14 MB, measured
+on 2026-09-28.
+
+**FR-9.1: One current version per export kind** ← CAP-53
+- Under `presentations/<topic>/src/{pptx,marp}/`, each kind carries exactly one dated file, the
+  newest. A kind is a directory, the stem before `-YYYY-MM-DD`, and the extension. A stamp sidecar
+  goes with its file.
+- The superseded versions are deleted, and git history keeps them. Nothing is moved into an
+  archive folder, because a move shrinks neither the checkout nor `.git`.
+- `pyforge.herald.deck_versions` holds the one rule. `tests/meta/test_deck_working_set.py` reds
+  a superseded export. Herald's CI job runs on `presentations/**` changes.
+- The family pages publish the same 69 downloads before and after the prune. Story 28.1.
+
+**FR-9.2: A new export replaces the one it supersedes** ← CAP-53
+- Every writer of a dated export retires the older versions of that kind after a successful write:
+  the Design pulls of the Marp sources and the standalone, the pptx-fill exporter, and
+  `deck-export`.
+- A write never deletes another kind, an undated file, or a newer version.
+- A second `sync-all` run still writes nothing (CAP-36/CAP-50). Story 28.2.
+
+**ONE FR space now Feature Groups 1–9** (FR-10.1 is the next free id).
+
+**Content changed:** this section only; no FR renumbered or removed. The architecture's AD-4
+(artifact tracking) gains a retention rule; see the spine's § Currency reconciliation — 2026-09-28.
+§ Success Metrics is unchanged, because the working set is a size constraint, not an audience
+measure.
