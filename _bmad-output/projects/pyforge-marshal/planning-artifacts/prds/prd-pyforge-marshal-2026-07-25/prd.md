@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
+updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
@@ -2789,3 +2790,51 @@ clears when the spec or the verify commands change (Story 65.2).
 the one triangle check, now called on the dispatch worktree the way `marshal init` calls it on a
 loop home; the seeding writes go through `FsPort`; the plan's predicates are pure in `core/` and its
 reads stay in `cli/`; no new port, adapter or decision boundary.
+
+## 31. Currency reconciliation — 2026-09-28
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-275 and CAP-276 on 2026-09-28, both from
+the station Dream's 2026-09-19 (the third drain) entry, items (5) and (2). Same-day reconcile; FRs
+derived from the CAPs per `one-chain-per-station`.*
+
+### 31.1 The FR space: FR-221 registered
+
+A dispatched session that ends `done` with `followup_review_recommended: true` has the flag copied
+into the tracked spec (CAP-250) and then nothing acts on it: its only reader is the re-dispatch
+guard of a `done` story, and a drain never re-dispatches a `done` key. Story 51.3 landed on 51.2's
+files with no review. On 2026-09-28, 210 tracked specs read `done` with the flag true, and 181 of
+them are carried by nothing. FR-221 decomposes into **Epic 66** (Stories 66.1, 66.2).
+
+#### FR-221: A follow-up review a landed story recommends is carried into the deferred-work ledger ← CAP-275
+When `dispatch_land_finalize` lands a story whose tracked spec on `origin/main` reads `status: done`
+with `followup_review_recommended: true`, it adds exactly one `DW-FRR-<story>` row
+(`origin: dispatch-followup-review`, `status: open`) to that project's tracked
+`deferred-work-ledger.md`. The write shares the intake step's lock and publish, is idempotent, and
+finalize names the id in its `dispatch-land-finalize-resync` observation; a failed write is a
+non-gating `MRS-DISP-047` WARN (Story 66.1). A one-time backfill carries every already-landed
+flagged spec across the eight stations' ledgers, and a repo-wide meta test holds the invariant that
+every such spec has a carrying row (Story 66.2).
+
+### 31.2 The FR space: FR-222 registered
+
+Item (2), every successful land reading `stopped_externally`, was closed as a side effect of Story
+51.9 (merge `df813208e9`), whose finalize fast-forwards the primary checkout's `main`. The verdict
+still rests on that fast-forward: after its own land, the supervisor re-resolves from repository
+facts read on local `main` alone, and finalize skips the fast-forward for a dirty primary or one not
+at `main`'s tip. FR-222 decomposes into **Epic 67** (Story 67.1).
+
+#### FR-222: A landed dispatch reads completed even when the primary checkout cannot be fast-forwarded ← CAP-276
+After the dispatch supervisor lands a story from its terminal branch, a `dispatch-land` OUTCOME for
+the run journaled `ok` with verdict `landed` or `already_landed` resolves the session verdict
+`completed` with `stop_reason: null`, the rule its loop head, its post-finalize re-read and
+`marshal status` already apply; only without one does the verdict come from repository facts. The
+repository-fact reads and their local-`main` base are unchanged, and the completion still reports
+them as read. Story 67.1.
+
+**ONE FR space now FR-1..FR-222** (FR-223 = next free id).
+
+**Content changed:** § 31 added (FR-221 and FR-222 registered). No AD amended — the follow-up row's
+selection and rendering are pure in `core/` and its publish reuses finalize's existing locked write
+onto `origin/main` (AD-4, AD-29, AD-42); the supervisor's verdict reads the process fact it
+journaled while the repository facts stay git's (AD-5, AD-33); no new port, adapter or decision
+boundary.

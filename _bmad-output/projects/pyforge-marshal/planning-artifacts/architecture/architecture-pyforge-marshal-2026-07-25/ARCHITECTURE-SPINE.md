@@ -7,7 +7,8 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
+updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
 # 2026-09-18  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-196..FR-200 / CAP-244..248 (Epic 50). AD-24 amended in place: default merge-subject form gains {slug}. Four FRs land on AD-5/26/28, the harness seam, AD-16 and AD-13 -- no AD added or removed. See § Currency reconciliation — 2026-09-18.
@@ -1877,5 +1878,27 @@ never a clean plan (AD-8); the plan's findings are coded in a new `MRS-DRAINPLAN
 `dispatch_once`'s pre-launch `MRS-DISP-050` evaluates, before a session, the same
 `gate.check_spec_binding` AD-49 already requires of the post-session gate, against the same spec
 and the same guard-appended commands. No new port, adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-221 / CAP-275 (Epic 66, a follow-up
+review a landed story recommends is carried into the deferred-work ledger) and FR-222 / CAP-276
+(Epic 67, a landed dispatch reads completed even when the primary checkout cannot be
+fast-forwarded).*
+
+*FR-221 lands on AD-4, AD-5, AD-29 and AD-42 as written. Selecting and rendering the
+`DW-FRR-<story>` row is a pure function in `core/deferred_work.py`, beside Story 4.13's loop twin
+(AD-4). Finalize names the promoted id in its own journaled observation (AD-5). The row is published
+onto `origin/main` through `commit_paths_onto_remote_tip` and never left only in the primary
+checkout's working tree (AD-29), under the advisory lock the intake step already takes on the shared
+tracked ledger (AD-42).*
+
+*FR-222 lands on AD-5, AD-9 and AD-33 as written. The supervisor resolves its post-land verdict from
+the landing outcome it journaled itself (AD-5): a fact of its own action, never anything the session
+reports (AD-9). The repository facts it records beside it (`story_merged_on_main`, `branch_merged`)
+keep git as their authority and are recorded as read (AD-33); only the process verdict changes
+source. No new port, adapter or decision boundary.*
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

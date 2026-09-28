@@ -6371,7 +6371,7 @@ status: open
   severity: medium
   promoted: 2026-09-19 — hand-filed
   status: open
-  story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5).
+  story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5). Promoted 2026-09-28 to Stories 66.1 (spec-pyforge-marshal CAP-275, Epic 66: finalize carries a recommended follow-up review into this ledger as `DW-FRR-<story>`) and 66.2 (the one-time backfill, which mints `DW-FRR-51-2` to carry 51.2's own follow-up review from then on); close when 66.2 lands, citing both merges.
 
 ### DW-FU-51-9: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
 

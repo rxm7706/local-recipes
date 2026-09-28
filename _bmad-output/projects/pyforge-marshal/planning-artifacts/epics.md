@@ -11,9 +11,10 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 63  # 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 333  # 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-27"   # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
+epicCount: 65  # 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 336  # 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
 mode: headless
@@ -7234,6 +7235,112 @@ the drain records a campaign block rather than a transient retry
 **And** a spec declaring a command outside `verify_commands` returns `MRS-DISP-050` naming `MRS-GATE-011` and the command; a spec
 that binds launches unchanged; after the refused spec gains its `## Verification` the drain's re-preflight clears the block and
 the next cycle dispatches; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+## Epic 66: A follow-up review a landing recommends is carried, never dropped (spec-pyforge-marshal CAP-275)
+
+Minted 2026-09-28 from the station Dream's 2026-09-19 (the third drain) entry, item (5). A dispatched session that ends `done`
+with `followup_review_recommended: true` has the flag copied into the tracked spec (CAP-250, Story 51.2), and then nothing
+acts on it. Its only reader is the re-dispatch guard of a `done` story, and a drain never re-dispatches a `done` key. 51.3
+landed on 51.2's files with no review (`DW-FU-51-2-1`). Measured 2026-09-28: 210 tracked specs read `done` with the flag
+true, and 181 of them are carried by nothing. A new epic because Epic 51 is `done`. **HARD boundaries:** marshal carries the
+recommendation and never re-interprets it (the flag's meaning stays bmad-build-auto's). The carry is a tracked row, never a
+dispatch. A failed write is journaled and never refuses a landing after its merge. `scripts/deferred_work_intake.py`
+(spec-pyforge-doctor) is unchanged. The backfill never marks a review owed where the repository cannot show the landing
+route.
+
+### Story 66.1: Finalize carries a recommended follow-up review into the deferred-work ledger
+
+As a fleet operator whose dispatched sessions recommend a follow-up review they cannot run themselves,
+I want `dispatch_land_finalize` to write that recommendation into the station's tracked deferred-work ledger when the story lands,
+So that the next landing on the same files is never the only review the change gets, and the sweep sees what is owed.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-275 (FR-221); AD-4, AD-5, AD-29, AD-42 • Story 4.13, Story 51.2, Story 53.2
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/deferred_work.py` (pure: the `DW-FRR-<story>` id, the
+selection over one spec's status and flag and the ledger's existing id tokens, and the row renderer, beside Story 4.13's loop
+twin), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` (after the ledger promotion:
+read the landed story's tracked spec on `origin/main` through `dispatch_core.spec_text_at_ref`, add the row inside
+`_run_deferred_work_intake`'s lock and publish, name the id in the `dispatch-land-finalize-resync` payload), tests:
+`src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py`.
+**Given** 51.2's tracked spec (`status: done`, `followup_review_recommended: true`) is the story finalize has just landed, and the
+project's tracked `deferred-work-ledger.md` holds no `DW-FRR-51-2`
+**When** `finalize_dispatch_land` runs
+**Then** exactly one `### DW-FRR-51-2:` row is published onto `origin/main` with `origin: dispatch-followup-review`,
+`source_spec` naming the spec, `location:` its path, `severity: low` and `status: open`, and the `dispatch-land-finalize-resync`
+payload names `DW-FRR-51-2`
+**And** a second finalize adds nothing; the flag false or absent, or a status other than `done`, adds nothing; a ledger holding
+`DW-FRR-51-20` still gains `DW-FRR-51-2`; the intake's rows and the new row survive one publish; a failed publish is a
+`MRS-DISP-047` WARN with finalize's exit code unchanged; removing the promotion call makes the 51.2 fixture add no row
+(mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 66.2: Every landed follow-up recommendation is backfilled and held by a meta test
+
+As a fleet operator with 181 landed follow-up recommendations that nothing ever carried,
+I want a one-time backfill that gives every `done`-and-flagged tracked spec its carrying row, and a meta test that keeps it so,
+So that no follow-up recommendation is lost again, whichever route landed the story.
+
+**Type:** chore • **Effort:** M • **Deps:** S-66.1 • **FR/AD:** spec-pyforge-marshal CAP-275 (FR-221); AD-4, AD-42 • closes
+DW-FU-51-2-1 • co-governed by spec-pyforge-atlas (its tracked ledger)
+**Surface:** `src/shared/packages/pyforge-marshal/tests/meta/test_followup_review_carried.py` (new: the repo-wide invariant over every
+project's tracked specs and ledger), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/deferred_work.py`
+(`render_ledger_entry` writes `origin: review-budget-followup`), `src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py`,
+the eight tracked ledgers (backfilled `DW-FRR-<story>` rows appended; each loop damping carry gains one `origin:` line;
+`DW-FU-51-2-1` closed): `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`,
+`_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md`,
+`_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`,
+`_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`,
+`_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md`,
+`_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md`,
+`_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`,
+`_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md`; and
+`_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md` (the atlas ledger's surface
+reconcile). Admitted by `[epic_surfaces]` "66" in `planning-artifacts/marshal-policy.toml`.
+**Given** 210 tracked story specs read `status: done` with `followup_review_recommended: true` on 2026-09-28: 28 carried by a loop
+damping row, 51.2 by the hand-filed `DW-FU-51-2-1`, 181 by nothing
+**When** the backfill renders one `DW-FRR-<story>` row per uncarried spec with 66.1's renderer into its own project's tracked ledger
+(`status: open` for a landing `origin/main` shows as `Merge <slug>/<key> into main` or a `dispatch/<slug>/<key>` branch merge,
+`closed` with its reason otherwise), gives each loop damping carry an `origin: review-budget-followup` line, and
+`render_ledger_entry` writes that line from then on
+**Then** `test_followup_review_carried.py` finds, for every such spec across the eight projects, a row in its own project's ledger
+whose `source_spec` names it and whose `origin` is `dispatch-followup-review` or `review-budget-followup`, and fails naming the
+spec and project when one is planted without
+**And** `DW-FU-51-2-1` reads closed, superseded by `DW-FRR-51-2` (open); no existing row's summary, evidence or id is rewritten;
+`deferred-work-check` and `spec-surface-check` exit 0 (the atlas ledger reconciled on spec-pyforge-atlas's memlog);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+## Epic 67: A landed dispatch reads completed whatever state the primary checkout is in (spec-pyforge-marshal CAP-276)
+
+Minted 2026-09-28 from the station Dream's 2026-09-19 (the third drain) entry, item (2): every successful land read
+`stopped_externally` / `external-operator-stop`. It was closed as a side effect of Story 51.9 (merge `df813208e9`), whose
+finalize fast-forwards the primary checkout's `main`, so the supervisor's post-land read of local `main` sees the merge. The
+verdict still rests on that fast-forward, which finalize skips for a dirty primary or one not at `main`'s own tip, and the
+supervisor's re-resolution after its own land never reads the landing it has just journaled. Probed 2026-09-28: a land
+journaled `landed` with local `main` behind still writes `stopped_externally`. A new epic because Epic 51 is `done`. **HARD
+boundaries:** the repository facts keep git as their authority, so `gather_dispatch_git_facts`, its local-`main` base and the
+completion's recorded `story_merged_on_main` / `branch_merged` are unchanged; only the process verdict reads the journal. A
+land that was refused or not `ok` resolves exactly as today, and historical completions are not rewritten.
+
+### Story 67.1: A landed dispatch reads completed when the primary checkout cannot be fast-forwarded
+
+As a fleet operator whose primary checkout is sometimes dirty or off `main` while a drain lands stories,
+I want the dispatch supervisor to read the landing it journaled before it judges the session from repository facts,
+So that a story that landed never reads as an operator stop in `marshal status` and `fleet-picture`.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-276 (FR-222); AD-5, AD-9, AD-33 • Story 28.17 (the
+land-journal rule), Story 51.9 (CAP-251)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` (`run_dispatch_supervisor`: the
+terminal branch's re-resolution after `_land_or_journal_block` consults `_landing_succeeded` before
+`resolve_terminal_session_verdict`, the rule the loop head and the post-finalize re-read already apply, extracted into one helper
+if the three sites share it), tests: `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py`.
+**Given** a dispatch run whose session has ended, whose verification is `verified`, and whose land the supervisor journals `landed`
+while the dispatch branch is retired and local `main`'s subjects lack the merge (the primary could not be fast-forwarded)
+**When** the supervisor re-resolves the session verdict after its land
+**Then** it journals `dispatch-completion` `completed` with `stop_reason: null` and publishes `completed`, with the branch retired
+or still present, and even when the repository re-read after the land fails
+**And** removing the new check makes the fixture write `stopped_externally` (mutation); a land journaled `refused`, or not `ok`,
+resolves from repository facts exactly as today; `test_supervisor_finalizes_verifies_and_lands_a_finished_harness_session` pins
+`completed`; `test_supervisor_lands_from_the_live_branch_then_completes` is unchanged;
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

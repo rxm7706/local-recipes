@@ -407,6 +407,16 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   wrote the tracked spec directly. The promotion needs a merge rule for a twin whose
   `status:` is terminal while the tracked copy's is not (or whose Auto Run Result the tracked
   copy lacks). Hand-promoted for 51.2 and 51.9.
+  **Decomposed 2026-09-28:** (2) was closed as a side effect of Story 51.9 (CAP-251, merged
+  `df813208e9` the same day). Finalize now fast-forwards the primary checkout's `main` after the
+  land, so the supervisor's post-land read of `main` sees the merge, and every dispatch land since
+  has read `completed`. That verdict still rests on the fast-forward, which finalize skips when the
+  primary is dirty or not at `main`'s own tip, and the supervisor's post-land re-resolution never
+  reads the landing it has just journaled: probed 2026-09-28 on today's code, a land journaled
+  `landed` with local `main` behind still writes `stopped_externally`. The hardening → CAP-276 /
+  Epic 67 / Story 67.1. (5) → CAP-275 / Epic 66 / Stories 66.1 (finalize carries a recommended
+  follow-up review into the station's deferred-work ledger) and 66.2 (the one-time backfill across
+  the eight ledgers, and the meta test that holds it); `DW-FU-51-2-1` points at both.
 - **2026-09-20 (night, the third drain)** — **Proposed: the watch is blind to the very runs
   it was fixed to see, and a session that halts on its own reads as an operator stop.**
   (7) `marshal watch --fleet` reported all eight stations *idle* at 00:38Z while three
