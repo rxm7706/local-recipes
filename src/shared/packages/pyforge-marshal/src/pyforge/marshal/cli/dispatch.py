@@ -276,11 +276,18 @@ def _random_token() -> str:
     return secrets.token_hex(4)
 
 
-def _dispatch_scope_refusal(repo_root: Path, slug: str) -> Finding | None:
-    """Story 33.9 / FR-190 CAP-1 third call site: refuse before any launch work.
+def _dispatch_scope_refusal(slug: str) -> Finding | None:
+    """Story 33.9 / FR-190 CAP-1 third call site: refuse before any launch work
+    when the parent shell's own ``BMAD_ACTIVE_PROJECT`` disagrees with the
+    dispatch slug.
 
-    Checks the parent ``BMAD_ACTIVE_PROJECT`` env (when set) and the sole
-    ``verify_scope`` triangle against the dispatch slug.
+    Story 64.1 (CAP-273, FR-219) retires the primary-checkout
+    ``verify_scope`` branch this function used to also run here: the
+    PRIMARY checkout's marker/links are never read or written by dispatch
+    at all now (another station may own the shared marker with no effect
+    on this launch). The triangle that actually matters is the dispatch
+    WORKTREE's own, checked once ``_ensure_dispatch_worktree`` resolves it
+    -- see ``_seed_dispatch_worktree_scope`` below.
     """
     env_slug = os.environ.get("BMAD_ACTIVE_PROJECT", "").strip()
     if env_slug and env_slug != slug:
@@ -293,12 +300,52 @@ def _dispatch_scope_refusal(repo_root: Path, slug: str) -> Finding | None:
                 f"_bmad-output/projects/{slug}/ and never scripts/bmad-switch"
             ),
         )
-    drift = verify_scope(repo_root, slug)
+    return None
+
+
+def _seed_dispatch_worktree_scope(*, fs: FsPort, worktree: Path, slug: str) -> Finding | None:
+    """Story 64.1 (CAP-273, FR-219): give the dispatch WORKTREE its own
+    scope triangle -- never the shared primary checkout's -- then refuse
+    via the unmodified ``verify_scope`` (``scope.py``) on any drift that
+    remains.
+
+    Mirrors ``cli/init.py``'s MRS-INIT-003 loop-home seeding shape but is
+    strictly narrower: a corner that already exists here -- correct,
+    foreign, or unrecognized -- is NEVER repointed or overwritten; only a
+    corner that is genuinely absent gets written, through ``FsPort`` only
+    (AD-11). ``fs.read_text``/``fs.read_symlink_target`` return ``None``
+    for "missing"; a link corner also needs ``fs.exists`` to tell a
+    dangling/absent path apart from a real, non-symlink file squatting
+    there (which counts as an existing corner too, per
+    ``ports/fs.py``'s own ``exists`` docstring) -- never touched either
+    way. A write failure degrades to ``MRS-DISP-006`` ("cannot provision"),
+    matching this module's other worktree-provisioning failures; it never
+    raises past this function.
+    """
+    marker_path = worktree / "_bmad" / "custom" / ".active-project"
+    planning_link = worktree / "_bmad-output" / "planning-artifacts"
+    implementation_link = worktree / "_bmad-output" / "implementation-artifacts"
+    try:
+        if fs.read_text(marker_path) is None:
+            fs.write_text_atomic(marker_path, f"{slug}\n")
+        for link, name in (
+            (planning_link, "planning-artifacts"),
+            (implementation_link, "implementation-artifacts"),
+        ):
+            if fs.read_symlink_target(link) is None and not fs.exists(link):
+                fs.repoint_symlink_atomic(link, Path("projects") / slug / name)
+    except FsError as exc:
+        return Finding(
+            code="MRS-DISP-006",
+            severity=Severity.ERROR,
+            message=f"cannot provision dispatch worktree scope triangle at {worktree!r}: {exc}",
+        )
+    drift = verify_scope(worktree, slug)
     if drift is not None:
         return Finding(
             code="MRS-DISP-041",
             severity=Severity.ERROR,
-            message=format_scope_drift(drift),
+            message=f"{format_scope_drift(drift)} (dispatch worktree {worktree!r})",
         )
     return None
 
