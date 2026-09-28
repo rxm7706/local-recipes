@@ -77,7 +77,12 @@ class FakeFs:
         path.write_text(content, encoding="utf-8")
 
     def read_text(self, path: Path) -> str | None:
-        return self.files.get(path)
+        if path in self.files:
+            return self.files[path]
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
 
     def read_symlink_target(self, path: Path) -> Path | None:
         if not path.is_symlink():
@@ -2509,3 +2514,133 @@ def test_format_scope_drift_matches_bmad_switch_shape() -> None:
     assert text.startswith("scope drift:")
     assert "expected 'project-a'" in text
     assert "marker='project-b'" in text
+
+
+# --------------------------------------------------------------------------
+# Story 64.1 (CAP-273, FR-219): the dispatch WORKTREE carries its own scope
+# triangle, never the shared primary-checkout marker.
+# --------------------------------------------------------------------------
+
+
+def test_dispatch_refuses_worktree_side_foreign_marker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A REUSED dispatch worktree (``worktree.exists()`` already, so
+    ``_ensure_dispatch_worktree`` attaches without provisioning) whose own
+    triangle already names a DIFFERENT station is drift -- refused, and
+    never repointed: an existing corner, however it is shaped, is left
+    alone per the seeding step's Never rule."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-foreign-worktree-marker"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    point_scope_triangle(worktree, "pyforge-steward")
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "expected 'pyforge-marshal'" in finding.message
+    assert "marker='pyforge-steward'" in finding.message
+    assert str(worktree) in finding.message
+    assert not attempt.launched
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-006"] == []
+
+
+def test_dispatch_refuses_worktree_side_unrecognized_link(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A worktree whose ``implementation-artifacts`` link exists but is
+    shaped in a way ``verify_scope`` cannot parse is drift too -- the
+    ``UNRECOGNIZED`` fail-closed token never counts as agreement, and the
+    seeding step leaves an already-existing (however malformed) link
+    untouched rather than repointing it."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-unrecognized-worktree-link"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"{slug}\n", encoding="utf-8")
+    out = worktree / "_bmad-output"
+    planning_target = out / "projects" / slug / "planning-artifacts"
+    planning_target.mkdir(parents=True, exist_ok=True)
+    (out / "planning-artifacts").symlink_to(Path("projects") / slug / "planning-artifacts")
+    (out / "implementation-artifacts").symlink_to(Path("elsewhere") / "implementation-artifacts")
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "implementation-artifacts='unrecognized'" in finding.message
+    assert not attempt.launched
+    assert (out / "implementation-artifacts").readlink() == Path("elsewhere") / "implementation-artifacts"
+
+
+def test_dispatch_reused_worktree_with_agreeing_triangle_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A REUSED worktree (pre-existing on disk, so provisioning attaches
+    rather than creates) whose triangle already agrees with the slug
+    launches cleanly -- the seeding step writes nothing and
+    ``verify_scope`` sees agreement immediately."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-reused-worktree-agrees"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    point_scope_triangle(worktree, slug)
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+
+
+def test_dispatch_worktree_scope_write_failure_is_mrs_disp_006(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A freshly-provisioned worktree (missing triangle) whose corner write
+    fails degrades to ``MRS-DISP-006`` -- the same code this module already
+    uses for every other worktree-provisioning failure -- rather than
+    raising past ``dispatch_once``."""
+
+    class _RefusingFs(FakeFs):
+        def write_text_atomic(self, path: Path, content: str) -> None:
+            if path.name == ".active-project":
+                raise FsError(f"cannot write {path}")
+            super().write_text_atomic(path, content)
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-worktree-scope-write-fails"
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=_RefusingFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-006"]
+    assert "cannot provision dispatch worktree scope triangle" in finding.message
+    assert not attempt.launched
