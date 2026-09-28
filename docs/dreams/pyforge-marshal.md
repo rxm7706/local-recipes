@@ -1783,6 +1783,17 @@ kinship, not a merge)
   project — the property this Dream actually guarantees — it just stops requiring the marker to
   already, coincidentally, agree before a launch is even attempted. No CAP minted, no story
   touched.
+  **Specced 2026-09-27 — no flip needed.** Read against the code, nothing the launch starts ever
+  reads the primary's marker: the session runs in its own fresh dispatch worktree (the marker and
+  both links are gitignored, so it has none) with `BMAD_ACTIVE_PROJECT` pinned, which BMAD's
+  resolver ranks above any marker, and every launcher read and write is a physical
+  `_bmad-output/projects/<slug>/` path. So the scope moves into the worktree — its own marker and
+  links, checked by the same `verify_scope`, as `marshal init` already does for a loop home —
+  and the shared marker is neither consulted nor flipped. A flip under a lock would repoint every
+  primary-checkout writer that does not take the lock (an interactive session, `bmad-switch`) for
+  the length of the launch: the wrong-project window this Dream exists to close. A contradicting
+  `BMAD_ACTIVE_PROJECT`, or a worktree whose own triangle names another project, still refuses
+  `MRS-DISP-041`. → CAP-273 / Epic 64 / Story 64.1
 
 ## 2026-09-16 — Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones (folded from dashboard-velocity-captures-hand-driven-work)
 
