@@ -3,7 +3,7 @@ title: "27.5: pr-preflight runs the Pages build check only when docsite-check.ym
 type: 'feature'
 created: '2026-09-27'
 status: 'blocked'
-blocking_condition: 'blocked until steward Story 71.2 (spec-pyforge-steward CAP-159, "run the lanes CI would run, read from the workflow files") has landed on main; the operator flips the ledger key, never a session'
+blocking_condition: 'blocked until steward Story 71.2 (spec-pyforge-steward:CAP-159, "run the lanes CI would run, read from the workflow files") has landed on main; the operator flips the ledger key, never a session'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -20,7 +20,7 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** After Story 27.2, CI's `docsite-check.yml` runs `pages-check` (`npm ci`, the Astro build, the dossier mount under `/herald/`, the redirects) on PRs that touch the docs paths. The local twin, `pr-preflight`, still runs only the old `site-check` leg, so it no longer predicts that lane. If `pages-check` were added unconditionally, every push would pay for a site build, even from a diff that never touches the docs. The operator ruled on 2026-09-27 (D8) that `pr-preflight` runs the Pages build check only when the diff touches the docs paths, with no second hand-kept path list: steward's `spec-pyforge-steward` CAP-159 / Story 71.2 selects each `pr-preflight` lane by its CI workflow's own `paths`.
+**Problem:** After Story 27.2, CI's `docsite-check.yml` runs `pages-check` (`npm ci`, the Astro build, the dossier mount under `/herald/`, the redirects) on PRs that touch the docs paths. The local twin, `pr-preflight`, still runs only the old `site-check` leg, so it no longer predicts that lane. If `pages-check` were added unconditionally, every push would pay for a site build, even from a diff that never touches the docs. The operator ruled on 2026-09-27 (D8) that `pr-preflight` runs the Pages build check only when the diff touches the docs paths, with no second hand-kept path list: steward's `spec-pyforge-steward:CAP-159` / Story 71.2 selects each `pr-preflight` lane by its CI workflow's own `paths`.
 
 **Approach:** Replace `pr-preflight`'s `{ task = "site-check", environment = "site" }` leg with `{ task = "pages-check", environment = "site" }`, bound to `docsite-check.yml` so that 71.2's workflow-derived filter selects it from that workflow's `paths`. It is a replacement, not an addition, because `pages-check` depends on `pages-build`, which already runs `docsite/build.py --check` (the whole of `site-check`). Keeping both would build the dossier twice per preflight. `site-check` stays a pixi task for the local docsite loop.
 
@@ -57,13 +57,13 @@ Parent Spec capability: `spec-pyforge-herald CAP-52` (FR-8.5; decision D8 in the
 Architecture: AD-21.
 Ledger key: `27-5-pr-preflight-runs-the-pages-build-check-only-when-docsite-check-yml-s-paths-change`.
 Ledger status at mint: `blocked`, until steward Story 71.2 has landed; the operator flips it.
-Deps: S-27.2 (`pages-check` and `docsite-check.yml`'s docs path filters). Cross-station gate: steward Story 71.2 (`spec-pyforge-steward` CAP-159).
-Kinship: `spec-pyforge-steward` CAP-159 / Story 71.2 owns the workflow-derived lane filter.
+Deps: S-27.2 (`pages-check` and `docsite-check.yml`'s docs path filters). Cross-station gate: steward Story 71.2 (`spec-pyforge-steward:CAP-159`).
+Kinship: `spec-pyforge-steward:CAP-159` / Story 71.2 owns the workflow-derived lane filter.
 Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this spec once the operator unblocks it.
 
 ## Epic excerpt
 
-**Type:** feature • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** spec-pyforge-herald CAP-52 (FR-8.5; D8); AD-21 • cross-project gate: steward Story 71.2 (`spec-pyforge-steward` CAP-159) must have landed first — the ledger key is minted `blocked` and the operator flips it, per AGENTS.md (marshal's `Deps:` parser is station-local)
+**Type:** feature • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** spec-pyforge-herald CAP-52 (FR-8.5; D8); AD-21 • cross-project gate: steward Story 71.2 (`spec-pyforge-steward:CAP-159`) must have landed first — the ledger key is minted `blocked` and the operator flips it, per AGENTS.md (marshal's `Deps:` parser is station-local)
 
 **Surface:**
 - `pixi.toml`, and only `pr-preflight`'s lane list:

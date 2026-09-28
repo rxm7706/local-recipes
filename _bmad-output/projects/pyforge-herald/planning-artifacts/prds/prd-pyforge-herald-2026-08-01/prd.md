@@ -1125,7 +1125,7 @@ dossier and the Kedro-Viz dashboard ride in the same artifact.
 
 **FR-8.5: The local preflight builds the site only when the docs move** ← CAP-52
 - `pr-preflight` runs `pages-check` (in place of `site-check`, which it subsumes) only when a diff touches `docsite-check.yml`'s own `paths`
-- The selection is read from the workflow file by steward Story 71.2 (`spec-pyforge-steward` CAP-159); no second path list exists. A diff touching only `src/shared/packages/pyforge-marshal/` leaves it unselected, and one touching `docs/how-to/x.md` selects it (operator ruling 2026-09-27, D8). Story 27.5, whose ledger key is `blocked` until 71.2 lands; the operator flips it.
+- The selection is read from the workflow file by steward Story 71.2 (`spec-pyforge-steward:CAP-159`); no second path list exists. A diff touching only `src/shared/packages/pyforge-marshal/` leaves it unselected, and one touching `docs/how-to/x.md` selects it (operator ruling 2026-09-27, D8). Story 27.5, whose ledger key is `blocked` until 71.2 lands; the operator flips it.
 
 **ONE FR space now Feature Groups 1–8** (FR-9.1 is the next free id).
 
