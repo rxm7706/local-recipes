@@ -718,6 +718,24 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   repository name; `init`'s behaviour is unchanged. Kinships: Story 10.7 (the gap named), Story 12.2
   (the oracle, K-02), steward session check's parse of this JSON (a separate steward CAP); owner
   `spec-pyforge-marshal`.
+- **2026-09-28 — Proposed: the front door names the environment a roster station runs in.**
+  `pixi run -e pyforge-guild pyforge warden --help` answers `unknown station 'warden'; known:
+  doctor, herald, marshal, scribe, steward` (exit 2), and `pyforge atlas` and `pyforge mason` answer
+  the same. All three are Guild stations on the one roster (`pyforge.core.roster.STATIONS`); they are
+  simply not installed in the Guild environment. Warden is left out on purpose (its `osv-scanner`
+  range pin conflicts with the factory's), atlas is absent, and mason arrives with steward Story
+  72.1. `pyforge.core.dispatch` builds its station map from the installed distributions and calls
+  anything missing "unknown", so the operator is told a real station does not exist.
+  **What it looks like when real:** a name on the roster that is not installed here reads as exactly
+  that — "station 'warden' is not installed in this environment; it runs in `-e pyforge-warden`" —
+  with the command to run it. A name on no roster still reads "unknown station", listing what is
+  installed. `pyforge --help` names the roster stations this environment lacks and where each runs.
+  **Constraints:** `pyforge-core` stays a stdlib leaf and reads no `pixi.toml`: the environment name
+  is the roster's long form (`pyforge-<station>`, the form Ruling 18 fixes for packages and pixi
+  environments); the exit code is unchanged; no station is installed or removed here. Owner
+  `spec-pyforge-core` (hosted on marshal; its Dream is archived here). Kinships:
+  `spec-pyforge-steward:CAP-161` (Story 72.1, mason in the Guild environment), steward's
+  examination of atlas in the Guild environment (a separate steward chain).
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

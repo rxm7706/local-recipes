@@ -3324,6 +3324,12 @@ capabilities:
     heading: "the station-tests lane picks suites from the remote-tracking ref"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-11
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "the front door names the environment a roster station runs in"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
   # 2026-09-17 steward one-chain fold remints
   - id: pyforge-steward:CAP-1
     spec: pyforge-steward

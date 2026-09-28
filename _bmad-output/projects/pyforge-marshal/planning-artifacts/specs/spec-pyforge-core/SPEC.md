@@ -161,6 +161,24 @@ costs two stories of rework; deciding it now costs an epic ordering.
   - **success:** the lane's pull_request `BASE` is the full ref (as `coverage-gates.yml`'s is); a
     scripts-suite test reds any workflow under `.github/workflows/` that builds a diff base from a
     short `origin/${…}`, and fails on the pre-fix tree; the push path's sha is unchanged.
+- **CAP-11 — the front door names the environment a roster station runs in.** *(minted 2026-09-28)*
+  - **intent:** `pyforge.core.dispatch.dispatch_argv` resolves a token as today — an installed station,
+    the single-name distribution fallback, then `NOUN_ALIASES` — and only then, when the token is on
+    `pyforge.core.roster.STATIONS` but not installed in the running environment, refuses naming it:
+    `station 'warden' is not installed in this environment; it runs in -e pyforge-warden` with the
+    command `pixi run -e pyforge-warden pyforge warden <noun> <verb>`. The environment name is
+    `roster.long_form(station)`; nothing reads `pixi.toml`. A token on no roster keeps today's
+    `unknown station …; known: …` message byte-for-byte. The usage listing also names the roster
+    stations this environment lacks, each with its environment. Exit codes are unchanged (2).
+    (Found 2026-09-28: the Guild environment answers `pyforge warden|atlas|mason` with "unknown
+    station"; warden is left out on purpose, atlas is absent, mason arrives with
+    `spec-pyforge-steward:CAP-161`.)
+  - **success:** with an installed map of doctor, herald, marshal, scribe and steward, `pyforge warden
+    --help` refuses naming `-e pyforge-warden` and the `pixi` command and exits 2; atlas and mason name
+    their own environments; `pyforge nosuch` keeps the unknown-station message byte-for-byte;
+    `pyforge context …` still aliases to marshal; an installed station still dispatches; the usage
+    listing names the three missing roster stations; removing the roster check brings back "unknown
+    station 'warden'" (mutation); `pyforge-core-test` green.
 
 ## Constraints
 
