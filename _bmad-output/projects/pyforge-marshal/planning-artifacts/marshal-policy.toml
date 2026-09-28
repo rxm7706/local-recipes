@@ -335,6 +335,20 @@ verify_commands = [
   "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md",
 ]
 
+"69" = [  # the switch script runs where it is documented to run (spec-pyforge-marshal CAP-278), added 2026-09-28.
+          # The default surface, restated because a declared entry replaces it outright, plus the one
+          # repo-root script whose source Marshal owns. Its tests live in the marshal package.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/bmad-switch",
+]
+
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 469
+# stories: 472
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -334,6 +334,7 @@ development_status:
   66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test: backlog
   67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: backlog
   68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent: backlog
+  69-1-the-switch-script-runs-where-it-is-documented-to-run: backlog
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
@@ -477,6 +478,8 @@ development_status:
   epic-67-retrospective: optional
   epic-68: backlog
   epic-68-retrospective: optional
+  epic-69: backlog
+  epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

@@ -1844,6 +1844,25 @@ kinship, not a merge)
   the length of the launch: the wrong-project window this Dream exists to close. A contradicting
   `BMAD_ACTIVE_PROJECT`, or a worktree whose own triangle names another project, still refuses
   `MRS-DISP-041`. → CAP-273 / Epic 64 / Story 64.1
+- **2026-09-28 — Proposed: the switch script runs where it is documented to run.** Every document
+  names the bare form (`scripts/bmad-switch <slug>`, `scripts/bmad-switch --current`; AGENTS.md, the
+  pre-shell hook's `bmad-switch-unsafe` denial, 326 tracked Markdown files, none with an interpreter
+  prefix), and its shebang is `#!/usr/bin/env python3`. On this machine that is the system Python
+  3.12.3, and `--current` crashes: `_load_verify_scope` first imports `pyforge.marshal.scope`, which
+  the system interpreter does not have (`ModuleNotFoundError: No module named 'pyforge'`), then falls
+  back to the source tree and imports `scope.py`, whose `except OSError, UnicodeDecodeError:` (line 60)
+  is Python 3.14-only syntax — `ruff format` wrote it under the package's py314 target on 2026-09-20.
+  `--list` crashes the same way once a marker exists; the switch itself and `--clear` never load the
+  primitive and still run. Today the read verbs work only as
+  `pixi run -e pyforge-guild python scripts/bmad-switch …`, which no document says.
+  **What it looks like when real:** every documented form works on the primary checkout. When the
+  primitive will not load, the script runs itself once more under the Guild environment and returns
+  that run's exit code. When `pixi` is missing, it prints one line naming the interpreter it ran
+  under, what it needs and the exact command, and exits non-zero — never a traceback.
+  **Constraints:** `scope.py` stays the one primitive (no local copy, no 3.12 rewrite that the
+  formatter would undo); nothing prints before the re-run; a re-run never loops; the switch and
+  `--clear` are unchanged. Kinships: CAP-75..CAP-77 (the primitive and its hard fail, Stories 20.6 /
+  20.7), CAP-201 (the worktree-aware switch); owner `spec-pyforge-marshal`.
 
 ## 2026-09-16 — Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones (folded from dashboard-velocity-captures-hand-driven-work)
 
