@@ -919,6 +919,7 @@ def test_ship_pypi_repository_url_sets_target_pypi_test_on_the_terminal_result()
     )
     with (
         patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch("pyforge.mason.package.pypi_index.version_exists", return_value=False),
         patch(
             "pyforge.mason.package.twine.upload",
             return_value=upload_result,
@@ -970,6 +971,7 @@ def test_ship_pypi_repository_url_sets_target_pypi_test_on_upload_failure():
     upload_result = TwineUploadResult(returncode=1, url=None, stdout="ERROR HTTPError: 400\n")
     with (
         patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch("pyforge.mason.package.pypi_index.version_exists", return_value=False),
         patch("pyforge.mason.package.twine.upload", return_value=upload_result),
     ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
@@ -991,6 +993,7 @@ def test_ship_pypi_without_repository_url_still_forwards_none_to_twine_upload():
     upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
     with (
         patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch("pyforge.mason.package.pypi_index.version_exists", return_value=False),
         patch(
             "pyforge.mason.package.twine.upload",
             return_value=upload_result,

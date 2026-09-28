@@ -56,6 +56,13 @@ SITES: tuple[Site, ...] = (
     _site("pixi.toml feature pixi floors (python/local-recipes/build)", "pixi.toml",
           r'^pixi = ">=' + _PIXI_VERSION + r'"\s+# Pixi package & environment manager$',
           hits=3, kind="floor"),
+    # mason Story 20.1 (spec-pyforge-mason CAP-30, operator ruling 2026-09-28: no station or
+    # environment caps pixi): registered the day its <0.81 ceiling came off. Unregistered, the
+    # ceiling lagged requires-pixi twice (2026-08-21, 2026-09-11); as a floor site it tracks the
+    # master version and bump-pixi-version moves it, and a re-added ceiling stops matching (hit-count-drift).
+    _site("pyforge-mason [package.run-dependencies] pixi floor",
+          "src/shared/packages/pyforge-mason/pixi.toml",
+          r'^pixi = ">=' + _PIXI_VERSION + r'"', kind="floor"),
     _site("environment.yaml", "environment.yaml",
           r"^- pixi >=" + _PIXI_VERSION + r"$", kind="floor", derived=True),
     _site("dashboard.yml setup-pixi", ".github/workflows/dashboard.yml",
