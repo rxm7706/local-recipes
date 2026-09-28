@@ -3176,7 +3176,7 @@ capabilities:
   - id: pyforge-marshal:CAP-265
     spec: pyforge-marshal
     station: pyforge-marshal
-    heading: "a landing's ledger promotion repairs its own feed drift, never a human's job"
+    heading: "the hand ledger sync repairs unrelated feed drift itself and names every key it repaired"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - id: pyforge-marshal:CAP-266

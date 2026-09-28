@@ -524,6 +524,17 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   already knows the truth and repairing toward it is provably safe.
   Kinships: continues the `dispatch_land_finalize` reliability thread above (Epic 51
   CAP-249/CAP-252, Epic 53 CAP-261); owner `spec-pyforge-marshal`.
+  **Re-scoped 2026-09-28 (operator ruling): the premise above was a misread.** Doctor 24.2's and
+  24.3's automatic promotions never refused over the feed: finalize computed the promotion (its
+  journaled INTENT names the key) and the push died on the pre-push hook's timeout — CAP-277 /
+  Story 68.1. The automatic promotion never depended on the feed at all: it advances the landed key
+  in the tracked twin directly and only warns about feed drift. Feed drift blocked only the *human*
+  fallback, `sprint-ledger-sync` (`scripts/promote_sprint_status.py`), whose regression guard refuses
+  a whole sync when the Tier-3 feed is stale on keys the operator is not promoting. **What it looks
+  like when real now:** that hand sync repairs the unrelated drift itself — the same one-directional
+  pull-forward `--repair-feed` does, only toward `done`, never touching a key the feed is promoting —
+  and names every key it repaired, instead of refusing. `--allow-regression` stays the one way to
+  move a key out of `done`. → CAP-265 (amended) / Epic 54 / Story 54.1, same key.
 - **2026-09-27 — Proposed: a landing refusal outlives the landing.** The 2026-09-25, -26 and
   -27 fleet pictures each opened ATTENTION with `doctor: landing refused (1 finding(s)) --
   MRS-DISP-020` and the same line for marshal. Both refusals were real when written: doctor

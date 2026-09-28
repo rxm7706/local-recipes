@@ -318,6 +318,23 @@ verify_commands = [
   "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
 ]
 
+"54" = [  # the hand ledger sync repairs its own feed drift (spec-pyforge-marshal CAP-265, re-scoped 2026-09-28).
+          # The default surface, restated because a declared entry replaces it outright, plus the repo-root
+          # sync script whose source Marshal owns and the three documents that describe a bare sync.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/promote_sprint_status.py",
+  "AGENTS.md",
+  "docs/how-to/one-chain-station-ops.md",
+  "docs/how-to/troubleshoot-bmad-agent-loops.md",
+]
+
 "66" = [  # a follow-up review a landing recommends is carried (spec-pyforge-marshal CAP-275), added 2026-09-28.
           # The default surface (core/gate.py::default_epic_surface), restated because a declared entry replaces
           # it outright, plus what Story 66.2's one-time backfill writes: the eight stations' tracked

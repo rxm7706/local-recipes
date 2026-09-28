@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-09-28"   # AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -2535,13 +2535,16 @@ Doctor 24.2 and 24.3 (PRs #1577/#1578, #1579/#1580) each landed cleanly but need
 (13 and 14, respectively). FR-211 decomposes into **Epic 54** (Story 54.1) — a new epic because
 Epic 51 (the `dispatch_land_finalize` reliability thread this continues) is `done`.
 
-#### FR-211: A landing's ledger promotion repairs its own feed drift ← CAP-265
-`dispatch_land_finalize`'s promotion retries with the Tier-3 feed's stale-but-safe keys pulled
-forward from the tracked twin (the same one-directional operation `--repair-feed` already performs
-by hand, safe because the twin is the authoritative record) whenever the regression guard's
-refusal names only keys other than the one being promoted, landing the feed catch-up in the same
-commit as the story it promotes; a refusal naming the promoted story's own key still stops for a
-human, unchanged. Fixture: doctor 24.2/24.3. Story 54.1.
+#### FR-211: The hand ledger sync repairs unrelated feed drift itself ← CAP-265 *(amended 2026-09-28, § 31.7)*
+~~`dispatch_land_finalize`'s promotion retries with the Tier-3 feed's stale-but-safe keys pulled
+forward from the tracked twin … whenever the regression guard's refusal names only keys other than
+the one being promoted.~~ Re-scoped by operator ruling 2026-09-28 (the automatic promotion never
+depended on the feed; its 24.2/24.3 failures were the push timeout, FR-223): `sprint-ledger-sync --
+--project <station>` pulls the twin's `done` / story `blocked` values and twin-only keys forward into
+a stale Tier-3 feed — `--repair-feed`'s own move, never away from `done`, never rewriting a key the
+feed advances — then promotes and names every key it repaired, instead of refusing;
+`--allow-regression` stays the one way out of `done`; the feed's trailing metadata survives.
+Fixture: doctor 24.2's hand-sync shape. Story 54.1.
 
 **ONE FR space now FR-1..FR-211** (FR-212 = next free id).
 
@@ -2898,9 +2901,18 @@ keeps today's "unknown station" message byte-for-byte; the usage listing names t
 this environment lacks. Exit codes are unchanged, and `pyforge-core` reads no `pixi.toml`.
 Story 71.1.
 
+### 31.7 FR-211 amended (CAP-265 re-scoped)
+
+Operator ruling 2026-09-28: CAP-265's premise was a misread. Doctor 24.2's and 24.3's automatic
+promotions computed the promotion and died on the pre-push push timeout (FR-223, Story 68.1);
+`cli/land._promote_sprint_ledger` advances the landed key in the twin directly and only warns about
+feed drift. Feed drift blocked only the human fallback, `sprint-ledger-sync`, whose regression guard
+refuses a whole sync over keys the operator is not promoting. FR-211 is amended in place (§ 22) to
+that hand path; its number, Epic 54 and Story 54.1's ledger key are kept. No FR renumbered.
+
 **ONE FR space now FR-1..FR-226** (FR-227 = next free id).
 
-**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered; FR-224, FR-225 and FR-226 later the same day). No AD amended — the follow-up row's
+**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered; FR-224, FR-225 and FR-226 later the same day; FR-211 amended in § 22, recorded in § 31.7). No AD amended — the follow-up row's
 selection and rendering are pure in `core/` and its publish reuses finalize's existing locked write
 onto `origin/main` (AD-4, AD-29, AD-42); the supervisor's verdict reads the process fact it
 journaled while the repository facts stay git's (AD-5, AD-33); the promotion's unpaired INTENT gets
