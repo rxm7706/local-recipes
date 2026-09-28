@@ -524,6 +524,17 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   already knows the truth and repairing toward it is provably safe.
   Kinships: continues the `dispatch_land_finalize` reliability thread above (Epic 51
   CAP-249/CAP-252, Epic 53 CAP-261); owner `spec-pyforge-marshal`.
+  **Re-scoped 2026-09-28 (operator ruling): the premise above was a misread.** Doctor 24.2's and
+  24.3's automatic promotions never refused over the feed: finalize computed the promotion (its
+  journaled INTENT names the key) and the push died on the pre-push hook's timeout — CAP-277 /
+  Story 68.1. The automatic promotion never depended on the feed at all: it advances the landed key
+  in the tracked twin directly and only warns about feed drift. Feed drift blocked only the *human*
+  fallback, `sprint-ledger-sync` (`scripts/promote_sprint_status.py`), whose regression guard refuses
+  a whole sync when the Tier-3 feed is stale on keys the operator is not promoting. **What it looks
+  like when real now:** that hand sync repairs the unrelated drift itself — the same one-directional
+  pull-forward `--repair-feed` does, only toward `done`, never touching a key the feed is promoting —
+  and names every key it repaired, instead of refusing. `--allow-regression` stays the one way to
+  move a key out of `done`. → CAP-265 (amended) / Epic 54 / Story 54.1, same key.
 - **2026-09-27 — Proposed: a landing refusal outlives the landing.** The 2026-09-25, -26 and
   -27 fleet pictures each opened ATTENTION with `doctor: landing refused (1 finding(s)) --
   MRS-DISP-020` and the same line for marshal. Both refusals were real when written: doctor
@@ -692,6 +703,89 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   skip stays the one park mechanism. Kinships: Story 22.7 (the drain), Story 28.12 (the Deps sort),
   Story 28.18 (re-preflight), the 2026-09-25 scope seed (CAP-273); owner `spec-pyforge-marshal`.
   → CAP-274 / Epic 65 / Stories 65.1, 65.2
+- **2026-09-28 — Proposed: `marshal seed check` judges the paths the manifest means.** On this
+  repository `marshal seed check --json` exits 1 with `failing: true`, and five of its HARD findings
+  are the manifest's own placeholders read as literal paths: `docs/dreams/{{ slug }}.md`,
+  `_bmad-output/projects/{{ slug }}/.bmad-config.toml`, its `specs/README.md`,
+  `presentations/{{ slug }}/` and `_bmad-output/projects/{{ slug }}/` — "declared by the manifest but
+  absent from the repo".
+  A sixth is `.claude/skills/**`, an `unclassified-deferred` glob, also read literally. Every one of
+  the eight projects here carries all five rendered paths. The manifest's paths are templated on the
+  project slug (AD-55), and only `seed init` renders them; `check` never does. Story 10.7 named the gap
+  and left it for a later story. Steward's session check reads this JSON, so a green repository reads
+  red. **Does checking A apply at all?** Yes: the model was extracted from this repository and Story
+  12.2's oracle holds it to the model (SC-02). Exempting the seed's home would hide exactly the drift
+  that oracle exists to catch. What changes is that the check reads real paths.
+  **What it looks like when real:** `check` renders `{{ slug }}` with the project the command already
+  resolves for its `[context]` read (`--project`, then `BMAD_ACTIVE_PROJECT`, then the target's
+  active-project marker), through the one renderer `seed init` uses. With no project to resolve, a
+  templated entry is one INFO finding naming `--project`, never a HARD finding against a literal
+  placeholder. An `unclassified-deferred` entry has no class contract and nothing `adopt` could
+  materialize, so it is never reported missing. What stays on this repository after the fix is true:
+  it was never adopted (`model-behind`), and its primary checkout has no `.bmad-loop/policy.toml`
+  because the harness policy is rendered per loop home. That second fact is Story 12.2's K-02, not
+  this fix.
+  **Constraints:** no new state key (the state schema has no `slug`, by decision); no exemption by
+  repository name; `init`'s behaviour is unchanged. Kinships: Story 10.7 (the gap named), Story 12.2
+  (the oracle, K-02), steward session check's parse of this JSON (a separate steward CAP); owner
+  `spec-pyforge-marshal`.
+- **2026-09-28 — Proposed: the front door names the environment a roster station runs in.**
+  `pixi run -e pyforge-guild pyforge warden --help` answers `unknown station 'warden'; known:
+  doctor, herald, marshal, scribe, steward` (exit 2), and `pyforge atlas` and `pyforge mason` answer
+  the same. All three are Guild stations on the one roster (`pyforge.core.roster.STATIONS`); they are
+  simply not installed in the Guild environment. Warden is left out on purpose (its `osv-scanner`
+  range pin conflicts with the factory's), atlas is absent, and mason arrives with steward Story
+  72.1. `pyforge.core.dispatch` builds its station map from the installed distributions and calls
+  anything missing "unknown", so the operator is told a real station does not exist.
+  **What it looks like when real:** a name on the roster that is not installed here reads as exactly
+  that — "station 'warden' is not installed in this environment; it runs in `-e pyforge-warden`" —
+  with the command to run it. A name on no roster still reads "unknown station", listing what is
+  installed. `pyforge --help` names the roster stations this environment lacks and where each runs.
+  **Constraints:** `pyforge-core` stays a stdlib leaf and reads no `pixi.toml`: the environment name
+  is the roster's long form (`pyforge-<station>`, the form Ruling 18 fixes for packages and pixi
+  environments); the exit code is unchanged; no station is installed or removed here. Owner
+  `spec-pyforge-core` (hosted on marshal; its Dream is archived here). Kinships:
+  `spec-pyforge-steward:CAP-161` (Story 72.1, mason in the Guild environment), steward's
+  examination of atlas in the Guild environment (a separate steward chain).
+- **2026-09-28 — Proposed: the dispatch supervisor judges a merge from `origin/main`.** CAP-276
+  (Story 67.1) makes the supervisor trust the landing it journaled itself, because its repository
+  facts read local `main`, which only moves when finalize can fast-forward the primary checkout. That
+  is a workaround for the reads, not a fix of them. `gather_dispatch_git_facts` asks
+  `is_branch_merged(…, into="main")` and reads the merge subjects from `refs/heads/main`, while the
+  same function already diffs from `origin/main` and reads each candidate spec's status at
+  `origin/main` — one fact from two refs. Three decisions consume those facts: whether to land
+  (`VERIFIED` and not merged), whether a stuck land is retried (`should_retry_stuck_land`), and
+  whether the supervisor may exit (`supervisor_should_exit`). With local `main` behind, a story
+  merged by another route reads unmerged: the supervisor tries to land it again and counts it stuck.
+  **What it looks like when real:** every merge fact the supervisor judges comes from
+  `refs/remotes/origin/main`, the ref a landing writes and the supervisor already fetches every
+  fifth tick; after its own land it fetches before re-reading. Local `main` can lag as long as it
+  likes. **Constraints:** the landing journal still decides first (CAP-276); an unreadable
+  `origin/main` is a failed gather, as today, never a merged story; the port's branch-name form stays
+  for its other callers. Kinships: CAP-276 (Story 67.1), CAP-270 (Story 60.1, the full ref);
+  owner `spec-pyforge-marshal`.
+- **2026-09-28 — Proposed: a drain runs the follow-up review a landed story recommended.**
+  CAP-275 (Story 66.1) carries `followup_review_recommended: true` into the station's deferred-work
+  ledger as an open `DW-FRR-<story>` row, and then nothing runs the review. A drain never
+  dispatches a `done` key (`station_backlog` drops it; `--stories` refuses it), although
+  `bmad-build-auto` already knows what to do with one: its step 01 routes a `done` spec whose flag is
+  `true` to a fresh review, writing the flag `false` first. Two things stand in the way beyond the
+  queue. The dispatch supervisor judges a run complete as soon as the story's merge subject is on
+  `main` (`judge_dispatch_completion`), and the original landing already put it there, so a review
+  run reads finished before it starts. And `dispatch land` answers ALREADY_LANDED for the same
+  reason, so the review's own branch would never merge.
+  **What it looks like when real:** a run on a `done` spec with the flag `true` is a follow-up review
+  run, marked so in its journal with the row it answers. It is judged and landed by its own branch —
+  merges after its own baseline, its own head on `origin/main` — never by the story's first landing,
+  and a review whose only change is its own spec's record still counts. When it lands, finalize
+  closes the row. A drain queues each open row after the station's implementable backlog, and
+  `drain --plan` lists them.
+  **Constraints (the respawn trap):** the row's state gates a follow-up, never the ledger key — the
+  key stays `done` throughout, is never flipped and never re-enters the backlog; a closed or absent
+  row is never dispatched; an open row whose spec no longer reads `done` with the flag `true` is
+  reported stale, not dispatched; a follow-up's own review never chains a second one (step 04 leaves
+  the flag `false`). Kinships: CAP-275 (Stories 66.1, 66.2), CAP-274 (Story 65.1, `drain --plan`),
+  CAP-280 (Story 72.1, the supervisor's merge reads); owner `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
@@ -1844,6 +1938,25 @@ kinship, not a merge)
   the length of the launch: the wrong-project window this Dream exists to close. A contradicting
   `BMAD_ACTIVE_PROJECT`, or a worktree whose own triangle names another project, still refuses
   `MRS-DISP-041`. → CAP-273 / Epic 64 / Story 64.1
+- **2026-09-28 — Proposed: the switch script runs where it is documented to run.** Every document
+  names the bare form (`scripts/bmad-switch <slug>`, `scripts/bmad-switch --current`; AGENTS.md, the
+  pre-shell hook's `bmad-switch-unsafe` denial, 326 tracked Markdown files, none with an interpreter
+  prefix), and its shebang is `#!/usr/bin/env python3`. On this machine that is the system Python
+  3.12.3, and `--current` crashes: `_load_verify_scope` first imports `pyforge.marshal.scope`, which
+  the system interpreter does not have (`ModuleNotFoundError: No module named 'pyforge'`), then falls
+  back to the source tree and imports `scope.py`, whose `except OSError, UnicodeDecodeError:` (line 60)
+  is Python 3.14-only syntax — `ruff format` wrote it under the package's py314 target on 2026-09-20.
+  `--list` crashes the same way once a marker exists; the switch itself and `--clear` never load the
+  primitive and still run. Today the read verbs work only as
+  `pixi run -e pyforge-guild python scripts/bmad-switch …`, which no document says.
+  **What it looks like when real:** every documented form works on the primary checkout. When the
+  primitive will not load, the script runs itself once more under the Guild environment and returns
+  that run's exit code. When `pixi` is missing, it prints one line naming the interpreter it ran
+  under, what it needs and the exact command, and exits non-zero — never a traceback.
+  **Constraints:** `scope.py` stays the one primitive (no local copy, no 3.12 rewrite that the
+  formatter would undo); nothing prints before the re-run; a re-run never loops; the switch and
+  `--clear` are unchanged. Kinships: CAP-75..CAP-77 (the primitive and its hard fail, Stories 20.6 /
+  20.7), CAP-201 (the worktree-aware switch); owner `spec-pyforge-marshal`.
 
 ## 2026-09-16 — Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones (folded from dashboard-velocity-captures-hand-driven-work)
 

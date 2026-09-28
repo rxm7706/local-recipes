@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
@@ -1911,5 +1911,49 @@ fact (AD-33). `VcsPort.commit_paths_onto_remote_tip` gains one keyword-only argu
 reason for the pre-push opt-out. The adapter sets the opt-out only after checking the commit it
 built, as Story 57.1's refresh push does, so the port's contract widens without a new port, adapter
 or decision boundary.*
+
+*Extended in the evening for FR-224 / CAP-278 (Epic 69, the switch script runs where it is documented
+to run). `scripts/bmad-switch` is a repo-root script whose source Marshal owns, outside the
+hexagon, so no port or adapter moves. It lands on AD-8 as written: a primitive that cannot load is a
+non-zero exit naming why, never a traceback and never a pass. The re-execution runs the same
+`verify_scope` (CAP-75..77), so the one primitive stays one.*
+
+*Extended for FR-225 / CAP-279 (Epic 70, seed check judges the paths the manifest means). It lands
+on AD-54, AD-55 and AD-60 as written. AD-55 already declares a manifest path templated on the slug;
+`check` now renders it, through the one renderer `seed init` uses, moved into `model/manifest.py`
+beside the manifest it renders. `check` stays the model's own detector (AD-54), and SC-02's oracle
+keeps this repository under it (AD-60). The slug comes from the command's existing project
+resolution, never from state (AD-52's schema is unchanged).*
+
+*Extended for FR-226 / `spec-pyforge-core` CAP-11 (Epic 71, the front door names the environment a
+roster station runs in). It lands on AD-66 and AD-68 as written. The front door reads the roster from
+`pyforge.core.roster`, another module of the same leaf, and derives the environment from the
+roster's long form, so `pyforge-core` still reads no file and imports no station (AD-66). Exit codes
+and the off-roster message are unchanged (AD-68); only the not-installed case gains its own
+wording.*
+
+*FR-211 / CAP-265 re-scoped (operator ruling, Story 54.1, key kept). The change moves from
+`dispatch_land_finalize` to `scripts/promote_sprint_status.py`, the human fallback, a repo-root
+script outside the hexagon, so no port or adapter moves. It lands on AD-33 and AD-42 as written: the
+tracked twin stays the record of fact and the Tier-3 feed the statement of intent, so the repair only
+moves the feed toward the twin (AD-33); the write still takes the ledger lock every writer of the
+tracked twin shares (AD-42).*
+
+*Extended for FR-227 / CAP-280 (Epic 72, the dispatch supervisor judges merge facts from
+origin/main). It lands on AD-9, AD-29 and AD-33 as written. The supervisor still observes from
+outside (AD-9); the repository facts it observes are read from the ref a landing makes durable,
+`origin/main` (AD-29), and keep the repository as their authority (AD-33), no longer a local branch
+that only moves when the primary checkout can be fast-forwarded. `VcsPort.is_branch_merged` gains
+one keyword-only argument, a full-ref target; its branch-name form keeps its callers, so the port's
+contract widens without a new port, adapter or decision boundary.*
+
+*Extended for FR-228 / CAP-281 (Epic 73, a drain runs the follow-up review a landed story
+recommended). It lands on AD-4, AD-5, AD-9, AD-29, AD-42 and AD-75 as written. Selecting open
+`DW-FRR` rows and rendering a closed one are pure functions in `core/` (AD-4). A follow-up run is
+marked on its launch INTENT, derived from the tracked spec's own frontmatter, never declared by a
+caller (AD-5, AD-75). The supervisor still judges from outside (AD-9), now scoped to the run's own
+baseline so an older landing of the same story is not read as this run's. The row is closed through
+the publish onto `origin/main` and the lock CAP-275's carry already uses (AD-29, AD-42). No new port,
+adapter or decision boundary.*
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

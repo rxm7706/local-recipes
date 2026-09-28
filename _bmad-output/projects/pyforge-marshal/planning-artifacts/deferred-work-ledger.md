@@ -6758,12 +6758,12 @@ status: open
 
 ## DW-marshal-repair-feed-drops-trailing-metadata-2026-09-27 — `repair_feed` rewrites a Tier-3 feed as "everything before `development_status:`" plus the map, so a feed whose top-level metadata follows the map loses it
 
-- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-265 — Story 54.1 makes `dispatch_land_finalize` call this repair automatically on every landing)
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-265 — re-scoped 2026-09-28: Story 54.1 makes the bare `sprint-ledger-sync` run this repair on every sync whose feed has drifted; before the re-scope it named `dispatch_land_finalize`)
   summary: marshal's Tier-3 feed (`implementation-artifacts/sprint-status.yaml`) carries `generated`, `last_updated`, `project`, `project_key`, `tracking_system` and `story_location` AFTER its `development_status:` map. `scripts/promote_sprint_status.py::repair_feed` writes `head + "development_status:\n" + sorted map`, where `head` is only the text before the marker, so all six keys are dropped. By hand this is one lost block per `--repair-feed`; once Story 54.1 wires the repair into `dispatch_land_finalize`, it happens on every landing whose feed has drifted.
   evidence: probe 2026-09-27 on a scratch copy of marshal's feed — `repair_feed(copy, parse_sprint_status(copy), twin)` restored 24 regressed + 15 missing keys and the four keys checked (`generated`, `project`, `project_key`, `story_location`) were all gone from the output; the Story 56.1 mint aligned the live feed with a layout-preserving script instead.
   location: scripts/promote_sprint_status.py
   severity: medium
-  fix: split the feed at the `development_status:` block's end (the first following line that starts a top-level key), not only at its start, and write `head + block + tail`; add a regression test with trailing metadata. Home: Story 54.1, which already names `scripts/promote_sprint_status.py`'s repair path in its Surface — land the fix there before the repair runs unattended.
+  fix: split the feed at the `development_status:` block's end (the first following line that starts a top-level key), not only at its start, and write `head + block + tail`; add a regression test with trailing metadata. Home: Story 54.1, which names `scripts/promote_sprint_status.py`'s repair path in its Surface — land the fix there, in the same change that makes the bare sync repair by default.
   status: open
 
 ## DW-marshal-disp020-two-meanings-2026-09-27 — `MRS-DISP-020` names two different failures: a PR that could not be merged, and a promote + ledger finalize that failed after the PR merged

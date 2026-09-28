@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 469
+# stories: 485
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -334,12 +334,18 @@ development_status:
   66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test: backlog
   67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: backlog
   68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent: backlog
+  69-1-the-switch-script-runs-where-it-is-documented-to-run: backlog
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
   7-4-manifest-schema-loader-and-model-version-ranges: done
   7-5-the-v1-extraction-manifest-the-model-as-data: done
   7-6-spike-0-copier-api-fit-critical-gate: done
+  70-1-seed-check-judges-the-paths-the-manifest-means-never-its-placeholders: backlog
+  71-1-the-front-door-names-the-environment-a-roster-station-runs-in: backlog
+  72-1-the-dispatch-supervisor-reads-merge-facts-from-origin-main: backlog
+  73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch: backlog
+  73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended: backlog
   8-1-marker-grammar-and-the-per-format-registry: done
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done
@@ -477,8 +483,18 @@ development_status:
   epic-67-retrospective: optional
   epic-68: backlog
   epic-68-retrospective: optional
+  epic-69: backlog
+  epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
+  epic-70: backlog
+  epic-70-retrospective: optional
+  epic-71: backlog
+  epic-71-retrospective: optional
+  epic-72: backlog
+  epic-72-retrospective: optional
+  epic-73: backlog
+  epic-73-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

@@ -318,6 +318,23 @@ verify_commands = [
   "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
 ]
 
+"54" = [  # the hand ledger sync repairs its own feed drift (spec-pyforge-marshal CAP-265, re-scoped 2026-09-28).
+          # The default surface, restated because a declared entry replaces it outright, plus the repo-root
+          # sync script whose source Marshal owns and the three documents that describe a bare sync.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/promote_sprint_status.py",
+  "AGENTS.md",
+  "docs/how-to/one-chain-station-ops.md",
+  "docs/how-to/troubleshoot-bmad-agent-loops.md",
+]
+
 "66" = [  # a follow-up review a landing recommends is carried (spec-pyforge-marshal CAP-275), added 2026-09-28.
           # The default surface (core/gate.py::default_epic_surface), restated because a declared entry replaces
           # it outright, plus what Story 66.2's one-time backfill writes: the eight stations' tracked
@@ -333,6 +350,35 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md",
+]
+
+"69" = [  # the switch script runs where it is documented to run (spec-pyforge-marshal CAP-278), added 2026-09-28.
+          # The default surface, restated because a declared entry replaces it outright, plus the one
+          # repo-root script whose source Marshal owns. Its tests live in the marshal package.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/bmad-switch",
+]
+
+"71" = [  # the front door names the environment a roster station runs in (spec-pyforge-core CAP-11), added 2026-09-28.
+          # Hosted on marshal (Epics 14/52/63 precedent). The default surface, restated because a declared entry
+          # replaces it outright, plus pyforge-core's front door and its unit test -- nothing else in pyforge-core.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py",
 ]
 
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
