@@ -47,7 +47,7 @@ development_status:
   17-1-the-local-mirror-is-the-source-of-truth: done
   17-2-every-local-recipe-carries-its-internal-metadata-stripped-on-push: done
   17-3-the-recurring-campaigns-have-a-home-and-a-record: done
-  18-1-the-recipe-ci-picks-changed-recipes-from-the-remote-tracking-ref: backlog
+  18-1-the-recipe-ci-picks-changed-recipes-from-the-remote-tracking-ref: done
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -103,7 +103,7 @@ development_status:
   epic-16-retrospective: optional
   epic-17: done
   epic-17-retrospective: optional
-  epic-18: backlog
+  epic-18: done
   epic-18-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional

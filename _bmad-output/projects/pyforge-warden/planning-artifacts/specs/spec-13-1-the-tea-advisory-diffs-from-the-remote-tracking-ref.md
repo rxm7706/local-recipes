@@ -2,7 +2,7 @@
 title: "13.1: The TEA advisory diffs from the remote-tracking ref"
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -21,7 +21,7 @@ declared_low_risk: false
 **Approach:** `_DEFAULT_BASE_REF = "refs/remotes/origin/main"`, and the comment that mirrors steward's `tea-test-review` pixi task names the new base (steward Story 70.1 changes the task in the same change). A unit test captures the argv the default runner builds, with `subprocess.run` replaced, and asserts `--base refs/remotes/origin/main`. TEA's own default is upstream's; it is not changed here.
 
 Ledger key: `13-1-the-tea-advisory-diffs-from-the-remote-tracking-ref`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -69,3 +69,4 @@ Ledger status at mint: `backlog`.
   - [fixed] nit: `_default_runner`'s docstring said it is never exercised in the suite -- the real binary never is;
     the new test calls the function with `subprocess.run` replaced. Verified: TEA 1.27.2 rejects only an empty
     base or one starting with `-`, so the full ref is accepted.
+- **Review 2 (2026-09-27, same agent, delta) — PASS.**

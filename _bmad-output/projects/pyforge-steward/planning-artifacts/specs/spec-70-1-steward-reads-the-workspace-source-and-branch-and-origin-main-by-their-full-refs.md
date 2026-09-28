@@ -2,7 +2,7 @@
 title: "70.1: Steward reads the workspace source and branch, and origin/main, by their full refs"
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -21,7 +21,7 @@ declared_low_risk: false
 **Approach:** two private helpers in `workspace.py` — `_source_ref(source)` (`origin/<b>` → `refs/remotes/origin/<b>`, anything else unchanged) and `_branch_ref(branch)` (`refs/heads/<branch>`) — used at every git read of a record's source and branch; `start` passes `_source_ref(from_ref)` to `worktree add` and records `from_ref` as written, so old bookkeeping reads the same way. The platform guard's `rev-parse`, skip text and `diff` name `refs/remotes/origin/main` (the platform CI fetch already writes that ref). The pixi task passes `--base refs/remotes/origin/main` and its description says so; the review lens defaults to the same and writes a stated `origin/<b>` as `refs/remotes/origin/<b>`; `environment.yaml` is re-exported (tasks are not in it, so it should not change).
 
 Ledger key: `70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -83,3 +83,8 @@ Ledger status at mint: `backlog`.
     it always prefixes now; a test pins it.
   - [fixed] nit: a test docstring said the deleted branch's commits existed nowhere else -- they stayed reachable
     through the stray ref.
+- **Review 2 (2026-09-27, same agent, delta) — PASS:** 7/7 single-line mutants killed; two lows taken after it --
+  a cross-reference event on spec-pyforge-marshal's memlog (the lens is marshal Story 31.3's file), and CAP-157's
+  heading names the Story 70.1 supersession. [accepted] the lens's change sits on this chain: spec-surface names no
+  governor for `_bmad/**`, and both tea-test-review callers are halves of spec-bmad-suite-lifecycle CAP-4, a
+  steward-hosted Spec, where the event is recorded.

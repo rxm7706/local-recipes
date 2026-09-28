@@ -2,7 +2,7 @@
 title: "18.1: The recipe CI picks changed recipes from the remote-tracking ref"
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -21,7 +21,7 @@ declared_low_risk: false
 **Approach:** all four diff from `refs/remotes/origin/${{ github.base_ref }}...HEAD`. The regression test is `pyforge-core:CAP-10`'s workflow scan (marshal Story 63.1, same change), which covers these four; no second test. `.github/` is outside the CFE surface (`scripts/mason_cfe_surface_check.py`), so no CFE retro is owed.
 
 Ledger key: `18-1-the-recipe-ci-picks-changed-recipes-from-the-remote-tracking-ref`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -69,3 +69,4 @@ Ledger status at mint: `backlog`.
   - [fixed] LOW: the failure scenario cannot occur today -- no recipe workflow runs on `pull_request`, so the branch
     is dormant; the Dream, CAP-28 (memlog amendment, then its rendered line), the epic and this spec now call it
     hardening.
+- **Review 2 (2026-09-27, same agent, delta) — PASS:** the hardening wording verified against the triggers.

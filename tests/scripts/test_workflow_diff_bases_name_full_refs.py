@@ -15,12 +15,14 @@ REPO = Path(__file__).resolve().parents[2]
 WORKFLOWS = REPO / ".github" / "workflows"
 
 #: The shapes a workflow builds a short base from: ``origin/`` then a GitHub expression or shell variable, quoted or not
-#: (``origin/${{ github.base_ref }}``, ``origin/"$BASE"``); ``format('origin/{0}', ...)``; and a literal range
-#: (``origin/main...HEAD``). The lookbehind skips ``refs/remotes/origin/...`` (a ``/`` precedes it).
+#: (``origin/${{ github.base_ref }}``, ``origin/"$BASE"``, ``origin/$1``); ``format('origin/{0}', ...)``; a literal
+#: range (``origin/main...HEAD``, not prose's ``origin/main...``); and a literal ``origin/<b>`` handed to a git command
+#: that reads it as a revision (``git diff origin/main HEAD``). The lookbehind skips ``refs/remotes/origin/...``.
 SHORT_BASE = re.compile(
-    r"(?<![\w/.-])origin/[\"']?\$(?:\{\{|\{|[A-Za-z_])"
+    r"(?<![\w/.-])origin/[\"']?\$(?:\{\{|\{|[A-Za-z_0-9])"
     r"|format\(\s*'origin/\{"
-    r"|(?<![\w/.-])origin/[\w.-]+(?:/[\w.-]+)*\.\."
+    r"|(?<![\w/.-])origin/[\w.-]+(?:/[\w.-]+)*\.\.\.?(?=[\w@$])"
+    r"|\bgit\s+(?:diff|log|merge-base|rev-list|rev-parse|show)\b.*?(?<![\w/.:+-])origin/\w"
 )
 
 
@@ -57,6 +59,11 @@ def test_the_scan_sees_each_short_shape_and_passes_the_full_ref() -> None:
     assert _offenders("base: ${{ format('origin/{0}', github.base_ref) }}")
     assert _offenders("git diff --name-only origin/main...HEAD")
     assert _offenders("git log origin/release/2026..HEAD")
+    assert _offenders("git diff origin/main HEAD")
+    assert _offenders("git merge-base origin/main HEAD")
+    assert _offenders('git diff "origin/$1"...HEAD')
+    assert not _offenders('echo "Syncing with origin/main..."')
+    assert not _offenders("git diff refs/remotes/origin/main HEAD")
     assert not _offenders('BASE="refs/remotes/origin/${GITHUB_BASE_REF}"')
     assert not _offenders("git diff --name-only refs/remotes/origin/${{ github.base_ref }}...HEAD")
     assert not _offenders("git diff refs/remotes/origin/main...HEAD")

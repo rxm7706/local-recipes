@@ -326,7 +326,7 @@ development_status:
   60-1-every-remote-tracking-read-names-the-full-ref: done
   61-1-every-local-branch-read-names-the-full-ref: done
   62-1-the-kits-branch-guards-default-to-the-remote-tracking-ref: done
-  63-1-the-station-tests-lane-picks-suites-from-the-remote-tracking-ref: backlog
+  63-1-the-station-tests-lane-picks-suites-from-the-remote-tracking-ref: done
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
@@ -452,7 +452,7 @@ development_status:
   epic-60: done
   epic-61: done
   epic-62: done
-  epic-63: backlog
+  epic-63: done
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

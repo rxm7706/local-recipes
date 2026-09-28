@@ -2,7 +2,7 @@
 title: "63.1: The station-tests lane picks suites from the remote-tracking ref"
 type: 'fix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -22,7 +22,7 @@ declared_low_risk: false
 **Approach:** the lane's pull_request `BASE` names `refs/remotes/origin/${GITHUB_BASE_REF}`. A new scripts-suite test (`tests/scripts/test_workflow_diff_bases_name_full_refs.py`, stdlib only) scans every workflow under `.github/workflows/` and fails on any line that builds a base from a short `origin/${…}` — a GitHub expression or a shell variable — so the shape cannot come back in this lane, the coverage gate or mason's four recipe workflows (`pyforge-mason:CAP-28`, fixed in the same change).
 
 Ledger key: `63-1-the-station-tests-lane-picks-suites-from-the-remote-tracking-ref`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -75,3 +75,6 @@ Ledger status at mint: `backlog`.
   - [fixed] nit: the scan missed a quoted variable (`origin/"$X"`), `format('origin/{0}', ...)` and a literal range
     (`origin/main...HEAD`), and flagged a trailing comment -- all four handled and pinned; the redundant
     `refs/remotes/` lookbehind dropped. It still finds exactly the five pre-fix lines on `origin/main`'s workflows.
+- **Review 2 (2026-09-27, same agent, delta) — PASS:** a scan nit fixed after it -- no false positive on prose
+  (`origin/main...` then a quote), and a literal `origin/<b>` handed to `git diff|log|merge-base|rev-list|rev-parse|show`
+  and `origin/$1` are caught; still exactly the five pre-fix lines on `origin/main`'s workflows.

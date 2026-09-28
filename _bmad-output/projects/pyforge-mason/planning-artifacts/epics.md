@@ -2011,7 +2011,7 @@ So that, when a pull_request trigger returns, a pushed tag named `origin/main` c
 **When** a recipe workflow picks what to build
 **Then** it diffs `refs/remotes/origin/${{ github.base_ref }}...HEAD`, never the short `origin/<base>`
 **And** marshal Story 63.1's workflow test passes over all four, and the manual `recipes` input path is unchanged
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 

@@ -684,4 +684,5 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   location: src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py; pixi.toml `tea-test-review`
   severity: low
   fix: pass `refs/remotes/origin/main` (after confirming the binary accepts a full ref), through warden's chain; steward's task likewise (a `pixi.toml` change regenerates `environment.yaml`).
-  status: open
+  status: closed
+  resolved: 2026-09-27 (warden Story 13.1, spec-pyforge-warden CAP-23; steward Story 70.1, pyforge-steward:CAP-158) — the advisory's `_DEFAULT_BASE_REF`, steward's `tea-test-review` task and marshal's review lens (the task's one documented caller, whose `--base` replaces the task's) all pass `refs/remotes/origin/main`. Verified against the installed TEA 1.27.2: it diffs `<base>...HEAD` and rejects only an empty base or one starting with `-`.
