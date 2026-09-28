@@ -747,6 +747,23 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `spec-pyforge-core` (hosted on marshal; its Dream is archived here). Kinships:
   `spec-pyforge-steward:CAP-161` (Story 72.1, mason in the Guild environment), steward's
   examination of atlas in the Guild environment (a separate steward chain).
+- **2026-09-28 — Proposed: the dispatch supervisor judges a merge from `origin/main`.** CAP-276
+  (Story 67.1) makes the supervisor trust the landing it journaled itself, because its repository
+  facts read local `main`, which only moves when finalize can fast-forward the primary checkout. That
+  is a workaround for the reads, not a fix of them. `gather_dispatch_git_facts` asks
+  `is_branch_merged(…, into="main")` and reads the merge subjects from `refs/heads/main`, while the
+  same function already diffs from `origin/main` and reads each candidate spec's status at
+  `origin/main` — one fact from two refs. Three decisions consume those facts: whether to land
+  (`VERIFIED` and not merged), whether a stuck land is retried (`should_retry_stuck_land`), and
+  whether the supervisor may exit (`supervisor_should_exit`). With local `main` behind, a story
+  merged by another route reads unmerged: the supervisor tries to land it again and counts it stuck.
+  **What it looks like when real:** every merge fact the supervisor judges comes from
+  `refs/remotes/origin/main`, the ref a landing writes and the supervisor already fetches every
+  fifth tick; after its own land it fetches before re-reading. Local `main` can lag as long as it
+  likes. **Constraints:** the landing journal still decides first (CAP-276); an unreadable
+  `origin/main` is a failed gather, as today, never a merged story; the port's branch-name form stays
+  for its other callers. Kinships: CAP-276 (Story 67.1), CAP-270 (Story 60.1, the full ref);
+  owner `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
