@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -2794,8 +2794,9 @@ reads stay in `cli/`; no new port, adapter or decision boundary.
 ## 31. Currency reconciliation — 2026-09-28
 
 *Chain-currency sweep: `spec-pyforge-marshal` gained CAP-275 and CAP-276 on 2026-09-28, both from
-the station Dream's 2026-09-19 (the third drain) entry, items (5) and (2). Same-day reconcile; FRs
-derived from the CAPs per `one-chain-per-station`.*
+the station Dream's 2026-09-19 (the third drain) entry, items (5) and (2), and CAP-277 the same day
+from marshal 64.1's landing. Same-day reconcile; FRs derived from the CAPs per
+`one-chain-per-station`.*
 
 ### 31.1 The FR space: FR-221 registered
 
@@ -2831,10 +2832,33 @@ the run journaled `ok` with verdict `landed` or `already_landed` resolves the se
 repository-fact reads and their local-`main` base are unchanged, and the completion still reports
 them as read. Story 67.1.
 
-**ONE FR space now FR-1..FR-222** (FR-223 = next free id).
+### 31.3 The FR space: FR-223 registered
 
-**Content changed:** § 31 added (FR-221 and FR-222 registered). No AD amended — the follow-up row's
+Later on 2026-09-28, marshal 64.1 landed (PR #1647) and its tracked ledger still read `backlog` on
+`origin/main`. The finalize promotion's push to `main` ran the repository's `pre-push` hook
+(`spec-pyforge-steward:CAP-154`). The hook runs the full `pr-preflight` on the primary checkout, not
+on the pushed commit, and the publish's 120 s git timeout killed the push. The promotion reported
+that only as a WARN, finalize exited 0, and `dispatch land` journaled `landed` / clean. Since the
+hook landed on 2026-09-20, 0 of 9 promotion intents reached `origin/main`. FR-223 decomposes into
+**Epic 68** (Story 68.1).
+
+#### FR-223: A landing's ledger promotion reaches origin/main, and a failed one is never silent ← CAP-277
+The publish that carries a landing's bookkeeping onto `origin/main` sets the pre-push hook's
+journaled opt-out for its one push, with a reason naming the new sha, the paths and the story. It
+does so only when a caller passes that reason and the commit it built names no path outside the
+written set, all under the station's `planning-artifacts/`; any other diff is refused before the
+push. The ledger promotion, finalize's intake publish and the supervisor's blocked-twin publish all
+pass the story key. A failure is never silent: the promotion pairs its INTENT with an OUTCOME `ok:
+false`; finalize journals every finding it collected and, when the landed key does not read `done`
+on `origin/main` after its promotion, adds `MRS-DISP-051` (ERROR) and exits non-zero; `dispatch
+land` turns a non-zero finalize exit into `MRS-DISP-020`, REFUSED; and a failed blocked-twin publish
+is journaled. Story 68.1.
+
+**ONE FR space now FR-1..FR-223** (FR-224 = next free id).
+
+**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered). No AD amended — the follow-up row's
 selection and rendering are pure in `core/` and its publish reuses finalize's existing locked write
 onto `origin/main` (AD-4, AD-29, AD-42); the supervisor's verdict reads the process fact it
-journaled while the repository facts stay git's (AD-5, AD-33); no new port, adapter or decision
-boundary.
+journaled while the repository facts stay git's (AD-5, AD-33); the promotion's unpaired INTENT gets
+its OUTCOME (AD-6), the new refusal is a coded finding (AD-15), and whether the key reached `done` is
+read from `origin/main` (AD-29, AD-33); no new port, adapter or decision boundary.
