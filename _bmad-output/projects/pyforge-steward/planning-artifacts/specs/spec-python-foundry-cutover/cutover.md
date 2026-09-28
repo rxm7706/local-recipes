@@ -1,6 +1,6 @@
 ---
 companion-of: spec-python-foundry-cutover
-updated: "2026-09-13"
+updated: "2026-09-28"
 ---
 
 # Cutover — phases, target tree, faces, order
@@ -114,7 +114,7 @@ python-foundry/                        # lasting git root (today: local-recipes)
 ├── src/ides/  src/sentinel/  src/domains/<slug>/
 ├── templates/  presentations/pyforge-<station>/  docs/dreams/
 ├── skills/
-│   ├── stations/<station>/SKILL.md    # × 7. Mason → domain/conda-forge-expert
+│   ├── stations/<station>/SKILL.md    # × 8; Mason's sits beside domain/conda-forge-expert
 │   ├── personas/<station>/SKILL.md
 │   └── domain/conda-forge-expert/
 ├── .claude/skills/  (.cursor/skills/) # generated per-machine links, gitignored (fnd:AD-19)
@@ -129,12 +129,12 @@ python-foundry/                        # lasting git root (today: local-recipes)
 | CLI | `src/packages/pyforge-<station>/` |
 | UI | `src/packages/django-<station>/` |
 | MCP | `POST /stations/<name>/mcp` on Foundry Platform |
-| Skill | `skills/stations/<station>/` (mason: `skills/domain/conda-forge-expert`) |
+| Skill | `skills/stations/<station>/` (mason: `skills/stations/mason/` + `skills/domain/conda-forge-expert`) |
 | Agent | `skills/personas/<station>/` (`python-persona-engine` + harness) |
 
 ## Do not create / carry
 
-`.claude/skills/pyforge-mason/` · lasting `src/shared/packages/` ·
+`.claude/skills/pyforge-mason/` (never carried; `A-only` on A until the flip) · lasting `src/shared/packages/` ·
 `src/platform/compliance_face/` as the portal · `services/` or `:800x` · root
 `docker-compose.yml` · `sys.path` for `django-*` · Containerfile `COPY` of django src ·
 the `recipes/` universe · the 268 registered worktrees · `local-recipes` git history.

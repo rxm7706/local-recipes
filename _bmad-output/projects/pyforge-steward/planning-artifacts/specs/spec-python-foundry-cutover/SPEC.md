@@ -4,7 +4,7 @@ spec: python-foundry-cutover
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-09-04"
-updated: "2026-09-26"
+updated: "2026-09-28"
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-N outside it; Unifying CAP-1..19 and pap:CAP-1..6 are different sets — never collapse
 surface: []
@@ -243,7 +243,9 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 - Package fold and the skills / BMAD move are separate stories. Never one.
 - The estate `pixi.lock` never absorbs the factory solver farm.
 - No `services/` or `:800x` tree; no root `docker-compose.yml`; no
-  `src/platform/compliance_face/` as the portal; no `.claude/skills/pyforge-mason/`.
+  `src/platform/compliance_face/` as the portal; no lasting `.claude/skills/pyforge-mason/`
+  — `A-only` until the cutover flip, never carried to B (B rebuilds Mason's skills under
+  `skills/stations/`).
 - CAP-3 and CAP-6 are Mason work under Rule 1 and Rule 2: `conda-forge-expert` is
   invoked and a CFE retro lands. Marshal's `Deps:` parser is station-local, so Mason
   gates are ledger state, as 43.6 was behind Mason 13.
