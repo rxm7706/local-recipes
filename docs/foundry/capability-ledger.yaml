@@ -3233,6 +3233,24 @@ capabilities:
     heading: "a drain can be asked, before it launches anything, whether each queued story would dispatch"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-275
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a follow-up review a landed story recommends is carried into the deferred-work ledger, never dropped"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-276
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a landed dispatch reads completed even when the primary checkout cannot be fast-forwarded"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-277
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a landing's ledger promotion reaches origin/main, and a failed one is never silent"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core

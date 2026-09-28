@@ -6371,7 +6371,7 @@ status: open
   severity: medium
   promoted: 2026-09-19 — hand-filed
   status: open
-  story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5).
+  story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5). Promoted 2026-09-28 to Stories 66.1 (spec-pyforge-marshal CAP-275, Epic 66: finalize carries a recommended follow-up review into this ledger as `DW-FRR-<story>`) and 66.2 (the one-time backfill, which mints `DW-FRR-51-2` to carry 51.2's own follow-up review from then on); close when 66.2 lands, citing both merges.
 
 ### DW-FU-51-9: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
 
@@ -6839,3 +6839,13 @@ status: open
   fix: `BASE="refs/remotes/origin/${GITHUB_BASE_REF}"`, through spec-pyforge-core's chain.
   status: closed
   resolved: 2026-09-27 (marshal Story 63.1, spec-pyforge-core CAP-10) — the lane's pull_request `BASE` names `refs/remotes/origin/${GITHUB_BASE_REF}`, matching `coverage-gates.yml` again; `tests/scripts/test_workflow_diff_bases_name_full_refs.py` reds any workflow that builds a diff base from a short `origin/...` (quoted or not, `format('origin/{0}')`, a literal range) and finds exactly the five pre-fix lines on the old tree.
+
+## DW-marshal-git-timeout-orphans-hook-children-2026-09-28 — a git command killed on its timeout leaves its hook's children running
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md` (the process primitive every station's git calls go through); found minting `spec-pyforge-marshal` CAP-277
+  summary: `pyforge.core.process.PosixProcess.run` passes `timeout_s` to `subprocess.run`, which on expiry kills only the direct child. For a `git push`, that child is git, and the `pre-push` hook it started (`scripts/pre_push_preflight.sh` → `pixi run --frozen -e pyforge-guild pr-preflight`) keeps running with no parent, for up to the preflight's full length. CAP-277 (Story 68.1) removes the trigger on the landing's publish path, because the journaled opt-out returns the hook at once. Any other timed git call that starts a hook can still leave one behind.
+  evidence: `src/shared/packages/pyforge-core/src/pyforge/core/process.py:157-178` (no new session or process group; `subprocess.run` kills the child only); marshal's `adapters/vcs_git.py:132-151` maps the expiry to `VcsCommandError`. The operator's 64.1 promotion replay on 2026-09-28 found the preflight still running after git was killed at 120 s.
+  location: src/shared/packages/pyforge-core/src/pyforge/core/process.py
+  severity: low
+  fix: launch a timed command in its own process group (`start_new_session=True`) and kill the group on expiry, through `spec-pyforge-core`'s own chain (it co-governs every station's `src/`).
+  status: open

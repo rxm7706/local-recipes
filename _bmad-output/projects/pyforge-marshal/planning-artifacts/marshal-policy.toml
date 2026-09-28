@@ -318,6 +318,23 @@ verify_commands = [
   "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
 ]
 
+"66" = [  # a follow-up review a landing recommends is carried (spec-pyforge-marshal CAP-275), added 2026-09-28.
+          # The default surface (core/gate.py::default_epic_surface), restated because a declared entry replaces
+          # it outright, plus what Story 66.2's one-time backfill writes: the eight stations' tracked
+          # deferred-work ledgers, and spec-pyforge-atlas's memlog (the one Spec that governs a ledger, atlas's
+          # own). Story 66.1 stays inside the default surface.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md",
+]
+
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.
