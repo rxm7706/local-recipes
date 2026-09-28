@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-09-28"   # AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -2884,7 +2884,11 @@ glob `.claude/skills/**`, while all eight projects carry every rendered path. On
 `BMAD_ACTIVE_PROJECT`, then the target's marker) through the one renderer `seed init` uses; with no
 project, each templated entry is one INFO `slug-unresolved` finding, never a HARD finding at a
 literal placeholder. An `unclassified-deferred` entry is never reported missing. No state key is
-added, and no repository is exempted by name — this repository stays SC-02's oracle. Story 70.1.
+added, and no repository is exempted by name — this repository stays SC-02's oracle. *(Amended
+2026-09-28, operator ruling; § 31.10.)* A manifest entry may declare `required_in: loop-home`, and
+`.bmad-loop/policy.toml` does: absent from a target that is not a loop home, it is not reported
+missing; in a loop home, or where the target's branch cannot be read, it is judged as before. The
+scope is the entry's, never a repository's name. Story 70.1.
 
 ### 31.6 The FR space: FR-226 registered (spec-pyforge-core)
 
@@ -2922,7 +2926,10 @@ works around that for the post-land verdict. FR-227 decomposes into **Epic 72** 
 `refs/remotes/origin/main` (the port's `is_branch_merged` gains a full-ref target; its branch-name form
 stays), and the supervisor fetches `origin main` after its own land before re-reading. The land
 trigger, the stuck-land retry and the exit decision all judge the remote-tracking ref; the landing
-journal still decides first (FR-222); an unreadable `origin/main` is a failed gather. Story 72.1.
+journal still decides first (FR-222); an unreadable `origin/main` is a failed gather. *(Widened
+2026-09-28, operator ruling; § 31.10.)* `dispatch land`'s ALREADY_LANDED check reads its merge
+subjects from `origin/main` too, after a tolerated fetch; an unreadable `origin/main` there is still
+`MRS-DISP-016`. Every merge fact the dispatch path judges comes from the remote-tracking ref. Story 72.1.
 
 ### 31.9 The FR space: FR-228 registered
 
@@ -2936,9 +2943,32 @@ finished on its first tick, because the story's first landing already put its me
 A run on a `done` spec whose `followup_review_recommended` is true is a follow-up review run,
 journaled with the open row it answers; it is judged and landed by its own branch (merges after its
 own baseline, its own head on `origin/main`, a spec-only review counted), and finalize closes the row
-when it lands (Story 73.1). A drain queues every open row whose spec still qualifies after the
+when it lands (Story 73.1). A drain queues open rows whose spec still qualifies after the
 station's implementable backlog, reports stale rows, and `drain --plan` lists both (Story 73.2). The
-row's state gates a follow-up; the ledger key stays `done` and is never re-queued.
+row's state gates a follow-up; the ledger key stays `done` and is never re-queued. *(Amended
+2026-09-28, operator ruling; § 31.10.)* A drain campaign queues at most
+`dispatch.max_followup_reviews_per_campaign` follow-ups (Marshal default 2; 0 turns scheduling off),
+counted across its stations and cycles and resolved from the repository's policy layers, newest
+landings first; the rest wait for a later campaign, named in one INFO finding.
+
+### 31.10 FR-225, FR-227 and FR-228 amended (operator rulings, 2026-09-28)
+
+Three rulings the same evening amend not-yet-implemented FRs in place; every number, epic, story key
+and status is kept, and no FR is added.
+- **FR-225 (CAP-279, Story 70.1).** `.bmad-loop/policy.toml` is required in loop homes only, never on
+  a primary checkout: this repository is the seed's home, not a loop home, and every writer renders
+  the file into a loop home (`write_policy_toml(effective, <loop_home>)`). The manifest entry carries
+  the scope (`required_in: loop-home`), so `seed check` on this repository can pass honestly; a loop
+  home, or a target whose branch cannot be read, still owes the file.
+- **FR-227 (CAP-280, Story 72.1).** Widened to `dispatch land`'s ALREADY_LANDED read
+  (`dispatch_land.py:687`), which read its merge subjects from `refs/heads/main` while its landing
+  merges through the forge. Every merge fact the dispatch path judges now comes from `origin/main`.
+  The local-`main` reads outside the dispatch path (`marshal status`, the loop landing in
+  `cli/deploy.py`, `retire`, the loop supervisor) are not moved; that is recorded as an open question.
+- **FR-228 (CAP-281, Story 73.2).** The wave size the mint left open is capped: at most
+  `dispatch.max_followup_reviews_per_campaign` follow-ups per drain campaign, default 2, newest
+  landings first. Story 66.2's backfill opens 181 rows (measured 2026-09-28), so an uncapped campaign
+  would spend a session on each of them at once.
 
 **ONE FR space now FR-1..FR-228** (FR-229 = next free id).
 
@@ -2947,4 +2977,7 @@ selection and rendering are pure in `core/` and its publish reuses finalize's ex
 onto `origin/main` (AD-4, AD-29, AD-42); the supervisor's verdict reads the process fact it
 journaled while the repository facts stay git's (AD-5, AD-33); the promotion's unpaired INTENT gets
 its OUTCOME (AD-6), the new refusal is a coded finding (AD-15), and whether the key reached `done` is
-read from `origin/main` (AD-29, AD-33); no new port, adapter or decision boundary.
+read from `origin/main` (AD-29, AD-33); no new port, adapter or decision boundary. § 31.10 later
+(FR-225, FR-227, FR-228 amended in place): AD-55 is amended in place, additively (a manifest entry's
+optional `required_in`); FR-227's widening lands on AD-29 and AD-33 as written; FR-228's cap is one
+more field of the composed `dispatch` block (AD-16's layers unchanged).

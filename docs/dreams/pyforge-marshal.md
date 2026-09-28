@@ -729,6 +729,12 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   repository name; `init`'s behaviour is unchanged. Kinships: Story 10.7 (the gap named), Story 12.2
   (the oracle, K-02), steward session check's parse of this JSON (a separate steward CAP); owner
   `spec-pyforge-marshal`.
+  **Amended 2026-09-28 (operator ruling):** the second fact above is not a gap. `.bmad-loop/policy.toml`
+  is owed only in the loop homes `marshal init` provisions, never on a primary checkout, and this
+  repository is the seed's home, not a loop home. The manifest entry carries that scope
+  (`required_in: loop-home`), so the check on this repository can pass honestly while a loop home
+  without the file still fails. The scope is the entry's, not an exemption by name. → CAP-279 amended,
+  Story 70.1 (AD-55 amended in place).
 - **2026-09-28 — Proposed: the front door names the environment a roster station runs in.**
   `pixi run -e pyforge-guild pyforge warden --help` answers `unknown station 'warden'; known:
   doctor, herald, marshal, scribe, steward` (exit 2), and `pyforge atlas` and `pyforge mason` answer
@@ -764,6 +770,10 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `origin/main` is a failed gather, as today, never a merged story; the port's branch-name form stays
   for its other callers. Kinships: CAP-276 (Story 67.1), CAP-270 (Story 60.1, the full ref);
   owner `spec-pyforge-marshal`.
+  **Widened 2026-09-28 (operator ruling):** `dispatch land` judged the same fact from local `main` —
+  its ALREADY_LANDED check (`dispatch_land.py:687`) read merge subjects from `refs/heads/main` while
+  its landing merges through the forge. It moves to `origin/main` in the same story, so every merge
+  fact the dispatch path judges comes from one ref. → CAP-280 widened, Story 72.1.
 - **2026-09-28 — Proposed: a drain runs the follow-up review a landed story recommended.**
   CAP-275 (Story 66.1) carries `followup_review_recommended: true` into the station's deferred-work
   ledger as an open `DW-FRR-<story>` row, and then nothing runs the review. A drain never
@@ -786,6 +796,10 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   reported stale, not dispatched; a follow-up's own review never chains a second one (step 04 leaves
   the flag `false`). Kinships: CAP-275 (Stories 66.1, 66.2), CAP-274 (Story 65.1, `drain --plan`),
   CAP-280 (Story 72.1, the supervisor's merge reads); owner `spec-pyforge-marshal`.
+  **Amended 2026-09-28 (operator ruling):** a campaign runs a few, not all. Story 66.2's backfill opens
+  181 rows at once, so a drain campaign queues at most `dispatch.max_followup_reviews_per_campaign`
+  follow-ups (default 2), newest landings first; the rest wait for later campaigns. → CAP-281 amended,
+  Story 73.2.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

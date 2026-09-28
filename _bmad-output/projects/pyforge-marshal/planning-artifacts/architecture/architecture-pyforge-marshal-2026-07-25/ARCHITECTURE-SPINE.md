@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
+updated: "2026-09-28"   # AMENDED (evening, cont. 6): operator rulings on FR-225 / CAP-279 (AD-55 amended in place: the manifest entry's optional required_in, loop-home), FR-227 / CAP-280 widened (lands on AD-29/AD-33) and FR-228 / CAP-281's per-campaign cap (lands on AD-4/AD-5/AD-29/AD-33). See § Currency reconciliation -- 2026-09-28 (operator rulings). Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
@@ -1029,7 +1029,10 @@ assumption 3 from the critical path.
 **Rule:** `templates/manifest.yaml`, one document, entries keyed by stable **artifact id**
 (P-11). Each entry: `id`, `class`, `path` (jinja-templated on slug), `format` (for hybrid),
 `regions[]` with `anchor`, `since` / `until` model-version bounds, `applies_to` (`init` /
-`adopt` / both), and `rationale` (surfaced by `marshal seed explain`, FR-127). One file keeps
+`adopt` / both), an optional `required_in` (`loop-home`: the artifact is owed only in a provisioned
+loop home, never on a primary checkout; absent: every checked repository — *amended in place
+2026-09-28, operator ruling, FR-225 / CAP-279; `bmad-loop-policy` carries it*), and `rationale`
+(surfaced by `marshal seed explain`, FR-127). One file keeps
 coverage (FR-69) a single-pass check and makes the manifest reviewable as a diff — which
 matters, because **the manifest is the product's actual contract**.
 
@@ -1957,3 +1960,32 @@ the publish onto `origin/main` and the lock CAP-275's carry already uses (AD-29,
 adapter or decision boundary.*
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (operator rulings)
+
+`spec→prd→arch` edge: three operator rulings the same evening amend not-yet-implemented CAPs in place
+(PRD § 31.10). No AD is added or removed; one is amended in place.
+
+*FR-225 / CAP-279 (Story 70.1): `.bmad-loop/policy.toml` is owed only in a loop home.* **AD-55 is
+amended in place, additively:** a manifest entry may carry an optional `required_in` (`loop-home`),
+and `bmad-loop-policy` does, because every writer renders the harness policy into a loop home and a
+primary checkout never holds one. The scope is the entry's — the manifest stays the contract and one
+file (AD-55's point), no repository is special-cased (SC-02 / AD-60 keep this repository under the
+check), and `check` stays the model's read-only detector (AD-54). The target's loop-home status is read
+at the CLI boundary from its own branch (`core/context.slug_from_loop_branch`, through the existing
+`VcsPort.list_worktrees`), so no port or adapter is added.
+
+*FR-227 / CAP-280 widened (Story 72.1): `dispatch land`'s ALREADY_LANDED read moves to
+`origin/main`.* It lands on AD-29 and AD-33 as written: the merge fact is read from the ref a landing
+makes durable and keeps the repository as its authority. The read's existing port call changes its ref
+only; no new port, adapter or decision boundary.
+
+*FR-228 / CAP-281 (Story 73.2): a drain campaign queues at most
+`dispatch.max_followup_reviews_per_campaign` follow-ups (default 2), newest landings first.* It lands
+on AD-4 (the selection, the cap and the order are pure in `core/`) and on the policy composition as
+written: the key is one more field of the composed `dispatch` block (Story 33.8), resolved from the
+repository's layers because it bounds a campaign, not a station. The landing order is read from
+`origin/main`'s history (AD-29, AD-33); the campaign's own count comes from its journal (AD-5).
+
+**Content changed:** this section, and AD-55's entry list (one optional key, dated in place).
+`updated:` bumped. No AD added or removed.
