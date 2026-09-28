@@ -341,6 +341,55 @@ Drift — orphaned between stations.
   `-e local-recipes`. Kinships: [[pyforge-mason]] (the 2026-09-27 entry; `spec-pyforge-mason:CAP-29`),
   CAP-5 (the Guild), `canopy:AD-14` and `canopy:AD-17`. Owner: steward. → CAP-161 / Story 72.1 (FR-34)
   and CAP-160 / Story 72.2 (FR-33), specced 2026-09-28.
+- **2026-09-28 (later) — Proposed: `steward session check` reads the seed check it asks.** Every
+  `marshal factory dispatch` warns `MRS-DISP-049` because `pixi run --frozen -e pyforge-guild steward
+  session check --json` exits 1 with `token-kit` and `codegraph-index` both `ok: false`, detail
+  "`… marshal seed check --json returned unparseable output: "failing": true;   }; }`", remedy
+  `marshal seed kit`. Measured the same day in a fresh worktree: `marshal seed check --json` writes one
+  valid JSON document to stdout (8,302 bytes; stderr empty — no pixi banner, nothing merged) and exits
+  1 on its own HARD findings. The output is not unparseable. Since marshal Story 12.5 (2026-08-23,
+  FR-123 / NFR-12) every `marshal seed` verb wraps its payload in a schema-stable `{verb, ok,
+  result|error}` envelope, so the kit sits at `result.kit`. `session.py::_seed_kit_findings`
+  (Story 63.4, 2026-09-24) reads `payload["kit"]` at the top level; the `KeyError` falls into the same
+  `except` as a `JSONDecodeError`, is reported as "unparseable output", and the detail quotes the last
+  three stdout lines joined by `; ` — the closing lines of a valid document. The unit fixtures build a
+  flat `{"kit": [...]}` the CLI never emitted, so the suite stayed green while the check never read a
+  real kit. Neither the exit code nor stderr is the cause (the reader looks at neither on this path),
+  and a fix must keep it so: the seed check exits 1 whenever its own report is failing, whatever the
+  kit says. **What it looks like when real:** the session check reads the kit from the envelope
+  whatever the seed check's exit code; `token-kit` and `codegraph-index` report the kit's real
+  statuses; an `ok: false` envelope reports the seed check's own error; "unparseable" is kept for
+  stdout that is not JSON; the tests read a document recorded from the real CLI. **Constraints:**
+  steward shells marshal's CLI and never imports it; the seed check's own HARD findings (manifest
+  paths whose slug placeholder is never rendered) are marshal's, minted in parallel on marshal —
+  Kinship only. Kinships:
+  CAP-5 (the Guild and its token-kit floor), Story 63.4 (`steward session check`), marshal FR-123 (the
+  envelope) and `MRS-DISP-049` (the dispatch preamble that reads this check). Owner: steward.
+  → CAP-162 / Story 73.1 (FR-35), specced 2026-09-28.
+- **2026-09-28 (later) — Decided: `pyforge-atlas` stays out of the Guild environment, and the Guild
+  says why.** `pixi run -e pyforge-guild pyforge atlas --help` answers `unknown station 'atlas'; known:
+  doctor, herald, marshal, scribe, steward` (exit 2), while `bmad-agent-atlas` acts only through
+  `pyforge atlas` grammar. Measured whether atlas can join `[feature.pyforge-guild.dependencies]` the way
+  Story 72.1 adds mason: **it solves, and it should not join.** `pyforge-foundry-full` composes the
+  Guild and atlas features and is locked on linux-64, osx-arm64 and win-64, so there is no hard
+  conflict. The cost, read on linux-64 from `pixi.lock` and a cold install of both environments: the
+  `pyforge-atlas` package's run-dependency closure (kedro, dagster, duckdb, pandas, pyarrow, ibis,
+  vizro, bokeh, …) brings 257 packages the Guild lacks, 179 MB to download and ~841 MB installed,
+  onto a Guild of 243 packages and ~1,396 MB (`du` 1.5 GB) — about +60% on the environment every
+  agent, harness and CI job installs, for one station's analytics stack. The union also moves the
+  Guild's own pins: libabseil 20260526 → 20260107 (libarrow, grpc, libprotobuf), which takes nodejs
+  26.10 → 24.21; protobuf 7.35 → 6.33 (dagster `<7`); filelock 4.0 → 3.32 (ibis-framework-core `<4`).
+  And a Guild-hosted atlas would still be partial: its pipelines' feature-level supply
+  (`boring-semantic-layer`, the warden `[gate]` extra) stays in `-e pyforge-atlas`, where
+  `pyforge atlas --help` already answers. **Decision (steward, 2026-09-28):** atlas is excluded from
+  the Guild on purpose, like warden, and `pixi.toml`'s Guild section records the reason beside
+  warden's — in Story 72.1's banner rewrite, the same lines. Two CAP-5 measurements found on the way,
+  recorded on Story 72.1 for its author and the operator: the Guild's cold install is already 1.5 GB,
+  past CAP-5's 1 GB bound before mason joins; and `pyforge-mason` caps `pixi >=0.80.0,<0.81` (and
+  brings conda-lock's `virtualenv <21`), so 72.1's union takes the Guild's pixi 0.81.0 → 0.80.0.
+  Kinships: CAP-5, CAP-161 / Story 72.1; the front door's "on the roster but not installed here; use
+  `-e pyforge-<station>`" message, minted in parallel on `spec-pyforge-core` (marshal project). Owner:
+  steward. → no CAP; recorded as a decision on the Spec's memlog and as an amendment to Story 72.1.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

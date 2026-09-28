@@ -86,6 +86,28 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-28** — **Proposed: a recommended follow-up review is carried, and Doctor checks it on every
+  PR.** Operator ruling 2026-09-28. `spec-pyforge-marshal:CAP-275` makes a landing carry it: `dispatch_land_finalize`
+  files a `DW-FRR-<story>` row (`origin: dispatch-followup-review`) for a story whose tracked spec reads
+  `status: done` with `followup_review_recommended: true` (Story 66.1), and a one-time backfill carries
+  every spec that already reads so, held by a marshal meta test (Story 66.2). That meta test runs only in
+  marshal's own suite, which fires on a marshal diff. A doctor or herald PR that lands a flagged spec,
+  or edits a ledger and drops its carrying row, is never checked. Measured 2026-09-28: 210 tracked
+  specs read `done` with the flag true; by a scratch count only 18 have a carrying row under 66.2's
+  predicate today, so the check has to wait for the backfill. **What it looks like when real:**
+  Doctor's `deferred-work` source (`deferred-work-check`, in `detectors-ci`) reports every tracked
+  story spec that reads `done` with an explicit truthy flag and has no row in its own project's tracked
+  `deferred-work-ledger.md` naming it in `source_spec:` under `origin: dispatch-followup-review` or
+  `review-budget-followup`, the same predicate as marshal's meta test, as a FAIL, on every PR. A
+  follow-up that already ran is seen through the tracked spec: `bmad-build-auto` writes the flag
+  `false` before its one follow-up pass and forces it `false` at that pass's halt, so an explicit
+  `false` is out of scope. **Constraints:** Doctor reads tracked files only; a Tier-3 dispatch journal
+  is gitignored and absent on a runner. Doctor imports no station's internals, so the predicate is
+  Doctor's own and matches marshal's by fixtures. The check lands only after marshal Story 66.2 has
+  backfilled `main`, or it reds `main`: marshal's `Deps:` parser is station-local, so the story is a
+  ledger gate the operator flips. Kinships: `spec-pyforge-marshal:CAP-275` (Stories 66.1 and 66.2),
+  CAP-36 (the detector sees what it claims to check), CAP-35..44 (`deferred-work-visibility`, folded).
+  Owner: `spec-pyforge-doctor`. → CAP-86 / Story 33.1 (FR-19), specced 2026-09-28.
 - **2026-09-27 (late)** — **Proposed: Doctor names the refs it judges by their full refname.**
   Marshal Stories 60.1 and 61.1 found that git resolves a short name through `refs/<n>`,
   `refs/tags/<n>`, `refs/heads/<n>`, then `refs/remotes/<n>`: a local branch or tag named

@@ -39,6 +39,22 @@ composition (`pixi run -e pyforge-guild docs-station-cli`, `docs-environments`).
 reds a `[feature.pyforge-guild.dependencies]` that lacks `pyforge-mason`. Measure the cold install of `pyforge-guild`
 (delete that environment, `pixi install -e pyforge-guild`, `du -sh`) and record it in this spec against CAP-5's 1 GB bound.
 
+**Amended 2026-09-28 (later)** (steward memlog decision of the same date; Dream entry *Decided: `pyforge-atlas` stays out of
+the Guild environment, and the Guild says why*):
+- **Atlas's exclusion is documented beside warden's.** The banner rewrite adds, in `[feature.pyforge-guild.dependencies]`,
+  a comment in the same form as warden's (`pixi.toml:844-849`): `pyforge-atlas` is deliberately not here. It solves —
+  `pyforge-foundry-full` locks the union on all three platforms — but its package closure (kedro, dagster, duckdb, pandas,
+  pyarrow, ibis, vizro, bokeh, …) adds 257 packages / ~841 MB installed on linux-64, and the union moves the Guild's own
+  pins (libabseil 20260526 → 20260107 via libarrow / grpc / libprotobuf, so nodejs 26 → 24; protobuf 7 → 6 via dagster
+  `<7`; filelock 4 → 3 via ibis-framework-core `<4`); the atlas seam stays `-e pyforge-atlas`. Cite the memlog decision.
+- **The Guild is already over CAP-5's bound.** Measured 2026-09-28: a cold `pixi install -e pyforge-guild` (before mason) is
+  1.5 GB by `du` (243 packages, ~1,396 MB by conda-meta), against CAP-5's 1 GB (859 MB on 2026-09-16). Record the size
+  before and after mason. The size criterion below cannot pass as written whatever this story does; report the numbers and
+  stop for the operator's ruling on CAP-5's bound — never loosen the bound or drop a Guild dependency in this story.
+- **Mason moves two Guild pins.** `pyforge-mason`'s run-dependencies cap `pixi >=0.80.0,<0.81` and bring conda-lock
+  (`virtualenv >=20.26.6,<21`), so the re-solve takes the Guild's pixi 0.81.0 → 0.80.0 and virtualenv 21.12.1 → 20.39.0
+  (read from `pyforge-foundry-full`'s lock). Report both in the story; check `pixi-version-check` stays green.
+
 Ledger key: `72-1-the-guild-environment-answers-pyforge-mason`.
 Ledger status (do not edit the ledger): `backlog`.
 Type / Effort / Deps: fix / S / —.
@@ -54,6 +70,7 @@ Type / Effort / Deps: fix / S / —.
 - Given `pixi.toml` without `pyforge-mason` in `[feature.pyforge-guild.dependencies]` When `test_guild_environment_stations.py` runs Then it fails naming the missing dependency
 - Given a cold `pixi install -e pyforge-guild` When its environment directory is measured Then it is under 1 GB, recorded in this spec
 - Given `pixi.toml` changed When `pixi run -e pyforge-guild pyforge-station-tests` and `pixi run -e pyforge-guild detectors-ci` run Then both exit 0
+- Given `[feature.pyforge-guild.dependencies]` after the banner rewrite When it is read Then a comment beside warden's names why `pyforge-atlas` is not in the Guild, citing the steward memlog's 2026-09-28 decision (amended 2026-09-28, later)
 
 ## Boundaries & Constraints
 

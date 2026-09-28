@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -652,6 +652,24 @@ parameter default.
 
 *Decomposed as Epic 31 — Story 31.1.*
 
+## FR-19 — A done story's recommended follow-up review is carried, checked on every PR (spec-pyforge-doctor CAP-86)
+
+Added 2026-09-28 (operator ruling). `spec-pyforge-marshal:CAP-275` makes a landing carry a recommended follow-up review into the
+deferred-work ledger (Story 66.1) and backfills every spec that already recommends one, held by a marshal meta test
+(Story 66.2) — which runs only in marshal's suite, on a marshal diff. Doctor's `deferred-work` source, in `detectors-ci`
+on every PR, reports every tracked story spec that reads `status: done` with `followup_review_recommended` an explicit
+truthy and has no row in its own project's tracked `deferred-work-ledger.md` naming it in `source_spec:` under
+`origin: dispatch-followup-review` or `review-budget-followup` — marshal 66.2's predicate, reimplemented here because
+Doctor imports no station's internals.
+
+**Consequences (testable):** an uncarried spec is one FAIL finding (`followup-review-uncarried`, the source's own
+convention) naming the project and the spec; a carrying row of either origin clears it, a row under any other origin or in
+another project's ledger does not; a flag `false` or absent, or a status other than `done`, is out of scope; on `main`
+after 66.2's backfill the source reports none and `deferred-work-check` exits 0; the source reads tracked files only.
+
+*Decomposed as Epic 33 — Story 33.1, minted `blocked` until marshal Story 66.2 has landed (cross-station gate; marshal's
+`Deps:` parser is station-local).*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -920,3 +938,11 @@ row from marshal Story 61.1's third review, widened by a sweep to every Doctor s
 branch). FR-18 registered above to cite it; decomposed as **Epic 31** (Story 31.1), a new epic
 because Epic 30 is `done`. No AD amended: one Doctor-local pure helper module and source
 defaults. `updated:` bumped.*
+
+## Currency reconciliation — 2026-09-28
+
+*Chain-currency cascade (spec → PRD): `spec-pyforge-doctor` minted CAP-86 on 2026-09-28 (operator ruling: the
+follow-up-review orphan invariant, `spec-pyforge-marshal:CAP-275`'s, runs on every PR through Doctor's `deferred-work`
+source). FR-19 registered above to cite it; decomposed as **Epic 33** (Story 33.1), a new epic because Epic 31 is `done`;
+the story is minted `blocked` behind marshal Story 66.2's backfill. No AD amended: one more finding kind inside an existing
+source, over files that source already reads. `updated:` bumped.*
