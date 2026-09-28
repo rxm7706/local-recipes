@@ -1751,8 +1751,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # land failed or is not yet eligible — park, never another session.
         "MRS-DISP-040",
         # Story 33.9 (spec-bmad-switch-scope-enforcement CAP-1 third call
-        # site): `verify_scope` at `factory dispatch` — marker/symlink
-        # triangle or parent BMAD_ACTIVE_PROJECT disagrees with dispatch slug.
+        # site), narrowed by Story 64.1 (CAP-273, FR-219): `verify_scope`
+        # against the dispatch WORKTREE's own triangle, or the parent
+        # BMAD_ACTIVE_PROJECT disagreeing with the dispatch slug — the
+        # primary checkout's marker/links are never read here.
         "MRS-DISP-041",
         # Story 28.30 (CAP-3, dispatch half of the `output` layer): the
         # caveman skill's instrument is unavailable, or deploying it into
