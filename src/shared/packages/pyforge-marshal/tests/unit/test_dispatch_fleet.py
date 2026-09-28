@@ -655,9 +655,16 @@ def _cycle(
     Pass ``policy_flags=None`` to compose from the live project policy only.
 
     Also monkeypatches ``dispatch_once`` to point a real scope triangle at
-    each dispatched slug before calling through, so existing fleet-cycle
-    tests keep passing under Story 33.9's dispatch-boundary scope guard
-    without needing their own marker/symlink fixtures.
+    each dispatched slug and agree ``BMAD_ACTIVE_PROJECT`` before calling
+    through, so existing fleet-cycle tests keep passing without needing
+    their own marker/symlink fixtures. Since Story 64.1 (CAP-273, FR-219)
+    the dispatch-boundary guard checks the dispatch WORKTREE's own triangle,
+    not this repointed primary one -- the primary-side repoint is no longer
+    load-bearing for that guard, but the env agreement still short-circuits
+    ``_dispatch_scope_refusal``'s parent-environment check, and this helper
+    deliberately can't exercise the "primary on another station" scenario:
+    see ``test_execute_fleet_cycle_dispatches_despite_primary_triangle_naming_another_station``,
+    which calls ``execute_fleet_cycle`` directly instead, for that.
     """
     import os
 
@@ -771,6 +778,42 @@ def test_two_ready_stations_dispatch_in_the_same_cycle(tmp_path: Path, monkeypat
     # Both launches are detached; nothing in this path consults or mutates
     # FR-184's in-loop max_parallel clamp.
     assert report.complete is False
+
+
+def test_execute_fleet_cycle_dispatches_despite_primary_triangle_naming_another_station(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 64.1 (CAP-273, FR-219) AC #3 / the "drain cycle" I/O-matrix row:
+    ``execute_fleet_cycle`` itself, not just ``dispatch_once``, reaches the
+    launch for a non-steward station while the primary checkout's triangle
+    still names pyforge-steward and no ``BMAD_ACTIVE_PROJECT`` is set --
+    called directly, without ``_cycle``'s own ``point_scope_triangle`` +
+    env-agreement monkeypatch (that fixture exists to keep pre-64.1 tests
+    passing under the retired primary-checkout guard; it would silently
+    mask this exact scenario if used here)."""
+    from scope_triangle import point_scope_triangle
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["64-1-drain-cycle"]})
+    point_scope_triangle(tmp_path, "pyforge-steward")
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = execute_fleet_cycle(
+        repo_root=tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        leave_remaining=1,
+        campaign_blocked={},
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(alive=False),
+        harness=FakeHarness({"pyforge-marshal": (("64-1-drain-cycle", "backlog"),)}),
+        station="pyforge-marshal",
+        policy_flags={"dispatch": {"max_parallel": 1}},
+    )
+    assert [f for f in report.findings if f.code == "MRS-DISP-041"] == []
+    assert harness.dispatched == [("pyforge-marshal", "64.1")]
 
 
 def test_every_station_busy_refuses_every_dispatch_naming_the_in_flight_story(
