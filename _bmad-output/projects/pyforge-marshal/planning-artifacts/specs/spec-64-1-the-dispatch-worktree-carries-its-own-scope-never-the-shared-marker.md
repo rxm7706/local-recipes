@@ -2,13 +2,16 @@
 title: '64.1: The dispatch worktree carries its own scope, never the shared marker'
 type: 'fix'
 created: '2026-09-27'
-status: 'backlog'
+status: 'in-progress'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - docs/dreams/pyforge-marshal.md
 warnings: []
 deferred: []
+declared_low_risk: false
 ---
 
 <intent-contract>
