@@ -4250,6 +4250,18 @@ capabilities:
     heading: "the preflight answers in under a minute"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-160
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Mason's five-tier skill cell is its station skill and conda-forge-expert, both"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-161
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the Guild environment answers pyforge mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1
@@ -4929,6 +4941,14 @@ capabilities:
     station: pyforge-mason
     heading: "the recipe CI picks changed recipes from the remote-tracking ref"
     mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-29
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "Mason has its own skills, and conda-forge-expert is one of them"
+    mode: A-only
+    expiry: 44.5
+    note: "operator ruling 2026-09-28: A-only until pyforge.cutover_root flips to foundry (the attended flip that follows Story 44.5, cutover.md); B rebuilds Mason's skills under skills/stations/ -- rebuild on B, never a move"
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 
   # doctor one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs

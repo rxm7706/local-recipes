@@ -7,7 +7,7 @@ paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
 scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
-updated: "2026-09-27"   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (prd -> arch), no AD delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17   # RE-STAMPED 2026-09-17: chain-currency cascade (spec/PRD -> spine) after the one-chain fold. No AD added, changed or removed; § Currency reconciliation — 2026-09-17 already present.
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-51 / CAP-29 (Epic 19); lands on AD-1, AD-15 and canopy:AD-17, no AD amended. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (prd -> arch), no AD delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17   # RE-STAMPED 2026-09-17: chain-currency cascade (spec/PRD -> spine) after the one-chain fold. No AD added, changed or removed; § Currency reconciliation — 2026-09-17 already present.
 currency_review: "Reviewed 2026-09-17 — one-chain mason fold cascade (Spec and PRD re-dated 2026-09-17). No AD added, changed or removed. Prior review 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after recording FR-14's as-built diff-before-apply divergence and folding the realization-gate closure). Appended § Currency reconciliation — 2026-09-14: AD-1's knowledge-free core and AD-14's credential blindness both re-confirmed against the Story 44.7 foundry-island wiring and PR #1354's AD-14 guard fix; the FR-14 divergence is a VERB-LEVEL default, not a structural one, and no port or adapter boundary moves with it. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
   - 'FR-1..FR-50'
@@ -763,3 +763,24 @@ check ran.*
 *Trigger: the PRD's re-stamp for CAP-28 (`prd→arch`).* The change is one diff base in each of the four recipe build
 workflows, outside the CFE surface (`.claude/skills/conda-forge-expert/**`, `.claude/scripts/conda-forge-expert/**`,
 `conda_forge_server.py`). No AD is added, changed or removed; the recipe-factory decisions hold as written.
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the PRD's re-stamp for FR-51 / CAP-29 (`prd→arch`) — Mason has its own skills, and `conda-forge-expert` is one of
+them (Epic 19).* Checked against every AD; FR-51 lands on three as written:
+
+- **AD-1 (knowledge-free core).** The rule that keeps recipe knowledge out of `pyforge/mason/` carries to Mason's skills:
+  none restates a CFE gotcha or recipe workflow, and a meta-test with a planted gotcha heading proves the guard is not
+  vacuous (Stories 19.2–19.4). The station skill documents grammar and routes every recipe question to CFE.
+- **AD-15 (the CFE surface is read-only for implementation).** No Epic 19 implementation commit writes
+  `.claude/skills/conda-forge-expert/**`; the one CFE edit is Story 19.5's `retro(cfe):` commit, the sanctioned
+  retrospective this AD and FR-47 already name.
+- **canopy:AD-17 (station skills are SKF content skills; CFE is the hand-authored exception).** `pyforge-mason` follows the
+  rule (SKF-compiled from the station package, provenance-backed, exported only by `skf-export-skill`); the four other
+  Mason skills are operating-procedure skills of the kind the AD's exception names, hand-authored like CFE.
+
+No port, adapter or package boundary moves: the skills live under `.claude/skills/` (the SKF output folder and the skill
+root every harness reads), outside `src/shared/packages/pyforge-mason/`, under `AGENTS.md` § Policy's dated `A-only`
+exception until the cutover flip.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

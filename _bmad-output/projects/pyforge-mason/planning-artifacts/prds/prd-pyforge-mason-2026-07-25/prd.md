@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
@@ -1872,3 +1872,40 @@ short `origin/<base>` a pushed tag of that name would shadow. The branch is dorm
 `pull_request` (`test-all` is dispatch-only and calls the other three) — so no build behaviour changes, and the
 manual `recipes` input path is untouched. No FR text requires correction and none is minted (CI plumbing under the
 existing recipe-factory requirements); Epic 18 / Story 18.1 carries it.
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the chain-currency `spec→prd` edge — `spec-pyforge-mason` gained CAP-29 on 2026-09-28 while this PRD sat at
+2026-09-27. Same-day reconcile; the FR is derived from the CAP (`one-chain-per-station`: the PRD is the Spec's
+decomposition, never an independent namespace).*
+
+### The FR space: FR-51 registered
+
+The station Dream's 2026-09-27 entry (operator direction 2026-09-26) asked for Mason to have its own skills, with
+`conda-forge-expert` as one of them; the operator answered its four questions on 2026-09-28. FR-51 decomposes into
+**Epic 19** (Stories 19.1–19.5). Two of the pieces are steward's code and sit on steward's chain (`spec-pyforge-steward:CAP-160`, the
+five-tier rule; `spec-pyforge-steward:CAP-161`, the Guild environment that answers `pyforge mason`).
+
+#### FR-51: Mason has its own skills, and conda-forge-expert is one of them ← CAP-29
+
+An agent doing Mason's work loads Mason's skills: a station skill for the grammar, two craft skills and two campaign
+skills, with `conda-forge-expert` still the recipe skill.
+
+**Consequences (testable):**
+- `pyforge-mason`, the station skill, is SKF-compiled from `src/shared/packages/pyforge-mason/` like the other seven
+  stations' and documents `pyforge mason recipe|package|environment|doctor` and `POST /stations/mason/mcp`, sending every
+  recipe question to `conda-forge-expert`; `AGENTS.md`'s SKF block lists it as the eighth skill, written only by
+  `skf-export-skill`.
+- `mason-package` and `mason-environment` are hand-authored skills that walk the native crafts (`package build|ship`,
+  `environment lock|check`); `mason-feedstock-platform-expansion` and `mason-feedstock-failure-remediation` carry the two
+  feedstock campaigns moved verbatim from `docs/how-to/`, linking CFE's guides for the timeless workflow.
+- No Mason skill carries a CFE gotcha heading; a meta-test proves the check with a planted one. CFE is never replaced,
+  forked or demoted, and stays hand-authored and un-nested.
+- The Mason persona consults `pyforge-mason` and CFE and acts only through `pyforge mason …` and
+  `POST /stations/mason/mcp`.
+- The effort closes with a Rule-2 retro and a CFE `CHANGELOG.md` semver entry (FR-47's rule, applied to this effort).
+- The skills are `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds them under `skills/stations/`.
+
+**ONE FR space now FR-1..FR-51** (FR-52 = next free id).
+
+**Content changed:** this section added (FR-51 registered). No FR renumbered or removed. `updated:` bumped.

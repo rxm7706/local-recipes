@@ -237,7 +237,29 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   Kinships: mason Epic 11 (persona + CFE), steward's five-tier check (`canopy AD-14`),
   `spec-bmad-suite-lifecycle`'s adoption register (bmad-builder is already wielded by steward
   and mason for skill authoring), the cutover's `S-44.6` "CFE comes home" (`fnd:CAP-3`).
-  Owner: mason. Not yet specced: `bmad-spec` follows the operator's answers to 1–4.
+  **The operator's answers, 2026-09-28:**
+  1. **Root: A now, expiring at the cutover.** `A-only` until `pyforge.cutover_root` flips to
+     `foundry`; B rebuilds the skills under `skills/stations/`. The `AGENTS.md` Policy line gains a
+     dated, expiring exception for `.claude/skills/pyforge-mason/`, and its `governance-currency:ignore`
+     marker is corrected to match (landed with the Spec, before any story).
+  2. **Skills: all four.** The station grammar skill `pyforge-mason` (the `mason` grammar and
+     `POST /stations/mason/mcp`, linking CFE for all recipe work), a package craft skill (`mason
+     package build|ship`), an environment craft skill (`mason environment lock|check`), and the two
+     feedstock how-tos as Mason skills. Recipe work stays in CFE; CFE is never replaced, forked or
+     demoted, and every conda-forge effort still closes with the CFE retro and its semver bump.
+  3. **SKF: yes, like the other seven.** An eighth entry in the SKF block; `agent-instruction-notes.md:134`
+     reverses. The Frame lines (`mason.frame.md:18`, and `pyforge.frame.md:21`'s matching clause) are
+     B's to write under the writer lock: an operator-owned B-side follow-up, not edited here.
+  4. **Five-tier: both.** `five_tier.py` requires `pyforge-mason` and CFE for Mason's skill cell.
+  Found the same day: in `-e pyforge-guild`, `pyforge mason --help` answers `unknown station 'mason'`
+  and `mason` is not on `PATH`, though the persona may act only through `pyforge mason …`. The front
+  door works as built; the Guild environment never installed `pyforge-mason` (`spec-pyforge-steward:CAP-5`).
+  Owner: mason. → `spec-pyforge-mason` CAP-29 / Epic 19 / Stories 19.1–19.5 (FR-51), specced
+  2026-09-28: the SKF station skill and the persona consulting it (19.1), the package craft skill
+  (19.2), the environment craft skill (19.3), the two feedstock campaigns as skills (19.4), and the
+  closing Rule-2 retro (19.5). On steward's chain: `spec-pyforge-steward:CAP-161` / Story 72.1 (the Guild
+  environment answers `pyforge mason`) and `spec-pyforge-steward:CAP-160` / Story 72.2 (the five-tier
+  rule, gated on 19.1).
 
 ## One-chain fold — 2026-09-17
 

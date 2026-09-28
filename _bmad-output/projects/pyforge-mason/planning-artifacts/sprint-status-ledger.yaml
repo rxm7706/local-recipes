@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 107
+# stories: 114
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -48,6 +48,11 @@ development_status:
   17-2-every-local-recipe-carries-its-internal-metadata-stripped-on-push: done
   17-3-the-recurring-campaigns-have-a-home-and-a-record: done
   18-1-the-recipe-ci-picks-changed-recipes-from-the-remote-tracking-ref: done
+  19-1-mason-s-station-skill-is-skf-compiled-exported-and-consulted-by-the-persona: backlog
+  19-2-the-package-craft-skill-teaches-mason-package-build-and-ship: backlog
+  19-3-the-environment-craft-skill-teaches-mason-environment-lock-and-check: backlog
+  19-4-the-two-feedstock-campaigns-become-mason-skills: backlog
+  19-5-the-closing-rule-2-retro-teaches-conda-forge-expert-it-is-one-of-mason-s-skills: backlog
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -105,6 +110,8 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
+  epic-19: backlog
+  epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

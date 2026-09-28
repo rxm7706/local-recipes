@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-27"   # RE-STAMPED 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2013,6 +2013,133 @@ So that, when a pull_request trigger returns, a pushed tag named `origin/main` c
 **And** marshal Story 63.1's workflow test passes over all four, and the manual `recipes` input path is unchanged
 **Status:** done
 
+## Epic 19: Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29)
+
+Minted 2026-09-28 from the station Dream's 2026-09-27 entry of the same name and the operator's four answers of 2026-09-28
+(A-only until the cutover flip; all four skills; the station skill SKF-compiled; the five-tier cell requires both).
+**HARD boundaries:** `conda-forge-expert` is never replaced, forked or demoted, and no Mason skill restates a CFE gotcha or
+recipe workflow — Epic 11's rule holds, since nothing here supersedes CFE; no implementation commit writes the CFE surface
+(AD-15) — the only CFE edit is Story 19.5's `retro(cfe):` commit; `.claude/skills/pyforge-mason/` exists under `AGENTS.md`
+§ Policy's dated `A-only` exception until `pyforge.cutover_root` flips to `foundry`; `docs/foundry/frames/**` is B's and is
+not edited (the Mason Frame's "Do not SKF-compile" line is an operator-owned B-side follow-up). The five-tier rule
+(`spec-pyforge-steward:CAP-160`, Story 72.2) and the Guild environment's `pyforge mason` (`spec-pyforge-steward:CAP-161`, Story 72.1) are
+steward's. The Deps are serial: each story lands on the last, since they share the mason skill meta-test and
+`docs/reference/skills-catalog.md`.
+
+### Story 19.1: Mason's station skill is SKF-compiled, exported and consulted by the persona
+
+As an agent doing mason work,
+I want a `pyforge-mason` station skill compiled from Mason's own package, like the other seven stations' skills,
+So that the `mason` grammar is documented where every station's is, and recipe questions still go to `conda-forge-expert`.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); canopy:AD-17
+**Surface:** `.claude/skills/pyforge-mason/**` (new: `skill-brief.yaml`, `0.1.0/pyforge-mason/{SKILL.md,metadata.json,
+provenance-map.json,context-snippet.md}`, `active` → `0.1.0`); `AGENTS.md` (the SKF block only, written by
+`skf-export-skill`); `.claude/skills/.export-manifest.json` and `.claude/skills/export-skill-result-*.json` (the
+export's own records); `.claude/skills/bmad-agent-mason/{SKILL.md,customize.toml,transcripts/mason-doctor-e2e.json}`;
+`src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py` (new, the shape of steward's
+`test_skf_steward_skill.py`); `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py`;
+`docs/reference/agent-instruction-notes.md` (§ *SKF skills block*); `docs/reference/skills-catalog.md` (regenerated).
+**Given** `AGENTS.md` § Policy carries the dated `A-only` exception for `.claude/skills/pyforge-mason/`
+**When** `skf-brief-skill`, `skf-create-skill` (Quick tier, scope `specific-modules` over `src/pyforge/mason/cli.py`,
+`src/pyforge/mason/__init__.py` and `README.md`, like steward's brief) and `skf-export-skill` run for `pyforge-mason`
+**Then** `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md` documents `pyforge mason recipe|package|environment|doctor`
+and `POST /stations/mason/mcp`, and sends every recipe question to `.claude/skills/conda-forge-expert/SKILL.md`; its
+provenance resolves under `src/shared/packages/pyforge-mason/`; the SKF validators report no high finding; `AGENTS.md`'s
+SKF block reads `8 skills`
+**And** the persona consults `pyforge-mason` for the grammar and CFE for recipe work; the mason meta-tests still assert CFE
+is hand-authored and not version-nested, and no longer assert `.claude/skills/pyforge-mason` is absent; the notes line that
+says Mason has no SKF skill is replaced; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.2: The package craft skill teaches mason package build and ship
+
+As a maintainer shipping a library,
+I want a Mason skill that walks `mason package build` and `mason package ship` end to end,
+So that one pass to PyPI, a conda channel and conda-forge is a skill I follow, not a spec I reread.
+
+**Type:** feature • **Effort:** S • **Deps:** S-19.1 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); canopy:AD-17 (an
+operating-procedure skill, hand-authored)
+**Surface:** `.claude/skills/mason-package/**` (new, authored with bmad-builder's `bmad-workflow-builder`, which mason
+wields per the adoption register); `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (new);
+`docs/reference/skills-catalog.md` (regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (one row).
+**Given** Mason's native `package` verbs (CAP-3)
+**When** an agent loads `mason-package`
+**Then** it walks `pyforge mason package build` and `pyforge mason package ship --to …` over the four targets (`pypi-test`,
+`pypi`, `channel:<name>`, `conda-forge`): dry-run by default and `--yes` to confirm, the TestPyPI rehearsal that gates the
+irreversible PyPI publish (FR-50), credentials checked before anything is built, and the receipt; the `conda-forge` target
+links CFE, which owns the recipe and the submission
+**And** `test_mason_skills.py` asserts the skill exists, names the verbs it teaches, links `.claude/skills/conda-forge-expert/`,
+and carries no CFE gotcha heading (`### G<n>.`), with a planted heading proving the check is not vacuous;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.3: The environment craft skill teaches mason environment lock and check
+
+As a maintainer binding a project's conda and pip dependencies,
+I want a Mason skill that walks `mason environment lock` and `mason environment check`,
+So that one lockfile, and a CI check that says when it went stale, are a skill I follow.
+
+**Type:** feature • **Effort:** S • **Deps:** S-19.2 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); canopy:AD-17 (an
+operating-procedure skill, hand-authored)
+**Surface:** `.claude/skills/mason-environment/**` (new, authored with `bmad-workflow-builder`);
+`src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (extended); `docs/reference/skills-catalog.md`
+(regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (one row).
+**Given** Mason's native `environment` verbs (CAP-4)
+**When** an agent loads `mason-environment`
+**Then** it walks `pyforge mason environment lock` (discovered manifests listed before solving, explicit paths override
+discovery, `--platform` repeatable, the engine's name and version in the output) and `pyforge mason environment check`
+(non-zero on a stale lockfile, machine-readable for CI), with the solve left entirely to the engine
+**And** `test_mason_skills.py` covers the skill the way it covers `mason-package`; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.4: The two feedstock campaigns become Mason skills
+
+As a recipe maintainer running a feedstock campaign,
+I want platform expansion and red-PR remediation to run from Mason skills,
+So that each campaign is a skill an agent loads, with CFE still owning every recipe step it drives.
+
+**Type:** docs • **Effort:** M • **Deps:** S-19.3 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); CAP-20 (the recurring
+campaigns); canopy:AD-17
+**Surface:** `.claude/skills/mason-feedstock-platform-expansion/**` and `.claude/skills/mason-feedstock-failure-remediation/**`
+(new: `SKILL.md` carrying the how-to's parameterized body, `references/worked-examples.md` carrying its Worked Examples);
+`docs/how-to/feedstock-platform-expansion.md` and `docs/how-to/feedstock-failure-remediation.md` (each becomes a short
+pointer to its skill, frontmatter kept); `docs/specs/feedstock-platform-expansion.md` and
+`docs/specs/feedstock-failure-remediation.md` (the stubs point at the skill); `CLAUDE.md` (the two legacy-index rows'
+descriptions); `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (extended);
+`docs/reference/skills-catalog.md` (regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (two rows).
+**Given** the two how-tos are the orchestration layer over CFE's procedure — in their own words CFE "owns the procedural
+detail" and is authoritative on any conflict
+**When** this story lands, with `conda-forge-expert` invoked first (Rule 1)
+**Then** each campaign runs from its Mason skill — parameters, waves, open questions, acceptance and the Worked Examples new
+cases append to — moved verbatim, not rewritten; the timeless workflow stays in
+`.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md` and CFE's diagnostic chain, linked, never copied
+**And** the how-to and the `docs/specs/` stub each resolve to the skill; `CLAUDE.md`'s legacy index still names both stub
+filenames (`bmad-drift-check`); `test_mason_skills.py` covers both skills; `docs/specs/feedstock-refresh.md` does not
+move; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.5: The closing Rule-2 retro teaches conda-forge-expert it is one of Mason's skills
+
+As the maintainer of `conda-forge-expert`,
+I want CFE to know it is one of Mason's skills and where Mason's other skills live,
+So that a recipe task that starts in CFE finds Mason's grammar and campaigns, and this conda-forge effort closes as every one does.
+
+**Type:** retro • **Effort:** S • **Deps:** S-19.4 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); CAP-26 (the
+self-improvement loop); FR-47; AD-15
+**Surface:** `.claude/skills/conda-forge-expert/SKILL.md` (a pointer: Mason's station skill routes recipe work here, and the
+feedstock campaigns run as Mason skills), `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md` (names
+`mason-feedstock-platform-expansion` as its parameterized runner), `.claude/skills/conda-forge-expert/CHANGELOG.md` (a dated
+entry), `.claude/skills/conda-forge-expert/MANIFEST.yaml` and `config/skill-config.yaml` (the version), and
+`config/failure-catalog.yaml` only if the generator regenerates it.
+**Given** Epic 19 is a conda-forge effort (CLAUDE.md Rule 2)
+**When** the retro runs
+**Then** CFE's `SKILL.md` and the guide link Mason's skills, and no gotcha or procedure moves out of CFE; the CHANGELOG
+carries a dated minor-version entry naming Epic 19 (a "guidance held" entry if nothing else is found)
+**And** the commit subject is `retro(cfe): …` and touches only the CFE surface; mason's sanctioned-retro meta-test and the
+CFE suite stay green; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency
@@ -2057,3 +2184,14 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-28
+
+`arch→epics` edge after the spine's 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28: FR-51 / CAP-29
+lands on AD-1, AD-15 and canopy:AD-17; no AD added, amended or removed). Epic 19 (19.1–19.5) decomposes CAP-29, and each
+story keeps to those decisions: no Mason skill restates recipe knowledge (19.2–19.4's gotcha-heading guard, AD-1's rule
+carried from code to skills); no implementation commit writes the CFE surface, whose one edit is 19.5's `retro(cfe):`
+commit (AD-15); the station skill is SKF-compiled and the four others are hand-authored operating-procedure skills
+(canopy:AD-17). Epic 11's rule — no mason SKF that supersedes CFE — holds: none does. Every Story heading still maps 1:1
+to a `sprint-status-ledger.yaml` key (`19-1`..`19-5` and `epic-19` added at `backlog`, `epic-19-retrospective` at
+`optional`, through the Tier-3 feed and `sprint-ledger-sync`). `updated:` bumped.

@@ -2,7 +2,8 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-09-27"   # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (brief->prd, spec->prd) — the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; no FR added. Prior 2026-09-24
 status: final
 currency_review: "Reviewed 2026-09-24 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved to 2026-09-24T20:08 (Story 63.4, `steward session check`, plus a merge reconcile of a co-governor spec-pyforge-core memlog entry from concurrent marshal Story 46.2 landing) while this PRD sat at 2026-09-20 — four days, past the runbook's 2-day grace. Story 63.4 decomposes Epic 63 (`environment pyforge-guild`, spec-pyforge-steward CAP-5), consolidating seven pre-existing session-precondition findings into one `pyforge steward session check` duty wired into four entry points; CAP-5 already covers the pyforge-guild environment-default capability this duty verifies. No FR added or changed. Reconciled in § Currency reconciliation — 2026-09-24. FR delta: none. Prior — Reviewed 2026-09-20 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved to 2026-09-20T02:28 with the landing entries for Stories 61.1–61.3 (corridor transports, work passport + core schema, as-of glass and mailed query — CAP-141..143 realized, Epic 61 in progress) plus the DW-FU-61-2 closure and two co-governor reconciles, while this PRD sat at 2026-09-17. All three stories decompose Spec capabilities already folded 2026-09-17; no FR added or changed. Reconciled in § Currency reconciliation — 2026-09-20. FR delta: none. Prior — Reviewed 2026-09-17 — chain-currency (spec→prd) — one-chain steward fold reminted spec-pyforge-steward CAP-1..145 (31 absorbed Specs, 35 covers-dreams) while this PRD sat at 2026-09-14 with fr-derivation-from already 2026-09-17. Kernel FR-1..18 unchanged; absorbed CAPs were already decomposed as Epics 9–64 on their own Specs — remint is provenance, not a new FR set. Reconciled in § Currency reconciliation — 2026-09-17. FR delta: none. Prior — Reviewed 2026-09-14 — chain-currency (spec→prd) — spec-pyforge-steward's own SPEC.md moved to 2026-09-12 (a 4-path surface-drift-exclude block; dated verified: lines on CAP-1..CAP-4 from the 2026-09-11 sweep, all holding, one scoped honestly as not-re-exercised-live) and its memlog to 2026-09-13T23:59 (a bulk post-outage surface reconcile of five already-landed stories, plus Story 53.6's frames.py re-key from `name` onto `identifier` per Frame Spec v0.3 §4.2.1) while this PRD sat at 2026-09-08. Reconciled in § Currency reconciliation — 2026-09-14. FR delta: none. Prior — Reviewed 2026-09-09 — chain-currency (spec→prd) — spec-pyforge-unifying-strategy's `SPEC.md` re-stamped 2026-09-09 by `bmad-correct-course` (operator-approved `sprint-change-proposal-2026-09-09-currency-review.md`): `:488` line-count constraint retired by operator ruling, `:73`/`:315` Python floor corrected to `3.14.*`, a dated Constraints block, § Residual (2026-09-09) replacing \"none\", two `open_questions`. Checked against FR-1..31 — no FR added or changed; the realization gate is a definition-of-done discipline over existing requirements, and Epics 48–49 decompose the Spec's Residual and Constraints, not a requirement here. § 14 gained a dated paragraph; deltas in § Currency reconciliation — 2026-09-09. Reviewed 2026-09-08 — chain-currency (spec→prd) — spec-pyforge-steward's `.memlog.md` moved 2026-09-08 for the deferred-work sweep follow-ups; the one substantive motion is `_persona_mentions` in tests/meta/test_adoption_register.py gaining word-boundary matching and a widened scan (README.md + reference/*.md). Checked against FR-1..31 — this PRD states no requirement about the adoption register or persona-routing text (searched for `adoption register` and `persona mention`, zero hits), so this is a test-helper precision fix inside an already-decomposed story surface and adds no FR; one new story was authored on the epics side (43.7, re-homing mason DW-13-2-2's sidecar 3.14 runtime validation), which decomposes existing pap:CAP-5/CAP-6 rather than minting a requirement here. Deltas in § Currency reconciliation — 2026-09-08. Reviewed 2026-09-05 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved twice on 2026-09-05 (the post-merge follow-up-review landing, PR #1056, and the bmad-suite 2026.9.5 roster change) and spec-bmad-eval-quality was created the same day (CAP-1 suite membership, CAP-2 pilot contract → Epic 45); neither adds an FR here — suite membership is governed by spec-bmad-suite-channel-product / -metapackage and eval-quality decomposes from its own owned Spec; deltas in § Currency reconciliation — 2026-09-05. Reviewed 2026-09-02 — chain-currency: spec-pyforge-steward's 2026-09-01 git touch (de24e396, the 23-1 merge) is the Spec landing at its sharded path `specs/spec-pyforge-steward/SPEC.md`; CAP-1..4, AD-1..9, non-goals and success signal are unchanged against this PRD, so no FR changes. Same day the red-team correct-courses minted Epics 40–43 on the unifying chain; those bind spec-pyforge-unifying-strategy, not this PRD. Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26)."
@@ -1221,6 +1222,9 @@ motive: one domain skill of eight and zero station personas. **2026-08-26 (Epic 
 the check reports **40/40**; mason's skill cell is `conda-forge-expert` (no
 `pyforge-mason/` skill). 01/02 work does not owe this matrix. Fewer-than-five on an
 **03 capability** remains a contract violation — the check now fails CI on a missing cell.
+*(Superseded 2026-09-28 by FR-33, operator ruling: Mason's skill cell is `pyforge-mason` **and**
+`conda-forge-expert`, both required — Story 72.2, after mason Story 19.1 compiles the station skill. The
+2026-08-26 sentence above is history.)*
 
 **Functional Requirements:**
 
@@ -2288,3 +2292,34 @@ prefixed satellite FR spaces are unchanged).
 
 **Content changed:** this section added (FR-32 registered). No FR renumbered or removed.
 `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28
+
+`spec→prd` edge: `spec-pyforge-steward` gained CAP-160 and CAP-161 on 2026-09-28 while this PRD sat at 2026-09-27.
+Same-day reconcile; the FRs are derived from the CAPs (`one-chain-per-station`: the PRD is the Spec's decomposition,
+never an independent namespace).
+
+### The FR space: FR-33 and FR-34 registered
+
+The operator answered the Mason Dream's 2026-09-27 entry (*Mason has its own skills, and `conda-forge-expert` is one of
+them*) on 2026-09-28 (`spec-pyforge-mason:CAP-29`, mason Epic 19). Two pieces are steward code; they decompose into
+**Epic 72** (Stories 72.1 and 72.2).
+
+#### FR-33: Mason's five-tier skill cell requires its station skill and conda-forge-expert ← CAP-160
+The five-tier check counts Mason's `skill` cell present only when `.claude/skills/pyforge-mason/` holds a `SKILL.md` and
+`.claude/skills/conda-forge-expert/SKILL.md` exists. **Consequences:** a tree with only one of the two reads Mason's cell
+missing and fails `check` naming `skill`; the live roster stays 40/40 once mason Story 19.1 has landed; every other
+station's cell rule is unchanged. Supersedes § 4.13's 2026-08-26 mason clause (canopy:FR-39's check, not its
+consequences, changes). Story 72.2, minted `blocked` behind mason Story 19.1.
+
+#### FR-34: The Guild environment answers `pyforge mason` ← CAP-161
+`pyforge-guild`, the session default (CAP-5), installs `pyforge-mason`, so `pyforge mason …` resolves and `mason` is on
+`PATH` there. **Consequences:** `pixi run -e pyforge-guild pyforge mason --help` and `… pyforge mason doctor --format json`
+exit 0; a meta-test reds the feature without `pyforge-mason`; the Guild still installs under 1 GB from cold; the front door
+(`pyforge-core`) is unchanged; warden stays out of the Guild. Story 72.1.
+
+**ONE kernel FR space now FR-1..FR-34** (FR-35 = next free id; the `canopy:`, `suite:` and other prefixed satellite FR
+spaces are unchanged).
+
+**Content changed:** this section added (FR-33, FR-34 registered); § 4.13 gains a dated superseded note. No FR renumbered
+or removed. `updated:` bumped.
