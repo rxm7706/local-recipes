@@ -69,9 +69,10 @@ own adapter (`name`, `probe()`, `find_open_pr()`) searches the CFE fork for
 an open conda-forge/staged-recipes pull request, one of `ship_pypi`/
 `ship_channel`'s three interrogation-based idempotence mechanisms (the other
 two are `pypi_index.version_exists`/`engines.pixi.search`, both added by the
-same story). `GH_VERSION_RANGE` below is constructed via `_minor_range`
-exactly like the existing four (evidence: `gh` 2.97.0, live-verified in this
-environment) -- `mason doctor` picks `gh` up automatically through this
+same story). `GH_VERSION_RANGE` below mirrors its `pixi.toml` pin exactly
+like the existing four -- all five are floors built by `_floor` since the
+2026-09-20 and 2026-09-28 operator rulings (evidence: `gh` 2.97.0,
+live-verified in this environment) -- `mason doctor` picks `gh` up automatically through this
 module's existing `probe_known_engines()` call, with no `doctor.py` source
 change (spec Always boundary)."""
 
@@ -201,53 +202,49 @@ engine's conda package is `python-build` (matching `pixi.toml`'s
 nor its binary name (`pyproject-build`) is that string."""
 
 
-def _minor_range(floor: str, ceiling: str) -> SpecifierSet:
-    """Build the `>=floor,<ceiling` `SpecifierSet` every constant below uses,
-    from two bare version strings rather than one inline `">=X,<Y"` literal.
+def _floor(floor: str) -> SpecifierSet:
+    """Build the floor-only ``>=floor`` `SpecifierSet` every constant below
+    uses, from a bare version string rather than an inline ``">=X"`` literal.
 
     `tests/meta/test_no_recipe_knowledge.py`'s AD-1 pin-constraint-shape
     guard flags any string constant holding a comparison operator directly
-    beside a digit (e.g. `">=1"`) ANYWHERE under `src/pyforge/mason/` --
+    beside a digit (e.g. ``">=1"``) ANYWHERE under `src/pyforge/mason/` --
     its target is a literal conda-forge *recipe* pin (a packaging decision
     CFE's generator/optimizer makes, per that guard's own docstring), not
     Mason's own engine-tooling provisioning ranges below, but the guard
-    matches on shape alone and its own docstring is explicit that the
-    fix for a shape collision is to construct the value differently, never
-    to weaken the pattern. `floor`/`ceiling` (e.g. `"0.76.2"`, `"0.77"`) are
-    plain digit-and-dot strings with no operator character, so neither they
-    nor this function's own `f"..."` literal parts (`">="`, `",<"` -- never
-    followed by a digit within the SAME string constant, since the digits
-    only arrive via interpolation) trip the guard, while the `SpecifierSet`
-    this produces at runtime is byte-identical to the inline-literal form.
-    """
-    return SpecifierSet(f">={floor},<{ceiling}")
+    matches on shape alone and its own docstring is explicit that the fix
+    for a shape collision is to construct the value differently, never to
+    weaken the pattern. ``floor`` (e.g. ``"0.80.0"``) is a plain
+    digit-and-dot string, and this function's own f-string literal part
+    (``">="``) is never followed by a digit within the SAME string constant,
+    so neither trips the guard, while the `SpecifierSet` produced at runtime
+    is byte-identical to the inline-literal form.
 
-
-def _floor(floor: str) -> SpecifierSet:
-    """A floor-only range (``>=floor``), built by interpolation for the same
-    reason ``_minor_range`` is: an inline ``">=7.0.0"`` literal trips the AD-1
-    pin-constraint-shape guard, while ``floor`` alone is digits and dots.
-    Operator ruling 2026-09-20: engine ranges carry no ceiling without a written
-    reason -- the ``pyforge-foundry-full`` union solve showed a cap's cost."""
+    Floors only (operator rulings 2026-09-20, "never cap without a reason",
+    and 2026-09-28, "we don't need to cap pixi in any station /
+    environment"): the ``pyforge-foundry-full`` union solve showed a cap's
+    cost, and the one window that survived 2026-09-20 -- pixi's ``<0.81`` --
+    held every env carrying pyforge-mason at pixi 0.80.0. Story 20.1 retired
+    the ``_minor_range`` window builder with that last window."""
     return SpecifierSet(f">={floor}")
 
 
-# Evidence-backed version FLOORS (spec Always boundary, amended 2026-09-20 by
-# operator ruling -- "never cap without a reason"): each constant must
-# byte-for-byte mirror `pixi.toml`'s `[package.run-dependencies]` entry for
-# the same engine -- enforced by `tests/meta/test_engine_version_range_sync.py`.
-# Until 2026-09-20 these were one-tested-minor windows (`>=X.Y.Z,<X.(Y+1)`);
-# the `pyforge-foundry-full` union env (steward Story 63.5) showed the cost:
+# Evidence-backed version FLOORS (spec Always boundary, amended by operator
+# ruling -- 2026-09-20 "never cap without a reason", 2026-09-28 "we don't need
+# to cap pixi in any station / environment"): each constant must byte-for-byte
+# mirror `pixi.toml`'s `[package.run-dependencies]` entry for the same engine
+# -- enforced by `tests/meta/test_engine_version_range_sync.py`. Until
+# 2026-09-20 these were one-tested-minor windows (`>=X.Y.Z,<X.(Y+1)`); the
+# `pyforge-foundry-full` union env (steward Story 63.5) showed the cost:
 # `python-build <1.6` could not co-resolve with the `>=1.6.0` floors pyforge-ci
 # / pyforge-core / pyforge-testing-kit / local-recipes pin, so the fleet's own
 # dependency closure was unsolvable. Floors carry the evidence (live-verified:
-# pixi 0.80.0, twine 7.0.0, conda-lock 4.0.2, build 1.6.0, gh 2.97.0); a
-# ceiling is added only with a written reason -- `PIXI_VERSION_RANGE` keeps
-# its window because an in-env pixi ABOVE the workspace's own `requires-pixi`
-# line would parse a manifest the workspace has not tested (the reason is in
-# pixi.toml beside the pin). These constants exist for the sync guard alone --
-# `require_engine` below does NOT consult them; see its own docstring for why.
-PIXI_VERSION_RANGE = _minor_range("0.80.0", "0.81")
+# pixi 0.80.0, twine 7.0.0, conda-lock 4.0.2, build 1.6.0, gh 2.97.0). Pixi's
+# window outlived the others until 2026-09-28 (Story 20.1, CAP-30); its floor
+# now tracks the root `requires-pixi` as a registered site of
+# `scripts/pixi_version_registry.py`. These constants exist for the sync guard
+# alone -- `require_engine` below does NOT consult them; see its own docstring.
+PIXI_VERSION_RANGE = _floor("0.80.0")
 TWINE_VERSION_RANGE = _floor("7.0.0")
 CONDA_LOCK_VERSION_RANGE = _floor("4.0.2")
 PYTHON_BUILD_VERSION_RANGE = _floor("1.6.0")

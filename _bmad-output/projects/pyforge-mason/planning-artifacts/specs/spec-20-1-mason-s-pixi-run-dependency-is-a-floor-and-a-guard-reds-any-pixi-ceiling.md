@@ -2,7 +2,7 @@
 title: "20.1: Mason's pixi run-dependency is a floor, and a guard reds any pixi ceiling"
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -42,7 +42,7 @@ walks every dependency table (conda, PyPI, host, build, run, every feature and t
 blocks are evicted and re-solved (the repo's path-dependency remedy).
 
 Ledger key: `20-1-mason-s-pixi-run-dependency-is-a-floor-and-a-guard-reds-any-pixi-ceiling`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done`.
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -65,8 +65,10 @@ Type / Effort / Deps: fix / S / —.
 **Always:**
 - Read every verdict from the exit code, never through a pipe.
 - Keep the check stdlib-only (`tomllib`, `re`): `tests/scripts/` runs in the dependency-free `pyforge-ci` environment.
-- Reconcile every Spec `spec-surface-check` names (the owner `spec-pyforge-mason`; co-governors `spec-pyforge-core` for
-  `engines/__init__.py` and `spec-pixi-candidate-currency` for `pixi.lock`), then stamp each scoped with `--spec`.
+- Reconcile the owner `spec-pyforge-mason` and every co-governor `spec-surface-check` names, then stamp each scoped with
+  `--spec`. The co-governors of this surface are `spec-pyforge-core` (marshal; `engines/__init__.py`) and
+  `spec-pixi-candidate-currency` (doctor) with `spec-platform-image-one-pixi-env` (steward) for `pixi.lock`; another
+  station's memlog is written only if the detector names it.
 
 **Never:**
 - Do not change the root `pixi.toml` or regenerate `environment.yaml` (its pins are already floors).

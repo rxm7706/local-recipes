@@ -2169,7 +2169,7 @@ So that no station or environment holds pixi below what the rest of the workspac
 `pixi.toml` or a package `pyproject.toml`
 **And** `pixi.lock` resolves pixi 0.81.x in every environment that carries `pyforge-mason`;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
