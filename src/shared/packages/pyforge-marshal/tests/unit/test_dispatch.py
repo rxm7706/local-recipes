@@ -58,6 +58,7 @@ class FakeFs:
         self.dirs: set[Path] = set()
         self.files: dict[Path, str] = {}
         self.appended: list[tuple[Path, str, bool]] = []
+        self.repointed: list[tuple[Path, Path]] = []
 
     def is_dir(self, path: Path) -> bool:
         return path in self.dirs
@@ -96,6 +97,7 @@ class FakeFs:
         if path.is_symlink() or path.exists():
             path.unlink()
         path.symlink_to(target)
+        self.repointed.append((path, target))
 
     def exists(self, path: Path) -> bool:
         return path.exists()
@@ -2467,18 +2469,40 @@ def test_dispatch_launches_despite_primary_triangle_naming_another_station(
     story = "64-1-worktree-scope"
     _seed_spec(tmp_path, slug, story)
     monkeypatch.chdir(tmp_path)
+    primary_marker = tmp_path / "_bmad" / "custom" / ".active-project"
+    primary_planning_link = tmp_path / "_bmad-output" / "planning-artifacts"
+    primary_implementation_link = tmp_path / "_bmad-output" / "implementation-artifacts"
+    marker_before = primary_marker.read_text(encoding="utf-8")
+    planning_target_before = primary_planning_link.readlink()
+    implementation_target_before = primary_implementation_link.readlink()
+    fake_fs = FakeFs()
+    harness = FakeBuildHarness()
     attempt = dispatch_once(
         slug=slug,
         story=story,
-        fs=FakeFs(),
+        fs=fake_fs,
         vcs=FakeVcs(tmp_path),
-        build_harness=FakeBuildHarness(),
+        build_harness=harness,
         process=FakeProcess(),
     )
     assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
     assert attempt.launched
     worktree = Path(str(attempt.data["worktree_path"]))
     assert verify_scope(worktree, slug) is None
+    # AC #1: the fake harness records exactly one launch, for this slug.
+    assert [c["project_slug"] for c in harness.calls] == [slug]
+    # AC #1: the primary checkout's marker bytes and both readlink targets
+    # are identical before and after -- dispatch never touches them.
+    assert primary_marker.read_text(encoding="utf-8") == marker_before
+    assert primary_planning_link.readlink() == planning_target_before
+    assert primary_implementation_link.readlink() == implementation_target_before
+    # AC #2: every write this run made is under the dispatch worktree or
+    # `_bmad-output/projects/<slug>/` -- never the primary's own corners.
+    allowed_roots = (worktree, tmp_path / "_bmad-output" / "projects" / slug)
+    for written in (*fake_fs.files, *(path for path, _target in fake_fs.repointed)):
+        assert any(
+            written == root or root in written.parents for root in allowed_roots
+        ), f"write outside allowed scope: {written}"
 
 
 def test_dispatch_refuses_bmad_active_project_env_disagreement(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
