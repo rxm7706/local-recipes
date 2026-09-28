@@ -188,6 +188,56 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   surface changes (`scripts/mason_cfe_surface_check.py` does not cover `.github/`). Kinships:
   `spec-coverage-gate-independence` CAP-4, `spec-pyforge-core` CAP-10 (its workflow test covers these
   four). Owner: mason.
+- **2026-09-27 — Proposed: Mason has its own skills, and `conda-forge-expert` is one of them.**
+  Operator direction, 2026-09-26: *Mason should have its own skills, with conda-forge-expert as
+  one of them* (team memory `2026-09-26-operator-direction-not-started-mason-should-have`, which
+  also says it enters here before any Spec, Story or code). Today every other station has a
+  station skill (`.claude/skills/pyforge-<station>/`, SKF-compiled) and a persona
+  (`bmad-agent-<station>`). Mason has the persona, and its skill tier is CFE itself. Recipe work
+  is only one of the three crafts this Dream names: recipes, environments and shipping.
+  **What the rules say today** (each one moves if this is accepted):
+  - `AGENTS.md` § Policy: *never mint a lasting `src/shared/packages/` or
+    `.claude/skills/pyforge-mason/` path*. Its `governance-currency:ignore` marker gives the
+    reason: *mason's skill tier is conda-forge-expert per five_tier.py*.
+  - `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py:104-106` counts Mason's
+    `skill` cell as present only when `conda-forge-expert/SKILL.md` exists ("Mason 11.1: CFE is
+    the domain skill. Do not require pyforge-mason/").
+  - Mason Epic 11 (`epics.md` ~1552, ~1581): *`conda-forge-expert` is not replaced (no mason SKF
+    that supersedes CFE)*; the Domain-skill row reads *CFE never replaced*.
+  - `docs/reference/agent-instruction-notes.md:134`: *Mason … deliberately has no SKF skill*.
+  - The Mason Frame, `docs/foundry/frames/stations/mason.frame.md:18`: *Do not SKF-compile
+    `.claude/skills/pyforge-mason/`*. Frames are B's to write under the writer lock, so a change
+    there lands on B, not here.
+  **What does not move:** CFE is never replaced, forked or demoted. The direction keeps it as one
+  of Mason's skills, which honours Epic 11's rule, since nothing supersedes CFE. Every conda-forge
+  effort still closes with the CFE retro and its `CHANGELOG.md` semver bump.
+  **Where it fits:** the foundry target tree already separates the two kinds of skill,
+  `skills/{stations,personas,domain}/`. CFE is a domain skill; a Mason station skill sits
+  beside it, the same way the other seven stations' do. On B this is the tree's intended shape.
+  On A it collides with the Policy line above.
+  **Questions for the operator, before `bmad-spec`:**
+  1. **Root.** Does this land on A (an `A-only` mode with an expiry, since the Policy line
+     forbids a lasting path) or only on B (`B-only`, named on a Spec before `done`)? The mode
+     table is B's `docs/foundry/modes.md`.
+  2. **Which skills.** Recipe work stays in CFE. The candidates for Mason's own skills are the
+     other two crafts, environments (`mason environment lock`) and shipping (`mason package
+     ship`), plus the station grammar every other station's skill documents (the `mason` CLI
+     and `POST /stations/mason/mcp`). Which ones? And do the two feedstock workflows now written
+     as how-tos (`docs/how-to/feedstock-platform-expansion.md`,
+     `docs/how-to/feedstock-failure-remediation.md`) become Mason skills?
+  3. **SKF.** Is Mason's station skill SKF-compiled like the other seven? That reverses
+     `agent-instruction-notes.md:134` and the Frame line, and adds an eighth entry to the SKF
+     block in `CLAUDE.md`.
+  4. **The five-tier check.** Should `five_tier.py` require Mason's own station skill, keep CFE
+     as its `skill` cell, or require both?
+  **What it looks like when real:** Mason's station skill documents the Mason grammar the way
+  `pyforge-steward` documents steward's. CFE stays the recipe skill and is linked from it.
+  `five_tier.py` and the Policy line say the same thing. No recipe workflow is duplicated
+  between the two.
+  Kinships: mason Epic 11 (persona + CFE), steward's five-tier check (`canopy AD-14`),
+  `spec-bmad-suite-lifecycle`'s adoption register (bmad-builder is already wielded by steward
+  and mason for skill authoring), the cutover's `S-44.6` "CFE comes home" (`fnd:CAP-3`).
+  Owner: mason. Not yet specced: `bmad-spec` follows the operator's answers to 1–4.
 
 ## One-chain fold — 2026-09-17
 
