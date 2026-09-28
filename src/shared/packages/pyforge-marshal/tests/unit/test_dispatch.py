@@ -2558,6 +2558,8 @@ def test_dispatch_refuses_worktree_side_foreign_marker(tmp_path: Path, monkeypat
     worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
     worktree.mkdir(parents=True)
     point_scope_triangle(worktree, "pyforge-steward")
+    worktree_marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker_before = worktree_marker.read_text(encoding="utf-8")
     _seed_spec(tmp_path, slug, story)
     monkeypatch.chdir(tmp_path)
     attempt = dispatch_once(
@@ -2574,6 +2576,11 @@ def test_dispatch_refuses_worktree_side_foreign_marker(tmp_path: Path, monkeypat
     assert str(worktree) in finding.message
     assert not attempt.launched
     assert [f for f in attempt.findings if f.code == "MRS-DISP-006"] == []
+    # AC #5: the worktree's own foreign marker is left byte-identical, and
+    # no run directory is created for the refused attempt.
+    assert worktree_marker.read_text(encoding="utf-8") == marker_before
+    runs_dir = dispatch_core.dispatch_runs_dir(tmp_path, slug)
+    assert not runs_dir.exists() or not any(runs_dir.iterdir())
 
 
 def test_dispatch_refuses_worktree_side_unrecognized_link(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2636,6 +2643,48 @@ def test_dispatch_reused_worktree_with_agreeing_triangle_launches(
     )
     assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
     assert attempt.launched
+
+
+def test_dispatch_worktree_with_marker_but_missing_link_seeds_only_that_corner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A REUSED worktree whose marker and one link already agree with the
+    slug, but whose other link is entirely absent (e.g. a prior run's
+    corner write failed partway, MRS-DISP-006, before a retry), seeds only
+    the missing corner -- the existing marker and link are left untouched
+    -- and then launches cleanly."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-mixed-worktree-triangle"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"{slug}\n", encoding="utf-8")
+    out = worktree / "_bmad-output"
+    planning_target = out / "projects" / slug / "planning-artifacts"
+    planning_target.mkdir(parents=True, exist_ok=True)
+    planning_link = out / "planning-artifacts"
+    planning_link.symlink_to(Path("projects") / slug / "planning-artifacts")
+    marker_before = marker.read_text(encoding="utf-8")
+    planning_target_before = planning_link.readlink()
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+    assert verify_scope(worktree, slug) is None
+    # The pre-existing corners are untouched -- only the missing one was seeded.
+    assert marker.read_text(encoding="utf-8") == marker_before
+    assert planning_link.readlink() == planning_target_before
+    assert (out / "implementation-artifacts").readlink() == Path("projects") / slug / "implementation-artifacts"
 
 
 def test_dispatch_worktree_scope_write_failure_is_mrs_disp_006(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
