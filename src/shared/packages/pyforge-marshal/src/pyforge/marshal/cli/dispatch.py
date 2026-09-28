@@ -1837,7 +1837,7 @@ def dispatch_once(
     if session_finding is not None:
         findings.append(session_finding)
 
-    scope_refusal = _dispatch_scope_refusal(repo_root, slug)
+    scope_refusal = _dispatch_scope_refusal(slug)
     if scope_refusal is not None:
         findings.append(scope_refusal)
         return _done()
@@ -2146,6 +2146,10 @@ def dispatch_once(
         )
         return _done()
     data["worktree_path"] = str(worktree)
+    worktree_scope_refusal = _seed_dispatch_worktree_scope(fs=fs, worktree=worktree, slug=slug)
+    if worktree_scope_refusal is not None:
+        findings.append(worktree_scope_refusal)
+        return _done()
     output_finding = _seed_dispatch_output_layer(fs=fs, worktree=worktree, context_payload=context_payload)
     if output_finding is not None:
         findings.append(output_finding)

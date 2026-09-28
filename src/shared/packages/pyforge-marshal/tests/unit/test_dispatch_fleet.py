@@ -407,6 +407,22 @@ class FakeFs:
         except OSError:
             return None
 
+    def read_symlink_target(self, path: Path) -> Path | None:
+        if not path.is_symlink():
+            return None
+        return path.readlink()
+
+    def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
+        if not path.is_symlink() and path.exists():
+            raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to replace it")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_symlink() or path.exists():
+            path.unlink()
+        path.symlink_to(target)
+
+    def exists(self, path: Path) -> bool:
+        return path.exists()
+
 
 class FakeVcs:
     def __init__(self, repo_root: Path) -> None:
