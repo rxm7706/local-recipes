@@ -4232,6 +4232,12 @@ capabilities:
     heading: "steward reads origin/main and its own branches by their full refs"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-159
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the preflight answers in under a minute"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1
