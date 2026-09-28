@@ -12,6 +12,7 @@ import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 from scope_triangle import point_scope_triangle
 
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.cli.dispatch import (
     _surface_session_precondition_findings,
     dispatch_once,
@@ -30,6 +31,7 @@ from pyforge.marshal.ports.build_harness import (
     HarnessResolution,
 )
 from pyforge.marshal.ports.fs import AdvisoryLock
+from pyforge.marshal.scope import verify_scope
 
 
 def _init_git_repo(path: Path, *, scope_slug: str | None = None) -> None:
@@ -56,6 +58,7 @@ class FakeFs:
         self.dirs: set[Path] = set()
         self.files: dict[Path, str] = {}
         self.appended: list[tuple[Path, str, bool]] = []
+        self.repointed: list[tuple[Path, Path]] = []
 
     def is_dir(self, path: Path) -> bool:
         return path in self.dirs
@@ -71,9 +74,33 @@ class FakeFs:
 
     def write_text_atomic(self, path: Path, content: str) -> None:
         self.files[path] = content
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
 
     def read_text(self, path: Path) -> str | None:
-        return self.files.get(path)
+        if path in self.files:
+            return self.files[path]
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def read_symlink_target(self, path: Path) -> Path | None:
+        if not path.is_symlink():
+            return None
+        return path.readlink()
+
+    def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
+        if not path.is_symlink() and path.exists():
+            raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to replace it")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_symlink() or path.exists():
+            path.unlink()
+        path.symlink_to(target)
+        self.repointed.append((path, target))
+
+    def exists(self, path: Path) -> bool:
+        return path.exists()
 
     def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
         # Story 22.11: `dispatch --stories` delegates to `run_fleet_drain`,
@@ -2426,25 +2453,56 @@ def test_resolve_max_parallel_cli_override_wins() -> None:
 # --------------------------------------------------------------------------
 
 
-def test_dispatch_refuses_triangle_drift_before_launch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dispatch_launches_despite_primary_triangle_naming_another_station(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 64.1 (CAP-273, FR-219): the PRIMARY checkout's shared marker
+    naming another station's slug must never block a dispatch launch --
+    only the dispatch WORKTREE's own triangle (seeded fresh by
+    ``_seed_dispatch_worktree_scope``) is checked now. Supersedes the old
+    ``test_dispatch_refuses_triangle_drift_before_launch``, which asserted
+    the opposite (pre-64.1) behaviour on this exact setup."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     point_scope_triangle(tmp_path, "pyforge-steward")
     os.environ["BMAD_ACTIVE_PROJECT"] = slug
-    story = "33-9-scope-guard"
+    story = "64-1-worktree-scope"
     _seed_spec(tmp_path, slug, story)
     monkeypatch.chdir(tmp_path)
+    primary_marker = tmp_path / "_bmad" / "custom" / ".active-project"
+    primary_planning_link = tmp_path / "_bmad-output" / "planning-artifacts"
+    primary_implementation_link = tmp_path / "_bmad-output" / "implementation-artifacts"
+    marker_before = primary_marker.read_text(encoding="utf-8")
+    planning_target_before = primary_planning_link.readlink()
+    implementation_target_before = primary_implementation_link.readlink()
+    fake_fs = FakeFs()
+    harness = FakeBuildHarness()
     attempt = dispatch_once(
         slug=slug,
         story=story,
-        fs=FakeFs(),
+        fs=fake_fs,
         vcs=FakeVcs(tmp_path),
-        build_harness=FakeBuildHarness(),
+        build_harness=harness,
         process=FakeProcess(),
     )
-    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
-    assert "expected 'pyforge-marshal'" in finding.message
-    assert "marker='pyforge-steward'" in finding.message
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+    worktree = Path(str(attempt.data["worktree_path"]))
+    assert verify_scope(worktree, slug) is None
+    # AC #1: the fake harness records exactly one launch, for this slug.
+    assert [c["project_slug"] for c in harness.calls] == [slug]
+    # AC #1: the primary checkout's marker bytes and both readlink targets
+    # are identical before and after -- dispatch never touches them.
+    assert primary_marker.read_text(encoding="utf-8") == marker_before
+    assert primary_planning_link.readlink() == planning_target_before
+    assert primary_implementation_link.readlink() == implementation_target_before
+    # AC #2: every write this run made is under the dispatch worktree or
+    # `_bmad-output/projects/<slug>/` -- never the primary's own corners.
+    allowed_roots = (worktree, tmp_path / "_bmad-output" / "projects" / slug)
+    for written in (*fake_fs.files, *(path for path, _target in fake_fs.repointed)):
+        assert any(written == root or root in written.parents for root in allowed_roots), (
+            f"write outside allowed scope: {written}"
+        )
 
 
 def test_dispatch_refuses_bmad_active_project_env_disagreement(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2480,3 +2538,180 @@ def test_format_scope_drift_matches_bmad_switch_shape() -> None:
     assert text.startswith("scope drift:")
     assert "expected 'project-a'" in text
     assert "marker='project-b'" in text
+
+
+# --------------------------------------------------------------------------
+# Story 64.1 (CAP-273, FR-219): the dispatch WORKTREE carries its own scope
+# triangle, never the shared primary-checkout marker.
+# --------------------------------------------------------------------------
+
+
+def test_dispatch_refuses_worktree_side_foreign_marker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A REUSED dispatch worktree (``worktree.exists()`` already, so
+    ``_ensure_dispatch_worktree`` attaches without provisioning) whose own
+    triangle already names a DIFFERENT station is drift -- refused, and
+    never repointed: an existing corner, however it is shaped, is left
+    alone per the seeding step's Never rule."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-foreign-worktree-marker"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    point_scope_triangle(worktree, "pyforge-steward")
+    worktree_marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker_before = worktree_marker.read_text(encoding="utf-8")
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "expected 'pyforge-marshal'" in finding.message
+    assert "marker='pyforge-steward'" in finding.message
+    assert str(worktree) in finding.message
+    assert not attempt.launched
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-006"] == []
+    # AC #5: the worktree's own foreign marker is left byte-identical, and
+    # no run directory is created for the refused attempt.
+    assert worktree_marker.read_text(encoding="utf-8") == marker_before
+    runs_dir = dispatch_core.dispatch_runs_dir(tmp_path, slug)
+    assert not runs_dir.exists() or not any(runs_dir.iterdir())
+
+
+def test_dispatch_refuses_worktree_side_unrecognized_link(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A worktree whose ``implementation-artifacts`` link exists but is
+    shaped in a way ``verify_scope`` cannot parse is drift too -- the
+    ``UNRECOGNIZED`` fail-closed token never counts as agreement, and the
+    seeding step leaves an already-existing (however malformed) link
+    untouched rather than repointing it."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-unrecognized-worktree-link"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"{slug}\n", encoding="utf-8")
+    out = worktree / "_bmad-output"
+    planning_target = out / "projects" / slug / "planning-artifacts"
+    planning_target.mkdir(parents=True, exist_ok=True)
+    (out / "planning-artifacts").symlink_to(Path("projects") / slug / "planning-artifacts")
+    (out / "implementation-artifacts").symlink_to(Path("elsewhere") / "implementation-artifacts")
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "implementation-artifacts='unrecognized'" in finding.message
+    assert not attempt.launched
+    assert (out / "implementation-artifacts").readlink() == Path("elsewhere") / "implementation-artifacts"
+
+
+def test_dispatch_reused_worktree_with_agreeing_triangle_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A REUSED worktree (pre-existing on disk, so provisioning attaches
+    rather than creates) whose triangle already agrees with the slug
+    launches cleanly -- the seeding step writes nothing and
+    ``verify_scope`` sees agreement immediately."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-reused-worktree-agrees"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    point_scope_triangle(worktree, slug)
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+
+
+def test_dispatch_worktree_with_marker_but_missing_link_seeds_only_that_corner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A REUSED worktree whose marker and one link already agree with the
+    slug, but whose other link is entirely absent (e.g. a prior run's
+    corner write failed partway, MRS-DISP-006, before a retry), seeds only
+    the missing corner -- the existing marker and link are left untouched
+    -- and then launches cleanly."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-mixed-worktree-triangle"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"{slug}\n", encoding="utf-8")
+    out = worktree / "_bmad-output"
+    planning_target = out / "projects" / slug / "planning-artifacts"
+    planning_target.mkdir(parents=True, exist_ok=True)
+    planning_link = out / "planning-artifacts"
+    planning_link.symlink_to(Path("projects") / slug / "planning-artifacts")
+    marker_before = marker.read_text(encoding="utf-8")
+    planning_target_before = planning_link.readlink()
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+    assert verify_scope(worktree, slug) is None
+    # The pre-existing corners are untouched -- only the missing one was seeded.
+    assert marker.read_text(encoding="utf-8") == marker_before
+    assert planning_link.readlink() == planning_target_before
+    assert (out / "implementation-artifacts").readlink() == Path("projects") / slug / "implementation-artifacts"
+
+
+def test_dispatch_worktree_scope_write_failure_is_mrs_disp_006(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A freshly-provisioned worktree (missing triangle) whose corner write
+    fails degrades to ``MRS-DISP-006`` -- the same code this module already
+    uses for every other worktree-provisioning failure -- rather than
+    raising past ``dispatch_once``."""
+
+    class _RefusingFs(FakeFs):
+        def write_text_atomic(self, path: Path, content: str) -> None:
+            if path.name == ".active-project":
+                raise FsError(f"cannot write {path}")
+            super().write_text_atomic(path, content)
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-worktree-scope-write-fails"
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=_RefusingFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-006"]
+    assert "cannot provision dispatch worktree scope triangle" in finding.message
+    assert not attempt.launched
