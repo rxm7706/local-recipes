@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 61  # 2026-09-27 (night): Epic 63 appended (spec-pyforge-core CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 330  # 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-27"   # RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
+epicCount: 63  # 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 333  # 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-27"   # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
 mode: headless
@@ -7142,6 +7142,98 @@ So that a pushed tag named `origin/main` can never empty the selection into a PR
 **Then** a base built from a short `origin/${…}` (a GitHub expression or a shell variable) fails the test, naming the file and line
 **And** `pyforge-station-tests.yml`'s pull_request `BASE` is `refs/remotes/origin/${GITHUB_BASE_REF}`; the test fails on the
 pre-fix tree and passes after; `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` green
+
+## Epic 64: A dispatch carries its own scope, never the shared marker (spec-pyforge-marshal CAP-273)
+
+Minted 2026-09-27 (late night) from the station Dream's 2026-09-25 seed under the bmad-switch-scope-enforcement fold:
+`marshal factory dispatch pyforge-marshal 46.9` was refused `MRS-DISP-041` while pyforge-steward held the primary checkout's
+shared marker and both links, and on 2026-09-27 the marker still names pyforge-steward — only one station is dispatchable at a
+time. Nothing a dispatch launches reads that marker: the session runs in its own fresh worktree with `BMAD_ACTIVE_PROJECT`
+pinned, and every launcher path is physical. A new epic because Epic 63 is `done` (Story 33.9, which put `verify_scope` at the
+dispatch boundary, closed with Epic 33). **HARD boundaries:** no write can land in the wrong project — the worktree's own
+triangle is checked by the same `verify_scope` before launch, and a contradiction still refuses `MRS-DISP-041`; the primary's
+marker and links are never read, written, flipped or locked; `scope.py`, `scripts/bmad-switch` and `cli/init.py` are unchanged.
+
+### Story 64.1: The dispatch worktree carries its own scope, never the shared marker
+
+As the operator whose drains and dispatches run while another station's chain holds the shared marker,
+I want each dispatch to check the scope of the worktree its session actually runs in,
+So that any station is dispatchable at any time and no write can land in the wrong project.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-273 (FR-219); AD-11, AD-75 • FR-190 (Story 33.9)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (`_dispatch_scope_refusal` keeps only
+the `BMAD_ACTIVE_PROJECT` check; a worktree-scope step after `_ensure_dispatch_worktree` writes the worktree's missing corners
+through `FsPort` and calls `verify_scope(worktree, slug)` before the launch; the `dispatch` subparser description),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` (the `MRS-DISP-041` registry comment), tests:
+`src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` (the Story 33.9 block),
+`src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_scope_worktree.py` (new).
+**Given** the primary checkout's marker and both links name pyforge-steward
+**When** `marshal factory dispatch pyforge-marshal <story>` runs, and a drain cycle runs under the same primary
+**Then** the session launches with `BMAD_ACTIVE_PROJECT=pyforge-marshal`, the dispatch worktree's own triangle names
+pyforge-marshal and passes `verify_scope`, every write lands under the worktree or `_bmad-output/projects/pyforge-marshal/`, and
+the primary's marker bytes and link targets are unchanged
+**And** a parent `BMAD_ACTIVE_PROJECT` naming another project, or a reused worktree whose own marker names another project,
+still refuses `MRS-DISP-041` with no launch; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+## Epic 65: A drain can be asked what it would dispatch before it launches anything (spec-pyforge-marshal CAP-274)
+
+Minted 2026-09-27 (late night) from the station Dream's entry of the same name: reading steward's drain queue by hand found
+44.4–44.6 parked only in prose in `epics.md`, 44.4's Deps `done` and its spec without `## Verification`. A drain would have
+dispatched it, `MRS-GATE-010` would have refused it after a whole session, and that gate's transient classification would
+have re-dispatched it every cycle. There is no dry run: `dispatch_once`'s first write is `git worktree add`. A new epic because
+Epic 64 is a different capability and Epic 63 is `done`. **HARD boundaries:** the plan never writes — no worktree, session,
+run directory, journal entry or lock; it computes the queue through the same functions the drain uses, never a second
+evaluator; environment probes run only behind an explicit flag; the declared skip (`skip_policies`) stays the one park
+mechanism — the plan reports a prose park, never honours one; the post-session gate and its transient classification are
+unchanged.
+
+### Story 65.1: A drain plan reports every refusal it can decide before launch
+
+As the operator about to start a drain,
+I want to ask it, before it launches anything, which story each station would dispatch next and every refusal it can already see,
+So that a story that can never land, or one parked only in prose, is fixed or skipped before it costs a session.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-274 (FR-220); AD-4, AD-8, AD-15, AD-49 • Story 22.7, Story 28.12, Story 28.18
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (`add_factory_drain_subparser`: `--plan`,
+`--all-stories`, `--check-env`; `run_fleet_drain` answers `--plan` before any lock, journal, worktree or supervisor; the per-station
+queue computation extracted from `execute_fleet_cycle` into one read-only planner both call),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py` (new, pure: the spec-binding predicate, the
+prose-park detector over a story's `epics.md` block and spec text, the inert-override check, the plan's findings),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` and `core/verdict.py` (`MRS-DRAINPLAN-001..005`), tests:
+`src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py` (new),
+`src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`.
+**Given** a fixture replaying steward's 2026-09-27 state — 44.3 and 44.12 `done`, 44.4–44.6 `backlog` with "Parked 2026-09-13 …
+do not dispatch" in their `epics.md` blocks, 44.4's spec without `## Verification`, `skip_policies: []`, and an `order_overrides`
+list whose keys are all done
+**When** `marshal factory drain --plan --mode drain_to_zero --station pyforge-steward --format json` runs
+**Then** it names 44.4 as the next story with `MRS-DRAINPLAN-001` findings for the `MRS-GATE-010` binding refusal and the
+unmirrored prose park, reports 44.5/44.6's parks (`MRS-DRAINPLAN-002`) and the inert override list (`MRS-DRAINPLAN-003`) as WARN,
+exits 4, and the fakes record no write, worktree, journal line or lock
+**And** with `skip_policies` entries for 44.4–44.6 the plan lists them as declared skips and names none of them next; on a shared
+fixture the plan's next story (serial) and wave members (parallel) equal what `execute_fleet_cycle` hands `dispatch_once`; the
+harness binary and authcheck probes run only with `--check-env`; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 65.2: A story whose spec cannot bind is refused before a session is spent
+
+As the operator whose drain relaunches a story every cycle,
+I want `dispatch_once` to refuse a story whose tracked spec cannot bind before it provisions anything,
+So that a story that can never pass the gate never costs a session and never enters the transient re-dispatch loop.
+
+**Type:** fix • **Effort:** S • **Deps:** S-65.1 • **FR/AD:** spec-pyforge-marshal CAP-274 (FR-220); AD-15, AD-49 • Story 28.18
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (`dispatch_once`: the binding check right
+after the spec is read and the policy composed, before harness resolution and `_ensure_dispatch_worktree`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py` (65.1's binding predicate, reused),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_re_preflight.py` (`MRS-DISP-050` re-preflightable: a
+changed spec or verify-commands fingerprint clears the block), `core/findings.py` and `core/verdict.py` (`MRS-DISP-050`), tests:
+`src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch_binding.py` (new),
+`src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`.
+**Given** a backlog story whose tracked spec has no `## Verification` section
+**When** `dispatch_once` runs, alone or from a drain cycle
+**Then** it returns `MRS-DISP-050` naming `MRS-GATE-010`, adds no worktree, launches no harness and creates no run directory, and
+the drain records a campaign block rather than a transient retry
+**And** a spec declaring a command outside `verify_commands` returns `MRS-DISP-050` naming `MRS-GATE-011` and the command; a spec
+that binds launches unchanged; after the refused spec gains its `## Verification` the drain's re-preflight clears the block and
+the next cycle dispatches; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

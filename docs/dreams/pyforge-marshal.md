@@ -642,6 +642,46 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   sha is unchanged. Owner `spec-pyforge-core` (hosted on marshal; its Dream is archived here).
   Kinships: `spec-coverage-gate-independence` CAP-4, `spec-pyforge-mason` CAP-28 (the recipe
   workflows the same test covers).
+- **2026-09-27 (late night) — Proposed: a drain can be asked what it would dispatch before it
+  launches anything.** Reading steward's drain queue by hand today found a story parked only in
+  prose. Steward 44.4–44.6 carry "Parked 2026-09-13 … do not dispatch" in `epics.md`, their ledger
+  rows stay `backlog`, and nothing in code reads that line. 44.4's Deps (44.3, 44.12) are `done`
+  and its spec has no `## Verification`, so a steward drain would have dispatched it first.
+  `MRS-GATE-010` would have refused it only after a whole session, and the drain classes that gate
+  transient (`core/dispatch_retry.py`), so it would have re-dispatched it every cycle. It was
+  parked in code the same day with a `skip_policies` entry in `fleet-drain-queue.yaml` (a separate
+  PR); the declared skip stays the one park mechanism. The same read found two more things nobody
+  can see without launching. A non-empty `order_overrides` list switches the Story 28.12 Deps sort
+  off even when every key in it is done (`dispatch_fleet.station_backlog`). And in serial mode (the
+  default, `max_parallel = 1`) Deps only order the queue and never gate it; only the parallel
+  wave gates, through `spec_deps.ready_backlog`. There is no dry run: `dispatch_once`'s first write
+  is `git worktree add`, and neither `dispatch` nor `drain` has a plan or check flag. Marshal
+  registers 49 `MRS-DISP`, 15 `MRS-GATE` and 17 `MRS-DRAIN` codes. Many of the refusals among them
+  can be decided before anything launches but fire only after a session: `MRS-GATE-010`/`011`
+  against the primary checkout's tracked spec, which the session cannot change; `MRS-GATE-003`
+  against a verify command's shape; `MRS-DISP-019` against the rendered merge subject.
+  **What it looks like when real:** `marshal factory drain --plan` computes each station's queue
+  the way a drain cycle does, through the same functions but with no worktree, session, journal or
+  lock. For the next story (and for every queued story, on request) it names each refusal it can
+  decide without launching. It also names prose parks that no `skip_policies` entry mirrors, and
+  override lists that change nothing but the sort. It exits non-zero when any station's next story
+  would be refused. Separately, `dispatch_once` refuses a story whose tracked spec cannot bind
+  before it provisions anything, so a story that can never pass the gate never costs a session and
+  never enters the transient re-dispatch loop.
+  **The pieces already exist, read-only:** `_dispatch_scope_refusal`,
+  `dispatch_core.resolve_story_spec_path` and `resolve_dispatch_branch`, `_compose_policy`,
+  `_read_fleet_queue_config`, `_station_ledger_statuses`, `dispatch_fleet.station_backlog`,
+  `plan_station_queue` and `build_wave_batch`, `_station_blocked_map`,
+  `station_finalize_pending_story`, `parse_spec_status` with `blocks_harness_relaunch`,
+  `spec_binding.parse_success_signal` with `gate.check_spec_binding` (against the guard-appended
+  verify commands, `dispatch_verify.py`), `promotion.corroborated_merged_story_keys`,
+  `merge_subject_is_marshal_native` and `dispatch_verify._bare_shell_metacharacters`. The plan
+  composes them and adds no second evaluator.
+  **Constraints:** the plan never writes. Environment probes (harness binary, authcheck) run only
+  behind an explicit flag. The plan reports a prose park but never honours one, so the declared
+  skip stays the one park mechanism. Kinships: Story 22.7 (the drain), Story 28.12 (the Deps sort),
+  Story 28.18 (re-preflight), the 2026-09-25 scope seed (CAP-273); owner `spec-pyforge-marshal`.
+  → CAP-274 / Epic 65 / Stories 65.1, 65.2
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
@@ -1783,6 +1823,17 @@ kinship, not a merge)
   project — the property this Dream actually guarantees — it just stops requiring the marker to
   already, coincidentally, agree before a launch is even attempted. No CAP minted, no story
   touched.
+  **Specced 2026-09-27 — no flip needed.** Read against the code, nothing the launch starts ever
+  reads the primary's marker: the session runs in its own fresh dispatch worktree (the marker and
+  both links are gitignored, so it has none) with `BMAD_ACTIVE_PROJECT` pinned, which BMAD's
+  resolver ranks above any marker, and every launcher read and write is a physical
+  `_bmad-output/projects/<slug>/` path. So the scope moves into the worktree — its own marker and
+  links, checked by the same `verify_scope`, as `marshal init` already does for a loop home —
+  and the shared marker is neither consulted nor flipped. A flip under a lock would repoint every
+  primary-checkout writer that does not take the lock (an interactive session, `bmad-switch`) for
+  the length of the launch: the wrong-project window this Dream exists to close. A contradicting
+  `BMAD_ACTIVE_PROJECT`, or a worktree whose own triangle names another project, still refuses
+  `MRS-DISP-041`. → CAP-273 / Epic 64 / Story 64.1
 
 ## 2026-09-16 — Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones (folded from dashboard-velocity-captures-hand-driven-work)
 

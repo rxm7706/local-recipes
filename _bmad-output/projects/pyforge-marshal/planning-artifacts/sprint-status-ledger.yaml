@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 452
+# stories: 459
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -327,6 +327,9 @@ development_status:
   61-1-every-local-branch-read-names-the-full-ref: done
   62-1-the-kits-branch-guards-default-to-the-remote-tracking-ref: done
   63-1-the-station-tests-lane-picks-suites-from-the-remote-tracking-ref: done
+  64-1-the-dispatch-worktree-carries-its-own-scope-never-the-shared-marker: backlog
+  65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch: backlog
+  65-2-a-story-whose-spec-cannot-bind-is-refused-before-a-session-is-spent: backlog
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
@@ -460,6 +463,10 @@ development_status:
   epic-62-retrospective: optional
   epic-63: done
   epic-63-retrospective: optional
+  epic-64: backlog
+  epic-64-retrospective: optional
+  epic-65: backlog
+  epic-65-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done
