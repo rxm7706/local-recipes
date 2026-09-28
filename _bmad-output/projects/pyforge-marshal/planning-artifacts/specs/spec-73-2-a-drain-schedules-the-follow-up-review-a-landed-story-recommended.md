@@ -32,6 +32,7 @@ Type / Effort / Deps: feature / S / 73.1.
 ### Living CAP citations
 
 - `spec-pyforge-marshal` CAP-281 (FR-228).
+- Kinship: `spec-pyforge-doctor:CAP-86` (Doctor checks on every PR that a done story's recommended follow-up review is carried).
 - Kinship: `spec-pyforge-marshal` CAP-274 (Story 65.1: `drain --plan` computes each station's queue through the same functions, so it lists the follow-ups and stale rows this story adds; `drain --plan` is not built here); CAP-275 (Stories 66.1, 66.2, the rows).
 
 ## Acceptance Criteria

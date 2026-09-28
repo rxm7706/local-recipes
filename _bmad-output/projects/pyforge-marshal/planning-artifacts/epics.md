@@ -7473,7 +7473,7 @@ I want the check to judge the manifest's templated paths at the project the comm
 So that `failing` names real gaps instead of files that could never exist under a literal `{{ slug }}` name.
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-279 (FR-225); AD-54, AD-55, AD-60 • Story 10.7
-(the gap named), Story 12.2 (the oracle, K-02)
+(the gap named), Story 12.2 (the oracle, K-02) • `spec-pyforge-steward:CAP-162` (Kinship: steward's session check reads this envelope)
 **Surface:**
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/manifest.py`: the one `{{ slug }}` path renderer (moved
   from `verbs/init.py::_manifest_for_init`, which now calls it).
@@ -7511,7 +7511,8 @@ and 63 were; its own Dream is archived into the marshal Dream). `pixi run -e pyf
 on the roster (`pyforge.core.roster.STATIONS`) and not installed in the Guild environment (warden on purpose, for its
 `osv-scanner` range pin). A new epic because Epic 63 is `done`. **HARD boundaries:** `pyforge-core` stays a stdlib leaf and reads
 no `pixi.toml` (the environment is the roster's long form); exit codes and the off-roster message are unchanged; no station is
-installed or removed here (mason is `spec-pyforge-steward:CAP-161`, Story 72.1; atlas is a separate steward chain).
+installed or removed here (mason is `spec-pyforge-steward:CAP-161`, steward Story 72.1; atlas stays out of the Guild by steward's
+2026-09-28 decision, like warden).
 
 ### Story 71.1: The front door names the environment a roster station runs in
 

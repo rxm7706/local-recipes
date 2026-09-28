@@ -39,7 +39,7 @@ Type / Effort / Deps: fix / S / —.
 ### Living CAP citations
 
 - `spec-pyforge-marshal` CAP-279 (FR-225).
-- Kinship: Story 10.7 (the gap named in `init.py`), Story 12.2 (the local-recipes oracle, K-02); steward session check's parse of this JSON — a separate steward CAP, not this story.
+- Kinship: Story 10.7 (the gap named in `init.py`), Story 12.2 (the local-recipes oracle, K-02); `spec-pyforge-steward:CAP-162` (steward Story 73.1: `steward session check` reads this command's envelope whatever its exit code — the parse half, a separate steward CAP, not this story).
 
 ## Acceptance Criteria
 
@@ -61,7 +61,7 @@ Type / Effort / Deps: fix / S / —.
 - Do not exempt this repository, or any repository, by name or path.
 - Do not change `init`'s or `adopt`'s plans, `build_plan`, or the packaged `manifest.yaml`.
 - Do not change the `.bmad-loop/policy.toml` finding on this repository; it is K-02's (Story 12.2).
-- Do not touch steward's session check (`src/shared/packages/pyforge-steward/src/pyforge/steward/session.py`); its parse of this JSON is a separate steward CAP.
+- Do not touch steward's session check (`src/shared/packages/pyforge-steward/src/pyforge/steward/session.py`); its parse of this JSON is `spec-pyforge-steward:CAP-162`.
 - Do not hand-edit `sprint-status-ledger.yaml` or `SPEC.md`; do not run `scripts/bmad-switch`.
 
 Co-governing Specs: `spec-pyforge-marshal` (owner of `src/shared/packages/pyforge-marshal/**`) and `spec-pyforge-core` (co-governs every station's `src/`) — reconcile each one the spec-surface detector names.

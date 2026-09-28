@@ -15,7 +15,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** `pixi run -e pyforge-guild pyforge warden --help` prints `unknown station 'warden'; known: doctor, herald, marshal, scribe, steward` and exits 2; `pyforge atlas` and `pyforge mason` answer the same. All three are Guild stations on the one roster (`pyforge.core.roster.STATIONS`). They are not installed in the Guild environment: warden is left out on purpose (its `osv-scanner >=2.4.0,<2.5` range pin conflicts with the factory's `>=2.5.1`; see the `[feature.pyforge-guild.dependencies]` comment in `pixi.toml`), atlas is absent, and mason arrives with steward Story 72.1 (`spec-pyforge-steward:CAP-161`). `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` builds its station map from the installed distributions (`script_map_from_installed`, `:94-105`), tries the single-name distribution fallback (`_resolve_primary`, `:154-166`) and the noun aliases (`:145`), and then raises `DispatchError("unknown station …")` (`:151`), which `main()` returns as exit 2 (`:184`).
+**Problem:** `pixi run -e pyforge-guild pyforge warden --help` prints `unknown station 'warden'; known: doctor, herald, marshal, scribe, steward` and exits 2; `pyforge atlas` and `pyforge mason` answer the same. All three are Guild stations on the one roster (`pyforge.core.roster.STATIONS`). They are not installed in the Guild environment: warden is left out on purpose (its `osv-scanner >=2.4.0,<2.5` range pin conflicts with the factory's `>=2.5.1`; see the `[feature.pyforge-guild.dependencies]` comment in `pixi.toml`), atlas is excluded on purpose too (steward's 2026-09-28 decision, recorded on steward Story 72.1: its analytics closure would add ~60% to the Guild), and mason arrives with steward Story 72.1 (`spec-pyforge-steward:CAP-161`). Warden and atlas therefore keep needing this message after mason joins. `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` builds its station map from the installed distributions (`script_map_from_installed`, `:94-105`), tries the single-name distribution fallback (`_resolve_primary`, `:154-166`) and the noun aliases (`:145`), and then raises `DispatchError("unknown station …")` (`:151`), which `main()` returns as exit 2 (`:184`).
 
 **Approach:** in `dispatch_argv`, after the installed map, the fallback and `NOUN_ALIASES` have all failed:
 - when the token is in `roster.STATIONS`, raise `DispatchError` with a not-installed message, for example `station 'warden' is not installed in this environment; it runs in -e pyforge-warden: pixi run -e pyforge-warden pyforge warden <noun> <verb>` — the environment name is `roster.long_form(token)` (Ruling 18: the long form names packages and pixi environments), and nothing reads `pixi.toml`;
@@ -30,7 +30,7 @@ Type / Effort / Deps: fix / S / —.
 ### Living CAP citations
 
 - `spec-pyforge-core` CAP-11 (FR-226).
-- Kinship: `spec-pyforge-steward:CAP-161` (Story 72.1, mason in the Guild environment); steward's examination of atlas in the Guild environment (a separate steward chain, not minted here).
+- Kinship: `spec-pyforge-steward:CAP-161` (steward Story 72.1, mason in the Guild environment); steward's 2026-09-28 decision that atlas stays out of the Guild (`docs/dreams/pyforge-steward.md`, no CAP; recorded on steward Story 72.1).
 
 ## Acceptance Criteria
 

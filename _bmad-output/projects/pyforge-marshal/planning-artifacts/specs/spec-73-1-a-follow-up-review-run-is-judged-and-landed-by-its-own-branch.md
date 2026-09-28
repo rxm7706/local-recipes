@@ -35,6 +35,7 @@ Type / Effort / Deps: fix / M / 66.1, 72.1.
 ### Living CAP citations
 
 - `spec-pyforge-marshal` CAP-281 (FR-228).
+- Kinship: `spec-pyforge-doctor:CAP-86` (Doctor checks on every PR that a done story's recommended follow-up review is carried).
 - Kinship: CAP-275 (Stories 66.1, 66.2, the row); CAP-280 (Story 72.1, the supervisor's merge reads, which this story scopes to the run's baseline); CAP-276 (Story 67.1, the journal-first verdict).
 
 ## Acceptance Criteria
