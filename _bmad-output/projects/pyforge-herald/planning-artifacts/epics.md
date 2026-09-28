@@ -3,10 +3,11 @@ epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
-epicCount: 27  # 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
-storyCount: 111  # 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
-status: in-progress  # 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.5 / CAP-52; Epic 27 / Stories 27.1-27.5 minted (27.5 and the 27.2 rewrite follow the operator rulings of 2026-09-27, D7/D8). Prior 2026-09-25
+epicCount: 28  # 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
+storyCount: 113  # 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
+status: in-progress  # 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
+updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-9.1..FR-9.2 / CAP-53; Epic 28 / Stories 28.1-28.2 minted. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.5 / CAP-52; Epic 27 / Stories 27.1-27.5 minted (27.5 and the 27.2 rewrite follow the operator rulings of 2026-09-27, D7/D8). Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
 ---
 
@@ -56,7 +57,8 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E25** | Herald runs from the Guild env (spec-pyforge-herald CAP-51) | 1 | 1 |
 | **E26** | The dossier states the cutover's control plane (spec-python-foundry-cutover fnd:CAP-14) | 1 | 1 |
 | **E27** | The docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52) | 5 | 0 |
-| **Total** | | **111** | **105** |
+| **E28** | Each deck keeps one current version of each export (spec-pyforge-herald CAP-53) | 2 | 0 |
+| **Total** | | **113** | **105** |
 
 
 ---
@@ -1007,6 +1009,121 @@ So that a change far from the docs does not pay for a site build, and the local 
 **And** `test_preflight_pages_lane.py` passes in `pyforge-herald-test`; `pr-preflight` never runs `site-check` and `pages-check` together
 **Status:** blocked
 
+## Epic 28: Each deck keeps one current version of each export (spec-pyforge-herald CAP-53)
+
+Minted 2026-09-28 from the station Dream's entry of the same date. It takes up the steward Dream's
+2026-09-25 repo-size seed (`docs/dreams/pyforge-unifying-strategy.md`), which found `presentations/`
+at 47% of the tracked tree and parked a "latest deck per topic" working set in the cutover's Story
+44.5. The operator ruled on 2026-09-28 to spec it now, independent of the cutover: *keep the latest
+deck per topic in `presentations/`; older dated versions are pruned or moved, and git history keeps
+them.* Decisions D1–D5 are on the Spec memlog. Epic 28 is new, because Epic 27 belongs to CAP-52.
+
+**Measured 2026-09-28** (`c660efec81`):
+- `presentations/` holds 944 tracked files and 134.69 MB.
+- 118 dated export kinds; 62 carry more than one date.
+- 74 superseded files (26 `.pptx`, 36 `.md`, 12 `.html`), 54.14 MB, across 11 topics.
+- After the prune: 870 files and 80.55 MB, with the tracked tree at about 232 MB.
+
+**The rule (D2):** a kind is one directory, the filename stem before `-YYYY-MM-DD`, and the
+extension. The newest date is the current version, and a `.stamp.json` sidecar goes with its
+file. This is the rule `docsite/build.py` `_listed_files`, `deck_pipeline._newest_dated_match`,
+`deck_export.find_source` and `deck_facts._marp_source` already apply, so the prune changes no
+published or pushed byte.
+
+**HARD boundaries:**
+- Superseded exports are deleted with `git rm`, never moved to an archive folder (D1).
+- The rule has no exceptions (D4).
+- No undated file under `presentations/` is touched: `project/*.dc.html`, the standalone posters,
+  `facts.yaml`, `README.md`. The one exception is Story 28.1's correction of
+  `pyforge-unifying-strategy/README.md`'s artifact tree (D5).
+- No steward-owned text is edited: the Charter, steward's deferred-work ledger, and
+  `.steward/deck-integrity-baseline.json`. That baseline is gitignored and exists on neither
+  checkout. Steward Story 59.4's `deck-drift` fingerprints the one pulled Design artifact given as
+  `--path`, so far only ever a `project/*.dc.html`, so there is nothing to re-stamp.
+- Story 44.5's estate-move filter is not touched.
+- The spec-surface reconcile is a memlog entry naming every removed path, followed by one scoped
+  stamp per Spec the detector names, never a bare `--write-baseline`.
+- Every PR carries the `maintenance` label.
+
+### Story 28.1: Each deck keeps one current version of each export
+
+As a maintainer who clones, copies or ships `local-recipes`,
+I want `presentations/` to carry only the current version of each dated deck export, and a check that reds a superseded one,
+So that 54 MB of superseded exports stop riding in every working tree and copy while git history keeps them, and they cannot quietly regrow.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-herald CAP-53 (FR-9.1; D1–D5); AD-4 (amended 2026-09-28) • co-governing Specs: `spec-pyforge-core` (`spec-pyforge-core:CAP-8`'s station-tests lane; every station's `src/`), `spec-pyforge-doctor` (governs `docs/how-to/presentation-deck.md`)
+**Surface:**
+- `presentations/<topic>/src/{pptx,marp}/`: `git rm` every superseded dated export, the 74 files
+  measured on 2026-09-28, re-derived at landing by the new module's own report, with any
+  `.stamp.json` sidecar of a removed file.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_versions.py` (new, stdlib-only).
+  - The D2 rule: `superseded(root)` returns each superseded export with its current version.
+  - `python -m pyforge.herald.deck_versions [--root presentations]` prints one line per superseded
+    file and exits 1 if there is any, 0 otherwise.
+- `src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py` (new). The live
+  `presentations/` tree has zero superseded exports. Over fixture trees:
+  - a kind with two dates reports the older one and names the newer
+  - `<slug>-infographic` and `<slug>-infographic-deck-narration` stay separate kinds
+  - a sidecar follows its file
+  - undated files and single-date kinds are never reported
+  - the CLI exits 0 or 1 to match
+- `src/shared/packages/pyforge-herald/tests/unit/test_story_19_4_warden_deck.py`. Its three
+  real-tree tests stop opening `pyforge-warden-deck-2026-09-10.pptx` and `-2026-07-15.pptx` by
+  path, because both are superseded (D4). They read a deck regenerated from the tracked
+  `presentations/pyforge-warden/src/content_plan.json` with `pptx_pipeline.run_fill` into
+  `tmp_path` (a module-scoped fixture), and compare provenance against the one current
+  `pyforge-warden-deck-*.pptx`, resolved by the module, never a pinned date.
+- `.github/workflows/pyforge-station-tests.yml`: `presentations/**` joins both `on.paths` lists,
+  and the herald leg of the `changes` job diffs `presentations` as well as its package. The `core`
+  output is unchanged, so a `presentations/**`-only diff runs `herald-test` and not `core-test`.
+- `docsite/build.py`: the `_listed_files` docstring only. The behaviour is unchanged; the
+  docstring stops saying superseded exports stay on disk.
+- `presentations/pyforge-unifying-strategy/README.md:29-35`: the artifact tree names the
+  2026-09-15 files.
+- `docs/how-to/presentation-deck.md`:
+  - § Standard export set gains the one-version rule.
+  - The pptx-fill exemplar line (`:536`) points at the regeneration command instead of the 09-10
+    file.
+  - The `.pptx` gotcha (`:659-660`) says a new dated export replaces its predecessor.
+  - The worked examples keep their filenames as history (D5).
+- `_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md` for the reconcile entries,
+  and `scripts/.spec-surface-baseline.json` for the scoped stamps.
+
+**Given** `presentations/` carries 74 superseded dated exports (54.14 MB) beside their current versions, no check notices, and a deck-only PR runs no herald test
+**When** the superseded exports are pruned and the rule, its meta test and the CI trigger land
+**Then** `python -m pyforge.herald.deck_versions` exits 0 on the story's tree and exits 1 naming each planted superseded file and its current version; `git ls-files presentations | wc -l` and the tree's bytes drop by the pruned count and size, both recorded before and after in the story's Verification notes (944 → 870 and 134.69 → 80.55 MB on the 2026-09-28 tree); `pixi run -e site site-check` exits 0 and publishes the same 69 family downloads; the Story 19.4 tests pass against the regenerated deck
+**And** `pyforge-station-tests.yml` selects `herald-test` for a `presentations/**`-only diff and steward's `test_workflow_path_filters_match.py` stays green; `spec-surface-check` is green after the memlog reconcile and one scoped stamp per Spec it names; `pyforge-herald-test` is green
+**Status:** backlog
+
+### Story 28.2: A new export replaces the version it supersedes
+
+As a maintainer running `herald deck sync-all` or `deck-export`,
+I want each writer of a dated export to retire the older versions of the kind it just wrote,
+So that the one-version rule Story 28.1 checks holds after every sync, without a hand prune.
+
+**Type:** feature • **Effort:** S • **Deps:** S-28.1 • **FR/AD:** spec-pyforge-herald CAP-53 (FR-9.2; D3); AD-4 (amended 2026-09-28) • co-governing Spec: `spec-pyforge-core` (every station's `src/`)
+**Surface:**
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_versions.py` gains
+  `retire_superseded(written)`. It deletes the strictly older dated versions of the written file's
+  kind, and their `.stamp.json` sidecars, and returns what it removed.
+  - It never deletes the written file, a newer version, another kind or an undated file.
+  - When a newer version already exists, it removes nothing and reports the written file as
+    superseded.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`: `pull_marp_source`
+  (`:808-842`), `pull_standalone_bundle` (`:908-937`) and `PptxTemplateExporter.export`
+  (`:583-600`) call it after a successful write only.
+- `scripts/deck_export.py`: `stamp_marp_kinds` (`:199-205`) and the three dated outputs (`:283-309`: the standalone,
+  the infographic PPTX and the deck PPTX) call it after each successful write. It already imports `pyforge.herald.stamps`.
+- `src/shared/packages/pyforge-herald/tests/unit/test_deck_versions.py` (new) and the writer tests
+  in `tests/unit/test_deck_pipeline.py`, `tests/unit/test_sync_all.py` and
+  `tests/scripts/test_deck_export.py`.
+
+**Given** every dated writer adds a new file and none removes the one it supersedes, so a `sync-all` after Story 28.1's prune would regrow the tree
+**When** a writer writes `<stem>-<newer date>.<ext>` beside `<stem>-<older date>.<ext>`
+**Then** only the newer file of that kind remains, its sidecar with it; a failed write retires nothing; a backdated write (`DECK_EXPORT_DATE` older than the current file) removes nothing and is reported; other kinds and undated files are untouched; `python -m pyforge.herald.deck_versions` exits 0 after a fixture `sync-all`
+**And** a second `sync-all` run still reports every deck `unchanged` with zero writes (CAP-36/CAP-50); `test_deck_versions.py` and the writer tests pass in `pyforge-herald-test`
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -1055,3 +1172,13 @@ filters on `docsite-check.yml` move from 27.4 to 27.2, where the lane starts bui
 The Tier-3 feed took the one new key, and `sprint-ledger-sync` wrote only that key and the
 `# stories:` header to the twin. The Epic List table and `storyCount` are re-measured: 111
 stories, 105 done.
+
+## Currency reconciliation — 2026-09-28
+
+`arch→epics` edge after the spine re-stamp of 2026-09-28, which amended AD-4 (one dated version per
+export kind). Epic 28 (Stories 28.1–28.2) was minted from `spec-pyforge-herald` CAP-53, *each deck
+keeps one current version of each export*, which registers FR-9.1..FR-9.2 in the PRD. Every Story
+heading still maps 1:1 to a `sprint-status-ledger.yaml` key: the two `28-N` keys, `epic-28` and
+`epic-28-retrospective` went into the Tier-3 feed, and `sprint-ledger-sync` wrote the twin. The feed
+and the twin carried the same 165 keys before the mint, so no repair was needed. The Epic List
+table and `epicCount`/`storyCount` are re-measured: 28 epics, 113 stories, 105 done. `updated:` bumped.

@@ -116,6 +116,52 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-09-28 — Each deck keeps one current version of each export; git keeps the rest.**
+  Source: the steward Dream's 2026-09-25 seed, [[pyforge-unifying-strategy]] § Realization log,
+  "`local-recipes` repo-size measurement". It proposed "latest deck per topic" and deferred the
+  idea to the cutover's parked Story 44.5. Operator ruling 2026-09-28: spec it now, independent
+  of the cutover. Keep the latest deck per topic in `presentations/`, and prune or move the older
+  dated versions, because git history keeps them.
+  **Measured 2026-09-28** on `c660efec81`:
+  - `presentations/` holds 944 tracked files, 134.69 MB, which is 47.0% of the 286.5 MB tracked
+    tree.
+  - Dated exports live under `presentations/<topic>/src/{pptx,marp}/` and are named
+    `<stem>-YYYY-MM-DD.<ext>`. They form 118 kinds, where a kind is a directory plus a stem plus
+    an extension. 62 kinds carry more than one date.
+  - That leaves 74 superseded files (26 `.pptx`, 36 `.md`, 12 `.html`), 54.14 MB in all, across 11
+    topics:
+    - `agentic-sdlc`: 2 files, 12.74 MB
+    - `pyforge-atlas`: 12 files, 11.36 MB
+    - `pyforge-unifying-strategy`: 6 files, 10.46 MB
+    - `pyforge-marshal`: 11 files, 5.18 MB
+    - `pyforge-genesis`: 6 files, 3.87 MB
+    - `steward`, `mason`, `scribe`, `herald` and `doctor`: 6 files each, 1.75–1.83 MB each
+    - `pyforge-warden`: 7 files, 1.56 MB
+  - Pruning them leaves 870 files and 80.55 MB, and the tracked tree drops to about 232 MB.
+  - Command: `python3 -c "import re,pathlib,collections as c;g=c.defaultdict(list);[g[(p.parent,m[1],m[3])].append((m[2],p.stat().st_size)) for p in pathlib.Path('presentations').rglob('*') if p.is_file() and (m:=re.match(r'(.+)-(\d{4}-\d{2}-\d{2})(\.\w+)$',p.name))];o=[s for v in g.values() for d,s in sorted(v)[:-1]];print(len(g),sum(len(v)>1 for v in g.values()),len(o),sum(o)/2**20)"`.
+  - "Latest" already has one meaning in the repo: `docsite/build.py` `_listed_files`,
+    `deck_pipeline._newest_dated_match`, `deck_export.find_source` and `deck_facts._marp_source`
+    each pick the newest date per kind. So the 69 family-page downloads and every Design push
+    are already the files that would be kept.
+  - Every writer adds a new dated file and none removes the old one (`pull_marp_source`,
+    `pull_standalone_bundle`, `PptxTemplateExporter.export`, `deck_export.stamp_marp_kinds`). A
+    one-time prune would therefore regrow.
+  - The prune shrinks the working tree and anything that copies it. It does not shrink `.git`.
+
+  **Kinships:**
+  - steward: `spec-python-foundry-cutover` Story 44.5 (parked) inherits a minimal deck tree.
+    Story 59.4's `deck-drift` duty fingerprints the one pulled Design artifact passed as `--path`,
+    and so far that is only ever a `project/*.dc.html`. Its baseline is gitignored and exists on
+    neither checkout, so it has nothing to re-stamp.
+  - core: `spec-pyforge-core:CAP-8`, the station-tests lane. Herald's suite starts running on
+    `presentations/**` changes.
+  - doctor: `docs/how-to/presentation-deck.md`, which holds the naming convention.
+  - This station's docsite: CAP-35's family pages. Their downloads do not change.
+  - Story 19.4's pptx-fill exemplar. Its tests regenerate the deck instead of reading the
+    superseded file.
+
+  Status: **specified** (2026-09-28). → CAP-53 / Epic 28 / Stories 28.1–28.2. Epic 28 is new,
+  because Epic 27 belongs to CAP-52.
 - **2026-09-20 (later) — Herald's deck pipeline runs from the Guild env, not the recipe factory.**
   `deck_pipeline.py` and `sync_all.py` shell `pixi run -e local-recipes deck-export | deck-facts |
   deck-trio`; only `pyforge-guild` exists at runtime (operator ruling, steward Dream 2026-09-20

@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from pyforge.core.process import ProcessResult
 
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.cli.dispatch import live_dispatch_conflict, run_dispatch
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
@@ -230,9 +231,32 @@ class FakeFs:
 
     def write_text_atomic(self, path: Path, content: str) -> None:
         self.files[path] = content
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
 
     def read_text(self, path: Path) -> str | None:
-        return self.files.get(path)
+        if path in self.files:
+            return self.files[path]
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def read_symlink_target(self, path: Path) -> Path | None:
+        if not path.is_symlink():
+            return None
+        return path.readlink()
+
+    def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
+        if not path.is_symlink() and path.exists():
+            raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to replace it")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_symlink() or path.exists():
+            path.unlink()
+        path.symlink_to(target)
+
+    def exists(self, path: Path) -> bool:
+        return path.exists()
 
 
 class FakeVcs:
@@ -325,10 +349,11 @@ def test_run_dispatch_spawns_completion_supervisor_without_waiting(
     args = argparse.Namespace(slug=slug, story=story, format="json")
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    # Story 33.9's scope guard (`_dispatch_scope_refusal`) fires unconditionally on every
-    # dispatch and refuses when no real `_bmad` marker/symlink triangle matches `slug` --
-    # this test's bare `_init_git_repo` fixture has none, and scope verification is not
-    # this test's concern (it verifies completion-supervisor spawning). Patched at the
+    # Story 64.1's worktree-side scope guard (`_seed_dispatch_worktree_scope`) calls
+    # `verify_scope` against the dispatch worktree's own triangle before launch, and
+    # refuses when it disagrees with `slug` -- this test's bare `_init_git_repo`
+    # fixture leaves the worktree without one, and scope verification is not this
+    # test's concern (it verifies completion-supervisor spawning). Patched at the
     # dispatch module's own imported binding, not the `scope` module's source, since
     # `from ..scope import verify_scope` binds a local name `dispatch.py` reads directly.
     import pyforge.marshal.cli.dispatch as dispatch_module
