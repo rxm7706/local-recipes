@@ -2614,9 +2614,7 @@ def test_dispatch_reused_worktree_with_agreeing_triangle_launches(
     assert attempt.launched
 
 
-def test_dispatch_worktree_scope_write_failure_is_mrs_disp_006(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_worktree_scope_write_failure_is_mrs_disp_006(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A freshly-provisioned worktree (missing triangle) whose corner write
     fails degrades to ``MRS-DISP-006`` -- the same code this module already
     uses for every other worktree-provisioning failure -- rather than
