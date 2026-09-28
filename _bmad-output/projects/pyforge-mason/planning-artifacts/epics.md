@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2140,6 +2140,37 @@ carries a dated minor-version entry naming Epic 19 (a "guidance held" entry if n
 CFE suite stay green; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 **Status:** backlog
 
+## Epic 20: No station or environment caps pixi (spec-pyforge-mason CAP-30)
+
+Minted 2026-09-28 from the station Dream's entry of the same name and the operator's ruling of that date: *"we should
+loosen pyforge-mason to be >=0.80.0 with no cap -- we don't need to cap pixi in any station / environment"*. Mason's
+`pixi >=0.80.0,<0.81` run-dependency was the only pixi ceiling in the repo. **HARD boundaries:** the root `pixi.toml` does
+not change (its three pixi pins are already floors) and `environment.yaml` is not regenerated; conda-lock's own upstream
+`virtualenv <21` cap is out of scope; steward Story 72.1 is amended separately and its planning files are not touched
+here; no CFE surface changes.
+
+### Story 20.1: Mason's pixi run-dependency is a floor, and a guard reds any pixi ceiling
+
+As a maintainer composing an environment that carries `pyforge-mason`,
+I want Mason's pixi run-dependency to be a floor, and a check that fails on any capped pixi spec,
+So that no station or environment holds pixi below what the rest of the workspace resolves.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-30 (FR-52); AD-12
+**Surface:** `src/shared/packages/pyforge-mason/pixi.toml` (the `pixi` run-dependency and its comment),
+`src/shared/packages/pyforge-mason/src/pyforge/mason/engines/__init__.py` (`PIXI_VERSION_RANGE`),
+`src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py`, `scripts/pixi_version_registry.py`
+(Mason's run-dep registered as a floor site), `scripts/pixi_version_check.py` (the upper-bound finding),
+`tests/scripts/test_pixi_version_check.py` (new), `pixi.lock` (the path dependency's run-deps;
+`spec-pixi-candidate-currency` co-governs it).
+**Given** Mason's run-dependency reads `pixi >=0.80.0,<0.81`
+**When** the story lands
+**Then** it reads `pixi >=0.80.0`, `PIXI_VERSION_RANGE` is the same floor, and the sync meta-test holds them equal
+**And** `pixi-version-check` exits 0 on the tree and 1 when a capped pixi spec is planted in a root feature, a package
+`pixi.toml` or a package `pyproject.toml`
+**And** `pixi.lock` resolves pixi 0.81.x in every environment that carries `pyforge-mason`;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency
@@ -2195,3 +2226,12 @@ commit (AD-15); the station skill is SKF-compiled and the four others are hand-a
 (canopy:AD-17). Epic 11's rule — no mason SKF that supersedes CFE — holds: none does. Every Story heading still maps 1:1
 to a `sprint-status-ledger.yaml` key (`19-1`..`19-5` and `epic-19` added at `backlog`, `epic-19-retrospective` at
 `optional`, through the Tier-3 feed and `sprint-ledger-sync`). `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+`arch→epics` edge after the spine's second 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28 (later): FR-52 /
+CAP-30 lands on AD-12 as written; no AD added, amended or removed). Epic 20 (Story 20.1) decomposes CAP-30 and keeps to
+AD-12: pixi's range stays declared in the member `pixi.toml` and mirrored by `PIXI_VERSION_RANGE` under the sync
+meta-test, and only its shape changes, to a floor. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key
+(`20-1` and `epic-20` added, `epic-20-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`).
+`updated:` bumped.

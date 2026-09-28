@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
@@ -1909,3 +1909,37 @@ skills, with `conda-forge-expert` still the recipe skill.
 **ONE FR space now FR-1..FR-51** (FR-52 = next free id).
 
 **Content changed:** this section added (FR-51 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+*Trigger: the chain-currency `spec→prd` edge — `spec-pyforge-mason` gained CAP-30 on 2026-09-28, after this PRD's
+same-day re-stamp for CAP-29. The FR is derived from the CAP (`one-chain-per-station`).*
+
+### The FR space: FR-52 registered
+
+The operator ruled on 2026-09-28: *"we should loosen pyforge-mason to be >=0.80.0 with no cap -- we don't need to cap
+pixi in any station / environment"*. Mason's `pixi >=0.80.0,<0.81` run-dependency was the only pixi ceiling in the
+repo, kept on 2026-09-20 as the one reasoned exception to *never cap without a reason*; it held every environment that
+carries `pyforge-mason` at pixi 0.80.0 while the rest of the workspace resolved 0.81.0. FR-52 decomposes into
+**Epic 20** (Story 20.1). FR-40 is unchanged: engine ranges still live in the member `pixi.toml`, mirrored by in-code
+constants under a meta-test; pixi's range is now a floor like the other four.
+
+#### FR-52: No station or environment caps pixi ← CAP-30
+
+Every pixi dependency spec in the workspace is a floor, so no environment is held below the pixi the rest of the
+workspace resolves.
+
+**Consequences (testable):**
+- `src/shared/packages/pyforge-mason/pixi.toml` pins `pixi >=0.80.0`; `engines/__init__.py`'s `PIXI_VERSION_RANGE` is
+  the same floor, held equal by `tests/meta/test_engine_version_range_sync.py`.
+- The pin is a registered floor site of `scripts/pixi_version_registry.py`, so it tracks the root `requires-pixi` and
+  `bump-pixi-version` moves it.
+- `pixi-version-check` fails when any pixi dependency spec in the root `pixi.toml` (every feature) or in a
+  `src/shared/packages/*/pixi.toml` or `pyproject.toml` carries an upper bound (`<`, `<=`, `==`, `~=`, a bare or
+  wildcard pin); a test plants one of each kind and sees it fail.
+- `pixi.lock` resolves pixi 0.81.x in every environment that carries `pyforge-mason`.
+- conda-lock's own upstream `virtualenv <21` cap is out of scope.
+
+**ONE FR space now FR-1..FR-52** (FR-53 = next free id).
+
+**Content changed:** this section added (FR-52 registered). No FR renumbered or removed. `updated:` bumped.

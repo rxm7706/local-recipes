@@ -247,6 +247,21 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"20" = [  # No station or environment caps pixi (spec-pyforge-mason CAP-30), added 2026-09-28
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "pixi.lock",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 20.1: the pixi-pin detector, its registry and its test
+  "scripts/pixi_version_registry.py",
+  "scripts/pixi_version_check.py",
+  "tests/scripts/test_pixi_version_check.py",
+  # co-governor reconciles (core governs every station's src, doctor's spec-pixi-candidate-currency pixi.lock)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

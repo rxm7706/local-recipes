@@ -260,6 +260,32 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   closing Rule-2 retro (19.5). On steward's chain: `spec-pyforge-steward:CAP-161` / Story 72.1 (the Guild
   environment answers `pyforge mason`) and `spec-pyforge-steward:CAP-160` / Story 72.2 (the five-tier
   rule, gated on 19.1).
+- **2026-09-28 — Proposed: no station or environment caps pixi.** Operator ruling, 2026-09-28:
+  *"we should loosen pyforge-mason to be >=0.80.0 with no cap -- we don't need to cap pixi in any
+  station / environment"*. Mason's `[package.run-dependencies]` pin `pixi = ">=0.80.0,<0.81"`
+  (`src/shared/packages/pyforge-mason/pixi.toml:40`) is the only pixi ceiling in the repo; the root
+  `pixi.toml`'s three `pixi = ">=0.80.0"` pins are floors. The ceiling kept its place on 2026-09-20,
+  when the other engine ceilings came off under the ruling *never cap without a reason*; its written
+  reason was that an in-env pixi above `requires-pixi` parses a manifest the workspace has not
+  tested. It has already broken Mason's self-hosting build twice by lagging `requires-pixi`
+  (2026-08-21, 2026-09-11). Today it holds every environment that carries `pyforge-mason`
+  (`pyforge-mason`, `pyforge-container`, `pyforge-foundry-full`, `pyforge-foundry-full-stack`) at pixi
+  0.80.0 while the rest of the workspace resolves 0.81.0, and adding Mason to the Guild would move the
+  Guild's pixi 0.81.0 → 0.80.0 (found by steward Story 72.1's planning). Nothing checks the rule
+  either: `pixi-version-check` compares pin sites with the `requires-pixi` floor, and this run-dep
+  is not one of its registered sites.
+  **What it looks like when real:** Mason pins `pixi = ">=0.80.0"`, a floor that tracks
+  `requires-pixi` as a registered site of `scripts/pixi_version_registry.py` (so
+  `bump-pixi-version` moves it too); `engines/__init__.py`'s `PIXI_VERSION_RANGE` mirrors it; and
+  `pixi-version-check` reds any pixi dependency spec with an upper bound (`<`, `<=`, `==`, `~=`, a
+  bare or wildcard pin) in the root `pixi.toml` or any `src/shared/packages/*/pixi.toml` /
+  `pyproject.toml`. The four environments resolve pixi 0.81.x.
+  **Constraints:** the root `pixi.toml` does not change (its pins are already floors); conda-lock's own
+  upstream `virtualenv <21` cap is out of scope (a note, not a change); steward Story 72.1 is amended
+  separately. Kinships: the 2026-09-20 ruling (*never cap without a reason*), `spec-pyforge-steward:CAP-161`
+  (Story 72.1, the Guild environment that answers `pyforge mason`), `spec-pixi-candidate-currency`
+  (governs `pixi.lock`). Owner: mason. → `spec-pyforge-mason` CAP-30 / Epic 20 / Story 20.1
+  (FR-52), specced 2026-09-28.
 
 ## One-chain fold — 2026-09-17
 

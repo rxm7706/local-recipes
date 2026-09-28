@@ -189,6 +189,22 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   `docs/reference/agent-instruction-notes.md` no longer says Mason has no SKF skill; the closing Rule-2 retro
   lands a CFE `CHANGELOG.md` semver entry; `pyforge-mason-test` green. (Minted 2026-09-28.)
 
+### CAP-30 — no station or environment caps pixi
+
+- **intent:** Pixi is never capped. Every pixi dependency spec in the workspace — the root `pixi.toml` (every
+  feature, target and package table) and each `src/shared/packages/*/pixi.toml` and `pyproject.toml` — is a floor
+  with no upper bound: no `<`, `<=`, `==`, `~=`, and no bare or wildcard pin. Mason's `[package.run-dependencies]`
+  pin is `pixi >=0.80.0`, a floor that tracks the root `requires-pixi` as a registered site of
+  `scripts/pixi_version_registry.py`, so `bump-pixi-version` moves it with the others; `engines/__init__.py`'s
+  `PIXI_VERSION_RANGE` mirrors it. `pixi-version-check` enforces the rule, so an environment that carries
+  `pyforge-mason` resolves the same pixi as the rest of the workspace. Supersedes the 2026-09-20 carve-out that kept
+  pixi's `<0.81` window. (Operator ruling 2026-09-28.)
+- **success:** `src/shared/packages/pyforge-mason/pixi.toml` pins `pixi >=0.80.0` and `PIXI_VERSION_RANGE` is the
+  same floor (`tests/meta/test_engine_version_range_sync.py`); `pixi-version-check` exits 0 on the tree and 1 on a
+  planted capped pixi spec in a root feature, a package `pixi.toml` and a package `pyproject.toml`
+  (`tests/scripts/test_pixi_version_check.py`); `pixi.lock` resolves pixi 0.81.x in every environment that carries
+  `pyforge-mason`; `pyforge-mason-test` green. (Minted 2026-09-28.)
+
 ## Constraints
 
 - **The central decision — wrap by capability, not by product.** Mason **wraps** the packaging machinery by subprocess for all recipe operations and **builds** natively for `package` and `environment`. The boundary is drawn by *capability*. Pure porcelain was rejected because two of the three charter verb families have **nothing to wrap** — no wheel build, no upload path and no lock orchestration exists anywhere in the wrapped machinery's 41,410 lines, so a pure wrapper is not a smaller Mason but a Mason missing its reason to exist. Extraction/reimplementation was rejected on three independently sufficient grounds: **governance makes a fork structurally adversarial** (Rule 1 makes the skill authoritative over any conflicting story, and Rule 2 mandates that every conda-forge effort *edits the skill* — so a fork is continuously invalidated by the loop that governs the domain); **the in-repo precedent failed** (a sibling project rebuilt ~29,000 lines across 32 merged stories and the 8,902-line original is still the live runtime — nothing routes to the rebuild); and **it forks the moat**, converting 106 gotchas and 10 constraints from an appreciating asset into a depreciating one. The accepted cost, paid deliberately: **Mason is not standalone** — `mason recipe` requires a discoverable installation and is inert without one.
