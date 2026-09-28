@@ -3,7 +3,8 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-27"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
+updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 altitude: feature
 ---
@@ -111,6 +112,13 @@ altitude: feature
 - **Verification**: `retired-console-check` validates all tracked artifacts render correctly. Build pipeline proves all gitignored artifacts regenerate deterministically.
 
 **[ADOPTED]** — Optimization strategy verified in spec appendix; no new infrastructure required.
+
+**Amended 2026-09-28 (CAP-53; FR-9.1, FR-9.2):** a tracked dated export keeps **one version
+per kind**. A kind is a directory, the stem before `-YYYY-MM-DD`, and the extension, and the
+newest date is the current version. A superseded version is deleted, never moved to an archive
+folder, and git history keeps it. A new export retires the version it supersedes. One rule,
+`pyforge.herald.deck_versions`, is checked in the herald suite. See § Currency reconciliation —
+2026-09-28.
 
 ---
 
@@ -741,3 +749,37 @@ host, not Pages.
 **Content changed:** this section only. `updated:` bumped. AD-21 is added; no existing AD is
 amended or removed. The one prior rule this supersedes is CAP-44's (the Pages root is the dossier
 landing page), a Spec-level clause that no AD carried.
+
+## Currency reconciliation — 2026-09-28
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28:
+each deck keeps one current version of each export). The ruling lands on **AD-4** (artifact
+tracking), not on AD-21 (Pages). AD-4 already decides which deck artifacts are tracked. CAP-53
+adds how many dated versions of each stay in the tree, and that is a tracking rule.*
+
+**Why AD-4 and not AD-21.** AD-21 governs what the Pages artifact holds and who owns each path.
+The prune changes no published byte, for two reasons.
+- `docsite/build.py` `_listed_files` already publishes only the newest file per kind. The 69
+  downloads under `decks/<slug>/downloads/`, which move to `/herald/decks/<slug>/downloads/` after
+  Story 27.2, are the same files before and after.
+- `herald deck push` (`deck_pipeline._newest_dated_match`) already sends only the newest file per
+  kind.
+
+So AD-21 is untouched. AD-3's pipeline order is untouched too: the formats and their owners do not
+change. Only the number of dated versions each format keeps in the tree changes.
+
+**AD-4 amendment (in place above).** A tracked dated export keeps one version per kind, the newest
+date; a superseded version is deleted, never moved to an archive folder, and git history keeps it.
+- **Binds:** every writer of a dated export under `presentations/<topic>/src/{pptx,marp}/`. That is
+  `deck_pipeline.pull_marp_source`, `pull_standalone_bundle` and `PptxTemplateExporter.export`,
+  and `scripts/deck_export.py`. Each one retires the older versions of the kind it just wrote.
+- **Prevents:**
+  - The 54.14 MB of superseded exports measured on 2026-09-28 regrowing after a one-time prune.
+  - Moving the files into an archive folder, which shrinks neither the checkout nor `.git`.
+  - A second definition of "current" that could disagree with the pickers that publish and push.
+- **Rule:** `pyforge.herald.deck_versions` is the one stdlib-only definition, and the herald
+  suite checks it on the live tree. The newest-date pickers stay and are trivially correct with
+  one file per kind.
+
+**Content changed:** this section and AD-4's amendment line only. `updated:` bumped. No AD is added
+or removed.
