@@ -4310,6 +4310,12 @@ capabilities:
     heading: "the Guild environment answers pyforge mason"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-162
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "steward session check reads marshal seed check's envelope, whatever its exit code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1
@@ -5509,6 +5515,12 @@ capabilities:
     spec: pyforge-doctor
     station: pyforge-doctor
     heading: "Doctor names the refs it judges by their full refname"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-86
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a done story's recommended follow-up review is carried, and Doctor checks it on every PR"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
