@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 428
+# stories: 431
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -434,10 +434,13 @@ development_status:
   epic-67: in-progress
   epic-67-retrospective: optional
   epic-68: done
+  epic-68-retrospective: optional
   epic-69: done
+  epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-70: done
+  epic-70-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 445
+# stories: 452
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -445,14 +445,21 @@ development_status:
   epic-56: done
   epic-56-retrospective: optional
   epic-57: done
+  epic-57-retrospective: optional
   epic-58: done
+  epic-58-retrospective: optional
   epic-59: done
+  epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-60: done
+  epic-60-retrospective: optional
   epic-61: done
+  epic-61-retrospective: optional
   epic-62: done
+  epic-62-retrospective: optional
   epic-63: done
+  epic-63-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

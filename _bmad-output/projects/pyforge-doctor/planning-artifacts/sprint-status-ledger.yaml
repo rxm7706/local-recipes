@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 182
+# stories: 184
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -183,7 +183,9 @@ development_status:
   epic-30: done
   epic-30-retrospective: optional
   epic-31: done
+  epic-31-retrospective: optional
   epic-32: done
+  epic-32-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done
