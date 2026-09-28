@@ -3257,6 +3257,12 @@ capabilities:
     heading: "the switch script runs where it is documented to run, or says in one line why it cannot"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-279
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`marshal seed check` judges the paths the manifest means, never its unrendered placeholders"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core

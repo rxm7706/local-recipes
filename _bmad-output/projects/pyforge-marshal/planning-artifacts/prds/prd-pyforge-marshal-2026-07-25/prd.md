@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -2869,9 +2869,23 @@ before any verb prints, and returns that run's exit code; with no `pixi`, or a s
 exits 8 with one line naming the interpreter, the requirement and the command. The switch and
 `--clear` are unchanged; `scope.py` stays the sole primitive. Story 69.1.
 
-**ONE FR space now FR-1..FR-224** (FR-225 = next free id).
+### 31.5 The FR space: FR-225 registered
 
-**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered; FR-224 later the same day). No AD amended — the follow-up row's
+`marshal seed check --json` exits 1 on this repository with HARD `artifact-missing` findings at the
+manifest's own unrendered placeholders (`docs/dreams/{{ slug }}.md` and four more) and at the literal
+glob `.claude/skills/**`, while all eight projects carry every rendered path. Only `seed init` renders
+`{{ slug }}`; Story 10.7 named the gap. FR-225 decomposes into **Epic 70** (Story 70.1).
+
+#### FR-225: Seed check judges the paths the manifest means ← CAP-279
+`seed check` renders `{{ slug }}` with the project it already resolves (`--project`, then
+`BMAD_ACTIVE_PROJECT`, then the target's marker) through the one renderer `seed init` uses; with no
+project, each templated entry is one INFO `slug-unresolved` finding, never a HARD finding at a
+literal placeholder. An `unclassified-deferred` entry is never reported missing. No state key is
+added, and no repository is exempted by name — this repository stays SC-02's oracle. Story 70.1.
+
+**ONE FR space now FR-1..FR-225** (FR-226 = next free id).
+
+**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered; FR-224 and FR-225 later the same day). No AD amended — the follow-up row's
 selection and rendering are pure in `core/` and its publish reuses finalize's existing locked write
 onto `origin/main` (AD-4, AD-29, AD-42); the supervisor's verdict reads the process fact it
 journaled while the repository facts stay git's (AD-5, AD-33); the promotion's unpaired INTENT gets

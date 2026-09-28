@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
@@ -1917,5 +1917,12 @@ to run). `scripts/bmad-switch` is a repo-root script whose source Marshal owns, 
 hexagon, so no port or adapter moves. It lands on AD-8 as written: a primitive that cannot load is a
 non-zero exit naming why, never a traceback and never a pass. The re-execution runs the same
 `verify_scope` (CAP-75..77), so the one primitive stays one.*
+
+*Extended for FR-225 / CAP-279 (Epic 70, seed check judges the paths the manifest means). It lands
+on AD-54, AD-55 and AD-60 as written. AD-55 already declares a manifest path templated on the slug;
+`check` now renders it, through the one renderer `seed init` uses, moved into `model/manifest.py`
+beside the manifest it renders. `check` stays the model's own detector (AD-54), and SC-02's oracle
+keeps this repository under it (AD-60). The slug comes from the command's existing project
+resolution, never from state (AD-52's schema is unchanged).*
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

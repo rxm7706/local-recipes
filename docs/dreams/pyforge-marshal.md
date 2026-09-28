@@ -692,6 +692,32 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   skip stays the one park mechanism. Kinships: Story 22.7 (the drain), Story 28.12 (the Deps sort),
   Story 28.18 (re-preflight), the 2026-09-25 scope seed (CAP-273); owner `spec-pyforge-marshal`.
   → CAP-274 / Epic 65 / Stories 65.1, 65.2
+- **2026-09-28 — Proposed: `marshal seed check` judges the paths the manifest means.** On this
+  repository `marshal seed check --json` exits 1 with `failing: true`, and five of its HARD findings
+  are the manifest's own placeholders read as literal paths: `docs/dreams/{{ slug }}.md`,
+  `_bmad-output/projects/{{ slug }}/.bmad-config.toml`, its `specs/README.md`,
+  `presentations/{{ slug }}/` and `_bmad-output/projects/{{ slug }}/` — "declared by the manifest but
+  absent from the repo".
+  A sixth is `.claude/skills/**`, an `unclassified-deferred` glob, also read literally. Every one of
+  the eight projects here carries all five rendered paths. The manifest's paths are templated on the
+  project slug (AD-55), and only `seed init` renders them; `check` never does. Story 10.7 named the gap
+  and left it for a later story. Steward's session check reads this JSON, so a green repository reads
+  red. **Does checking A apply at all?** Yes: the model was extracted from this repository and Story
+  12.2's oracle holds it to the model (SC-02). Exempting the seed's home would hide exactly the drift
+  that oracle exists to catch. What changes is that the check reads real paths.
+  **What it looks like when real:** `check` renders `{{ slug }}` with the project the command already
+  resolves for its `[context]` read (`--project`, then `BMAD_ACTIVE_PROJECT`, then the target's
+  active-project marker), through the one renderer `seed init` uses. With no project to resolve, a
+  templated entry is one INFO finding naming `--project`, never a HARD finding against a literal
+  placeholder. An `unclassified-deferred` entry has no class contract and nothing `adopt` could
+  materialize, so it is never reported missing. What stays on this repository after the fix is true:
+  it was never adopted (`model-behind`), and its primary checkout has no `.bmad-loop/policy.toml`
+  because the harness policy is rendered per loop home. That second fact is Story 12.2's K-02, not
+  this fix.
+  **Constraints:** no new state key (the state schema has no `slug`, by decision); no exemption by
+  repository name; `init`'s behaviour is unchanged. Kinships: Story 10.7 (the gap named), Story 12.2
+  (the oracle, K-02), steward session check's parse of this JSON (a separate steward CAP); owner
+  `spec-pyforge-marshal`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
