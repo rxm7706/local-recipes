@@ -2379,6 +2379,31 @@ def test_a_landed_ledger_publish_journals_an_outcome_ok_true(tmp_path):
     assert not [f for f in findings if f.code == "MRS-LAND-011"]
 
 
+def test_a_feed_only_ledger_sync_names_the_wave_keys_in_its_preflight_reason(tmp_path):
+    """Story 68.1: when the Tier-3 feed advances rows but every wave key is already `done`, nothing was
+    `promoted` -- the reason falls back to the wave's own story keys, so the hook's journal still names one."""
+    ledger_path = _write_sprint_ledger(tmp_path, "acme", {"epic-4": "in-progress", "4-4-batch": "done"})
+    feed_path = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "sprint-status.yaml"
+    feed_path.parent.mkdir(parents=True)
+    feed_path.write_text(
+        "development_status:\n  epic-4: in-progress\n  4-4-batch: done\n  4-5-follow-up: backlog\n",
+        encoding="utf-8",
+    )
+    fs = LocalFs()
+    vcs = _FakeVcs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_run, [], base="main"
+    )
+
+    assert promoted == ("acme",)
+    assert "4-5-follow-up" in ledger_path.read_text(encoding="utf-8")
+    [reason] = vcs.isolated_promote_reasons
+    assert reason is not None
+    assert "story 4.4" in reason
+
+
 def test_land_stays_exit_zero_with_a_warn_when_the_ledger_publish_times_out(tmp_path, capsys, monkeypatch):
     """`marshal land`'s own exit is unchanged (the wave already landed): the failure is a WARN finding."""
     policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))

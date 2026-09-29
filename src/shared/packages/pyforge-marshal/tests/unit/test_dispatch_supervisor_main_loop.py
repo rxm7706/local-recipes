@@ -1171,10 +1171,14 @@ def test_attempted_change_patch_paths_skips_the_tier_three_store(tmp_path: Path)
     assert supervisor_main._attempted_change_patch_paths(worktree) == (kept,)
 
 
-def _promote(repo_root: Path, worktree: Path, vcs: FakeVcs, fs: FakeFs | None = None) -> None:
-    supervisor_main._promote_blocked_twin(
+def _promote(repo_root: Path, worktree: Path, vcs: FakeVcs, fs: FakeFs | None = None) -> int:
+    return supervisor_main._promote_blocked_twin(
         fs=fs if fs is not None else FakeFs(),
         vcs=vcs,
+        run_dir=_run_dir(repo_root),
+        run_id=_RUN_ID,
+        writer_id="dispatch-supervisor-1",
+        counter=0,
         repo_root=repo_root,
         slug=_SLUG,
         story_key=_STORY_KEY,
@@ -1228,10 +1232,17 @@ def test_promote_blocked_twin_swallows_a_git_failure(tmp_path: Path) -> None:
         worktree_text=_BLOCKED_SPEC_TEMPLATE.format(baseline=_BASELINE),
     )
     vcs = FakeVcs(remote_tip_raises=True)
+    fs = FakeFs()
 
-    _promote(repo_root, worktree, vcs)
+    counter = _promote(repo_root, worktree, vcs, fs)
 
     assert vcs.remote_tip_writes == []
+    # Story 68.1 (CAP-277): swallowed as far as the caller is concerned -- but journaled as a WARN.
+    assert counter == 1
+    journal = fs.journal_text(_run_dir(repo_root))
+    assert "dispatch-blocked-twin-publish" in journal
+    assert "MRS-LAND-011" in journal
+    assert "git commit-tree failed (test double)" in journal
 
 
 def test_promote_blocked_twin_gives_up_on_an_unreadable_spec(tmp_path: Path) -> None:
@@ -2249,6 +2260,49 @@ def test_supervisor_commits_and_promotes_a_blocked_halt(tmp_path: Path, clock: _
     assert code == 0
     assert dispatch_core.KIND_DISPATCH_BLOCKED in fs.journal_text(run_dir)
     assert vcs.remote_tip_writes, "the primary's tracked twin must be promoted to blocked"
+    assert vcs.remote_tip_reasons == [f"marshal blocked-twin promotion for story {_STORY_KEY}"]
+    assert "dispatch-blocked-twin-publish" not in fs.journal_text(run_dir)
+    assert publisher.completions and publisher.completions[0][1] == DispatchSessionVerdict.BLOCKED.value
+
+
+
+def test_supervisor_journals_a_warn_when_the_blocked_twin_cannot_be_published(tmp_path: Path, clock: _FakeClock) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(
+        run_dir,
+        (
+            _launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_FINALIZE,
+                payload={"story_key": _STORY_KEY, "trigger": "harness-done", "ok": True},
+                counter=1,
+            ),
+        ),
+    )
+    _seed_spec(
+        repo_root,
+        worktree,
+        primary=_READY_SPEC_TEXT,
+        worktree_text=_BLOCKED_SPEC_TEMPLATE.format(baseline=_BASELINE),
+    )
+    vcs = FakeVcs(head_sha=_MOVED, remote_tip_raises=True)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert dispatch_core.KIND_DISPATCH_BLOCKED in fs.journal_text(run_dir)
+    # Story 68.1 (CAP-277): the failed twin publish is never silent -- a WARN observation names the
+    # story and the error, and the blocked verdict is unaffected.
+    journal = fs.journal_text(run_dir)
+    assert "dispatch-blocked-twin-publish" in journal
+    assert "MRS-LAND-011" in journal
+    assert _STORY_KEY in journal
+    assert "git commit-tree failed (test double)" in journal
+    assert vcs.remote_tip_writes == []
     assert publisher.completions and publisher.completions[0][1] == DispatchSessionVerdict.BLOCKED.value
 
 

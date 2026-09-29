@@ -192,6 +192,43 @@ def test_main_keeps_a_post_merge_finalize_failure_in_attention(fleet, monkeypatc
     assert "not waiting on you" not in out
 
 
+_FINALIZE_EXITED_64_1 = [
+    {
+        "code": "MRS-DISP-020",
+        "severity": "error",
+        "message": (
+            "dispatch land finalize (promote + ledger) failed for 64.1: finalize exited with code 1: "
+            "finding MRS-DISP-051: the landed story's ledger key does not read done on origin/main"
+        ),
+    }
+]
+_LEDGER_64_1_BACKLOG = "development_status:\n  epic-64: in-progress\n  64-1-a-landing-s-ledger-promotion: backlog\n"
+
+
+def test_main_names_the_owed_promote_for_a_landing_whose_finalize_exited_non_zero(
+    fleet, monkeypatch, capsys, tmp_path
+):
+    """Story 68.1 (CAP-277): `dispatch land` now turns a finalize exit code into `MRS-DISP-020` / REFUSED,
+    and the refusal is journaled for a story that IS on `main` while its tracked ledger still reads
+    `backlog` (64.1's landing, 2026-09-28) -- ATTENTION names the promote + ledger still owed (Story 56.1's
+    rendering), it is never filed as history."""
+    rc = _run_main_with_live(
+        fleet,
+        monkeypatch,
+        tmp_path,
+        _marshal_live_row(landing_story="64.1", landing_findings=_FINALIZE_EXITED_64_1, landing_superseded=True),
+        ledger=_LEDGER_64_1_BACKLOG,
+    )
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert (
+        "  >> marshal: landing refused (1 finding(s)) -- MRS-DISP-020 -- 64.1 is on main but its ledger key "
+        "is not done: finish the promote + ledger"
+    ) in out
+    assert "not waiting on you" not in out
+
+
 def test_the_landing_line_names_the_dispatch_story_not_current_story(fleet, monkeypatch, capsys, tmp_path):
     """Review 1 (medium): `current_story` is the loop home's story unless the
     dispatch run is live or a dead tail -- a `completed` run keeps an
