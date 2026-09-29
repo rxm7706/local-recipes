@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-29"   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD) for CAP-34 (Epic 24); FR-56 registered. See § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
@@ -2056,3 +2056,35 @@ LICENSE, and a corpus proves each check still rejects the defect it exists for.
 **ONE FR space now FR-1..FR-55** (FR-56 = next free id).
 
 **Content changed:** this section added (FR-55 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-29 (later)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-mason` gained CAP-34 on 2026-09-29, after this PRD's
+re-stamp for CAP-33. The FR is derived from the CAP (`one-chain-per-station`).*
+
+### The FR space: FR-56 registered
+
+On 2026-09-29 a local `pr-preflight` failed one CFE test that CI passed. The credential host gate builds its allowlist
+from every `*_BASE_URL` var the shell exports, and a Claude Code shell exports `ANTHROPIC_BASE_URL`. The fix was already
+implemented, as CFE v8.91.1 in PR #1669, when the operator ruled that it take the whole chain before it merges. FR-56
+decomposes into **Epic 24**, with one story (24.1). It changes CFE tests only, so no FR about the `mason` CLI changes.
+FR-47's rule (every conda-forge effort closes with a Rule-2 retro) applies.
+
+#### FR-56: The CFE host-gate tests give the same verdict in any developer shell ← CAP-34
+
+A host-gate test's verdict no longer depends on which mirror or tool env vars the developer's shell exports.
+
+**Consequences (testable):**
+- Every CFE test module that exercises the host gate starts from no ambient `*_BASE_URL` and none of
+  `_http._EXTRA_MIRROR_ENV_VARS`, through one shared opt-in fixture. `network`-marked tests keep an operator's real
+  mirror routing.
+- The host-gate test modules pass with `ANTHROPIC_BASE_URL` set and without it, and `pr-preflight` exits 0 from a shell
+  that exports it.
+- A regression test fails if the fixture stops clearing an ambient var, so CI, which exports none, still exercises the
+  case.
+- `_http.py` and `inventory_channel.py` keep their behaviour, and no Mason source changes. The story lands a
+  `retro(cfe):` commit with a CFE `CHANGELOG.md` semver entry.
+
+**ONE FR space now FR-1..FR-56** (FR-57 = next free id).
+
+**Content changed:** this section added (FR-56 registered). No FR renumbered or removed. `updated:` bumped.

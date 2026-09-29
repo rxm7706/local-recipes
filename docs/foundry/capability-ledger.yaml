@@ -5064,6 +5064,12 @@ capabilities:
     heading: "CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest"
     mode: rebuild
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-34
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "The CFE host-gate tests give the same verdict in any developer shell"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 
   # doctor one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-doctor:CAP-1
