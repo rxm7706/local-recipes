@@ -64,6 +64,55 @@ def test_run_uses_the_given_cwd(process, tmp_path):
     assert result.stdout.strip() == "here"
 
 
+# --- env= (Story 75.1): default inherits, a mapping replaces --------------------
+
+
+_PRINT_ENV = "import os; print(os.environ.get('P75_PROBE', '<unset>'))"
+
+
+def test_run_inherits_the_environment_by_default(process, tmp_path, monkeypatch):
+    monkeypatch.setenv("P75_PROBE", "inherited")
+    result = process.run([sys.executable, "-c", _PRINT_ENV], cwd=tmp_path)
+    assert result.stdout.strip() == "inherited"
+
+
+def test_run_with_env_none_still_inherits(process, tmp_path, monkeypatch):
+    monkeypatch.setenv("P75_PROBE", "inherited")
+    result = process.run([sys.executable, "-c", _PRINT_ENV], cwd=tmp_path, env=None)
+    assert result.stdout.strip() == "inherited"
+
+
+def test_run_with_env_hands_the_child_exactly_that_environment(process, tmp_path, monkeypatch):
+    monkeypatch.setenv("P75_PROBE", "inherited")
+    child_env = {k: v for k, v in os.environ.items() if k != "P75_PROBE"}
+    child_env["P75_OTHER"] = "given"
+    script = "import os; print(os.environ.get('P75_PROBE', '<unset>'), os.environ['P75_OTHER'])"
+    result = process.run([sys.executable, "-c", script], cwd=tmp_path, env=child_env)
+    assert result.stdout.split() == ["<unset>", "given"]
+
+
+def test_run_env_is_keyword_only(process, tmp_path):
+    with pytest.raises(TypeError):
+        process.run([sys.executable, "-c", "pass"], tmp_path, None, {})  # type: ignore[misc]
+
+
+def test_run_passes_env_through_to_subprocess_run(process, tmp_path, monkeypatch):
+    import pyforge.core.process as process_module
+
+    seen: dict[str, object] = {}
+
+    def _fake_run(argv, **kwargs):
+        seen.update(kwargs)
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(process_module.subprocess, "run", _fake_run)
+    given = {"ONLY": "this"}
+    process.run(["whatever"], cwd=tmp_path, env=given)
+    assert seen["env"] is given
+    process.run(["whatever"], cwd=tmp_path)
+    assert seen["env"] is None
+
+
 # --- a missing executable: raises ProcessError, never a raw exception -------
 
 

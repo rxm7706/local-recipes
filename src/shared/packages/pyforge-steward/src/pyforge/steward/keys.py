@@ -1229,12 +1229,12 @@ def _run_exec(ns: argparse.Namespace) -> DutyResult:
     scope = ns.scope
     if scope not in GHE_SCOPES:
         return usage(f"unknown scope {scope!r}; expected one of {', '.join(GHE_SCOPES)}")
-    argv = list(ns.argv or ())
+    argv = list(getattr(ns, "argv", None) or ())
     if argv and argv[0] == "--":
         argv = argv[1:]
     if not argv:
         return usage("no command given (pass it after `--`)")
-    approval = (ns.approval or "").strip()
+    approval = (getattr(ns, "approval", None) or "").strip()
     if scope == GHE_PR_DRAFT_SCOPE and not approval:
         return usage(f"scope {GHE_PR_DRAFT_SCOPE!r} needs --approval <ref> naming the approved proposal")
 
@@ -1244,7 +1244,7 @@ def _run_exec(ns: argparse.Namespace) -> DutyResult:
             ok=False,
             summary="keys exec: GITHUB_API_BASE_URL names no GitHub Enterprise host (unset, or github.com)",
         )
-    inventory_path = Path(ns.inventory) if ns.inventory else default_inventory_path()
+    inventory_path = Path(ns.inventory) if getattr(ns, "inventory", None) else default_inventory_path()
     entries = load_inventory(inventory_path)
     entry = _active_issued(entries, scope)
     if entry is None:
