@@ -57,6 +57,8 @@ _MAINTENANCE_LABEL = "maintenance"
 _ORIGIN_REMOTE = "origin"
 # `_ORIGIN_MAIN` is the full refname (Story 60.1, CAP-270; the heal's probe since 59.1);
 # messages name it `ORIGIN_MAIN_SHORT`, as people read it.
+# Story 68.1: how much of a failed finalize's stderr the MRS-DISP-020 message keeps (its tail).
+_FINALIZE_DETAIL_MAX_CHARS = 1500
 
 
 @dataclass(frozen=True)
@@ -1042,8 +1044,9 @@ def execute_dispatch_land(
 
     data["merged"] = True
 
+    finalize_failure: str | None = None
     try:
-        process.run(
+        finalize_result = process.run(
             [
                 sys.executable,
                 "-m",
@@ -1055,11 +1058,25 @@ def execute_dispatch_land(
             cwd=git_repo_root,
         )
     except ProcessError as exc:
+        finalize_failure = str(exc)
+    else:
+        # Story 68.1 (CAP-277): `ProcessPort.run` does not raise on a non-zero exit, so a finalize
+        # that exited 1 (an ERROR finding -- MRS-DISP-051, its ledger key not `done` on
+        # `origin/main`) was read as a clean landing until the exit code was read here.
+        if finalize_result.returncode != 0:
+            detail = (finalize_result.stderr or finalize_result.stdout or "").strip()
+            if len(detail) > _FINALIZE_DETAIL_MAX_CHARS:
+                # A crashed finalize's traceback is the tail that matters; keep the finding readable.
+                detail = "..." + detail[-_FINALIZE_DETAIL_MAX_CHARS:]
+            finalize_failure = f"finalize exited with code {finalize_result.returncode}" + (
+                f": {detail}" if detail else ""
+            )
+    if finalize_failure is not None:
         findings.append(
             Finding(
                 code="MRS-DISP-020",
                 severity=Severity.ERROR,
-                message=(f"dispatch land finalize (promote + ledger) failed for {key}: {exc}"),
+                message=(f"dispatch land finalize (promote + ledger) failed for {key}: {finalize_failure}"),
             )
         )
         envelope = build_envelope(
