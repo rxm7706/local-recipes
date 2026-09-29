@@ -132,6 +132,34 @@ so the next export finds no orphan to ask about. `AGENTS.md` says where `governa
 runs. Both sit under **CAP-27** (one file carries the contract); no new CAP. Story 21.2 corrects
 the line; Epic 23 / Story 23.1 moves the block.
 
+## 2026-09-29 — Every session knows the BMAD estate it stands on
+
+Found by the 2026-09-12 research pass (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-bmad-suite-lifecycle-agent-knowledge-surface-research-2026-09-12.md`)
+and re-verified at `bd1a03dc` on 2026-09-29. The estate already writes down almost everything
+about the BMAD Method it runs on: the installed core and modules (`_bmad/_config/manifest.yaml`),
+the 127-directory skill catalog with a `description:` on every `SKILL.md`, the phase and sequence
+table BMAD ships (`_bmad/_config/bmad-help.csv`), the 13 bmad-suite members and their install
+classes (`recipes/bmad-suite/suite-members.yaml`, steward's adoption register), the release
+cadence, and the Marshal↔bmad-loop harness contract. What a session actually gets is one pointer
+line to the adoption register and, under pitfalls, the shim and config traps. Nothing agent-facing
+states the installed core version; the suite verbs (`steward suite pipeline-truth` / `advance`,
+`provision --module`, `upgrade bmad-core`), the cadence and the metapackage appear in no
+instruction file; upstream stopped publishing `llms-full.txt` at 6.12.0, so the only
+machine-readable upstream snapshot in the tree is the 6.11-era file; and the same version numbers
+disagree across the register, a Spec header and `pixi.toml` because they are hand-carried in
+four places. The 2026-09-26 fold (CAP-27) closed the load-path half of the gap — `CLAUDE.md`
+now imports `AGENTS.md` — and left the knowledge half open.
+
+The Dream: **one derived picture of the BMAD estate, never hand-written.** A generated
+`docs/reference/bmad-estate-llms-full.md` — the shape `library-llms-full.md` already proved,
+with its own drift detector — rendered from the sources above, so an agent opening this repo
+reads the installed core, every skill by family, the suite roster with wielder and provisioning
+path, the cadence and the harness range from one file that a detector keeps current. Each
+instruction file points at it once. The library catalog's freshness is already this station's
+curation surface (§ *What it owns*), so the estate catalog is Scribe's too; Steward stays the
+owner of the facts (the register, `pipeline-truth`), Doctor of any ambient verdict on them.
+`bmad-spec` mints the CAP on this station's Spec; Epic 24 carries the three stories.
+
 ## Realization log
 
 - **2026-07-23** — Seeded when the crew grew 6 → 8 (Scribe + Steward adopted; `3a50eebfc9`).
@@ -243,3 +271,4 @@ the line; Epic 23 / Story 23.1 moves the block.
   `.claude/memory/project/operator-inbox-*` entry is the human-readable twin of the DW rows
   (owner: scribe — this item). Seeded here; `bmad-spec` mints the CAPs on the next pass.
 - **2026-09-25** — Dated section *The local Postgres cluster starts from any worktree* seeded (socket-path limit found landing PR #1605); `spec-pyforge-scribe` CAP-31 minted; Epic 22 / Story 22.1 `backlog` with a tracked spec.
+- **2026-09-29** — Dated section *Every session knows the BMAD estate it stands on* seeded from the 2026-09-12 research pass (`spec-bmad-suite-lifecycle` research, steward tree); `spec-pyforge-scribe` CAP-32 minted; Epic 24 / Stories 24.1–24.3 `backlog` with tracked specs.

@@ -420,3 +420,25 @@ Repo (at `b978aa9b2a`): `_bmad/_config/manifest.yaml`, `_bmad/custom/config.toml
 `.claude/docs/bmad-skill-customization-mechanics.md`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`,
 `.cursor/rules/specs.mdc`, `.github/copilot-instructions.md`, `_bmad-output/PROJECTS.md`,
 `_bmad-output/EXEMPLAR-STANDARD.md`, `docs/reference/library-llms-full.md`, `docs/MAP.md`.
+
+## Addendum 2026-09-29 — what landed since, and the chain minted
+
+- **Option B is realized** without this research: `spec-pyforge-scribe` CAP-27 (Stories 19.1,
+  21.1, 23.1, merged 2026-09-26) reduced `CLAUDE.md` to a bare `@AGENTS.md` import, moved the
+  SKF block to `AGENTS.md` only, and moved the reference material `CLAUDE.md` carried into
+  `docs/reference/agent-instruction-notes.md`. § 3.1 and § 3.2 are closed: the retired skill
+  names now sit in the notes file as rename notes (current name first, behind
+  `governance-currency` ignore markers), not in a loaded file.
+- **Option C** therefore shrinks to two lines (no installed-version statement; two detector
+  names missing from `AGENTS.md` § *Running and verifying*) and folds into Story 24.3 below —
+  no separate maintenance PR.
+- **Option D** is partly moot: the `pyforge-steward` station skill now names `upgrade` and
+  `suite` among its verbs (re-forged since 2026-09-12).
+- **The governance changed on 2026-09-16** (one chain per station, `AGENTS.md` pre-PR checklist
+  item 6): a station-owned capability enters as a dated entry on the station Dream, not as a new
+  `docs/dreams/<slug>.md`. § 5's draft seed was therefore NOT minted as a file; its content
+  became `docs/dreams/pyforge-scribe.md` § *2026-09-29 — Every session knows the BMAD estate it
+  stands on*, `spec-pyforge-scribe` **CAP-32** (memlog entries 119–129), and **Epic 24 /
+  Stories 24.1–24.3** (`backlog`, tracked specs `spec-24-1..3-*.md`, `epic_surfaces "24"`).
+- **Q1 (repo role) stays open** and is the only remaining unverified item; the population was
+  confirmed 2026-09-12 (§ 1.4). Q2–Q5 were answered "go with your recommendation" 2026-09-29.

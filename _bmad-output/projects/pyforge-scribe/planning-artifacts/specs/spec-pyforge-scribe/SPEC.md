@@ -2,7 +2,7 @@
 id: SPEC-scribe
 spec: pyforge-scribe
 status: ready
-updated: "2026-09-26"
+updated: "2026-09-29"
 owner-dream: docs/dreams/pyforge-scribe.md
 covers-dreams:
   - docs/dreams/pyforge-scribe.md
@@ -54,7 +54,8 @@ companions:
   - ../../architecture/architecture-pyforge-scribe-2026-07-25/ARCHITECTURE-SPINE.md
   - ../../prds/prd-pyforge-scribe-2026-07-25/prd.md
   - ../../epics.md
-open_questions: []
+open_questions:
+  - "OQ-CAP-32-1 (Story 24.2 decides): byte-exact re-render or a structured diff of derived facts with prose exempt?"
 sources:
   - ../../../../../../docs/dreams/pyforge-scribe.md
   - ../../briefs/brief-pyforge-scribe-2026-07-25/brief.md
@@ -168,6 +169,10 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
   - **intent:** `scribe-pg-up` starts the per-user PostgreSQL + pgvector cluster from any checkout or worktree the estate creates, however long its path: the Unix socket directory is short and per-user (`SCRIBE_PG_SOCKET_DIR` when set, else `$XDG_RUNTIME_DIR/scribe-pg`, else `/tmp/scribe-pg-<uid>`, created 0700), while the data directory stays under the checkout's gitignored `var/scribe-pg/`; `scribe-pg-status` reports the socket directory in use.
   - **success:** from a worktree whose `var/scribe-pg` path exceeds 100 bytes, `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0 and `scribe-pg-status` reports listening on 127.0.0.1:5433; `tests/scripts/test_scribe_pg.py` (new) covers the directory choice, the override and the length guard without starting a server; the up path stays idempotent against a cluster already listening on :5433; port 5433, the DSN `tests/unit/conftest.py` hard-codes, and the no-container rule are unchanged.
 
+- **CAP-32 — every session reads one derived picture of the BMAD estate** ← spec-pyforge-scribe CAP-32 (ready 2026-09-29)
+  - **intent:** `docs/reference/bmad-estate-llms-full.md` is generated (`scribe catalog bmad-estate`) from live in-tree sources — `_bmad/_config/manifest.yaml` + `skf-manifest.yaml` (installed core, modules, shims flag), every `.claude/skills/*/SKILL.md` frontmatter `name`/`description` grouped by family, `_bmad/_config/bmad-help.csv` (phase, sequence, required), `recipes/bmad-suite/suite-members.yaml` joined with the adoption register § 1–2 (verdict, wielding station, provisioning path, hazards), `pixi.toml` `bmad-*` pins, the marshal harness range constant and the release-cadence step headings — never hand-written; a repo-scope detector (`bmad-estate-check`) exits non-zero when the rendered file no longer matches a fresh render of those sources; `AGENTS.md` points at it once (a Read-on-trigger row and one Where-things-are line) and states nothing the catalog derives.
+  - **success:** `pixi run -e pyforge-guild scribe catalog bmad-estate --check` exits 0 on `main` and 1 after any source above moves without a re-render (2 when a source cannot be read); the rendered file names the installed core version and `installShims` flag, all 13 active members with wielder and provisioning path, every skill family with its count, and the harness range, each traceable to its source path; `governance-currency` resolves every path the catalog names; the generator is offline-safe (no registry or network call; steward's `pipeline-truth` JSON is an optional input, never required); no version number or member verdict is typed by hand anywhere in the catalog or in `AGENTS.md`.
+
 ## Constraints
 
 - **AD-1 (append-only is the single source of truth):** capture is the only mutation path for decisions/ADRs/runbooks — append-only, never edited in place, only superseded. `scribe graph compile` never accepts direct graph edits; the compiled graph is 100% derived and re-computable from source records at any time.
@@ -183,6 +188,9 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 - **Versioning:** semver; CLI subcommand additions are MINOR, breaking flag/output-format changes are MAJOR.
 - **Managed block and per-tool files (CAP-27):** `AGENTS.md`'s `bmad:context` block stays `bmad-project-context`'s — never hand-edited, refreshed by the skill; CAP-27 edits only the prose outside the markers. No instruction content that belongs in `AGENTS.md` is authored into a per-tool file — the meta-test's duplication guard is the gate, not a review.
 - **Guild-env composition is steward's (CAP-28):** Story 63.1 / `spec-pyforge-steward` CAP-5 owns `pyforge-guild`; CAP-28 adds one path dependency and no extra. A future scribe dependency that is heavy or network-touching goes to `-e pyforge-scribe`, never to the Guild default.
+- **The catalog derives, never decides (CAP-32):** a wiring verdict, a provisioning path or a hazard appears only as read from `adoption-register.md`; a disagreement between the register, a Spec header and `pixi.toml` (TEA 1.24.0 / 1.25.0 / 1.26.0, eval-quality's retired commit pin, `bmad-suite` 2026.9.5 vs 2026.9.11 — all live 2026-09-12) is rendered as a disagreement with its sources and relayed to steward as a deferred-work row, never resolved by the generator.
+- **No station internals for a constant (CAP-32):** the marshal harness range and steward's roster are read as text (regex over `HARNESS_VERSION_RANGE_TEXT`, YAML over `suite-members.yaml`); the generator is a scribe CLI verb, the detector a thin `scripts/*_check.py` wrapper with `DETECTOR = {"scope": "repo"}` so `detectors-ci` discovers it — `scripts/bmad_estate_check.py` joins this Spec's surface, the same shape as `scripts/scribe_graph_freshness_check.py` (INV-4).
+- **`AGENTS.md` under CAP-27's rules (CAP-32):** the `bmad:context` block is refreshed only through `bmad-project-context`; the Read-on-trigger row is prose outside the markers; every edit reconciles this Spec's surface (memlog entry, `git add`, scoped `--write-baseline --spec pyforge-scribe/spec-pyforge-scribe`).
 
 ## Non-goals
 
@@ -207,4 +215,4 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 - `scribe recall`'s output format (plain text vs. structured JSON vs. both) is left unspecified at the product level — an architecture/API-contract decision, not a product one.
 - The two existing BMAD↔CFE feedback rules are Wave 1's seed-promotion proof; no new seed content was invented.
 - If Anthropic ships native team-shared memory (`anthropics/claude-code#38536`) during Scribe's build, `.claude/memory/`'s file layer may be absorbed into that native surface, leaving Scribe's differentiated value in graph-compile + recall — a watch-item, not currently a blocker or a scope change.
-
+- The estate catalog mirrors `docs/reference/library-llms-full.md`'s shape (generation date, regeneration command and detector name in the header, then sections), so the docs map, the reference README and the llms-full convention need no new category; it is repo-scope reference, not a governance kernel (CAP-32).
