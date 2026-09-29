@@ -103,7 +103,7 @@ development_status:
   31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname: done
   32-1-the-gates-base-normalizer-names-the-remote-tracking-ref: done
   33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: blocked
-  34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline-and-one-block-shape: backlog
+  34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline-and-one-block-shape: done
   34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci: backlog
   34-3-the-flag-gate-reads-the-tree-metadata-per-environment-defaults-and-the-90-day-clock: blocked
   34-4-each-station-has-a-checked-in-flag-inventory-of-its-runtime-capabilities: backlog
