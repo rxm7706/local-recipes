@@ -260,6 +260,44 @@ verify_commands = [
   "AGENTS.md",
 ]
 
+"34" = [  # every capability ships behind a flag -- the rule, the gate, the inventory (spec-feature-flag-governance
+          # CAP-1, CAP-2, CAP-4's gate clause, CAP-7), added 2026-09-28. Guild-owned Spec, Doctor as mechanism Smith
+          # (the Epic 24 relay): the gate ships outside every pyforge.<station> package (Charter section 6), so its
+          # scripts, data, tests and reference page are admitted here beside the default surface.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  # 34.1-34.5: the rule, the baseline, the gate and the inventory (scripts/), their tests, their allowlist lines
+  "scripts/flag_rule.py",
+  "scripts/flag_rule_baseline.py",
+  "scripts/flag_gate_check.py",
+  "scripts/flag_inventory.py",
+  "scripts/spec_surface_allowlist.txt",
+  "tests/scripts/test_flag_rule.py",
+  "tests/scripts/test_flag_gate_check.py",
+  "tests/scripts/test_flag_inventory.py",
+  # the Guild data beside guild-roster.json, the inventory reports, the Guild Spec's memlog
+  "docs/governance/guild-roster.json",
+  "docs/governance/flag-rule-baseline.json",
+  "docs/governance/flag-inventory/**",
+  "docs/governance/spec-feature-flag-governance/.memlog.md",
+  # 34.1: the block's one written shape and the pointer to it
+  "docs/reference/story-spec-flag-block.md",
+  "docs/reference/station-verify-commands.md",
+  "docs/map.yaml",
+  "docs/MAP.md",
+  # 34.2: the Story 24.2 companion meta-test in the core suite
+  "src/shared/packages/pyforge-core/tests/meta/test_flag_gate_stays_outside_every_station.py",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

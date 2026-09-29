@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 71  # 2026-09-28 (evening, cont. 5): Epic 73 appended (spec-pyforge-marshal CAP-281); 71 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 4): Epic 72 appended (spec-pyforge-marshal CAP-280); 70 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 2): Epic 71 appended (spec-pyforge-core:CAP-11); 69 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont.): Epic 70 appended (spec-pyforge-marshal CAP-279); 68 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening): Epic 69 appended (spec-pyforge-marshal CAP-278); 67 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (later): Epic 68 appended (spec-pyforge-marshal CAP-277); 66 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core:CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 343  # 2026-09-28 (evening, cont. 5): +2 for Epic 73 / Stories 73.1, 73.2 (343 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 4): +1 for Epic 72 / Story 72.1 (341 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 2): +1 for Epic 71 / Story 71.1 (340 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont.): +1 for Epic 70 / Story 70.1 (339 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening): +1 for Epic 69 / Story 69.1 (338 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (later): +1 for Epic 68 / Story 68.1 (337 story keys in the ledger after this commit's sync, measured). Earlier 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-28"   # AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
+epicCount: 72  # 2026-09-28 (night): Epic 74 appended (spec-feature-flag-governance CAP-3, CAP-4, CAP-6); 72 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 5): Epic 73 appended (spec-pyforge-marshal CAP-281); 71 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 4): Epic 72 appended (spec-pyforge-marshal CAP-280); 70 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 2): Epic 71 appended (spec-pyforge-core:CAP-11); 69 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont.): Epic 70 appended (spec-pyforge-marshal CAP-279); 68 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening): Epic 69 appended (spec-pyforge-marshal CAP-278); 67 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (later): Epic 68 appended (spec-pyforge-marshal CAP-277); 66 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core:CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 346  # 2026-09-28 (night): +3 for Epic 74 / Stories 74.1, 74.2, 74.3 (346 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 5): +2 for Epic 73 / Stories 73.1, 73.2 (343 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 4): +1 for Epic 72 / Story 72.1 (341 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 2): +1 for Epic 71 / Story 71.1 (340 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont.): +1 for Epic 70 / Story 70.1 (339 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening): +1 for Epic 69 / Story 69.1 (338 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (later): +1 for Epic 68 / Story 68.1 (337 story keys in the ledger after this commit's sync, measured). Earlier 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-28"   # RE-STAMPED (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core:CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
@@ -7684,6 +7684,139 @@ and changes nothing; a negative cap is `MRS-POLICY-002`; removing the row gate m
 removing the cap queues more than 2 (mutations); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 **Amended 2026-09-28 (operator ruling):** the per-campaign cap `dispatch.max_followup_reviews_per_campaign` (default 2, newest
 landings first) joins the story (key, status and Deps kept); the prior text queued every qualifying row, in ledger order.
+
+## Epic 74: Every capability ships behind a flag — the fixture, the dispatch refusal and the mandate (spec-feature-flag-governance CAP-4, CAP-3, CAP-6)
+
+Minted 2026-09-28 (night) from `docs/governance/spec-feature-flag-governance/SPEC.md` (owner Dream
+`docs/dreams/feature-flag-governance.md`, `owner: guild`), whose *Who does the work* table gives Marshal three of its seven
+CAPs: CAP-4, because the testing kit is Marshal's cross-station seam (`spec-pyforge-testing-charter`,
+`fold-exemption: cross-station-seam`); CAP-3, because dispatch is Marshal's; CAP-6, because `_bmad/custom/` is where
+Marshal already carries bmad-build-auto's facts (Story 46.7). The gate itself (CAP-1, CAP-2, CAP-7's inventory and CAP-4's
+gate clause) is Doctor's, doctor Epic 34 (the coverage-gate-independence relay); CAP-5 is steward Epic 76. Marshal mints no
+CAP and registers no FR for these stories: the CAPs are the Guild Spec's, enumerated here and in that Spec's `.memlog.md`,
+as doctor's Epics 24, 25 and 32 enumerate theirs (PRD § 31.11). A new epic because Epic 73 carries a different Spec.
+**HARD boundaries:** Marshal never re-implements the gate's rules — the dispatch refusal consults the `scripts/` gate as a
+process and decides nothing about a flag itself (Charter §6: the hand that builds is never the gate that judges); one tree
+and one provider (canopy:AD-11), so the fixture's test double is OpenFeature's `InMemoryProvider` and its integration form a
+temporary flagd FILE tree — never Waffle, LaunchDarkly or an environment variable; no installer-owned `SKILL.md`,
+`customize.toml` or step file is edited; each story here is itself `flag-exempt:`. **Cross-station relay:** Story 74.2
+waits on doctor Story 34.2 (the gate and its `--spec` interface) and is minted `blocked`; the operator flips it, because
+the `Deps:` parser is station-local (the doctor 33.1 precedent). Doctor Story 34.5 waits on Story 74.1 here.
+
+### Story 74.1: The testing kit runs a story in both flag states through one fixture
+
+As a station author whose story ships behind a flag,
+I want one fixture that runs my test with the flag ON and again with it OFF,
+So that every flagged story proves its new behaviour and its legacy fallback without hand-writing two flagd trees.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-feature-flag-governance CAP-4 (the kit half; its gate
+clause is doctor Story 34.5); `spec-pyforge-testing-charter` (the kit's governing Spec: FR-130's four mock families gain a
+fifth) • canopy:AD-11 • `flag-exempt: flag-infrastructure`
+**Surface:**
+- `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/flags.py` (new): a pytest fixture over OpenFeature's
+  `InMemoryProvider` (`openfeature.provider.in_memory_provider`) for unit tests, restoring the prior provider after each
+  test; `flagd_tree(tmp_path, {key: variant})`, which writes a temporary flagd FILE tree in the shape of
+  `src/platform/config/flags.json` for integration tests and for Playwright against a server started on it (it writes JSON
+  only and imports no provider); `flag_states(key)`, an ON/OFF parametrize helper whose ids read `on` and `off`; and a CLI
+  helper for the OFF case the Spec's Q3 names (the verb is still listed in `--help`, marked disabled, and refuses with the
+  station's usage exit code), built on the kit's CLI-runner family.
+- `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/__init__.py` (exports), `README.md` (the family table
+  gains the flags row), `pyproject.toml` and the package `pixi.toml` (`openfeature-sdk` declared where the kit imports it;
+  `pyforge-deps-test` reads both), the root `pixi.toml` `[feature.pyforge-testing-kit.dependencies]` (`openfeature-sdk`
+  from conda-forge, as the platform features already resolve it; `environment.yaml` regenerated in the same change),
+  `pixi.lock`.
+- Tests: `src/shared/packages/pyforge-testing-kit/tests/unit/test_flags.py`.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/.memlog.md` (the kit is that
+  Spec's `surface:`; memlog first naming each path, then a scoped stamp).
+
+**Given** a unit test decorated with `flag_states("pyforge.example.thing")`
+**When** it runs
+**Then** it runs twice, once with the key resolving ON and once OFF, through the OpenFeature client API a station reads
+(never a mock of an internal)
+**And** `flagd_tree` writes a tree whose shape matches `src/platform/config/flags.json` (`flags` → key → `state`,
+`variants`, `defaultVariant`), the same key ON in one tree and OFF in the other; the CLI helper passes on a fixture verb
+that is listed-and-refusing and fails on one that is absent from `--help` or exits 0
+**And** the kit's own tests exercise both states, and no provider state leaks between tests; `pixi run --frozen -e
+pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci pyforge-deps-test` green
+
+### Story 74.2: Dispatch refuses a story the flag gate would red, before any session starts
+
+As the operator dispatching a story,
+I want dispatch to ask the Guild's flag gate about the story's spec before it launches anything,
+So that a feature story with no flag block is refused in seconds, not after a session has built it.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-feature-flag-governance CAP-3; AD-4, AD-5, AD-8, AD-15 •
+`MRS-GATE-010` (Kinship: the spec-binding refusal that fires only after the work) • cross-project gate: doctor Story 34.2
+(the gate and its `--spec` interface) must have landed first — the ledger key is minted `blocked` and the operator flips it
+(the `Deps:` parser is station-local) • `flag-exempt: detector-or-gate`
+**Surface:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`: `dispatch_once`'s preflight, beside the
+  `MRS-DISP-041` / `042` / `049` refusals and before any worktree or harness session, runs the gate on the story's tracked
+  spec (`<interpreter> scripts/flag_gate_check.py --spec <path>` from the repository root) through
+  `pyforge.core.process.ProcessPort`, the edge `dispatch_verify` already uses, and hands the parsed JSON to a pure decision.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_flag_gate.py` (new, pure): `red` → REFUSED
+  `MRS-DISP-052` naming the spec, the gate's findings and the remedy (a `flag:` block or a `flag-exempt:` value); `warn` →
+  one WARN finding, and the dispatch proceeds; `pass` → nothing; no gate in the repository → one WARN naming its absence,
+  and the dispatch proceeds (a seeded repository that has not adopted the rule); exit 2, a timeout or unparseable JSON →
+  REFUSED `MRS-DISP-052` naming the gate's failure (AD-8: unevaluable is failure).
+- `core/findings.py` (the code's registry row), `core/dispatch_re_preflight.py` (`MRS-DISP-052` joins
+  `_RE_PREFLIGHTABLE_GATES`, cleared when the spec's fingerprint changes).
+- Tests: `tests/unit/test_dispatch_flag_gate.py`, `tests/unit/test_dispatch.py` (a fake `ProcessPort` answering each
+  verdict), `tests/unit/test_dispatch_re_preflight.py`, and the AD-15 code-registry meta-test (under
+  `src/shared/packages/pyforge-marshal/`).
+
+**Given** a post-rule `type: feature` story spec with neither a `flag:` block nor a `flag-exempt:` value, and doctor Story
+34.2's gate on `main`
+**When** `marshal factory dispatch <project> <story>` runs
+**Then** it exits REFUSED with `MRS-DISP-052`, naming the spec and the gate's findings, before any worktree or harness
+session exists — zero changed paths
+**And** a pre-rule spec dispatches with the gate's warning journaled; a flagged or exempt spec dispatches as today; a drain
+cycle records the refusal as a campaign block that a later cycle re-preflights once the spec changes; the gate's rules are
+never restated in marshal (a test fails if `core/dispatch_flag_gate.py` reads a spec's frontmatter itself); removing the
+consult makes the red fixture dispatch (mutation)
+**And** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci pyforge-deps-test`
+green
+
+### Story 74.3: bmad-spec, bmad-build and bmad-tea carry the flag mandate in their overrides
+
+As any harness running a BMAD skill on a flagged story,
+I want the Architect, Builder and Test Architect mandates carried in the repository's `_bmad/custom/` overrides,
+So that every session names the flag, wraps the new logic in it and tests both states without being prompted, and a
+`bmad-method` update never removes that.
+
+**Type:** feature • **Effort:** S • **Deps:** 74.1 • **FR/AD:** spec-feature-flag-governance CAP-6 (and CAP-1's clause
+"documented where `bmad-build` reads story specs") • Story 46.7 (Kinship: `_bmad/custom/bmad-build-auto.toml`'s persistent
+facts, the precedent) • `flag-exempt: flag-infrastructure`
+**Surface:**
+- `_bmad/custom/bmad-spec.toml` (new): `[workflow] persistent_facts` — the Architect mandate: a story spec of
+  `type: feature` minted on or after 2026-09-28 declares a `flag:` block (key, provider, default per environment, scope
+  `global`, fallback, cleanup) or a `flag-exempt:` value from the closed list; the shape is
+  `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-1 (and `docs/reference/story-spec-flag-block.md` once doctor
+  Story 34.1 lands).
+- `_bmad/custom/bmad-build.toml` (new): `[workflow] persistent_facts` — the Builder mandate (read the declared key only
+  through `pyforge.core` or `django_pyforge.flags`; OFF keeps the legacy behaviour; an OFF CLI verb stays listed and
+  refuses with its station's usage code) — and one `[[workflow.review_layers]]` entry that asks, on a flagged story,
+  whether the diff reads the declared key and whether the Verification's two-state test exists.
+- `_bmad/custom/bmad-build-auto.toml`: the same Builder fact appended, because `marshal factory dispatch` launches
+  bmad-build-auto.
+- `_bmad/custom/bmad-tea.toml` (new): `[agent] persistent_facts` — the TEA mandate: test both states through
+  `pyforge.testing_kit.flags` (`flag_states`, `flagd_tree`, the CLI OFF helper), never a mock of `waffle` or an
+  environment variable.
+- `src/shared/packages/pyforge-marshal/tests/meta/test_flag_mandate_overrides.py` (new): parses the four files, asserts
+  each mandate sits under the table its skill's `customize.toml` declares (`[workflow]` for bmad-spec, bmad-build and
+  bmad-build-auto; `[agent]` for bmad-tea), and asserts no key also appears in `_bmad/custom/config.toml` at a different
+  path (the "ambiguous config value" HALT, AGENTS.md § Known pitfalls).
+
+**Given** a fresh `bmad-build` session on a flagged story, or one `marshal factory dispatch` launches
+**When** the skill renders with the repository's overrides
+**Then** the rendered context carries the mandate, so the session names the story's flag key and its two-state test
+unprompted: `render_skill.py` renders bmad-build and bmad-build-auto with no HALT and the mandate in their context, and
+`resolve_customization.py` returns it for bmad-spec (`--key workflow`) and bmad-tea (`--key agent`)
+**And** no installer-owned file under `.claude/skills/` changes; the four overrides survive `bmad-method install --action
+update` byte-identical (`_bmad/custom/` is the layer the installer leaves alone — Story 46.7's reason for moving its fact
+there); the meta-test fails on a mandate moved to the wrong table (mutation)
+**And** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci pyforge-deps-test`
+green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

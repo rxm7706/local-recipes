@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -2970,7 +2970,24 @@ and status is kept, and no FR is added.
   landings first. Story 66.2's backfill opens 181 rows (measured 2026-09-28), so an uncapped campaign
   would spend a session on each of them at once.
 
-**ONE FR space now FR-1..FR-228** (FR-229 = next free id).
+### 31.11 Epic 74 hosts three Guild CAPs (no FR registered)
+
+`docs/governance/spec-feature-flag-governance/` (Guild-owned, `ready` 2026-09-28: every capability ships behind a flag,
+and a gate no station owns checks that it does) gives Marshal three of its seven CAPs in its *Who does the work* table:
+CAP-4, because the testing kit is Marshal's cross-station seam; CAP-3, because dispatch is Marshal's; and CAP-6, because
+`_bmad/custom/` is where Marshal already carries bmad-build-auto's facts (Story 46.7). They decompose into **Epic 74**:
+Story 74.1 (the kit's flag fixture), Story 74.2 (dispatch refuses a story the gate would red, before any session; minted
+`blocked` behind doctor Story 34.2, the gate) and Story 74.3 (the mandate in bmad-spec's, bmad-build's and bmad-tea's
+overrides).
+
+**No FR is registered.** A Guild Spec's CAPs are enumerated in the executing Smith's `epics.md` and in the Spec's own
+`.memlog.md`, never re-registered as station requirements — the relay doctor's Epics 24, 25 and 32 follow for
+`spec-coverage-gate-independence` and `spec-one-chain-per-station`, and doctor Epic 34 follows for CAP-1, CAP-2 and CAP-7
+of this Spec. An `FR-n ← CAP-m` line here would resolve in `fr-without-cap` only because marshal's own Spec happens to
+declare a CAP-3, a CAP-4 and a CAP-6. FR-226 is not a precedent against this: `spec-pyforge-core` is hosted in this
+project's own `specs/` tree, and the Guild Spec is not.
+
+**ONE FR space still FR-1..FR-228** (FR-229 = next free id; § 31.11 registers none).
 
 **Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered; FR-224 through FR-228 later the same day; FR-211 amended in § 22, recorded in § 31.7). No AD amended — the follow-up row's
 selection and rendering are pure in `core/` and its publish reuses finalize's existing locked write
@@ -2980,4 +2997,4 @@ its OUTCOME (AD-6), the new refusal is a coded finding (AD-15), and whether the 
 read from `origin/main` (AD-29, AD-33); no new port, adapter or decision boundary. § 31.10 later
 (FR-225, FR-227, FR-228 amended in place): AD-55 is amended in place, additively (a manifest entry's
 optional `required_in`); FR-227's widening lands on AD-29 and AD-33 as written; FR-228's cap is one
-more field of the composed `dispatch` block (AD-16's layers unchanged).
+more field of the composed `dispatch` block (AD-16's layers unchanged). § 31.11 later (Epic 74, `spec-feature-flag-governance` CAP-3, CAP-4, CAP-6; no FR): the dispatch refusal lands on AD-4, AD-5, AD-8 and AD-15 as written — a pure decision in `core/` over the verdict a repo-root gate prints, the gate run as a process through the edge `dispatch_verify` already uses; the kit and the `_bmad/custom/` overrides sit outside the hexagon. No AD amended.

@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # AMENDED (evening, cont. 6): operator rulings on FR-225 / CAP-279 (AD-55 amended in place: the manifest entry's optional required_in, loop-home), FR-227 / CAP-280 widened (lands on AD-29/AD-33) and FR-228 / CAP-281's per-campaign cap (lands on AD-4/AD-5/AD-29/AD-33). See § Currency reconciliation -- 2026-09-28 (operator rulings). Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED (night): chain-currency cascade (prd -> arch) for Epic 74 (spec-feature-flag-governance CAP-3, CAP-4, CAP-6; no FR). No AD amended; lands on AD-4/AD-5/AD-8/AD-15. See section Currency reconciliation -- 2026-09-28 (night). Earlier: AMENDED (evening, cont. 6): operator rulings on FR-225 / CAP-279 (AD-55 amended in place: the manifest entry's optional required_in, loop-home), FR-227 / CAP-280 widened (lands on AD-29/AD-33) and FR-228 / CAP-281's per-campaign cap (lands on AD-4/AD-5/AD-29/AD-33). See § Currency reconciliation -- 2026-09-28 (operator rulings). Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
@@ -1989,3 +1989,27 @@ repository's layers because it bounds a campaign, not a station. The landing ord
 
 **Content changed:** this section, and AD-55's entry list (one optional key, dated in place).
 `updated:` bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`prd→arch` edge: the PRD's § 31.11 records Epic 74, three CAPs of the Guild's `spec-feature-flag-governance` (every
+capability ships behind a flag). No FR is registered and no AD is added, amended or removed; each story lands on ADs as
+written.
+
+*CAP-3 (Story 74.2): dispatch refuses a story the flag gate would red, before any session.* It lands on AD-4, AD-5, AD-8
+and AD-15. The gate is a repo-root script outside the hexagon, owned by no station (Charter §6; doctor Story 34.2):
+`dispatch_once`'s preflight runs it as a process through `pyforge.core.process.ProcessPort`, the edge `dispatch_verify`
+already uses for verify commands, and a pure `core/` function turns its JSON verdict into the decision (AD-4). A warning
+for a pre-rule spec is journaled on the run (AD-5); a gate that cannot judge refuses, never passes (AD-8); the refusal is
+`MRS-DISP-052`, a new code in the existing DISP namespace (AD-15). Marshal never restates the gate's rules, so Marshal is
+not the judge of its own stories. No port or adapter is added.
+
+*CAP-4 (Story 74.1): the testing kit runs a story in both flag states.* `pyforge-testing-kit` is a separate leaf package
+(Part III, the shared floor), governed by `spec-pyforge-testing-charter`; a fifth mock family adds nothing inside the
+hexagon.
+
+*CAP-6 (Story 74.3): bmad-spec, bmad-build and bmad-tea carry the flag mandate in their overrides.* `_bmad/custom/*.toml`
+is BMAD's override layer, outside the hexagon, as Story 46.7's bmad-build-auto fact already is; no port, adapter or
+decision boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
