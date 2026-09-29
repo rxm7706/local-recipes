@@ -2,7 +2,7 @@
 title: '68.1: A landing''s ledger promotion reaches origin/main, and a failed one is never silent'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '0c8c07e6fc667f8442ab7c142a6a62bde074b228'
 review_loop_iteration: 0
 followup_review_recommended: false
