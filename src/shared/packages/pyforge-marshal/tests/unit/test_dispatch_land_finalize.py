@@ -537,7 +537,7 @@ def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_
     )
 
     def _fake_intake(process, fs, vcs, root, project_slug, story_key):
-        seen["intake_args"] = (root, project_slug)
+        seen["intake_args"] = (root, project_slug, story_key)
         return Finding(code="MRS-DISP-047", severity=Severity.ERROR, message="forced for test")
 
     monkeypatch.setattr(
@@ -546,7 +546,8 @@ def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_
     )
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 1
-    assert seen["intake_args"] == (tmp_path, "pyforge-steward")
+    # Story 68.1: the story key finalize hands the intake is the landed story's, never the slug.
+    assert seen["intake_args"] == (tmp_path, "pyforge-steward", "42.5")
 
 
 def test_finalize_stays_green_when_intake_returns_no_finding(tmp_path: Path, monkeypatch) -> None:

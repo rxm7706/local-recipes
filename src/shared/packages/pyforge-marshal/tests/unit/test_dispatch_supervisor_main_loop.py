@@ -15,6 +15,7 @@ verdict raises ``_LoopGuard`` instead of hanging the suite.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -2305,6 +2306,18 @@ def test_supervisor_journals_a_warn_when_the_blocked_twin_cannot_be_published(
     assert "git commit-tree failed (test double)" in journal
     assert vcs.remote_tip_writes == []
     assert publisher.completions and publisher.completions[0][1] == DispatchSessionVerdict.BLOCKED.value
+    # The twin WARN consumed a journal counter: the call site must carry the advanced counter on, or
+    # the next supervisor entry reuses the WARN's (writer_id, counter) id -- a duplicate id in an
+    # append-only journal.
+    entries = [json.loads(line) for line in journal.splitlines() if line]
+    ids = [(e["id"]["writer_id"], e["id"]["counter"]) for e in entries]
+    assert len(ids) == len(set(ids)), f"duplicate journal entry ids: {ids}"
+    [twin] = [e for e in entries if e["kind"] == "dispatch-blocked-twin-publish"]
+    [completion_intent] = [
+        e for e in entries if e["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and e["phase"] == Phase.INTENT.value
+    ]
+    assert twin["id"]["writer_id"] == completion_intent["id"]["writer_id"]
+    assert twin["id"]["counter"] < completion_intent["id"]["counter"]
 
 
 def test_supervisor_records_a_stale_blocked_spec_as_an_advisory_only(tmp_path: Path, clock: _FakeClock) -> None:
