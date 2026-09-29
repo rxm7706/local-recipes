@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 197
+# stories: 201
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -109,6 +109,8 @@ development_status:
   34-4-each-station-has-a-checked-in-flag-inventory-of-its-runtime-capabilities: backlog
   34-5-the-flag-gate-reds-a-landed-flagged-story-whose-test-does-not-run-both-states: blocked
   35-1-capability-ledger-s-post-pin-check-reads-only-live-specs: backlog
+  36-1-a-fold-complete-check-proves-each-archived-dream-s-body-is-in-its-station-dream: backlog
+  36-2-the-sibling-drift-check-reads-acknowledged-dreams-under-the-archive: backlog
   4-1-health-scoring-fr-10: done
   4-2-persistent-fleet-health-surface-fr-11: done
   4-3-adoption-tracking-watch-axis-fr-12: done
@@ -195,10 +197,12 @@ development_status:
   epic-32-retrospective: optional
   epic-33: backlog
   epic-33-retrospective: optional
-  epic-34: backlog
+  epic-34: in-progress
   epic-34-retrospective: optional
   epic-35: backlog
   epic-35-retrospective: optional
+  epic-36: backlog
+  epic-36-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

@@ -1,0 +1,104 @@
+---
+title: "33.1: deck-facts counts Dreams under the archive too"
+type: 'chore'
+created: '2026-09-29'
+status: 'backlog'
+review_loop_iteration: 0
+followup_review_recommended: false
+context:
+  - docs/governance/spec-one-chain-per-station/SPEC.md
+  - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
+  - scripts/deck_facts.py
+  - tests/scripts/test_deck_facts.py
+deferred: []
+declared_low_risk: false
+---
+
+<intent-contract>
+
+## Intent
+
+**Problem:** `scripts/deck_facts.py` derives a deck's fact ledger (`presentations/<slug>/facts.yaml`). For the
+`pyforge-genesis` deck it counts Dreams by frontmatter status (line ~626): `dreams_total` and one `dreams_<status>` fact per
+status, all from `docs/dreams/*.md`. `spec-one-chain-per-station` CAP-11 (operator ruling 2026-09-29) moves archived Dreams
+to `archive/docs/dreams/`. After the move `dreams_archived` would fall toward zero and `dreams_total` would fall with it,
+although no Dream was removed. CHAIN-STANDARD §11 requires every reader that lists Dreams to follow them before the first
+fold PR moves a file.
+
+**Approach:** the `pyforge-genesis` branch also counts `archive/docs/dreams/*.md` files that carry a frontmatter `status`,
+and each fact's source names both globs (`docs/dreams/*.md + archive/docs/dreams/*.md`). A slug in both places is counted
+once, from `docs/dreams/`. Nothing else in `deck_facts.py` changes.
+
+Ledger key: `33-1-deck-facts-counts-dreams-under-the-archive-too`.
+Ledger status (do not edit the ledger): `backlog`.
+Type / Effort / Deps: chore / S / —.
+
+### Living CAP citations
+
+- `spec-one-chain-per-station` CAP-11 (the Guild's; Herald mints no CAP and no FR, the relay shape doctor's Epics 24, 25,
+  32 and 34 use); CHAIN-STANDARD §11.
+- `spec-deck-family-currency` CAP-2 (the facts ledger).
+- `spec-feature-flag-governance` Q1: a `chore` needs no flag.
+- Siblings: doctor Stories 36.1 and 36.2, marshal Story 75.1.
+
+## Acceptance Criteria
+
+- Given today's tree When `deck-facts pyforge-genesis` runs Then every `dreams_*` count is unchanged, and only each fact's source text changes
+- Given a fixture archived Dream moved to `archive/docs/dreams/` When it runs Then `dreams_total` and `dreams_archived` keep their values
+- Given an archive file with no frontmatter `status` When it runs Then it is not counted, as a live file with no status is not
+- Given one slug in both directories When it runs Then it is counted once
+- Given the archive count is removed When the moved-Dream test runs Then it fails (mutation)
+
+## Tasks
+
+1. Read the `pyforge-genesis` branch of `scripts/deck_facts.py` and `tests/scripts/test_deck_facts.py`.
+2. Count both globs, de-duplicate by slug with `docs/dreams/` first, and name both globs in each fact's source.
+3. Add tests for every acceptance criterion to `tests/scripts/test_deck_facts.py`.
+4. Run `pixi run -e pyforge-guild python -m pytest tests/scripts/test_deck_facts.py -q` and
+   `pixi run --frozen -e pyforge-herald pyforge-herald-test`, and read each exit code.
+5. Reconcile every Spec `spec-surface-check` names for `scripts/deck_facts.py`: memlog first, `git add`, then a scoped
+   `--write-baseline --spec` for each.
+
+## Boundaries & Constraints
+
+**Always:**
+- Keep every count on today's tree.
+- Read every verdict from the exit code, never through a pipe.
+
+**Never:**
+- Do not edit the deck's poster or re-derive `presentations/pyforge-genesis/facts.yaml` in this story.
+- Do not move any Dream in this story.
+- Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
+
+## I/O & Edge-Case Matrix
+
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| today's tree | nothing moved | counts unchanged; source text names both globs | — |
+| Dream moved | archived Dream under the archive | counts unchanged | — |
+| no status | archive file without `status` | not counted | — |
+| slug in both | two copies | counted once | — |
+
+</intent-contract>
+
+## Binding
+
+Parent capability: `spec-one-chain-per-station` CAP-11 (Guild relay; no herald CAP or FR).
+Dream: `docs/dreams/one-chain-per-station.md` → § *2026-09-29 — One archive home*.
+Ledger key: `33-1-deck-facts-counts-dreams-under-the-archive-too`.
+Ledger status at mint: `backlog`.
+Deps: —.
+Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`).
+
+**Manual checks:**
+- `pixi run -e pyforge-guild python -m pytest tests/scripts/test_deck_facts.py -q` — expected: pass.
+- `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamps.
+
+## Review Triage Log
+
+- No independent review has run yet (implementation and review stay separate).

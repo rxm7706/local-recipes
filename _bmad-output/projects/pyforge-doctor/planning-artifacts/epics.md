@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-29'   # RE-STAMPED 2026-09-29: Epic 36 / Stories 36.1-36.2 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2705,6 +2705,57 @@ Spec loop reads the added `SPEC.md`'s frontmatter `status` with `_frontmatter` a
 HARD checks and the per-CAP post-PIN WARN are unchanged; on `main` the source reports OK and exits 0; restoring the
 status-blind loop makes the absorbed and draft tests fail (mutation); `pixi run --frozen -e pyforge-doctor
 pyforge-doctor-test` green
+**Status:** backlog
+
+## Epic 36: A fold is proven complete before its file moves, and the sibling check follows the archive (spec-one-chain-per-station CAP-11)
+
+Minted 2026-09-29 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`). The outcome is the Guild's; the mechanism is Doctor's under §5's
+outcome/mechanism rule, the relay Epics 24, 25, 32 and 34 followed. Doctor mints no CAP and no FR for these stories. They
+bind to a CAP on a Spec in `docs/governance/`, which INV-A does not scan, so these citations and that Spec's `.memlog.md`
+are where they are enumerated. **Ruled and closed before minting** (Spec memlog, 2026-09-29; do not re-open): one archive
+home, `archive/<original path>`; a fold is verbatim and carries no banner; a doctor check proves a fold complete before
+its file moves; Dreams move first, one station per PR (CHAIN-STANDARD §11). **HARD boundaries:** the check only reads; it
+moves no file and edits no Dream; it lives in `pyforge.doctor.sources` beside `chain-sprawl` (Story 25.1's shape) and runs
+inside `detectors-ci`; no station's internals are imported. Both stories land before the first station fold PR moves a
+file. Marshal Epic 75 and herald Epic 33 carry the other readers. Story 36.1 is `flag-exempt: detector-or-gate`; Story
+36.2 is a `chore`.
+
+### Story 36.1: A fold-complete check proves each archived Dream's body is in its station Dream
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (`SPEC.md` success: "the
+doctor check finds each archived Dream's paragraphs in its station Dream"; CHAIN-STANDARD §7 item 4 and §11); AD-2 •
+`flag-exempt: detector-or-gate`
+**difficulty:** medium
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` (a new `gather_fold_complete`),
+`sources/__init__.py` (`Source.FOLD_COMPLETE`, scope `repo`), `sources/__main__.py` (the dispatcher row), `pixi.toml` (a
+`fold-complete-check` task), `scripts/detectors.py` (a row in the `detectors-ci` list),
+`docs/governance/fold-complete-baseline.json` (the seven archive paths that are not folds of a station Dream: the six Dreams
+already under `archive/docs/dreams/` before the rule date, and the unifying strategy's 2026-08-23 topology split moving
+from `docs/dreams/archive/`; it only ever shrinks, the `chain-sprawl-baseline.json` shape), and doctor unit tests.
+**Given** an archived Dream under `archive/docs/dreams/` whose frontmatter `owner:` names a station, and that station's
+Dream `docs/dreams/pyforge-<owner>.md`
+**When** `pixi run -e pyforge-guild fold-complete-check` runs
+**Then** it FAILs naming each archived Dream with body paragraphs (blank-line separated, with headings and frontmatter left
+out, whitespace-normalized, longer than 80 characters) that are not found in the station Dream, and gives the count
+missing; it reports OK for a Dream whose paragraphs are all present, whatever the depth of its headings; and it FAILs an
+archived Dream whose owner cannot be read (missing or glued frontmatter)
+**And** the `docs/dreams/*.md` files whose frontmatter reads `status: archived` produce one WARN, naming the count per
+station (the migration's countdown), never a FAIL; baseline files are OK; on `main` today the source reports that WARN
+and exits 0; removing the paragraph comparison makes the incomplete-fold test fail (mutation); `pixi run --frozen -e
+pyforge-doctor pyforge-doctor-test` green
+**Status:** backlog
+
+### Story 36.2: The sibling-drift check reads acknowledged Dreams under the archive
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: readers
+follow the move); spec-pyforge-doctor CAP-71, CAP-82 (the check it extends)
+**difficulty:** low
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py` (`_local_fingerprints` also
+reads `archive/docs/dreams/*.md`, with `docs/dreams/` read first), `tests/unit/test_sources_sibling_dreams.py`.
+**Given** six archived Dreams carry `sibling-acknowledged:` hashes and will move to `archive/docs/dreams/`
+**When** the sibling-drift check runs after a fixture Dream has moved there
+**Then** it reads that Dream's acknowledgement and reports exactly what it reported before the move
+**And** a Dream present in both places is read from `docs/dreams/`; on `main` today its output is unchanged; tests cover the
+moved Dream and the both-places case; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
