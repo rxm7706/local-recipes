@@ -4,15 +4,17 @@ machine form (doctor Story 34.1, spec-feature-flag-governance CAP-1).
 One test per acceptance-criteria row and per I/O-matrix row of the story spec, plus the scan that
 pins the roster as the one declared source of the exemption list.
 
-``pytest.importorskip("yaml")`` mirrors ``test_docs_gen_common.py``: PyYAML is not a declared
-dependency of ``pyforge-ci``, so the suite skips there and runs for real from ``pyforge-guild``
-(``pixi run -e pyforge-guild python -m pytest tests/scripts/test_flag_rule.py -q``).
+The suite runs from ``pyforge-guild`` (``pixi run -e pyforge-guild python -m pytest
+tests/scripts/test_flag_rule.py -q``) and from ``pyforge-ci`` (the ``scripts-suite`` /
+``pyforge-doctor-scripts-test`` lane), where PyYAML arrives transitively. ``pytest.importorskip("yaml")``
+mirrors ``test_docs_gen_common.py`` and only guards the case where that transitive dependency drops out.
 """
 
 from __future__ import annotations
 
 import ast
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -214,6 +216,18 @@ def test_a_missing_spec_file_is_neither_never_a_crash(tmp_path: Path):
     assert "cannot read" in result.reasons[0]
 
 
+def test_an_impossible_frontmatter_date_is_neither_never_a_raise(tmp_path: Path):
+    # yaml.safe_load builds the date eagerly: `2026-02-30` raises ValueError, not YAMLError.
+    path = tmp_path / "spec-1-1-x.md"
+    path.write_text("---\ntype: feature\ncreated: 2026-02-30\nflag-exempt: docs-only\n---\n", encoding="utf-8")
+
+    result = flag_rule.classify(path)
+
+    assert result.verdict == flag_rule.NEITHER
+    assert "not valid YAML" in result.reasons[0]
+    assert flag_rule.in_scope(path) is False
+
+
 def test_a_relative_path_is_read_against_the_repo_root(tmp_path: Path):
     root = _repo(tmp_path)
     spec = _spec(root, FLAG_BLOCK)
@@ -304,7 +318,7 @@ def test_the_specs_own_created_date_never_decides_post_rule(tmp_path: Path):
 
 
 def test_is_post_rule_reads_the_live_baseline():
-    baselined = "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-1-1-generate-legacy-contextual-skill.md"
+    baselined = flag_rule.read_baseline()["specs"][0]
     this_story = (
         "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/"
         "spec-34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline-and-one-block-shape.md"
@@ -361,6 +375,7 @@ def test_a_spec_with_no_type_or_no_frontmatter_is_out_of_scope(tmp_path: Path):
         (f"{SPECS_DIR}/spec-19-1-a-folder-spec/.memlog.md", False),
         (f"{SPECS_DIR}/spec-pyforge-doctor/SPEC.md", False),
         (f"{SPECS_DIR}/spec-22-prep-no-story-number.md", False),
+        (f"{SPECS_DIR}/spec-land-promote-isolation.md", False),
         ("docs/specs/spec-1-1-legacy.md", False),
     ],
 )
@@ -533,3 +548,31 @@ def test_the_live_baseline_records_the_ruling_sha_and_a_sorted_story_spec_popula
     assert data["specs"] == sorted(data["specs"])
     assert all(flag_rule.is_story_spec(s) for s in data["specs"])
     assert len(set(data["specs"])) == len(data["specs"])
+
+
+def test_the_committed_baseline_matches_the_ruling_commits_tree():
+    data = flag_rule.read_baseline()
+    sha = flag_rule_baseline.RULING_SHA
+    if subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"], cwd=REPO_ROOT, capture_output=True).returncode:
+        pytest.skip(f"ruling commit {sha} is not in this clone")
+
+    population = set(flag_rule_baseline.snapshot(REPO_ROOT)["specs"])
+
+    assert set(data["specs"]) <= population, "a baseline entry was hand-added"
+    hand_deleted = [rel for rel in sorted(population - set(data["specs"])) if (REPO_ROOT / rel).exists()]
+    assert hand_deleted == [], "a baseline entry was hand-deleted (only --prune may, and only a vanished path)"
+
+
+def test_the_reference_pages_yaml_examples_classify_as_written(tmp_path: Path):
+    page = (REPO_ROOT / "docs/reference/story-spec-flag-block.md").read_text(encoding="utf-8")
+    blocks = re.findall(r"```yaml\n(.*?)```", page, flags=re.DOTALL)
+    assert len(blocks) == 2, "the page carries one flagged and one exempt example"
+
+    verdicts = []
+    for i, block in enumerate(blocks):
+        path = tmp_path / f"spec-1-{i}-example.md"
+        path.write_text(block, encoding="utf-8")
+        assert flag_rule.in_scope(path) is True
+        verdicts.append(flag_rule.classify(path))
+
+    assert verdicts == [(flag_rule.FLAG, ()), (flag_rule.EXEMPT, ())]

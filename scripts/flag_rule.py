@@ -127,6 +127,10 @@ def is_post_rule(
 
     The spec's own `created:` string is never read: it is a date the spec declares about
     itself, and specs minted before the Spec reached `ready` carry the rule date too.
+
+    This answers for a story spec only (`spec-<epic>-<story>-*.md`, see `is_story_spec`): the
+    baseline holds no other file, so a path outside that naming is reported post-rule. Callers
+    filter with `is_story_spec` first.
     """
     known = baseline if baseline is not None else load_baseline(repo_root)
     return repo_relative(path, repo_root) not in known
@@ -146,8 +150,9 @@ def _frontmatter(path: Path) -> tuple[dict[str, Any] | None, str]:
         return None, "no frontmatter (the opening `---` fence is never closed)"
     try:
         data = yaml.safe_load("\n".join(lines[1:end]))
-    except yaml.YAMLError as exc:
-        return None, f"frontmatter is not valid YAML: {str(exc).splitlines()[0]}"
+    except (yaml.YAMLError, ValueError, OverflowError) as exc:
+        # ValueError/OverflowError: safe_load builds dates eagerly, so `created: 2026-02-30` raises.
+        return None, f"frontmatter is not valid YAML: {next(iter(str(exc).splitlines()), type(exc).__name__)}"
     if data is None:
         return None, "frontmatter is empty"
     if not isinstance(data, dict):

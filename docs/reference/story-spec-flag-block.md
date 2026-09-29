@@ -3,7 +3,9 @@
 Every capability ships behind a flag, and a check no station owns refuses a story that does not
 say so (`docs/governance/spec-feature-flag-governance/SPEC.md`, CAP-1; Dream:
 `docs/dreams/feature-flag-governance.md`). This page writes the one shape a story spec uses to
-say so. A story author copies it; `bmad-build` and Marshal read the same shape.
+say so. A story author copies it; `bmad-build` and Marshal read the same shape. The Qn numbers
+below (Q1, Q3, Q4, Q5) are the operator rulings listed in
+`docs/governance/spec-feature-flag-governance/SPEC.md`.
 
 ## The rule
 
@@ -23,6 +25,10 @@ when it is absent from that list. Several `type: feature` specs minted on 2026-0
 Spec was `ready` are therefore pre-rule, and a spec cannot move itself across the line by
 editing its date. The baseline is stamped by `scripts/flag_rule_baseline.py` and only ever
 shrinks.
+
+Only a spec named `spec-<epic>-<story>-*.md` is a story spec under the rule; that naming is what
+puts a spec in the baseline population, and a legacy-named spec (for example
+`spec-land-promote-isolation.md`) is outside it.
 
 ## The `flag:` block
 
