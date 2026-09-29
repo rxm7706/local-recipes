@@ -81,6 +81,8 @@ class _FakeVcs:
         self.commit_paths_raises = commit_paths_raises
         self.commit_paths_calls: list[tuple[object, tuple[Path, ...], str]] = []
         self.isolated_promote_calls: list[tuple[object, str, str, tuple[tuple[str, str], ...], str]] = []
+        # Story 68.1: the `preflight_skip_reason` each publish carried, parallel to the calls above.
+        self.isolated_promote_reasons: list[str | None] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -145,8 +147,9 @@ class _FakeVcs:
             return candidate.read_text(encoding="utf-8")
         return None
 
-    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message):
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
         self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
+        self.isolated_promote_reasons.append(preflight_skip_reason)
         if self.commit_paths_raises:
             raise VcsCommandError("git push failed: non-fast-forward (test double)")
         for rel, content in writes:
