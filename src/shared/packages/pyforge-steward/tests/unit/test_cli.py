@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pyforge.core.flags import FlagOff
 
 from pyforge.steward import __version__
 from pyforge.steward.cli import (
@@ -12,6 +13,7 @@ from pyforge.steward.cli import (
     EXIT_INTERNAL,
     EXIT_INTERRUPTED,
     EXIT_OK,
+    EXIT_USAGE,
     build_parser,
     main,
 )
@@ -166,3 +168,32 @@ def test_crash_never_returns_bare_1(monkeypatch):
     rc = main(["keys"])
     assert rc == EXIT_INTERNAL
     assert rc != EXIT_FAILED, "a crash must not be reported as a duty failure"
+
+
+def test_flag_off_raised_inside_a_duty_projects_to_the_usage_code(monkeypatch, capsys):
+    """Story 75.1: `pyforge.core.flags` defines no exit code -- `main()` maps `FlagOff` to
+    steward's usage code 2 with the flag-off message on stderr, never to 1 or 70."""
+
+    class Flagged:
+        name = "keys"
+
+        def run(self, ns):
+            raise FlagOff("pyforge.test.some_capability")
+
+    monkeypatch.setattr("pyforge.steward.cli.resolve_duty", lambda n: Flagged())
+    rc = main(["keys"])
+    assert rc == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert captured.err == "steward: flag pyforge.test.some_capability is off\n"
+    assert captured.out == ""
+
+
+def test_keys_exec_is_a_verb_of_keys_not_a_new_duty(capsys):
+    """`exec` joins `keys` (Story 75.1): the duty count stays 25, the verb list grows to seven."""
+    assert len(DUTIES) == 25  # noqa: PLR2004
+    assert "exec" not in DUTIES
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["keys", "--help"])
+    out = capsys.readouterr().out
+    assert "{encrypt,decrypt,rotate,list,audit,revoke,exec}" in out
+    assert _HELP["keys"].endswith("encrypt/decrypt/rotate/list/audit/revoke/exec")

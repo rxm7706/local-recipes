@@ -13,6 +13,8 @@ import argparse
 import sys
 from collections.abc import Sequence
 
+from pyforge.core.flags import FlagOff, disabled_help
+
 from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
 
@@ -109,7 +111,7 @@ _HELP = {
         "every story carries a next field (done/running/ready/waits on .../"
         "blocked/?), filterable with --ready / --running"
     ),
-    "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
+    "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke/exec",
     "deploy": (
         "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx "
         "manifests; static: CAP-8/AD-10 static-export publish"
@@ -278,12 +280,22 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# Story 75.1: the flag and the two scopes `keys exec` knows. keys.py owns the
+# canonical constants (GHE_FLAG_KEY / GHE_SCOPES); they are repeated here as
+# literals because this module must build the parser without importing keys.py
+# (its import-time `_http.py` bridge refuses outside a checkout), and a unit
+# test pins the two copies equal.
+_KEYS_EXEC_FLAG = "pyforge.steward.ghe_fleet_credentials"
+_KEYS_EXEC_SCOPES = ("ghe-fleet-read", "ghe-fleet-pr-draft")
+_KEYS_EXEC_HELP = "run a command with a scoped GitHub Enterprise token in its environment (the only delivery path)"
+
+
 def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     """Add `encrypt`/`decrypt` verbs (Story 1.3) — the only CLI surface this
     story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
-    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit,revoke}")
+    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit,revoke,exec}")
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
     encrypt.add_argument("file", help="the plaintext file to encrypt")
@@ -325,6 +337,12 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
         metavar="PATH",
         help="file or directory to scan for plaintext-secret-shaped content",
     )
+    audit.add_argument(
+        "--inventory",
+        default=None,
+        help="path to keys-inventory.yaml to check for one payload serving both GHE scopes "
+        "(default: repo-root .steward/keys-inventory.yaml; a clean result prints only when given)",
+    )
 
     revoke = keys_subs.add_parser("revoke", help="mark a credential retired and print manual remediation guidance")
     revoke.add_argument("--scope", required=True, help="the credential scope to revoke")
@@ -332,6 +350,35 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
         "--inventory",
         default=None,
         help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
+    )
+
+    # Story 75.1 / Q3: the verb stays listed in --help, marked disabled, while its flag is off.
+    exec_help = disabled_help(_KEYS_EXEC_HELP, _KEYS_EXEC_FLAG)
+    exec_ = keys_subs.add_parser("exec", help=exec_help, description=exec_help)
+    exec_.add_argument(
+        "--scope",
+        required=True,
+        choices=_KEYS_EXEC_SCOPES,
+        help="which issued GitHub Enterprise identity to deliver (ghe-fleet-pr-draft is only for an approved proposal)",
+    )
+    exec_.add_argument(
+        "--approval",
+        default=None,
+        metavar="REF",
+        help="reference to the operator-approved proposal; required for ghe-fleet-pr-draft, "
+        "journaled to keys-exec.log beside the inventory (never a secret)",
+    )
+    exec_.add_argument(
+        "--inventory",
+        default=None,
+        help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
+    )
+    exec_.add_argument(
+        "argv",
+        nargs=argparse.REMAINDER,
+        metavar="COMMAND",
+        help="after `--`: the command and its arguments to run; its environment carries GH_HOST and "
+        "GH_ENTERPRISE_TOKEN (the ambient GitHub token variables are removed first)",
     )
 
 
@@ -1428,6 +1475,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if code is None:
             return EXIT_OK
         return code if isinstance(code, int) else EXIT_USAGE
+    except FlagOff as exc:
+        # A flag-gated capability was invoked while its flag reads OFF
+        # (spec-feature-flag-governance Q3): steward's usage code, never a new
+        # one. `pyforge.core.flags` defines no exit code -- the choice is here.
+        print(f"steward: {exc}", file=sys.stderr)
+        return EXIT_USAGE
     except Exception:  # noqa: BLE001 — deliberate boundary
         import traceback
 
