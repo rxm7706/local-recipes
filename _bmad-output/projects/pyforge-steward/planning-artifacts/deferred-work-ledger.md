@@ -4850,3 +4850,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-suite-versions-disagree-2026-09-29: Four bmad-suite members carry three different versions across the adoption register, `pixi.toml` and their local recipe.
+
+- source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md` (CAP-32, Story 24.1 — the catalog renders a disagreement, never resolves it)
+  summary: The first render of `docs/reference/bmad-estate-llms-full.md` § 4 "Sources disagree" lists bmad-loop (register 0.11.1 / pixi.toml 0.12.0 / recipe 0.12.0), bmad-method-test-architecture-enterprise (1.24.0 / 1.27.2 / 1.27.2), bmad-module-skill-forge (2.1.0 / 2.2.0 / 2.2.0) and bmad-eval-quality (0.2.0.dev0 @3172162f / 4.3.0 / 4.3.0). The register rows (AD-2, the one durable home) are behind the pins and recipes.
+  evidence: `docs/reference/bmad-estate-llms-full.md` § 4 (generated 2026-09-29); `pixi run -e pyforge-guild scribe catalog bmad-estate --check` re-derives it
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md:12
+  origin: relayed by scribe Story 24.1 (CAP-32 constraint "the catalog derives, never decides") on 2026-09-29
+  severity: low
+  promoted: 2026-09-29 — relayed by hand from the catalog's first render
+  status: open

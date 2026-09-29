@@ -127,6 +127,21 @@ verify_commands = [
   "scripts/scribe_pg.py",
   "tests/scripts/test_scribe_pg.py",
 ]
+"24" = [  # every session reads one derived picture of the BMAD estate (spec-pyforge-scribe CAP-32), added 2026-09-29
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-bmad-suite-lifecycle-agent-knowledge-surface-research-2026-09-12.md",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/bmad_estate_check.py",
+  "docs/reference/bmad-estate-llms-full.md",
+  "docs/reference/README.md",
+  "docs/MAP.md",
+  "AGENTS.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

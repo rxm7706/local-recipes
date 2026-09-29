@@ -821,6 +821,13 @@ capabilities:
     mode: rebuild
     note: provisioning script; Story 22.1 (socket dir short and per-user), added 2026-09-25
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-32
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "every session reads one derived picture of the BMAD estate"
+    mode: rebuild
+    note: generated catalog (scribe catalog bmad-estate) + bmad-estate-check detector; Stories 24.1-24.3, added 2026-09-29; B re-derives it from its own estate sources
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward

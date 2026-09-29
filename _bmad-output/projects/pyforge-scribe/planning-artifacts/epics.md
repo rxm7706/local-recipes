@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -836,6 +836,58 @@ So that every session stops paying for the same 54 lines twice.
 **When** this story lands
 **Then** `ides` is `[other]`, so the export targets `AGENTS.md` only; `CLAUDE.md` has no `<!-- SKF:BEGIN` / `<!-- SKF:END -->` markers, so the export's orphan check has nothing to ask about; `AGENTS.md`'s SKF block is unchanged; the line only `CLAUDE.md`'s copy carried (Mason has no SKF skill) lands in the notes file, its rule already in `AGENTS.md` § Policy
 **And** `skf-rebuild-managed-sections.py <file> check` reports `CLAUDE.md` without a managed section and `AGENTS.md` with valid markers; the seven station SKF meta-tests and scribe's parity tests pass; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** done
+
+## Epic 24: Every session reads one derived picture of the BMAD estate (spec-pyforge-scribe CAP-32)
+
+Minted 2026-09-29 from the station Dream's entry of the same date (research pass of 2026-09-12,
+`_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-bmad-suite-lifecycle-agent-knowledge-surface-research-2026-09-12.md`).
+A new epic because Epic 23 carries CAP-27 and Epic 22 CAP-31. Three stories, in order. **HARD
+boundaries:** the catalog is generated, never hand-edited; it reads steward's adoption register and
+never restates or re-decides a wiring verdict (AD-2); no `pyforge.<station>` internals are imported
+to read a constant; `AGENTS.md`'s `bmad:context` block changes only through `bmad-project-context`;
+the library catalog and `llms-full-check` are untouched.
+
+### Story 24.1: The BMAD estate catalog is generated, not written
+
+As an agent opening this repo,
+I want one file that tells me which BMAD core, modules, skills and suite members are installed here and who wields each,
+So that I never act on a retired skill name, a stale version, or a table hand-carried in four places.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-32 • Dream 2026-09-29
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py` (new: the readers and the renderer), `cli.py` (`scribe catalog bmad-estate [--write|--check|--pipeline-truth <json>]`), `tests/unit/test_catalog_bmad_estate.py` (new, fixture-driven, offline), `docs/reference/bmad-estate-llms-full.md` (first committed render).
+**Given** `_bmad/_config/manifest.yaml` and `skf-manifest.yaml` carry the installed core/modules, 127 `.claude/skills/*/SKILL.md` files carry a `description:`, `_bmad/_config/bmad-help.csv` carries phase/sequence/required, `recipes/bmad-suite/suite-members.yaml` and `spec-bmad-suite-lifecycle/adoption-register.md` § 1–2 carry the 13 members with verdict/wielder/provisioning path/hazards, `pixi.toml` carries the `bmad-*` pins, `harness_bmadloop.py` carries `HARNESS_VERSION_RANGE_TEXT`, and `release-cadence.md` carries the nine step headings — and no agent-facing file states the installed core version or the suite verbs
+**When** `pixi run -e pyforge-guild scribe catalog bmad-estate --write` runs
+**Then** `docs/reference/bmad-estate-llms-full.md` is rendered with a header (generation date, the regeneration command, the detector name), then: installed core/modules/`installShims`; the skill catalog by family (`bmad-*` core and BMM, `bmad-agent-*`, `bmad-os-*`, `bmad-cis-*`, `bmad-testarch-*`, `skf-*`, `bmad-loop-*`, labs consent, `pyforge-*`) with counts and one-line descriptions; the 13-member roster with install class, verdict, wielding station, provisioning path and hazards as read from the register; the `bmad-*` pins; the harness range; the cadence steps — every fact followed by its source path; a disagreement between the register, a Spec header and `pixi.toml` is rendered as such, never resolved
+**And** the generator makes no network call and imports no `pyforge.<station>` internals (steward's `pipeline-truth --json` is an optional `--pipeline-truth` input); `test_catalog_bmad_estate.py` renders from fixtures and asserts the header, one row per family, one row per member and the disagreement rendering; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; the first render is committed in the same PR; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** done
+
+### Story 24.2: The catalog cannot drift silently
+
+As an operator merging a change that moves a BMAD source (a core apply, a suite refresh, a skill re-forge),
+I want a repo-scope detector to red the merge when the rendered catalog no longer matches its sources,
+So that the estate picture stays current by a gate, not by someone remembering to regenerate it.
+
+**Type:** feature • **Effort:** S • **Deps:** S-24.1 • **FR/AD:** spec-pyforge-scribe CAP-32 • OQ-CAP-32-1
+**Surface:** `scripts/bmad_estate_check.py` (new, `DETECTOR = {"scope": "repo"}`, exit 0 clean / 1 findings / 2 could-not-run, `-- --json`), `pixi.toml` (`bmad-estate-check` under `guild-tasks`), `catalog.py` (`--check` mode), `docs/reference/bmad-estate-llms-full.md` (header names the detector), `tests/unit/test_catalog_bmad_estate.py` (drift cases).
+**Given** Story 24.1's generator renders the catalog from its sources and `scripts/detectors.py` discovers `scripts/*_check.py` files carrying a `DETECTOR` marker
+**When** a source moves (a manifest version, a skill description, a member row, a pin, the harness range) and the catalog is not re-rendered
+**Then** `pixi run -e pyforge-guild bmad-estate-check` exits 1 naming the drifted section and its source path; on `main` with a fresh render it exits 0; an unreadable source exits 2, never a false green; `detectors-ci` picks the detector up with no registry edit; OQ-CAP-32-1 is decided in this story's spec (structured diff of derived facts with prose exempt is the recommended default — the library catalog's byte-level check is the one operators keep re-syncing) and the decision is a memlog entry
+**And** `governance-currency` resolves every path the catalog names; the reconcile is the regeneration command in the catalog header, stated once; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile as in 24.1
+**Status:** done
+
+### Story 24.3: Every harness is pointed at the catalog once
+
+As a session on any harness that reads `AGENTS.md`,
+I want one trigger row and one where-things-are line that name the estate catalog,
+So that the picture is one read away without `AGENTS.md` restating a version, a count or a verdict.
+
+**Type:** config • **Effort:** S • **Deps:** S-24.2 • **FR/AD:** spec-pyforge-scribe CAP-32, CAP-27
+**Surface:** `AGENTS.md` (§ *Read on trigger* row outside the markers; § *Where things are* line and § *Running and verifying* detector names — `bmad-estate-check`, `bmad-method-version-drift-check`, `tea-test-review` — inside the `bmad:context` block via `bmad-project-context record`/`refresh`), `docs/reference/README.md` (row), `docs/MAP.md` (classification), `_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-bmad-suite-lifecycle-agent-knowledge-surface-research-2026-09-12.md` (addendum: what landed).
+**Given** `AGENTS.md` carries one pointer line to the adoption register and no line naming the installed core version, the suite verbs, the cadence, `bmad-method-version-drift-check` or `tea-test-review`, and `CLAUDE.md` already imports `AGENTS.md` (CAP-27)
+**When** this story lands
+**Then** `AGENTS.md` § *Read on trigger* gains one row ("Before invoking a BMAD skill, provisioning or upgrading a suite member, or driving bmad-loop → `docs/reference/bmad-estate-llms-full.md`"), § *Where things are* gains one line naming the catalog as the derived estate picture, § *Running and verifying* names the three detectors; no version, count or verdict is typed into `AGENTS.md`; the `bmad:context` block is changed only by the skill and its provenance line is re-stamped; `docs/reference/README.md` and `docs/MAP.md` classify the file; the research record gains a dated addendum
+**And** scribe's parity meta-test, `governance-currency`, `general-docs-consistency` and `spec-surface-check` green; co-governor reconcile as in 24.1
 **Status:** done
 
 ## Platform floor addendum — 2026-09-07
