@@ -6,7 +6,7 @@ project_name: pyforge-herald
 epicCount: 32  # 2026-09-28 (night): Epics 29-32 appended (spec-pyforge-herald CAP-54..CAP-57); 32 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 28 before this mint). 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
 storyCount: 120  # 2026-09-28 (night): +7 for Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 (120 story keys in the ledger, measured; 113 before this mint; 29.1 and 29.2 are minted blocked on steward 74.1). 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-28 (night): Epics 29-32 (7 stories) backlog; 29.1 and 29.2 blocked on steward Story 74.1, the rest backlog behind station-local Deps. 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 33 / Story 33.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-9.1..FR-9.2 / CAP-53; Epic 28 / Stories 28.1-28.2 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.5 / CAP-52; Epic 27 / Stories 27.1-27.5 minted (27.5 and the 27.2 rewrite follow the operator rulings of 2026-09-27, D7/D8). Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
@@ -1439,6 +1439,31 @@ So that I can change a deck without rebuilding it from images, and without Chrom
 **When** the plugin, the Node driver, the verb and the environment change land
 **Then** `pixi run -e pyforge-guild herald deck pptx-native <slug>` exits 0 on a fixture deck and writes `<slug>-deck-native-<date>.pptx`; python-pptx reads it back with one slide per Marp slide, titles and bullet text as text frames, tables as table graphic frames, speaker notes in each notes slide, and no picture shape standing in for a slide; a second run on a later date leaves one version of the kind; the Marp and pptx-fill exports are byte-unchanged
 **And** with the flag OFF the verb is listed as disabled and exits 2 with a "flag off" message; `environment.yaml` is regenerated in the same PR; `pyforge-station-tests` and `pyforge-herald-test` are green
+**Status:** backlog
+
+## Epic 33: The genesis deck counts archived Dreams where they now live (spec-one-chain-per-station CAP-11)
+
+Minted 2026-09-29 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`): archived Dreams leave `docs/dreams/` for `archive/docs/dreams/`,
+and CHAIN-STANDARD §11 requires every reader that lists Dreams to follow them before the first fold PR moves a file.
+`scripts/deck_facts.py` is one such reader: for the `pyforge-genesis` deck it counts Dreams by status, and spec-surface
+puts it on Herald. Herald mints no CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here
+and in that Spec's `.memlog.md`, as doctor's relay epics do. **HARD boundaries:** no file moves in this story; the deck's
+poster is not edited; `deck-facts --check` stays advisory. Doctor Epic 36 and marshal Epic 75 carry the other readers. The
+story is a `chore`.
+
+### Story 33.1: deck-facts counts Dreams under the archive too
+
+As the owner of the genesis deck's fact ledger,
+I want the Dream counts to include `archive/docs/dreams/`,
+So that moving archived Dreams to one archive home does not make the deck report fewer Dreams.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: readers follow the move); `spec-deck-family-currency` CAP-2 (the facts ledger)
+**Surface:** `scripts/deck_facts.py` (the `pyforge-genesis` branch counts `archive/docs/dreams/*.md` that carry a frontmatter `status` alongside `docs/dreams/*.md`, and each fact's source names both globs), `tests/scripts/test_deck_facts.py`.
+**Given** `dreams_total` and `dreams_<status>` count only `docs/dreams/*.md`
+**When** a fixture archived Dream moves to `archive/docs/dreams/`
+**Then** `dreams_total` and `dreams_archived` keep their values, and each fact's source names both globs
+**And** on today's tree every count for `pyforge-genesis` is unchanged; the test covers a moved Dream and an archive with no status; `pixi run --frozen -e pyforge-herald pyforge-herald-test` is green
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
