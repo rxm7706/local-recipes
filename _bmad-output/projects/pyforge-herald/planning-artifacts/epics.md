@@ -3,10 +3,11 @@ epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
-epicCount: 28  # 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
-storyCount: 113  # 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
-status: in-progress  # 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-9.1..FR-9.2 / CAP-53; Epic 28 / Stories 28.1-28.2 minted. Prior 2026-09-27
+epicCount: 32  # 2026-09-28 (night): Epics 29-32 appended (spec-pyforge-herald CAP-54..CAP-57); 32 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 28 before this mint). 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
+storyCount: 120  # 2026-09-28 (night): +7 for Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 (120 story keys in the ledger, measured; 113 before this mint; 29.1 and 29.2 are minted blocked on steward 74.1). 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
+status: in-progress  # 2026-09-28 (night): Epics 29-32 (7 stories) backlog; 29.1 and 29.2 blocked on steward Story 74.1, the rest backlog behind station-local Deps. 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-9.1..FR-9.2 / CAP-53; Epic 28 / Stories 28.1-28.2 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.5 / CAP-52; Epic 27 / Stories 27.1-27.5 minted (27.5 and the 27.2 rewrite follow the operator rulings of 2026-09-27, D7/D8). Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
 ---
@@ -58,7 +59,11 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E26** | The dossier states the cutover's control plane (spec-python-foundry-cutover fnd:CAP-14) | 1 | 1 |
 | **E27** | The docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52) | 5 | 0 |
 | **E28** | Each deck keeps one current version of each export (spec-pyforge-herald CAP-53) | 2 | 0 |
-| **Total** | | **113** | **105** |
+| **E29** | Each current export is also kept in object storage (spec-pyforge-herald CAP-54) | 2 | 0 |
+| **E30** | A deck is readable in the browser from its HTML twin (spec-pyforge-herald CAP-55) | 2 | 0 |
+| **E31** | The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56) | 2 | 0 |
+| **E32** | A deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57) | 1 | 0 |
+| **Total** | | **120** | **105** |
 
 
 ---
@@ -1124,6 +1129,318 @@ So that the one-version rule Story 28.1 checks holds after every sync, without a
 **And** a second `sync-all` run still reports every deck `unchanged` with zero writes (CAP-36/CAP-50); `test_deck_versions.py` and the writer tests pass in `pyforge-herald-test`
 **Status:** backlog
 
+## Epic 29: Each current export is also kept in object storage (spec-pyforge-herald CAP-54)
+
+Minted 2026-09-28 (night) from the station Dream's entry of the same night, which triaged the
+airgapped-decks intake (`archive/docs/intake/airgapped_pptx_architecture_specification.md`). The
+operator ruled that decks stay tracked and that each current export is *also* published to the
+object store with a metadata row; bytes in PostgreSQL were rejected. Decisions D1–D4 are on the
+Spec memlog, and AD-22 is new on the spine.
+
+**Cross-station gate:** both stories are minted `blocked` until steward Story 74.1 has landed.
+74.1 is the object-storage seam's first-consumer contract: the configuration names, the bucket and
+prefix, and the Helm values. The operator flips the two keys. It is a ledger gate because
+marshal's `Deps:` parser is station-local.
+
+**HARD boundaries:**
+- Decks stay tracked. AD-4 and CAP-53's one-version rule do not change, and CAP-35's downloads
+  still build from tracked files.
+- No bytes in PostgreSQL: no `BinaryField` and no `BYTEA`.
+- `src/platform/` never imports `pyforge.*`, and the base herald package imports neither `django`
+  nor the host's `config` modules.
+- No `django-cors-headers`, and no route sends `Access-Control-Allow-Origin`.
+- No new package path: the new modules live in `pyforge-herald` and `django-herald`.
+- No steward-owned file is edited. The chart's bucket and prefix values and the seam contract are
+  Story 74.1's.
+- PostgreSQL stays at 17 (fnd:CAP-12).
+- Every story spec carries the `pyforge.herald.deck_publish` flag block, and every PR carries the
+  `maintenance` label.
+
+### Story 29.1: herald deck publish puts each current export in the object store
+
+As an operator inside the enterprise network,
+I want `herald deck publish <slug>` to put each current export of a deck in the object store, with its metadata,
+So that git stops being the only place the exports live, and the portal has something to serve.
+
+**Type:** feature • **Effort:** M • **Deps:** S-28.1 • **FR/AD:** spec-pyforge-herald CAP-54 (FR-10.1; D1, D2); AD-22 • cross-project gate: steward Story 74.1 must have landed first — the ledger key is minted `blocked` and the operator flips it, per AGENTS.md (marshal's `Deps:` parser is station-local) • flag: `pyforge.herald.deck_publish`
+**Surface:**
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_store.py` (new): the store port
+  (`put_if_absent`, `head`, `open_stream`), its S3 adapter configured from the environment under
+  Story 74.1's contract, and an in-memory fake for the suite.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_publish.py` (new). It resolves each
+  current export through `pyforge.herald.deck_versions` (Story 28.1), hashes it with sha256,
+  streams it to `<prefix>/sha256/<hex>` when that key is absent, and writes the deck's manifest,
+  `<prefix>/manifests/<slug>.json`.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`: `herald deck publish <slug>
+  [--dry-run]` and `herald deck exports <slug> --json`. With the flag OFF, both stay listed as
+  disabled and exit 2.
+- `src/platform/config/flags.json`: the key `pyforge.herald.deck_publish`, `defaultVariant` off.
+- The flag is read through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract. If
+  75.1 has not landed, the story adds `read_boolean` to `pyforge.core` in exactly 75.1's shape
+  (`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` and its test), never a station-local reader.
+- If the adapter's S3 client library is not already in the `pyforge-herald` and `pyforge-guild`
+  environments: `pixi.toml` (a hand edit, then `pixi lock`), `pixi.lock`, and `environment.yaml`
+  regenerated in the same PR, with `pyforge-station-tests` run before the push.
+- Tests in the herald package: `tests/unit/test_deck_store.py`, `tests/unit/test_deck_publish.py`,
+  `tests/meta/test_deck_store_import_boundary.py`, and an ON/OFF flag test.
+**Given** each current export lives only in git, and the platform's object-storage seam has no consumer
+**When** `herald deck publish <slug>` runs with the flag ON against a local store (the `platform-object-storage` silo server)
+**Then** it exits 0; each current export sits at `<prefix>/sha256/<hex>` and reads back byte-identical; the manifest carries topic, kind, date, size, content type, sha256 and source commit for each; a second run uploads nothing; `herald deck exports <slug> --json` prints the records
+**And** with the flag OFF both verbs are listed as disabled and exit 2 with a "flag off" message; the boundary test finds no `django` or `config` import in the base package; `pyforge-herald-test` is green
+**Status:** blocked
+
+### Story 29.2: The published exports are listed and streamed behind the herald role
+
+As a reader inside the enterprise network,
+I want the platform to know which exports are published and to stream one to me only when I hold the herald role,
+So that a deck can be downloaded from the platform with no CORS hole and no bytes in the database.
+
+**Type:** feature • **Effort:** M • **Deps:** S-29.1 • **FR/AD:** spec-pyforge-herald CAP-54 (FR-10.2; D3, D4); AD-22 • cross-project gate: steward Story 74.1 must have landed first — the ledger key is minted `blocked` and the operator flips it • flag: `pyforge.herald.deck_publish`
+**Surface:**
+- `src/shared/packages/django-herald/src/django_herald_portal/models.py` (new): `DeckExport`, a
+  projection with no binary field; `migrations/0001_initial.py`; a `refresh_deck_exports`
+  management command that upserts from `herald deck exports --json` through the portal's
+  `PortalClient`.
+- `src/platform/db/changelog/changes/` and `db.changelog-master.yaml`: one namespaced changeset for
+  that migration, at the id the sqlmigrate extraction map assigns
+  (`src/platform/tests/policy/test_sqlmigrate_extraction.py`).
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py`:
+  `GET /stations/herald/api/v1/deck-exports` and `GET /stations/herald/api/v1/deck-exports/{sha256}`,
+  registered through the entry point the host already loads by name
+  (`src/platform/config/station_api.py:122`). The read gate accepts a portal browser session that
+  carries the herald role, and the story records how.
+- The route handlers read the flag through `pyforge.core.flags.read_boolean`, steward Story 75.1's
+  contract; `refresh_deck_exports` reads it through `django_pyforge.flags`. If
+  75.1 has not landed, the story adds `read_boolean` to `pyforge.core` in exactly 75.1's shape
+  (`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` and its test), never a station-local reader.
+- Tests: `src/platform/tests/test_herald_deck_exports.py` (the list, a chunked stream, 401, 403,
+  404, no CORS header, flag OFF 404, the projection and its refresh command) and herald-package
+  unit tests for the handlers over the store fake.
+**Given** Story 29.1 publishes exports and their manifest to the store, and nothing in the platform can list or serve them
+**When** the projection, its changeset and the two routes land
+**Then** `refresh_deck_exports` fills `DeckExport` from the manifest and the model has no binary field; the list route returns the records; the stream route streams the bytes in bounded chunks with the record's content type; an anonymous call gets 401, a caller without the herald role 403, and an unknown sha256 404; no response carries `Access-Control-Allow-Origin`
+**And** `test_sqlmigrate_extraction.py` and `test_liquibase_ddl_governance.py` stay green; no `pyforge.*` import appears under `src/platform/`; with the flag OFF both routes answer 404; `platform-ci-local -- --test` and `pyforge-herald-test` are green
+**Status:** blocked
+
+## Epic 30: A deck is readable in the browser from its HTML twin (spec-pyforge-herald CAP-55)
+
+Minted 2026-09-28 (night) from the same Dream entry. The operator ruled that the viewer shows
+Herald's own decks through their HTML twins, the Marp HTML and the React bundle, and that no
+`.pptx` parser runs in the browser (PPTXjs was rejected). Decision D5 is on the Spec memlog; the
+twins are served under AD-22, and AD-12's Pitch tab is amended. Both stories follow Epic 29
+through station-local `Deps:`, so they also wait on steward Story 74.1.
+
+**Measured 2026-09-28** (`cfae04e14b`):
+- 15 current standalone twins (`src/marp/<slug>-infographic-standalone-<date>.html`). 2 of them
+  load from another origin: agentic-sdlc's (fonts.googleapis.com) and pyforge-warden's (twemoji
+  SVGs from cdn.jsdelivr.net).
+- 14 React/JSX decks. Every `index.html` loads Google Fonts from fonts.googleapis.com and
+  fonts.gstatic.com, and their `dist/` bundles are gitignored.
+
+**HARD boundaries:**
+- No browser-side `.pptx` parser, and no PPTXjs, jQuery or JSZip anywhere.
+- No twin is published or served while it references another origin.
+- A twin is served under the portal's own origin, with no CORS header.
+- `dist/` stays gitignored (AD-4). A bundle lives in the store, never in git.
+- Vendored fonts come from npm font packages resolved at build time; no font binary is tracked.
+- Warden scans the vendored JavaScript like any other dependency; this epic adds no second verdict.
+- Every story spec carries the `pyforge.herald.deck_viewer` flag block, and every PR carries the
+  `maintenance` label.
+
+### Story 30.1: A deck's HTML twins are self-contained and published
+
+As an operator publishing decks for readers inside the airgap,
+I want every deck's HTML twin to load nothing from another origin, and `herald deck publish` to put the twins in the store,
+So that the portal can show a deck where fonts.googleapis.com and jsDelivr are unreachable.
+
+**Type:** feature • **Effort:** M • **Deps:** S-28.2, S-29.1 • **FR/AD:** spec-pyforge-herald CAP-55 (FR-10.3; D5); AD-22 • flag: `pyforge.herald.deck_viewer`
+**Surface:**
+- `presentations/<slug>/index.html`, `package.json` and `vite.config.js` for the 14 React decks:
+  fonts come from npm font packages (for example `@fontsource/*`) instead of Google Fonts, and
+  `base: './'` lets a bundle resolve under any prefix.
+- The two standalone twins that load from another origin are re-exported through
+  `deck-export <slug> html` with the reference vendored: agentic-sdlc's Google Fonts import, and
+  pyforge-warden's twemoji images (inlined, or Marp's emoji image conversion turned off).
+  `scripts/deck_export.py` gains that option if it needs one. Story 28.2's writer retires each
+  predecessor.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/twins.py` (new): the zero-origin scan
+  (`src`, `href`, `url()`, `@import`), the React build (`npm ci`, then `vite build` in the deck
+  folder), and the bundle manifest.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_publish.py`: with the flag ON,
+  publish also puts the twins in the store (a standalone as one object; a bundle as one object per
+  file plus a path-to-key manifest), and refuses a twin that fails the scan, naming the file and
+  the origin.
+- `src/platform/config/flags.json`: `pyforge.herald.deck_viewer`, `defaultVariant` off.
+- The flag is read through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract. If
+  75.1 has not landed, the story adds `read_boolean` to `pyforge.core` in exactly 75.1's shape
+  (`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` and its test), never a station-local reader.
+- Tests: `tests/meta/test_twins_zero_origin.py` (the live tree's 15 current standalones and 14 deck
+  `index.html` files), `tests/unit/test_twins.py`, the publish cases, and an ON/OFF flag test.
+**Given** 2 of 15 current standalone twins and all 14 React decks load from another origin, and no bundle is ever built for a reader
+**When** the fonts and images are vendored and the twin publisher lands
+**Then** the zero-origin scan passes on every current standalone, every deck's source `index.html` and a built bundle; publish refuses a planted twin that names another origin, naming the file and the origin, and exits non-zero
+**And** with the flag ON, `herald deck publish <slug>` puts the twins in the store and records them in the manifest; with it OFF, publish behaves exactly as Story 29.1 left it; `pyforge-herald-test` is green
+**Status:** backlog
+
+### Story 30.2: The herald portal shows a deck in the browser from its HTML twin
+
+As a reader inside the enterprise network without PowerPoint,
+I want to open a deck from the herald portal and read it in my browser,
+So that I can see the current deck without a download or a desktop application.
+
+**Type:** feature • **Effort:** M • **Deps:** S-29.2, S-30.1 • **FR/AD:** spec-pyforge-herald CAP-55 (FR-10.4; D5); AD-22, AD-12 (amended 2026-09-28 (night)) • flag: `pyforge.herald.deck_viewer`
+**Surface:**
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py`:
+  `GET /stations/herald/api/v1/deck-twins/{slug}/{path}` resolves a path through the current
+  twin's bundle manifest (or the standalone) and streams it from the store. It uses Story 29.2's
+  herald-role read gate, and its responses carry a Content-Security-Policy that names no origin
+  other than `'self'`.
+- `src/shared/packages/django-herald/src/django_herald_portal/views.py`, `urls.py` and
+  `templates/herald_portal/`: `decks/` lists the decks from `DeckExport`, and `decks/<slug>/view/`
+  frames the twin route in a sandboxed iframe and offers the `.pptx` as a download. Both views use
+  `require_station_role("herald")`. `home.html`'s Pitch tab links to the list.
+- The twin route reads the flag through `pyforge.core.flags.read_boolean`, steward Story 75.1's
+  contract; the django-herald views read it through `django_pyforge.flags`. If
+  75.1 has not landed, the story adds `read_boolean` to `pyforge.core` in exactly 75.1's shape
+  (`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` and its test), never a station-local reader.
+- Tests: `src/platform/tests/test_herald_portal_deck_viewer.py` (the list, the viewer, 403 without
+  the role, the CSP header, flag OFF 404), and a Playwright check that opens one standalone and one
+  bundle and records zero requests to any other origin.
+**Given** Epic 29 serves published exports and Story 30.1 publishes self-contained twins, but the portal shows only one deck's status
+**When** the deck list, the twin route and the viewer land
+**Then** `/stations/herald/decks/` lists every published deck, and `/stations/herald/decks/<slug>/view/` renders its twin with every asset request answered by the portal's own origin, which the Playwright run proves by recording zero requests to another origin; a `.pptx` is offered only as a download
+**And** an anonymous call is refused and a caller without the herald role gets 403; with the flag OFF the list and viewer answer 404 and the home page is unchanged; `platform-ci-local -- --test` and `pyforge-herald-test` are green
+**Status:** backlog
+
+## Epic 31: The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56)
+
+Minted 2026-09-28 (night) from the same Dream entry. The operator rejected a second Pages artifact.
+The need is a second host, an internal GitHub Enterprise Pages site, for the one artifact AD-21
+defines. Decision D6 is on the Spec memlog, and AD-21 is amended to "one artifact, N hosts". Both
+stories follow Story 27.2, which assembles the artifact (station-local `Deps:`).
+
+**HARD boundaries:**
+- One artifact and one deploy caller per repository: `dashboard.yml` stays the only
+  `actions/deploy-pages` caller, and no second workflow, assembler or artifact definition appears.
+- Nothing in the artifact calls another origin at runtime: no fetch, XHR, script, stylesheet,
+  font or image from another origin. No page calls the platform, and no host gets a CORS rule.
+- The public site's URLs do not change.
+- A vendored upstream file stays byte-identical to its recorded commit (AD-21 rule 5).
+- `docs/map.yaml` is doctor's registry. Story 31.2 adds one row for its page and reconciles it on
+  `spec-pyforge-doctor`.
+- No `pixi.toml` change is expected; if one is needed, `environment.yaml` regenerates in the same
+  PR.
+- Story 31.1 carries the `pyforge.herald.pages_second_host` flag block, Story 31.2 is
+  `flag-exempt: docs-only`, and every PR carries the `maintenance` label.
+
+### Story 31.1: The Pages artifact builds for the host that deploys it
+
+As a maintainer who deploys the docs site to GitHub Enterprise Pages inside the enterprise,
+I want the one Pages build to take the site URL and base path of the host that runs it,
+So that the same artifact works on github.io and on the enterprise host, with nothing calling across origins.
+
+**Type:** feature • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** spec-pyforge-herald CAP-56 (FR-10.5; D6); AD-21 (amended 2026-09-28 (night): one artifact, N hosts) • flag: `pyforge.herald.pages_second_host`
+**Surface:**
+- The assembler and `pages-build` that Story 27.2 adds under `docs-site/`: take a site URL and a
+  base path as inputs, feed them to Astro's `site` and `base` and to docsite's `/herald/` mount,
+  and default to today's public values.
+- `.github/workflows/dashboard.yml`: pass `actions/configure-pages`' `base_url` and `base_path`
+  outputs to the build when the flag is ON.
+- `pages-check`: exit 1 when a script, stylesheet, font, image, `fetch(` or XHR in the artifact
+  names another origin, or when an internal link is absolute to a host other than the configured
+  one. Plain navigation links pass.
+- `src/platform/config/flags.json`: `pyforge.herald.pages_second_host`, `defaultVariant` off, and no
+  second flag file.
+- The build step that chooses the host inputs reads the flag through
+  `pyforge.core.flags.read_boolean`, steward Story 75.1's contract, in an env that carries
+  `pyforge-core` (the `site` env gains no pyforge dependency). If
+  75.1 has not landed, the story adds `read_boolean` to `pyforge.core` in exactly 75.1's shape
+  (`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` and its test), never a station-local reader.
+- Tests: `src/shared/packages/pyforge-herald/tests/meta/test_pages_second_host.py` (both inputs,
+  the flag-OFF fallback, each planted cross-origin kind) and the `pages-check` fixtures.
+**Given** Story 27.2's artifact is built for the public github.io root only
+**When** the build takes the host's site URL and base path
+**Then** `pixi run -e site pages-build` with a fixture enterprise URL and base path produces an artifact whose internal links and assets resolve under that base, and with the public values produces today's artifact; with the flag OFF the host inputs are ignored and the public build results
+**And** `pages-check` exits 0 on both builds and exits 1 on each planted cross-origin kind and on an absolute link to the other host; exactly one workflow uses `actions/deploy-pages`; `pyforge-herald-test` is green
+**Status:** backlog
+
+### Story 31.2: How to deploy the docs site to GitHub Enterprise Pages
+
+As an operator of the enterprise GitHub,
+I want a how-to that takes the repository's Pages site from mirror to a working internal URL,
+So that the enterprise deploy is repeatable and does not live in one person's head.
+
+**Type:** docs • **Effort:** S • **Deps:** S-31.1 • **FR/AD:** spec-pyforge-herald CAP-56 (FR-10.5; D6); AD-21 • flag-exempt: docs-only
+**Surface:**
+- `docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md` (new). It covers keeping the
+  enterprise copy of the repository in step with `main`; enabling Pages with GitHub Actions as its
+  source; a runner that reaches the internal conda mirror (linking
+  `docs/how-to/air-gapped-mirror-setup.md` rather than restating it); turning
+  `pyforge.herald.pages_second_host` on; and checking the deployed site with `pages-check` and a
+  browser that has no route to the internet.
+- `docs/map.yaml`: one row for the page (owner herald, kind authored), reconciled on
+  `spec-pyforge-doctor`; `docs/MAP.md` re-rendered with `docs-map-render`.
+- `docs/how-to/README.md`: one link line.
+**Given** Story 31.1 makes the build take the deploying host's URL, and no written procedure exists for the enterprise side
+**When** the how-to lands
+**Then** it names each enterprise-side step with its command or setting, links the air-gapped mirror how-to instead of restating it, and ends with the check that the deployed site makes no request to another origin
+**And** `docs-map-hygiene-check` and `docs-currency-check` exit 0, and `pyforge-herald-test` is green
+**Status:** backlog
+
+## Epic 32: A deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57)
+
+Minted 2026-09-28 (night) from the same Dream entry. The operator ruled that `pptxgenjs-plus`
+becomes an *additional* export kind, native and editable, beside `marp --pptx` and the python-pptx
+fill, and that neither of those retires. Decision D7 is on the Spec memlog, and AD-3 is amended.
+Mason's `pptxgenjs-plus-jsx` recipe (mason Story 21.5) is a kinship, not a dependency: it matters
+only for JSX-authored decks.
+
+**HARD boundaries:**
+- `marp --pptx` and the python-pptx fill do not change, and their outputs stay byte-identical.
+- The new output is its own kind, `src/pptx/<slug>-deck-native-<date>.pptx`, and never supersedes
+  the Marp export.
+- It runs from the Guild env, never `-e local-recipes`.
+- The `pixi.toml` change is a hand edit followed by `pixi lock`, because the pre-shell hook refuses
+  a live `pixi add`. `environment.yaml` is regenerated in the same PR, and `pyforge-station-tests`
+  runs before the push (AGENTS.md checklist item 7).
+- No mason file changes.
+- The story spec carries the `pyforge.herald.deck_export_native` flag block, and the PR carries
+  the `maintenance` label.
+
+### Story 32.1: A deck exports as a native, editable pptx through pptxgenjs-plus
+
+As a presenter who needs to edit a deck in PowerPoint,
+I want `herald deck pptx-native <slug>` to write a native `.pptx` whose slides are real text, tables and notes,
+So that I can change a deck without rebuilding it from images, and without Chrome.
+
+**Type:** feature • **Effort:** M • **Deps:** S-28.2 • **FR/AD:** spec-pyforge-herald CAP-57 (FR-10.6; D7); AD-3 (amended 2026-09-28 (night)) • flag: `pyforge.herald.deck_export_native`
+**Surface:**
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/exporters.py`: `PptxgenjsExportPlugin`
+  (format id `pptxgenjs`) on `DECK_EXPORT_HOOK_SPEC`, beside the three default plugins.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_native.py` (new): the slide model
+  from the deck's current Marp source (per slide: title, bullets, tables, speaker notes), written
+  as JSON; the Node call; and `retire_superseded` after a successful write (Story 28.2).
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/node/pptx_native.mjs` (new, package
+  data): reads the JSON and writes the `.pptx` with `pptxgenjs-plus`, resolved through
+  `NODE_PATH=$CONDA_PREFIX/lib/node_modules`.
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`: `herald deck pptx-native <slug>`.
+  With the flag OFF it stays listed as disabled and exits 2.
+- `pixi.toml`: `pptxgenjs-plus = ">=4.2.1"` in `[feature.pyforge-guild.dependencies]`, and in
+  `[feature.pyforge-herald.dependencies]` with `nodejs` at the `python` feature's spec, so
+  `pyforge-herald-test` runs the Node driver; then `pixi.lock`, and `environment.yaml`
+  regenerated.
+- `src/platform/config/flags.json`: `pyforge.herald.deck_export_native`, `defaultVariant` off.
+- The flag is read through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract. If
+  75.1 has not landed, the story adds `read_boolean` to `pyforge.core` in exactly 75.1's shape
+  (`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` and its test), never a station-local reader.
+- Tests: `tests/unit/test_pptx_native.py` (the slide model), `tests/integration/test_pptx_native_render.py`
+  (a fixture deck rendered and read back with python-pptx), and an ON/OFF flag test.
+**Given** every standard `.pptx` comes from `marp --pptx` as image slides that need Chrome, and `pptxgenjs-plus` sits only in the `local-recipes` env
+**When** the plugin, the Node driver, the verb and the environment change land
+**Then** `pixi run -e pyforge-guild herald deck pptx-native <slug>` exits 0 on a fixture deck and writes `<slug>-deck-native-<date>.pptx`; python-pptx reads it back with one slide per Marp slide, titles and bullet text as text frames, tables as table graphic frames, speaker notes in each notes slide, and no picture shape standing in for a slide; a second run on a later date leaves one version of the kind; the Marp and pptx-fill exports are byte-unchanged
+**And** with the flag OFF the verb is listed as disabled and exits 2 with a "flag off" message; `environment.yaml` is regenerated in the same PR; `pyforge-station-tests` and `pyforge-herald-test` are green
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -1182,3 +1499,18 @@ heading still maps 1:1 to a `sprint-status-ledger.yaml` key: the two `28-N` keys
 `epic-28-retrospective` went into the Tier-3 feed, and `sprint-ledger-sync` wrote the twin. The feed
 and the twin carried the same 165 keys before the mint, so no repair was needed. The Epic List
 table and `epicCount`/`storyCount` are re-measured: 28 epics, 113 stories, 105 done. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`arch→epics` edge after the spine's second 2026-09-28 re-stamp (§ Currency reconciliation —
+2026-09-28 (night)), which added AD-22 and amended AD-3, AD-12 and AD-21. Epics 29–32 decompose
+`spec-pyforge-herald` CAP-54..CAP-57 (FR-10.1..FR-10.6), all from the Dream's 2026-09-28 (night)
+entry: Epic 29 (Stories 29.1–29.2, CAP-54), Epic 30 (30.1–30.2, CAP-55), Epic 31 (31.1–31.2,
+CAP-56) and Epic 32 (32.1, CAP-57). Stories 29.1 and 29.2 are minted `blocked` until steward
+Story 74.1 lands; the operator flips them. Every other new story is `backlog` behind station-local
+`Deps:` (S-27.2, S-28.1, S-28.2 and Epic 29's own). Each `type: feature` story carries a flag block
+under `spec-feature-flag-governance`, and Story 31.2 carries `flag-exempt: docs-only`. Every Story
+heading still maps 1:1 to a `sprint-status-ledger.yaml` key: the seven story keys, `epic-29` to
+`epic-32` and their four retrospectives went into the Tier-3 feed, and `sprint-ledger-sync` wrote
+the twin. The Epic List table and `epicCount`/`storyCount` are re-measured: 32 epics, 120 stories,
+105 done. `updated:` bumped.
