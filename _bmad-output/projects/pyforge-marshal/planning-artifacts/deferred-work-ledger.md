@@ -6849,3 +6849,25 @@ status: open
   severity: low
   fix: launch a timed command in its own process group (`start_new_session=True`) and kill the group on expiry, through `spec-pyforge-core`'s own chain (it co-governs every station's `src/`).
   status: open
+
+### DW-marshal-68-1: The landing heal's local-main-advance push runs the full pre-push preflight under the same 120 s git timeout.
+
+- source_spec: `planning-artifacts/specs/spec-68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent.md`
+  summary: The landing heal's local-main-advance push runs the full pre-push preflight under the same 120 s git timeout.
+  evidence: Unverified (needs a landing that reaches the local-main-advance fallback). dispatch_land_heal.py pushes the base branch with `vcs.push(git_repo_root, base)`, which carries no preflight opt-out; a push killed at 120 s returns False and the landing refuses with MRS-DISP-020. Not caused by Story 68.1, and its Never list forbids the opt-out for any push but the ledger, intake and blocked-twin publishes.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py:209
+  origin: spec-deferred ad7b9b71455e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-68-1-2: A ledger publish rejected because origin/main moved between its fetch and its push is not retried.
+
+- source_spec: `planning-artifacts/specs/spec-68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent.md`
+  summary: A ledger publish rejected because origin/main moved between its fetch and its push is not retried.
+  evidence: Verified in the code: commit_paths_onto_remote_tip fetches once, commits, pushes once, and raises VcsCommandError on a non-fast-forward rejection. Story 68.1 makes that failure loud (MRS-LAND-011, then MRS-DISP-051 and a REFUSED landing), so two stations finalizing within seconds of each other can refuse a landing whose only owed step is a re-run. The single-shot publish predates this story and the intent names no retry, so a bounded re-fetch and rebuild needs an operator decision.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:1340
+  origin: spec-deferred 177985a6b07e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
