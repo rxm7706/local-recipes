@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2108,6 +2108,36 @@ gate — `git` and `git pkgs` run through `pyforge.core.process`); no webhook; n
 **Then** unchanged heads skip with a reason, and moved heads coalesce into one run request for the Story 25.1 job and advance the cursor; the default production source is offline (`[]`) like `offline_event_source`, and no webhook exists
 **And** the decision half imports no Dagster (AD-1) and nothing from `pyforge.warden` or `django_warden_fabric`; only `orchestration/definitions.py` wraps it
 **Cross-station note** *(prose, deliberately NOT a `Deps:` token)*: the live inventory is Warden's Story 16.1 export (`spec-pyforge-warden:CAP-26`). This story is built and gated on a fixture export, so it does not wait for it; the attended live wiring follows 16.1.
+
+## Epic 26: The factory-status page stops reading the retired intake-spec tier (spec-one-chain-per-station CAP-11)
+
+**Spec binding.** Minted 2026-09-29 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`). `docs/specs/` retires, and CHAIN-STANDARD §11 requires its readers
+to follow before the PR that empties it (doctor Story 37.1). Atlas's factory-status page is one such reader. Atlas mints no
+CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here and in that Spec's `.memlog.md`, as
+doctor's relay epics do. **HARD boundaries:**
+- No file moves in this story.
+- The page's other sources (the build stamp, `sprint-status.yaml`, `epics.md`) are unchanged.
+- No dataset is added to the catalog.
+
+Steward Epic 77, herald Epic 34 and marshal Epic 76 carry the other readers. The story is a `chore`.
+
+### Story 26.1: The factory-status frame drops its docs/specs rows
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** `spec-one-chain-per-station:CAP-11` (CHAIN-STANDARD §11: readers follow the move)
+**Surface:**
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py`: `read_spec_statuses`, the
+  `specs_dir` default and parameter, and the `docs/specs` rows.
+- `dashboard/app.py`: the page text naming `docs/specs/*.md`.
+- The tests that build or inject a `docs/specs` directory: `tests/unit/test_dashboard_factory_status.py`,
+  `tests/integration/dashboard/conftest.py` and `tests/integration/dashboard/test_dashboard_dryrun.py`.
+
+**Given** the factory-status frame emits one `source="docs/specs"` row per legacy intake spec, and
+`test_dashboard_dryrun.py` asserts at least one such row
+**When** the `docs/specs` source is removed
+**Then** the frame carries the build-stamp, `sprint-status.yaml` and `epics.md` rows only, and the page text no longer names
+`docs/specs/`
+**And** the dry-run test asserts no `docs/specs` row where it asserted at least one, so it passes before and after
+`docs/specs/` empties; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

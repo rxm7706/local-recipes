@@ -6,7 +6,7 @@ project_name: pyforge-herald
 epicCount: 32  # 2026-09-28 (night): Epics 29-32 appended (spec-pyforge-herald CAP-54..CAP-57); 32 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 28 before this mint). 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
 storyCount: 120  # 2026-09-28 (night): +7 for Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 (120 story keys in the ledger, measured; 113 before this mint; 29.1 and 29.2 are minted blocked on steward 74.1). 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-28 (night): Epics 29-32 (7 stories) backlog; 29.1 and 29.2 blocked on steward Story 74.1, the rest backlog behind station-local Deps. 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 33 / Story 33.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (evening): Epic 34 / Story 34.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 33 / Story 33.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-9.1..FR-9.2 / CAP-53; Epic 28 / Stories 28.1-28.2 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.5 / CAP-52; Epic 27 / Stories 27.1-27.5 minted (27.5 and the 27.2 rewrite follow the operator rulings of 2026-09-27, D7/D8). Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
@@ -1464,6 +1464,47 @@ So that moving archived Dreams to one archive home does not make the deck report
 **When** a fixture archived Dream moves to `archive/docs/dreams/`
 **Then** `dreams_total` and `dreams_archived` keep their values, and each fact's source names both globs
 **And** on today's tree every count for `pyforge-genesis` is unchanged; the test covers a moved Dream and an archive with no status; `pixi run --frozen -e pyforge-herald pyforge-herald-test` is green
+**Status:** backlog
+
+## Epic 34: Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11)
+
+Minted 2026-09-29 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`). `docs/specs/` retires, and its `presentation-deck.md` is a stub
+whose body already lives at `docs/how-to/presentation-deck.md`. CHAIN-STANDARD §11 requires every reader to follow before
+the PR that moves the stub (doctor Story 37.1). Herald's code, skill, tests and deck READMEs still cite the stub. Herald
+mints no CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here and in that Spec's
+`.memlog.md`, as doctor's relay epics do. **HARD boundaries:**
+- No behaviour changes: every edit is a citation in a comment, docstring, help text, skill section, test constant, fixture
+  text or README.
+- The stub itself does not move in this story.
+- No deck poster or export is re-rendered.
+
+Atlas Epic 26, steward Epic 77 and marshal Epic 76 carry the other readers. The story is a `chore`.
+
+### Story 34.1: Herald cites the deck how-to, not the intake stub
+
+As the owner of the deck family,
+I want every Herald citation of the deck contract to name `docs/how-to/presentation-deck.md`,
+So that retiring `docs/specs/` leaves no Herald file pointing at an archived stub.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** `spec-one-chain-per-station:CAP-11` (CHAIN-STANDARD §11: readers follow the move)
+**Surface:**
+- Code: `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` (four citations), and
+  `scripts/deck_export.py`, `scripts/deck_facts.py` and `scripts/deck_trio.py` (one each).
+- `pixi.toml`: three task descriptions. `docs/how-to/pixi-tasks.md` is regenerated with `scripts/docs_pixi_tasks.py`.
+- `.claude/skills/bmad-agent-herald/SKILL.md` (the AD-2 section), with the `DECK_PIPELINE_SPEC` constant in
+  `tests/meta/test_slides_generator_routing.py`.
+- Test text: the docstring in `tests/meta/test_deck_registry_sections.py`, and the README fixture text in
+  `tests/unit/test_deck_pipeline.py`.
+- The 15 `presentations/*/README.md` that cite the stub.
+**Given** herald's code, skill, tests and deck READMEs cite `docs/specs/presentation-deck.md`, whose body lives at
+`docs/how-to/presentation-deck.md`
+**When** each citation names the how-to, keeping its section name
+**Then** no herald-owned live file names `docs/specs/presentation-deck.md`, and every cited section exists in the how-to
+(*The MCP bridge*, *Standard export set*, *Artifact dependency tree*, the large-file uploads note)
+**And** `environment.yaml` regenerates unchanged; `spec-surface-check` exits 0 after a memlog entry and a scoped stamp for each
+Spec it names (`spec-pyforge-herald`, `spec-design-code-bridge`, `spec-modernist-identity`); `pixi run --frozen -e
+pyforge-herald pyforge-herald-test` green
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
