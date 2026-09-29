@@ -47,5 +47,23 @@ contract → never here (BMAD planning-artifacts).
   report's own fold list — not yet fully absorbed. **2026-09-19 (doctor
   23.4):** stays; fold notes only, no new station.
 
+- ~~`airgapped_pptx_architecture_specification.md`, `bmad_feature_flag_governance_prompt.md`,
+  `system_architecture_specification.md`~~ — **triaged and archived 2026-09-28** to
+  `archive/docs/intake/`, structure-preserving and byte-identical. Each one described an
+  implementation, and most of that implementation already existed here or contradicted an adopted
+  decision. The need behind each became a dated seed under operator rulings:
+  - **Airgapped PPTX** → a `pyforge-herald` entry (decks viewable inside the airgap via HTML
+    twins; exports also kept in object storage; `pptxgenjs-plus` as an extra export kind) plus a
+    `pyforge-steward` entry (the object-storage seam's first consumer). BYTEA and PPTXjs were
+    rejected.
+  - **Feature-flag governance** → the Guild Dream `feature-flag-governance.md` (every capability,
+    blocking, a closed exemption list plus a retrofit). Its Spec is `ready` at
+    `docs/governance/spec-feature-flag-governance/`, with all seven questions ruled the same day.
+  - **Security scanning & PR engine** → `pyforge-warden` (Phase 4 of the fix-PR actuator, opengrep
+    SAST, a fleet scan on GHE with queued proposals), `pyforge-atlas` (dependency history),
+    `pyforge-steward` (GHE credentials) and `pyforge-mason` (packaging `git-pkgs`, `forge`,
+    `gitgres`, `opengrep` and `pptxgenjs-plus-jsx`) entries. gitgres is packaged but not adopted,
+    and CodeQL was rejected on licence grounds.
+
 Full revisit table:
 `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-inbox-disposition-2026-09-16.md`.

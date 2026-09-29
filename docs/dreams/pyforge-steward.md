@@ -397,6 +397,53 @@ Drift — orphaned between stations.
   Kinships: CAP-5, CAP-161 / Story 72.1; the front door's "on the roster but not installed here; use
   `-e pyforge-<station>`" message, minted in parallel on `spec-pyforge-core` (marshal project). Owner:
   steward. → no CAP; recorded as a decision on the Spec's memlog and as an amendment to Story 72.1.
+- **2026-09-28 (night) — Proposed: the object-storage seam gets its first consumer, Herald's deck
+  exports.** Source: the Herald Dream's entry of the same day (the airgapped-decks intake, archived
+  at `archive/docs/intake/airgapped_pptx_architecture_specification.md`).
+  `src/platform/config/object_storage.py` shipped on 2026-09-10 under CAP-94..97 with no consumer:
+  "No existing feature is wired to consume this seam yet -- that is deliberate". AD-1's exception
+  leaves the choice of consumer "decided story-by-story". The operator ruled on 2026-09-28 that
+  Herald's exports are that consumer, and ruled out bytes in PostgreSQL.
+  **What it looks like when real:**
+  - A station reaches the store only through the platform seam, from its `django-<station>`
+    package or the station API. `src/platform/` never imports `pyforge.*`.
+  - Objects are addressed by sha256 and streamed, never loaded whole into a model field.
+  - Credentials are secret references (canopy:AD-19).
+  - The Helm chart names the bucket and prefix per environment.
+  - Local development keeps CAP-96's `platform-object-storage` feature and its `silo` server.
+  - A Liquibase changeset carries Herald's metadata table in an allowed schema.
+  **Constraints:**
+  - The store is consumed and never self-hosted in production.
+  - PostgreSQL stays at 17 (fnd:CAP-12).
+  - No new process.
+  - The capability carries a flag block ([[feature-flag-governance]], same day).
+  **Kinships:** [[pyforge-herald]] (same day), CAP-94..97, `spec-pyforge-unifying-strategy` AD-1,
+  canopy:AD-19. Owner: steward. Status: **seed**. The next `bmad-spec` pass mints the CAP (CAP-163
+  onward).
+- **2026-09-28 (night) — Proposed: Warden's fleet scan reaches GitHub Enterprise with host-scoped
+  credentials the key inventory holds.** Source: the Warden Dream's entry of the same day (the
+  security-scanning intake, archived at `archive/docs/intake/system_architecture_specification.md`).
+  The operator ruled that the scan covers the enterprise fleet on GHE, and that a fix PR on a fleet
+  repo opens only after the operator approves that proposal.
+  **Why this is Steward's:** `steward keys` already owns host-scoped credential resolution (FR-7).
+  It delegates to CFE's `_http.auth_headers_for`, which today sends `GITHUB_TOKEN` only to
+  github.com. `steward keys` also owns the credential inventory, `.steward/keys-inventory.yaml`
+  (FR-5), with age-encrypted rotation.
+  **What it looks like when real:**
+  - The resolver knows the enterprise host.
+  - There are two scoped identities, each an inventory row with rotation: a read credential
+    (clone and contents) for the scan, and a PR-draft credential used only to open a proposal the
+    operator approved.
+  - Deployed pods carry references, not values (canopy:AD-19).
+  - Nothing inbound: the scan polls, and no webhook needs a bound public ingress.
+  **Constraints:**
+  - Secrets never go in CLI flags.
+  - The scan never holds a token that writes to a fleet repo.
+  - The posture follows [[work-passports-dated-extracts]]: "Security can show no PAT that opens
+    their org or writes ours on their behalf".
+  - The capability carries a flag block ([[feature-flag-governance]], same day).
+  **Kinships:** [[pyforge-warden]] (same day), FR-5, FR-7, canopy:AD-19. Owner: steward. Status:
+  **seed**. The next `bmad-spec` pass mints the CAP.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

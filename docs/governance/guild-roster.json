@@ -45,7 +45,8 @@
   "guild_dreams": [
     "pyforge-charter",
     "coverage-gate-independence",
-    "one-chain-per-station"
+    "one-chain-per-station",
+    "feature-flag-governance"
   ],
   "$comment_guild_dreams": [
     "The Dreams that may name no station. `guild` is NOT a ninth station.",
@@ -72,7 +73,15 @@
     "carries 22 open Dreams). Operator-ruled 2026-09-16 (six rulings in the",
     "Spec memlog). Mechanism stories stay Doctor's; the per-station fold",
     "stories stay each Smith's. Whether the Lexicon amendment also needs the",
-    "Section 5 ritual is the Spec's third open question."
+    "Section 5 ritual is the Spec's third open question.",
+    "",
+    "2026-09-28: the same shape a third time. `feature-flag-governance` is a",
+    "blocking gate over every Smith's story specs: every capability ships",
+    "behind a flag, and a check outside every station package refuses a",
+    "story that names neither a flag nor an exemption from a closed list.",
+    "Operator-ruled 2026-09-28 at the intake triage (four rulings in the Spec",
+    "memlog). Mechanism stories stay Doctor's; the retrofit stories stay",
+    "each Smith's."
   ],
 
   "dream_statuses": [
