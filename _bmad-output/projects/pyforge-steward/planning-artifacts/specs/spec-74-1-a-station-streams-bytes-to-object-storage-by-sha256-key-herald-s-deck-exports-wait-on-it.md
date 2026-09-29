@@ -2,7 +2,8 @@
 title: "74.1: A station streams bytes to object storage by sha256 key — herald's deck exports wait on it"
 type: 'feature'
 created: '2026-09-28'
-status: 'draft'
+status: 'in-progress'
+baseline_revision: 7ac7b29fa5f40108f2c183ab118140667d92b743
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -19,7 +20,7 @@ context:
   - src/platform/config/object_storage.py
   - src/platform/tests/test_object_storage_client.py
   - src/shared/packages/django-pyforge/src/django_pyforge/flags.py
-warnings: []
+warnings: [oversized]
 deferred:
   - summary: >-
       src/platform/ingest/github_projects still imports pyforge.steward.keys and .sync, a live breach of "src/platform
@@ -127,6 +128,35 @@ Type / Effort / Deps: feature / M / —.
 
 </intent-contract>
 
+## Code Map
+
+- `src/platform/config/object_storage.py` -- CAP-97's factory `object_storage_client()` (:67) is the one client the seam resolves; only the docstring's "No existing feature is wired to consume this seam yet" (:19-20) changes.
+- `src/platform/config/settings/base.py:417-427` -- the object-storage settings block (`env(..., default=None)` x3); the two new settings and the factory path join it.
+- `src/platform/config/flags.json` -- the one flagd tree; three flags today, each `{state, variants, defaultVariant}`; the new key joins with `defaultVariant: off`.
+- `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` -- `evaluate_boolean(key, default)` (:118) is the sanctioned reader (openfeature imported lazily; no provider configured means the default, so OFF fails closed); `configure_file_provider` (:75) and `wait_until_ready` (:93, keyed on `FLAG_KEY = pyforge.three_surfaces`, so a test tree must carry that key too or the provider never reads ready); `apps.py:22-25` configures the provider from the environment at host start.
+- `src/shared/packages/django-pyforge/src/django_pyforge/object_store.py` -- new; no boto3/botocore/config import (the factory is reached by `import_string`, a missing key is recognised by duck-typing the client error's `.response`).
+- `src/platform/tests/test_object_storage_client.py:33-34,56-104,126` -- CAP-97's pattern to copy: `REPO_ROOT`/`_SILO_BINARY`, the ephemeral `local_silo` fixture (skip when the env is absent), the `settings` fixture, the unconfigured-raises test.
+- `src/platform/tests/test_openfeature_file_flags.py:73-85,210-218` -- the flagd-tree writer and `configure_file_provider(tmp path)` pattern for the ON and OFF trees.
+- `src/platform/ingest/github_projects/{graphql,pipeline,source,test_github_metrics_dlt}.py` -- read-only evidence: the four existing `src/platform` importers of `pyforge.steward.*` (`pixi.toml:409` calls it "the live pap:AD-2 breach"); the meta-test allowlists exactly these (see `deferred`).
+- `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` -- the AST-scan and repo-root-discovery style for a steward meta-test; `pixi.toml:602-604` `pyforge-steward-test` runs `pytest src/shared/packages/pyforge-steward/tests -q`, so the new meta-test runs there.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/django-pyforge/src/django_pyforge/object_store.py` -- new module: `StoredObject`, `ObjectStoreDisabled`, `put_stream`, `open_stream`, `stat`, setting-name constants, `SPOOL_MAX_BYTES` / `CHUNK_BYTES` -- the one contract a portal or station API uses
+- `src/platform/config/settings/base.py` -- add `OBJECT_STORAGE_BUCKET`, `OBJECT_STORAGE_PREFIX` (`env(..., default=None)`) and `OBJECT_STORAGE_CLIENT_FACTORY` (plain string, `config.object_storage.object_storage_client`) -- the seam's configuration, secrets untouched
+- `src/platform/config/flags.json` -- add `pyforge.steward.object_store_consumer`, variants `on`/`off`, `defaultVariant: off` -- the flag block of the story spec
+- `src/platform/config/object_storage.py` -- docstring names `django_pyforge.object_store` as the consumer; no code change
+- `src/platform/tests/test_object_store_seam.py` -- new: silo round trip (large put, repeat put, get/stat), key refusal, unset settings, ON/OFF trees, no-client-call proofs -- the I/O matrix and the ACs
+- `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` -- new: AST scan for `pyforge.*` under `src/platform/` (closed allowlist) and `config`/`config.*` under `django_pyforge`, plus mutation proofs on tmp trees -- the two import rules, in the station's own suite
+- `.memlog.md` of every Spec `spec-surface` names for the touched paths -- append the surface reconcile line -- Boundaries: reconcile, never stamp alone
+
+**Acceptance Criteria:**
+- Given the intent contract's eight ACs, when `python -m pytest` runs the new seam test in the platform env against a real `silo` and `pyforge-steward-test` runs the meta-test, then both pass and no test skips for the story's own subject.
+- Given the I/O matrix, when the seam test runs, then each row (first put, repeat put, large put, get, bad key, unset setting, flag OFF, store down) has a test that fails if the row's behaviour is removed.
+
+## Spec Change Log
+
 ## Source
 
 Contract authored from `docs/dreams/pyforge-steward.md`'s 2026-09-28 (night) Realization-log entry *Proposed: the
@@ -140,6 +170,15 @@ Dream: `docs/dreams/pyforge-steward.md` § Realization log → *2026-09-28 (nigh
 Ledger key: `74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it`.
 Ledger status at mint: `backlog`.
 Deps: —. Herald Stories 29.1 and 29.2 wait on this story as `blocked` rows in herald's ledger.
+
+## Design Notes
+
+- `StoredObject.key` is prefix-relative (`sha256/<hex>`); the object sits at `<prefix>/sha256/<hex>`. A consumer stores the relative key, so a per-environment prefix (Story 74.2) never invalidates its rows. `stat` returns the same dataclass, its `sha256` read back from the key.
+- Check order in every call: flag (`ObjectStoreDisabled`) -> key shape (`ValueError`, pure) -> settings (`ImproperlyConfigured` naming the setting) -> factory client. `put_stream` resolves settings and the client before it reads the stream, so a misconfigured host refuses before consuming the payload.
+- `put_stream` hashes and spools in `CHUNK_BYTES` reads (`SpooledTemporaryFile(max_size=SPOOL_MAX_BYTES)`), then `head_object`; present means no upload and the stored content type comes back, absent means `upload_fileobj(spool, bucket, key, ExtraArgs={"ContentType": ...})`. Only a 404-shaped client error (`.response` Error.Code `404`/`NoSuchKey`/`NotFound`, or HTTP 404) means absent; every other error propagates unchanged.
+- `open_stream` calls `get_object` eagerly (a missing key raises at the call, before a view builds its `StreamingHttpResponse`) and returns a generator over `Body.iter_chunks(CHUNK_BYTES)` that closes the body when exhausted or closed.
+- The flag is read with `evaluate_boolean(FLAG_KEY, default=False)`; an unconfigured provider therefore reads OFF. Tests write two flagd trees, each carrying `pyforge.three_surfaces` as well so `wait_until_ready` returns.
+- The meta-test's allowlist names the four `ingest/github_projects` files and asserts each still imports `pyforge.*`, so the list shrinks and never silently outlives its reason.
 
 ## Verification
 
