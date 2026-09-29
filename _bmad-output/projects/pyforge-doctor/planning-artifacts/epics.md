@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-29'   # RE-STAMPED 2026-09-29: Epic 36 / Stories 36.1-36.2 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-29'   # RE-STAMPED 2026-09-29 (evening): Epic 37 / Story 37.1 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 36 / Stories 36.1-36.2 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2757,6 +2757,70 @@ reads `archive/docs/dreams/*.md`, with `docs/dreams/` read first), `tests/unit/t
 **And** a Dream present in both places is read from `docs/dreams/`; on `main` today its output is unchanged; tests cover the
 moved Dream and the both-places case; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 **Status:** backlog
+
+## Epic 37: The legacy intake-spec tier retires, and the intake inbox keeps only its README (spec-one-chain-per-station CAP-11)
+
+Minted 2026-09-29 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`). CAP-11's success names this PR: `docs/intake/` holds only its
+README, and `docs/specs/` is gone, with `CLAUDE.md`'s legacy index, `AGENTS.md`'s Tier 1 row and doctor's
+`check_spec_indexed` retired in the same PR (CHAIN-STANDARD §11, step 3). The outcome is the Guild's; the mechanism is
+Doctor's, which owns the docs shelf (`spec-docs-shelf-alignment`, Stories 23.3 and 23.4) and the check. Doctor mints no CAP
+and no FR (the relay shape of Epics 24, 25, 32, 34 and 36); the Guild Spec's `.memlog.md` enumerates the story. **Ruled and
+closed before minting** (do not re-open): the archive rule `archive/<original path>`; every move is a `git mv`;
+`feedstock-refresh.md` is carried into Mason's chain (`spec-pyforge-mason` CAP-35, Epic 25) and becomes a companion of that
+Spec; `flyte-conda-forge.md` is done and archives; the three workflow stubs archive, since their bodies already live in
+`docs/how-to/`. **HARD boundaries:**
+- History stays as written: `.memlog.md` entries, `CHANGELOG.md` entries, dated Realization-log and Currency-reconciliation
+  sections, and everything under `archive/`. Live references are repointed.
+- Marshal's seed templates, which teach Tier 1 to other repositories, do not change.
+- `pixi.toml` changes in comments only.
+
+The four readers land first: atlas Epic 26, steward Epic 77, herald Epic 34 and marshal Epic 76. The story is a `chore`.
+
+### Story 37.1: docs/specs and docs/intake empty, and the legacy tier's index and check retire
+
+**Type:** chore • **Effort:** L • **Deps:** — • **FR/AD:** `spec-one-chain-per-station:CAP-11` (`SPEC.md` success:
+"`docs/intake/` holds only its README. `docs/specs/` is gone, with `CLAUDE.md`'s legacy index, `AGENTS.md`'s Tier 1 row and
+doctor's `check_spec_indexed` retired in the same PR"); CHAIN-STANDARD §11 step 3 • cross-project gate: atlas Story 26.1,
+steward Story 77.1, herald Story 34.1 and marshal Story 76.1 land first; ledger `blocked` until the operator flips it
+**difficulty:** medium
+**Surface:**
+- Moves, each a `git mv`:
+  - `docs/specs/flyte-conda-forge.md`, `feedstock-failure-remediation.md`, `feedstock-platform-expansion.md` and
+    `presentation-deck.md` go to `archive/docs/specs/`.
+  - `docs/specs/feedstock-refresh.md` goes to
+    `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, and joins that
+    Spec's `companions:` (memlog first, then a render by script).
+  - `docs/intake/agentic-sdlc/` and `docs/intake/external-repos-analysis-2026-08-22/` go to `archive/docs/intake/`.
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`:
+  - drops `check_spec_indexed`, `_docs_specs` and the `docs-specs-nonmd` branch of `check_tier_alignment`;
+  - its misfiled-intake remedy stops naming `docs/specs/`.
+  - `tests/unit/test_sources_factory.py` follows.
+- The instruction surface:
+  - `CLAUDE.md`'s *Legacy intake-spec index* section;
+  - `AGENTS.md`'s Tier 1 row and its other `docs/specs/` lines, including the one naming `bmad_drift_check.py --specs`;
+  - `.cursor/rules/specs.mdc`, kept as a pointer file, because scribe's parity test pins it.
+- `scripts/spec_surface_allowlist.txt` drops `docs/specs/**`.
+- `spec-pyforge-herald`'s surface drops `docs/specs/presentation-deck.md` (memlog first, then a render by script).
+- Live references to the moved paths are repointed:
+  - `.claude/skills/conda-forge-expert/` (`SKILL.md`, `guides/`), in one `retro(cfe):` commit;
+  - `docs/reference/agent-instruction-notes.md` § *Intake specs*, `docs/MAP.md`,
+    `docs/explanation/the-tier-model-and-data-flow.md`, `docs/reference/README.md` and
+    `docs/reference/library-llms-full.md`;
+  - planning artifacts' live text and story-spec `context:` entries (mason Epic 25, Stories 25.1 and 25.2);
+  - the Dreams that name the intake items.
+
+**Given** `docs/specs/` holds five files, `docs/intake/` holds two items besides its README, and the four reader stories
+have landed
+**When** the files move and the legacy tier's index, row and check retire in one PR
+**Then** `docs/specs/` does not exist, `docs/intake/` holds only `README.md`, and every moved file is at its new path with
+its history (`git log --follow`)
+**And** a `git grep` over the live tree finds no moved path outside the history files named above
+**And** these exit 0: `governance-currency`, `detectors-ci` and `pr-preflight`, plus `spec-surface-check` after a memlog
+entry and a scoped stamp for each co-governor it names (scribe for the instruction files, doctor for the docs shelf,
+mason, and any other)
+**And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+**Status:** blocked
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
