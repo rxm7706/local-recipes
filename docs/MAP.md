@@ -100,6 +100,7 @@ Every file that lived in `docs/reference/` before Story 22.4 is accounted for be
 | [`pixi-config-jfrog.example.toml`](reference/pixi-config-jfrog.example.toml) | True reference | JFrog pixi config example |
 | [`station-verify-commands.md`](reference/station-verify-commands.md) | True reference | Derived verify-command lookup table (**still stale** — refresh tracked separately) |
 | [`library-llms-full.md`](reference/library-llms-full.md) | True reference | Generated library catalog (`llms-full-check` gate; **still stale** — regenerate via catalog header prompt) |
+| [`bmad-estate-llms-full.md`](reference/bmad-estate-llms-full.md) | True reference | Generated BMAD-estate catalog (`bmad-estate-check` gate; regenerate with `scribe catalog bmad-estate --write`) |
 | [`github-workflows.md`](reference/github-workflows.md) | True reference | Workflow inventory (**still stale** — audited 2026-07-26; omits/adds workflows vs live tree) |
 | [`sync-jira-github-workflow-templates/README.md`](reference/sync-jira-github-workflow-templates/README.md) | True reference | Steward `sync` GitHub Projects V2 ↔ Jira Cloud workflow templates for the *external target* repo, never installed here (see `archive/docs/intake/jira-github-projects-sync/`, archived doctor 23.4) |
 | [`test-charter.md`](reference/test-charter.md) | Policy reference | Fleet testing charter (cited by `docs/dreams/pyforge-testing-charter.md`) |
@@ -231,6 +232,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`reference/environments.md`](reference/environments.md) | steward | generated |
 | [`reference/github-workflows.md`](reference/github-workflows.md) | fleet | authored |
 | [`reference/judgement-vocabulary.md`](reference/judgement-vocabulary.md) | doctor | authored |
+| [`reference/bmad-estate-llms-full.md`](reference/bmad-estate-llms-full.md) | scribe | generated |
 | [`reference/library-llms-full.md`](reference/library-llms-full.md) | fleet | authored |
 | [`reference/manticore-studio.md`](reference/manticore-studio.md) | fleet | pointer |
 | [`reference/mcp-server-architecture.md`](reference/mcp-server-architecture.md) | fleet | pointer |

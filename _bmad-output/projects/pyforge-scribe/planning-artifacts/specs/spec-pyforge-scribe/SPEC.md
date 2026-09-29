@@ -28,6 +28,7 @@ surface:
   - scripts/scribe_nightly_trigger.py
   - scripts/scribe_install_nightly_trigger.py
   - scripts/scribe_graph_freshness_check.py
+  - scripts/bmad_estate_check.py
   - scripts/claude_instruction_mode_check.py
   - AGENTS.md
   - CLAUDE.md
@@ -54,8 +55,7 @@ companions:
   - ../../architecture/architecture-pyforge-scribe-2026-07-25/ARCHITECTURE-SPINE.md
   - ../../prds/prd-pyforge-scribe-2026-07-25/prd.md
   - ../../epics.md
-open_questions:
-  - "OQ-CAP-32-1 (Story 24.2 decides): byte-exact re-render or a structured diff of derived facts with prose exempt?"
+open_questions: []
 sources:
   - ../../../../../../docs/dreams/pyforge-scribe.md
   - ../../briefs/brief-pyforge-scribe-2026-07-25/brief.md

@@ -2,7 +2,7 @@
 title: '24.1: The BMAD estate catalog is generated, not written'
 type: 'feature'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

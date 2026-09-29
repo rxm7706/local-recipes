@@ -2,7 +2,7 @@
 title: '24.3: Every harness is pointed at the catalog once'
 type: 'config'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

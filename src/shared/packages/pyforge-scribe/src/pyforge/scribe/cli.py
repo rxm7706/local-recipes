@@ -21,6 +21,7 @@ import typer
 from pyforge.core.atomic_write import atomic_write_text
 
 from pyforge.scribe import __version__
+from pyforge.scribe import catalog as estate_catalog
 from pyforge.scribe.capture import capture as capture_write
 from pyforge.scribe.compile import (
     CompileInProgressError,
@@ -66,6 +67,13 @@ index_app = typer.Typer(
     help=("graphify compile_surface ingest + report verbs (Story 6.1); cocoindex incremental refresh (Story 6.2).")
 )
 app.add_typer(index_app, name="index")
+catalog_app = typer.Typer(
+    help=(
+        "Derived catalogs (spec-pyforge-scribe CAP-32): generated from in-tree sources, never "
+        "hand-written; `bmad-estate` renders docs/reference/bmad-estate-llms-full.md."
+    )
+)
+app.add_typer(catalog_app, name="catalog")
 
 # Resolved relative to the current working directory at invocation time —
 # `scribe` is always run from the repo root (never a hardcoded absolute
@@ -628,6 +636,51 @@ def _index_refresh_declared(repo_root: Path, manifest_path: Path, warnings: list
         f"skipped (unchanged): {', '.join(result.skipped) or '(none)'} "
         f"-> {result.index_path}"
     )
+
+
+@catalog_app.command("bmad-estate")
+def catalog_bmad_estate(
+    write: bool = typer.Option(False, "--write", help="Render into docs/reference/bmad-estate-llms-full.md."),
+    check: bool = typer.Option(
+        False,
+        "--check",
+        help="Compare the committed catalog's per-section digests against a fresh derive; exit 1 on drift.",
+    ),
+    root: Path = typer.Option(Path("."), "--root", help="Repository root (default: the current directory)."),
+    output: Path | None = typer.Option(None, "--output", help="Write/check this file instead of the default path."),
+    pipeline_truth: Path | None = typer.Option(
+        None,
+        "--pipeline-truth",
+        help="Optional `steward suite pipeline-truth --json` output to add the six-stage columns.",
+    ),
+) -> None:
+    """Render (or check) the derived BMAD-estate catalog (Story 24.1, CAP-32).
+
+    Reads the installed manifests, every `.claude/skills/*/SKILL.md`, `bmad-help.csv`,
+    `suite-members.yaml` joined with steward's adoption register, the `bmad-*` pins in
+    `pixi.toml`, the marshal harness range and the release-cadence steps — offline, no
+    station internals. Without `--write` or `--check` the rendered catalog is printed.
+    Exit codes: 0 rendered / current, 1 drift (`--check`), 2 a source cannot be read."""
+    if write and check:
+        typer.echo("choose one of --write or --check", err=True)
+        raise typer.Exit(code=2)
+    try:
+        if check:
+            findings = estate_catalog.check(root, catalog=output, pipeline_truth=pipeline_truth)
+            for finding in findings:
+                typer.echo(f"[bmad-estate] {finding}")
+            if findings:
+                raise typer.Exit(code=1)
+            typer.echo("[bmad-estate] ok -- the catalog matches its sources")
+            return
+        if write:
+            target = estate_catalog.write(root, output=output, pipeline_truth=pipeline_truth)
+            typer.echo(f"wrote {target}")
+            return
+        typer.echo(estate_catalog.render(estate_catalog.derive(root, pipeline_truth=pipeline_truth)))
+    except estate_catalog.CatalogSourceError as exc:
+        typer.echo(f"[bmad-estate] could-not-run: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
 
 
 def main() -> None:

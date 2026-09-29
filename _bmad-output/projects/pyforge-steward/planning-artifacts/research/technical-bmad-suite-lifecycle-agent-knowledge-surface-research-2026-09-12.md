@@ -442,3 +442,4 @@ Repo (at `b978aa9b2a`): `_bmad/_config/manifest.yaml`, `_bmad/custom/config.toml
   Stories 24.1–24.3** (`backlog`, tracked specs `spec-24-1..3-*.md`, `epic_surfaces "24"`).
 - **Q1 (repo role) stays open** and is the only remaining unverified item; the population was
   confirmed 2026-09-12 (§ 1.4). Q2–Q5 were answered "go with your recommendation" 2026-09-29.
+- **2026-09-29, later the same day — Stories 24.1–24.3 implemented** in the same PR (#1672): `scribe catalog bmad-estate` renders `docs/reference/bmad-estate-llms-full.md`; `scripts/bmad_estate_check.py` (`bmad-estate-check`, repo scope) reds when a section's derived facts move; `AGENTS.md` gains one Read-on-trigger row. First render surfaced four live version disagreements (bmad-loop, TEA, skill-forge, eval-quality: register vs `pixi.toml` vs recipe) — rendered, relayed to steward, not resolved.
