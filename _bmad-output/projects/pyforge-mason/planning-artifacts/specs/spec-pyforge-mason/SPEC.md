@@ -2,7 +2,7 @@
 id: SPEC-pyforge-mason
 spec: pyforge-mason
 status: ready
-updated: "2026-09-28"
+updated: "2026-09-29"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
   - docs/dreams/pyforge-mason.md
@@ -257,6 +257,32 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   `validate_recipe` exits non-zero on fixtures with a sentinel key, an int key and a whole-scalar object repr, and exits
   0 on a fixture whose prose only mentions an object repr. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md`
   semver entry. `pyforge-mason-test` green. (Minted 2026-09-28.)
+
+### CAP-33 — CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest
+
+- **intent:** Mason takes the three things `OpenTeams-WFT-CDO/auto-recipe` had that Mason and CFE lacked, and
+  auto-recipe retires. `recipe-generator.py` stops choosing silently at its six guess points: the `setuptools` backend
+  default, the import-name fallback, the classifier-only noarch call, the licence (the first matching classifier, or
+  `REPLACE_LICENSE`), `license_file: LICENSE`, and the `python_min` floor used when `python_requires` does not parse.
+  Each becomes a decided value or a question with its options and default. The questions go to stdout and to the
+  recipe's bottom CFE block; the default run still writes the recipe and exits 0, and `--strict` exits non-zero with
+  the questions and writes nothing. `license-checker.py --check-source` reds a GPL, LGPL, AGPL or GFDL `-only`
+  identifier whose LICENSE grants "any later version", names the `-or-later` identifier to use, and skips permissive
+  licences. A negative corpus under the CFE tests holds recipes that must stay rejected, each asserted against the
+  specific rule that rejects it, and a fixture that passes every check fails the suite. Code is ported from
+  `auto-recipe@8b53eda` with a provenance line; the operator owns that GitHub org. CFE code only: `mason recipe new`
+  and `mason recipe validate` reach it by subprocess (AD-1). Each story closes with a CFE Rule-2 retro in its own
+  `retro(cfe):` commit. The unattended trigger layer (issue to draft PR, PR watcher, LLM fix loop) and the MCP
+  `generate_recipe_from_pypi` grayskull path are out of scope. (Operator ruling 2026-09-29.)
+- **success:** A generator run on a fixture sdist with no `[build-system]` table, two top-level packages, no licence
+  metadata and an unparseable `python_requires` lists one question per unsettled point, writes them into the recipe's
+  CFE comments block, and exits 0; with `--strict` it exits non-zero and writes no recipe. A run on a fully resolvable
+  fixture lists no questions and writes the same recipe as before. `license-checker.py --check-source` exits non-zero
+  on a `GPL-3.0-only` fixture whose LICENSE says "any later version", exits 0 on the matching `-or-later` fixture, and
+  skips an MIT fixture. The negative corpus asserts a named rule for each fixture (the scalar test matrix, skip under
+  noarch, the licence mismatch and the conda-recipe-manager sentinel key), and removing any one check makes its
+  fixture's test fail. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry.
+  `pyforge-mason-test` green. (Minted 2026-09-29.)
 
 ## Constraints
 

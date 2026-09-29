@@ -2,10 +2,11 @@
 title: One Dream, one Spec, one PRD, one architecture, one epic chain — per station
 type: dream
 owner: guild
-status: specified   # 2026-09-16 — seeded `dreamt` from the operator's fleet-consolidation
-                    # ruling the morning the token-savings fold (PRs #1382/#1383) proved the
-                    # shape on one chain; Spec derived and flipped `ready` the same day once its
-                    # three open questions were ruled (docs/governance/spec-one-chain-per-station/).
+status: specified
+# status: 2026-09-16 — seeded `dreamt` from the operator's fleet-consolidation
+# ruling the morning the token-savings fold (PRs #1382/#1383) proved the
+# shape on one chain; Spec derived and flipped `ready` the same day once its
+# three open questions were ruled (docs/governance/spec-one-chain-per-station/).
 fold-exemption: governance   # first live use of the vocabulary this Dream mints — a
                              # Lexicon amendment cannot be a dated section of a station Dream
 ---
@@ -199,6 +200,16 @@ treadmill.** This Dream is the rule first, the fold second.
   reached `main`. Day-to-day after the eight station folds is
   `CHAIN-STANDARD.md` §3. Spec CAP-10. Status stays `specified`; nothing
   is reset or un-archived.
+- **2026-09-29 — One archive home, and a fold that is complete.** An
+  analysis of `docs/dreams/` found 158 archived Dreams still in the live
+  tree, two fold methods (marshal and steward pasted satellite bodies in;
+  the other six stations only added a banner, so 70-odd Dreams' content
+  exists only in the archived file), and four archive locations. Operator
+  rulings: one archive home, `archive/<original path>`; folds are verbatim
+  and carry no banner; a Dream moves out only once its body is in its
+  station Dream; the rule covers Dreams first, then absorbed Spec folders,
+  `docs/intake/` and `docs/specs/`. Spec CAP-11; § *2026-09-29 — One
+  archive home* below. Status stays `specified`.
 
 ## 2026-09-17 — Lock, mop, and exemption — the portable rerun
 
@@ -256,3 +267,52 @@ sync, surface stamps, and this Spec's derive path. Do not load
 `PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"` when rendering BMAD
 skills. `uv run _bmad/scripts/memlog.py` then `bmad-spec` — never
 hand-edit a `SPEC.md`.
+
+## 2026-09-29 — One archive home
+
+**What was found.** On 2026-09-29, `docs/dreams/` held 174 Dream files, and
+158 of them were `archived`. The fold had been done two ways. Marshal (the
+2026-09-16 pilot) and steward pasted each satellite's body into the station
+Dream and kept the satellite as well. The other six stations only added a
+`Consolidated into` banner, so the content of about seventy Dreams existed
+nowhere but in the archived file. Even marshal's fold left 22 satellites
+with nothing pasted in. There were four archive locations: top-level
+`archive/` (295 files, structure-preserving), `docs/dreams/archive/` (one
+file), atlas's `spec-archive/` (29 files) and the in-place `archived`
+status. Archived and live Dreams sat side by side, and every detector,
+console and reader had to filter them apart.
+
+**The rulings (operator, 2026-09-29).**
+
+1. **One archive home:** `archive/<original path>`, the rule
+   `archive/docs/README.md` already states. `docs/dreams/archive/` and
+   atlas's `spec-archive/` fold into it. Nothing is deleted: every move is a
+   `git mv`.
+2. **A fold is complete, and carries no banner.** A satellite's whole body
+   goes, verbatim, into a dated section of its station Dream, with its
+   headings demoted one level. Only then does the file move to
+   `archive/docs/dreams/`. A Dream is live in `docs/dreams/` or archived
+   under `archive/`, never both.
+3. **Scope and order.** Dreams first. Then the absorbed and archived Spec
+   folders, each moving with its memlog and every companion. Then
+   `docs/intake/`, which keeps only its README (the inbox rule stays), and
+   `docs/specs/`, whose legacy intake-spec tier retires. `feedstock-refresh`
+   is unfinished, so it is carried into Mason's chain before its file
+   moves.
+
+These amend two lines of the 2026-09-17 section above. "Absorbed Spec
+folders stay pointers plus memlog plus companions" now means they stay
+that way under `archive/`. CHAIN-STANDARD §7 item 4 (the banner) and §10
+lesson 44 are superseded. "Do not reset or un-archive" stands: a moved
+Dream is still archived.
+
+**How it lands.** This Dream entry and Spec CAP-11 state the rule, and
+CHAIN-STANDARD §7 and §11 carry it. The mechanism comes next, as Stories:
+
+- a doctor check that proves a fold complete before its file moves;
+- the readers that list Dreams (the console's Archived column, the deck
+  facts, scribe's compile, the sibling-drift check) learning where the
+  archive is;
+- then one fold PR per station, which pastes in the missing bodies, moves
+  the satellites and repoints their references;
+- then the Spec folders, `docs/intake/` and `docs/specs/`.

@@ -5058,6 +5058,12 @@ capabilities:
     heading: "Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one"
     mode: rebuild
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-33
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 
   # doctor one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-doctor:CAP-1
