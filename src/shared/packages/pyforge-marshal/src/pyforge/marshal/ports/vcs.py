@@ -531,6 +531,7 @@ class VcsPort(Protocol):
         ref: str,
         writes: tuple[tuple[str, str], ...],
         message: str,
+        preflight_skip_reason: str | None = None,
     ) -> str:
         """CAP-5 / land-promote-isolation: fetch ``remote``/``ref``, commit
         ``writes`` (repo-relative POSIX path, full file text) onto that
@@ -543,7 +544,27 @@ class VcsPort(Protocol):
         ``repo_root`` is used only as ``git -C`` for fetch / worktree add /
         push (shared object store). Never ``--force``.
 
+        Story 68.1 (spec-pyforge-marshal CAP-277): ``preflight_skip_reason``
+        (keyword-only) is the proof-carrying opt-out from the repository's
+        ``pre-push`` preflight (``spec-pyforge-steward:CAP-154``), for a
+        landing's bookkeeping publish, which the preflight would otherwise
+        run in full and outlast the push's git timeout. A caller passing one
+        NAMES THE STORY in it. The adapter then (1) refuses, before any
+        write or fetch, a written path that is not a normalized
+        ``_bmad-output/projects/<slug>/planning-artifacts/...`` path, and
+        (2) refuses, after building the commit and before any push, a commit
+        that names any path outside the written set. Only a commit that
+        passes both is pushed with the hook's journaled opt-out
+        (``PYFORGE_PREFLIGHT_SKIP=1`` and a ``PYFORGE_PREFLIGHT_SKIP_REASON``
+        naming the new sha, the paths and the caller's reason), set for that
+        one ``git push`` only through the POSIX ``env`` utility, exactly as
+        ``push`` does for Story 57.1. Where ``env`` does not exist the push
+        runs the preflight. With ``None`` (the default) the push is
+        unchanged and the hook runs as it always did.
+
         Returns the new commit sha. Raises ``VcsCommandError`` if
-        ``writes`` is empty, fetch fails, the push is not a fast-forward,
-        or on any other git failure."""
+        ``writes`` is empty, a reason is given for a write outside
+        ``planning-artifacts/`` or for a commit naming an unwritten path,
+        fetch fails, the push is not a fast-forward, or on any other git
+        failure."""
         ...
