@@ -2,7 +2,7 @@
 title: '68.1: A landing''s ledger promotion reaches origin/main, and a failed one is never silent'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: '0c8c07e6fc667f8442ab7c142a6a62bde074b228'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -11,7 +11,28 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - scripts/pre_push_preflight.sh
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      The landing heal's local-main-advance push runs the full pre-push preflight under the same 120 s git timeout.
+    evidence: |-
+      Unverified (needs a landing that reaches the local-main-advance fallback). dispatch_land_heal.py pushes the base
+      branch with `vcs.push(git_repo_root, base)`, which carries no preflight opt-out; a push killed at 120 s returns
+      False and the landing refuses with MRS-DISP-020. Not caused by Story 68.1, and its Never list forbids the opt-out
+      for any push but the ledger, intake and blocked-twin publishes.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py:209
+    severity: medium (unverified)
+  - summary: >-
+      A ledger publish rejected because origin/main moved between its fetch and its push is not retried.
+    evidence: |-
+      Verified in the code: commit_paths_onto_remote_tip fetches once, commits, pushes once, and raises VcsCommandError
+      on a non-fast-forward rejection. Story 68.1 makes that failure loud (MRS-LAND-011, then MRS-DISP-051 and a REFUSED
+      landing), so two stations finalizing within seconds of each other can refuse a landing whose only owed step is a
+      re-run. The single-shot publish predates this story and the intent names no retry, so a bounded re-fetch and
+      rebuild needs an operator decision.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:1340
+    severity: medium
 ---
 
 <intent-contract>
@@ -121,6 +142,43 @@ All paths under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` f
 
 ## Review Triage Log
 
+### 2026-09-28 — Review pass
+- verdicts: 30 findings — high 0, medium 2, low 21, false 6, maybe-false 1
+- findings (Blind Hunter, 13):
+  - `[low]` `[patch]` `--no-renames` in `_paths_changed_between` is untested — deleting the flag left every test green, and rename detection would hide a deleted unwritten file behind a written path — fixed: `test_a_rename_pairing_cannot_hide_a_deleted_unwritten_file_behind_a_written_path`, which fails with the flag removed.
+  - `[false]` `[reject]` the stray-path proof checks a tree diff, not the pushed range's shape, and `diff.ignoreSubmodules` could hide a gitlink — `commit_paths` runs one `git commit` in a fresh worktree of `old_sha` staging only the named paths, `--is-ancestor` runs before the proof, and no named path can change a gitlink, so neither outcome can occur.
+  - `[low]` `[reject]` the opt-out is wider than the callers need (any `planning-artifacts/` file) and "names its story" is only a non-empty check — the intent contract itself fixes the scope as every written path under `_bmad-output/projects/<slug>/planning-artifacts/`, and naming the story is each caller's duty, pinned by the three caller tests.
+  - `[low]` `[reject]` a missing `env` silently drops the opt-out — the intent says exactly this ("Where `env` is absent, the push runs the preflight"), the Story 57.1 precedent; a timeout hint would add a branch for no reachable defect.
+  - `[low]` `[patch]` `MRS-LAND-011` is reused for the blocked-twin publish while its registry comments name `_promote_sprint_ledger` alone — fixed: the comments in `core/findings.py` and `core/verdict.py` name the second triggering shape (AD-31); no new code is minted, as the intent asks for a WARN and no more.
+  - `[low]` `[reject]` "never silent" reaches only the journal, the new kind is a module-local string, the finding is carried twice, and `error` is uncapped — the intent names the supervisor's journal as the surface; the rest is cosmetic with no named harm.
+  - `[low]` `[patch]` AD-6 is closed only for `VcsCommandError` — an `OSError` from `mkdtemp` or `write_text` escaped, left the INTENT unpaired and crashed — fixed in the adapter: both steps raise `VcsCommandError ... from exc`, with `test_an_oserror_building_the_publish_worktree_is_a_vcs_command_error`. Grouped with the two Edge Case Hunter rows below.
+  - `[false]` `[reject]` a REFUSED-after-merge landing disables the fleet's mid-flight guard — `is_finalize_pending` defines the ~45 s window while finalize runs and is self-limiting by its own docstring; after a failed finalize the durable owed state is what Story 56.1's ATTENTION reads, and the same REFUSED branch has existed for a finalize `ProcessError` since Story 51.2.
+  - `[false]` `[reject]` `MRS-DISP-051` has no recovery path — an absent row or ledger says so in its own message, a not-done row is the only one that says "still owed", and re-running finalize retries the publish for that case.
+  - `[low]` `[reject]` the reason names raw ledger keys when promoted and the dotted key on a feed-only sync — both forms identify the story the landing carries, and the intent says to pass the promoted keys.
+  - `[low]` `[reject]` the fleet-picture test asserts a hand-written finding, not the real chain — the renderer keys on the code, the superseded flag and the ledger status, the same shape as the existing 46.6 tests, and the journaled refusal is an existing branch; a full round trip is a new test fixture, not a correction.
+  - `[low]` `[patch]` the real-git tests never clear the operator's `PYFORGE_PREFLIGHT_SKIP` / `PYFORGE_PREFLIGHT_SKIP_REASON` — fixed: a module-wide autouse fixture deletes both (six tests fail without it when both are exported). The 2.5 s margin (a local push is ~50 ms) and the orphaned `sleep 8` are harmless and left.
+  - `[maybe-false]` `[defer]` a sibling push, `dispatch_land_heal.py`'s `vcs.push(git_repo_root, base)`, runs the same full preflight under the same 120 s timeout — pre-existing, and the intent forbids the opt-out for any push but these publishes; whether a real heal push times out is unverified (it needs a landing that reaches the local-main-advance fallback). Deferred below. (`marshal land` exiting 0 on a failed ledger publish is the WARN-by-design the intent names, not a finding.)
+- findings (Edge Case Hunter, 9):
+  - `[medium]` `[defer]` one fetch → commit → push, no retry: a push rejected because `origin/main` moved in between is one WARN, then `MRS-DISP-051` REFUSED for a story that landed — verified in the code; single-shot publish is pre-existing and a retry policy is not in the intent, so it needs an operator decision. Deferred below.
+  - `[low]` `[patch]` INTENT left unpaired on `OSError` — fixed with the row above.
+  - `[low]` `[reject]` the promotion's local-ledger early return skips publishing when the primary's ledger reads `done` while `origin/main`'s does not — needs a primary ahead of `origin/main`, which `_resync_home_branch` and "never commit on the shared checkout" prevent; the new readback makes that state loud, which is its job.
+  - `[low]` `[reject]` a tracked symlink under `planning-artifacts/` would redirect the write — the written paths are fixed ledger and spec paths, not caller-controlled, and the fix is a new guard for a state nothing shows reachable.
+  - `[low]` `[reject]` a reason of control characters passes the non-empty check — the reason text always carries the sha and the paths, and every caller builds its reason with a story.
+  - `[low]` `[reject]` the twin WARN observation has no reader — same root as the journal-only row above.
+  - `[low]` `[reject]` any finalize ERROR now refuses an already-merged PR — the intent says a non-zero finalize exit becomes `MRS-DISP-020` and REFUSED; scan ERRORs already gated finalize's exit and nothing read it.
+  - `[low]` `[patch]` claim: the AD-6 comment overclaims for `OSError` — fixed with the AD-6 row above.
+  - `[low]` `[reject]` claim: `marshal status` alone does not carry the "promote + ledger owed" hint — the fix is to edit this spec's sentence, which the review may not do; recorded under residual risks.
+- findings (Verification Gap, 3):
+  - `[medium]` `[patch]` the supervisor loop test never checks journal id uniqueness, so dropping `counter =` at the `_promote_blocked_twin` call site left every test green with a duplicate `(writer_id, counter)` id (verified by mutation) — fixed: the test parses the journal and asserts unique ids and the completion INTENT after the twin observation; dropping the assignment now fails it.
+  - `[low]` `[patch]` no test checks the story key finalize hands the intake step — passing `project_slug` kept every test green (verified by mutation) — fixed: a finalize-level fake records `story_key` and the test asserts `"42.5"`.
+  - `[low]` `[reject]` the adapter's synthetic hook and the real `scripts/pre_push_preflight.sh` share variable names only by convention — the layer reported no defect, and the intent-alignment layer ran the real script with the same `env` form and saw it journal the reason and pass the push.
+- findings (Intent Alignment, 5):
+  - `[low]` `[reject]` each link is tested with fakes at the next seam, and no test composes two — the ACs are worded per link; the 64.1 replay runs the real `_promote_sprint_ledger` inside finalize, and `PosixProcess`'s non-raise on a non-zero exit is pinned by pyforge-core's `test_run_reports_a_nonzero_exit_without_raising`.
+  - `[false]` `[reject]` the path-shape check runs before any fetch or write, earlier than "before any push" — the intent's "every written path must lie under `planning-artifacts/`" holds earlier still; it is not a divergence.
+  - `[false]` `[reject]` `MRS-DISP-051` requires every ledger row normalizing to the key to be `done` — the intent says the landed key reads `done`; a duplicate row that does not is the same failure.
+  - `[low]` `[reject]` the supervisor and `cli/dispatch.py` consumers of a merged-but-REFUSED landing are not exercised — the REFUSED-after-merge result already existed for a finalize `ProcessError`.
+  - `[false]` `[reject]` `tests/meta/test_local_branch_refs_are_full_refnames.py` is edited outside the epic's Surface list — the meta test requires every `VcsPort` `str` parameter be classified, so the new parameter must be.
+
 ## Design Notes
 
 - The reason is a plain string with the full new sha, the sorted written paths and the caller's reason, with no tab or newline (the hook's log is tab-separated).
@@ -150,3 +208,48 @@ Deferred-work row filed with this story, closed elsewhere: `DW-marshal-git-timeo
 
 **Manual checks:**
 - After the first landing through this story's code, `origin/main`'s `sprint-status-ledger.yaml` reads that story `done` in a `marshal: promote sprint-status ledger` commit, and `.steward/preflight-skips.log` names that commit's sha and the story.
+
+## Auto Run Result
+
+Status: done
+baseline_revision: 0c8c07e6fc667f8442ab7c142a6a62bde074b228
+
+**Summary.** A landing's ledger publish now reaches `origin/main` under the pre-push hook's journaled opt-out, and a failed one is reported at every layer instead of hidden.
+
+- `GitVcs.commit_paths_onto_remote_tip` takes a keyword-only `preflight_skip_reason`. With one, it refuses before any fetch or write unless every written path is a normalized `_bmad-output/projects/<slug>/planning-artifacts/...` path. After building the commit it refuses, before any push, if `git diff --name-only --no-renames -z <tip> <new>` names a path outside the written set. Only then does it push with `PYFORGE_PREFLIGHT_SKIP=1` and a one-line `PYFORGE_PREFLIGHT_SKIP_REASON` (new sha, sorted paths, caller's reason) through `env`, for that one push. Without `env`, or without a reason, the push is unchanged. An OSError building the scratch worktree is a `VcsCommandError`.
+- All three callers name their story: `_promote_sprint_ledger` (the promoted keys, or the wave keys on a feed-only sync), finalize's intake publish, and the supervisor's `_promote_blocked_twin`.
+- `_promote_sprint_ledger` writes its OUTCOME `ok: false` with the error on a failed publish (and `ok: true` on success).
+- Finalize reads `origin/main`'s ledger after the promotion and adds `MRS-DISP-051` (ERROR) when the landed key is absent, not `done`, or unreadable; its resync observation carries every finding of every severity.
+- `dispatch land` reads finalize's exit code; a non-zero exit is `MRS-DISP-020` (exit code plus the tail of stderr) and REFUSED with the PR facts.
+- The supervisor journals a failed blocked-twin publish as a `MRS-LAND-011` WARN observation (`dispatch-blocked-twin-publish`) and threads the advanced journal counter back.
+
+**Files changed** (all under `src/shared/packages/pyforge-marshal/`):
+- `src/pyforge/marshal/ports/vcs.py` -- port signature and contract for `preflight_skip_reason`.
+- `src/pyforge/marshal/adapters/vcs_git.py` -- path proofs, the checked opt-out, OSError conversion.
+- `src/pyforge/marshal/cli/land.py` -- reason from the promoted keys; OUTCOME `ok: false`.
+- `src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- intake reason, `origin/main` readback, findings in the observation.
+- `src/pyforge/marshal/dispatch_land.py` -- finalize exit-code read.
+- `src/pyforge/marshal/dispatch_supervisor/__main__.py` -- twin reason and WARN journal entry.
+- `src/pyforge/marshal/core/findings.py`, `core/verdict.py` -- `MRS-DISP-051` at ERROR; `MRS-LAND-011` comments name the twin shape.
+- Tests: `tests/unit/test_vcs_git.py`, `test_land.py`, `test_dispatch_land_finalize.py`, `test_dispatch_landing.py`, `test_dispatch_supervisor_blocked_halt.py`, `test_dispatch_supervisor_main_loop.py`, `test_findings.py`, `tests/meta/test_fleet_picture_landing_findings.py`, `tests/meta/test_local_branch_refs_are_full_refnames.py`.
+- Surface reconcile: named on `spec-pyforge-marshal/.memlog.md` and `spec-pyforge-core/.memlog.md` (the co-governor) on 2026-09-28; no baseline stamp.
+
+**Review findings.** 30 findings from four layers: 6 patched (verdicts: 1 medium, 5 low), 2 deferred (see frontmatter `deferred`), 22 rejected — each with its recorded reason in the Review Triage Log above.
+- Patched: the untested `--no-renames`; the `MRS-LAND-011` registry comments; the OSError-unpaired-INTENT gap (three rows, one fix); the operator's exported opt-out variables leaking into the real-git tests; the journal-id-uniqueness gap at the twin call site (medium); the intake story key at the finalize call site.
+- Deferred: the heal push's preflight timeout (medium, unverified); no retry when `origin/main` moves between the publish's fetch and push (medium).
+
+**Follow-up review recommendation:** `false`. This pass patched no high and one medium entry.
+
+**Verification performed** (from the worktree root, against the worktree sources; exit codes read directly):
+- `pytest src/shared/packages/pyforge-marshal/tests -m "not slow"` -- 8905 passed, 1 skipped, 12 deselected, exit 0 (the same suite the station's `pyforge-marshal-test` task runs).
+- `pytest tests/packaging` in the `pyforge-ci` env (`pyforge-deps-test`) -- 131 passed, 2 skipped, exit 0.
+- `ruff check`, `ruff format --check` (395 files) and `mypy -p pyforge.marshal` -- clean.
+- `python scripts/spec_surface_reconcile.py` -- exit 0, no drift; `pyforge.doctor.sources spec-surface` reports zero gating and zero drift-presumed findings.
+- Mutation: disabling the exit-code read in `dispatch_land.py` fails 4 tests; restored (hash-checked). The implementer's 12 further mutations and this pass's five each failed the tests they should.
+- Matrix audit: every I/O row has a covering test that ran and passed -- hook present, extra path, path outside `planning-artifacts/`, no reason, no `env`, push timeout (64.1 replay), key already done, `origin/main` unreadable, blocked-twin publish failure.
+
+**Residual risks.**
+- The Manual check is not run: after the first landing through this code, `origin/main`'s ledger must read that story `done` in a `marshal: promote sprint-status ledger` commit, and `.steward/preflight-skips.log` must name that sha and the story. It can only happen on a real landing.
+- Finalize now REFUSES a merged landing whenever it cannot prove the key `done` on `origin/main` (a fetch failure, a contended ledger lock, a lost push race, a hand-run land for a key not in the ledger). That is the intent; the two deferred rows record the parts that need an operator decision.
+- The spec's sentence that Story 56.1 renders the owed promote + ledger "in `marshal status` and in `fleet-picture`'s ATTENTION" is only true of `fleet-picture`: `marshal status` carries the refusal and the superseded flag but does not read the ledger (AD-5). A review may not edit the spec, so it is recorded here.
+- The real `scripts/pre_push_preflight.sh` is exercised only by a scratch-repo check in review, not by a test in this diff; the adapter tests use a synthetic hook with the same variable names.
