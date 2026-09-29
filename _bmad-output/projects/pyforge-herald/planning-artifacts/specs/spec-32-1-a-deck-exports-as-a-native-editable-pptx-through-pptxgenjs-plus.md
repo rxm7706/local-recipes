@@ -76,6 +76,7 @@ Type / Effort / Deps: feature / M / S-28.2.
 
 ## Tasks
 
+- [ ] Read `pyforge.herald.deck_export_native` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
 - [ ] `pptx_native.py`: the Marp-to-slide-model parser (stdlib), the JSON handoff, the Node call, `retire_superseded`
 - [ ] `node/pptx_native.mjs` as package data; declare it in the package build
 - [ ] `PptxgenjsExportPlugin` in `exporters.py`
@@ -89,12 +90,14 @@ Type / Effort / Deps: feature / M / S-28.2.
 ## Boundaries & Constraints
 
 **Always:**
+- **The flag reader** (coordinator ruling 2026-09-28): `herald deck pptx-native` reads `pyforge.herald.deck_export_native` through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract (`75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity`). If 75.1 has not landed when this story runs, add it to `pyforge.core` in exactly 75.1's shape -- `read_boolean(key, default=False)` in `src/shared/packages/pyforge-core/src/pyforge/core/flags.py`: it resolves the tree as `cutover_root.resolve_flags_path` does, returns False for `state: DISABLED`, returns the `defaultVariant`'s value when it is a bool, and reads False with a named WARN on stderr for a missing tree, a missing key or a non-bool value, never True; with `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, reconciled on `spec-pyforge-core` -- and never write a station-local reader.
 - The `pixi.toml` change is a hand edit followed by `pixi lock`, because the pre-shell hook refuses a live `pixi add` or `pixi update`. `environment.yaml` is regenerated in the same PR, and `pyforge-station-tests` runs before the push, since the shared-surface rule fires every station suite in CI.
 - The export runs from the Guild env; station code names `-e pyforge-guild`, never `-e local-recipes`.
 - Retire only after a successful write, and only the older version of the `-deck-native` kind (Story 28.2's rule).
 - The PR carries the `maintenance` label.
 
 **Never:**
+- Do not write a station-local flag reader, and do not parse the flag tree from herald code.
 - Do not change `marp --pptx`, `PptxTemplateExporter`, the python-pptx fill or their outputs.
 - Do not render slides as images, and do not require Chrome.
 - Do not add a mason dependency or edit a mason file; `pptxgenjs-plus-jsx` is out of scope.

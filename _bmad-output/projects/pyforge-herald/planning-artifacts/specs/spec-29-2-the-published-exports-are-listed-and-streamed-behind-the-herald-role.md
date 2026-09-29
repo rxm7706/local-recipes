@@ -74,6 +74,7 @@ Type / Effort / Deps: feature / M / S-29.1.
 
 ## Tasks
 
+- [ ] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape; the `refresh_deck_exports` management command reads it through `django_pyforge.flags.evaluate_boolean`
 - [ ] Re-read steward Story 74.1's landed contract before starting
 - [ ] `DeckExport` model, `migrations/0001_initial.py`, `refresh_deck_exports`
 - [ ] The Liquibase changeset and its `db.changelog-master.yaml` include; the extraction map entry
@@ -84,6 +85,8 @@ Type / Effort / Deps: feature / M / S-29.1.
 ## Boundaries & Constraints
 
 **Always:**
+- **The flag reader** (coordinator ruling 2026-09-28): The deck-exports route handlers in `pyforge.herald.station_api` read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract (`75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity`). If 75.1 has not landed when this story runs, add it to `pyforge.core` in exactly 75.1's shape -- `read_boolean(key, default=False)` in `src/shared/packages/pyforge-core/src/pyforge/core/flags.py`: it resolves the tree as `cutover_root.resolve_flags_path` does, returns False for `state: DISABLED`, returns the `defaultVariant`'s value when it is a bool, and reads False with a named WARN on stderr for a missing tree, a missing key or a non-bool value, never True; with `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, reconciled on `spec-pyforge-core` -- and never write a station-local reader.
+- Portal and Django paths (the `refresh_deck_exports` management command) read `pyforge.herald.deck_publish` through `django_pyforge.flags.evaluate_boolean`, never `read_boolean` and never a second reader.
 - **Blocked until steward Story 74.1 has landed; the operator flips it.** Do not start this story while 74.1 is unlanded.
 - Stream in bounded chunks; nothing reads a whole object into memory or a model field.
 - The routes stay under `/stations/herald/api/v1/`, and the host keeps loading `pyforge.herald.station_api` by name (`src/platform/config/station_api.py:122`). A host edit, if one is needed, loads by name the same way and is reconciled with the Spec that governs that file.
@@ -91,6 +94,7 @@ Type / Effort / Deps: feature / M / S-29.1.
 - The PR carries the `maintenance` label.
 
 **Never:**
+- Do not write a station-local flag reader, and do not parse the flag tree from herald code.
 - Do not add a `BinaryField`, `BYTEA` or any bytes column.
 - Do not add `django-cors-headers` or any `Access-Control-*` header.
 - Do not let a portal request write `DeckExport` or the store.

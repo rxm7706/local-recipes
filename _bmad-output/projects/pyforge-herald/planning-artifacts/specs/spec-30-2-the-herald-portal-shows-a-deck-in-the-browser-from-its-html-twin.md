@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / M / S-29.2, S-30.1.
 
 ## Tasks
 
+- [ ] Read `pyforge.herald.deck_viewer` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape; the django-herald `decks/` and `decks/<slug>/view/` views read it through `django_pyforge.flags.evaluate_boolean`
 - [ ] The twin route on herald's v1 sub-app, with the CSP header, behind Story 29.2's read gate
 - [ ] The two django-herald views, their URLs and templates (chrome from `django-pyforge`), and the Pitch-tab link
 - [ ] `src/platform/tests/test_herald_portal_deck_viewer.py` and a Playwright zero-foreign-request check
@@ -74,6 +75,8 @@ Type / Effort / Deps: feature / M / S-29.2, S-30.1.
 ## Boundaries & Constraints
 
 **Always:**
+- **The flag reader** (coordinator ruling 2026-09-28): The deck-twins route handler in `pyforge.herald.station_api` reads `pyforge.herald.deck_viewer` through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract (`75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity`). If 75.1 has not landed when this story runs, add it to `pyforge.core` in exactly 75.1's shape -- `read_boolean(key, default=False)` in `src/shared/packages/pyforge-core/src/pyforge/core/flags.py`: it resolves the tree as `cutover_root.resolve_flags_path` does, returns False for `state: DISABLED`, returns the `defaultVariant`'s value when it is a bool, and reads False with a named WARN on stderr for a missing tree, a missing key or a non-bool value, never True; with `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, reconciled on `spec-pyforge-core` -- and never write a station-local reader.
+- Portal and Django paths (the django-herald `decks/` and `decks/<slug>/view/` views) read `pyforge.herald.deck_viewer` through `django_pyforge.flags.evaluate_boolean`, never `read_boolean` and never a second reader.
 - The twin is served under the portal's own origin, from the store, through the station package (AD-22).
 - The iframe is sandboxed, and the CSP names only `'self'`.
 - Chrome comes from `django-pyforge` only (canopy:AD-3); django-herald ships no base layout.
@@ -81,6 +84,7 @@ Type / Effort / Deps: feature / M / S-29.2, S-30.1.
 - The PR carries the `maintenance` label.
 
 **Never:**
+- Do not write a station-local flag reader, and do not parse the flag tree from herald code.
 - Do not parse `.pptx` in the browser, and add no PPTXjs, jQuery or JSZip.
 - Do not send a CORS header, and do not add `django-cors-headers`.
 - Do not serve a twin from git or from the local filesystem in production; the store is its home.

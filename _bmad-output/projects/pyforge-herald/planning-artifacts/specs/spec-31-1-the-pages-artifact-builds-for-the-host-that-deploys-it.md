@@ -43,8 +43,9 @@ so the site must stay fully static.
 - `pages-check` exits 1 when a script, stylesheet, font, image, `fetch(` or XHR in the artifact
   names another origin, or when an internal link is absolute to a host other than the configured
   one. Plain navigation links pass.
-- The build reads the flag from the one tree, the way `pyforge.core.cutover_root` does
-  (`PYFORGE_FLAGS_PATH`, else `src/platform/config/flags.json`). No second flag file.
+- The build step that chooses the host inputs reads the flag through `pyforge.core.flags.read_boolean`
+  (steward Story 75.1's contract), which resolves the one tree (`PYFORGE_FLAGS_PATH`, else
+  `src/platform/config/flags.json`). No second flag file and no station-local reader.
 
 Ledger key: `31-1-the-pages-artifact-builds-for-the-host-that-deploys-it`.
 Ledger status (do not edit the ledger): `backlog`.
@@ -68,6 +69,7 @@ Type / Effort / Deps: feature / S / S-27.2.
 
 ## Tasks
 
+- [ ] Read `pyforge.herald.pages_second_host` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
 - [ ] Host inputs through the assembler and `pages-build`, defaulting to the public values
 - [ ] `dashboard.yml`: pass `configure-pages`' outputs when the flag is ON
 - [ ] `pages-check`: the cross-origin and absolute-link checks
@@ -78,6 +80,7 @@ Type / Effort / Deps: feature / S / S-27.2.
 ## Boundaries & Constraints
 
 **Always:**
+- **The flag reader** (coordinator ruling 2026-09-28): The build step that chooses the host inputs (run in an env that carries `pyforge-core`, such as the Guild env; the `site` env gains no pyforge dependency) reads `pyforge.herald.pages_second_host` through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract (`75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity`). If 75.1 has not landed when this story runs, add it to `pyforge.core` in exactly 75.1's shape -- `read_boolean(key, default=False)` in `src/shared/packages/pyforge-core/src/pyforge/core/flags.py`: it resolves the tree as `cutover_root.resolve_flags_path` does, returns False for `state: DISABLED`, returns the `defaultVariant`'s value when it is a bool, and reads False with a named WARN on stderr for a missing tree, a missing key or a non-bool value, never True; with `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, reconciled on `spec-pyforge-core` -- and never write a station-local reader.
 - One artifact and one deploy caller per repository (AD-21 rule 2): `dashboard.yml` stays the only `actions/deploy-pages` caller.
 - The public site's URLs do not change; the public build is the default.
 - A vendored upstream file stays byte-identical to its recorded commit (AD-21 rule 5); local behaviour lives in local files.
@@ -85,6 +88,7 @@ Type / Effort / Deps: feature / S / S-27.2.
 - The PR carries the `maintenance` label.
 
 **Never:**
+- Do not write a station-local flag reader, and do not parse the flag tree from herald code.
 - Do not add a second workflow, assembler or artifact definition.
 - Do not add any runtime call to the platform or another origin, and no CORS rule anywhere.
 - Do not add a second flag file or read flags from environment variables as a provider.

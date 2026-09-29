@@ -324,6 +324,9 @@ verify_commands = [
   "src/platform/config/station_api.py",
   "src/platform/tests/test_herald_deck_exports.py",
   # co-governor reconciles (core governs every station's src)
+  # the flag reader, if steward 75.1 has not landed (added in pyforge.core in 75.1's shape)
+  "src/shared/packages/pyforge-core/src/pyforge/core/flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "30" = [  # a deck is readable in the browser from its HTML twin (spec-pyforge-herald CAP-55), added 2026-09-28 (night)
@@ -341,6 +344,9 @@ verify_commands = [
   "tests/scripts/test_deck_export.py",
   "src/platform/config/flags.json",
   "src/platform/tests/test_herald_portal_deck_viewer.py",
+  # the flag reader, if steward 75.1 has not landed (added in pyforge.core in 75.1's shape)
+  "src/shared/packages/pyforge-core/src/pyforge/core/flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "31" = [  # the docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56), added 2026-09-28 (night)
@@ -361,6 +367,9 @@ verify_commands = [
   "docs/how-to/README.md",
   "docs/map.yaml",
   "docs/MAP.md",
+  # the flag reader, if steward 75.1 has not landed (added in pyforge.core in 75.1's shape)
+  "src/shared/packages/pyforge-core/src/pyforge/core/flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "32" = [  # a deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57), added 2026-09-28 (night)
@@ -374,6 +383,9 @@ verify_commands = [
   # 32.1: the new -deck-native exports and the flag key
   "presentations/**",
   "src/platform/config/flags.json",
+  # the flag reader, if steward 75.1 has not landed (added in pyforge.core in 75.1's shape)
+  "src/shared/packages/pyforge-core/src/pyforge/core/flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 

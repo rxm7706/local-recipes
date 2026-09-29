@@ -73,6 +73,7 @@ Type / Effort / Deps: feature / M / S-28.2, S-29.1.
 
 ## Tasks
 
+- [ ] Read `pyforge.herald.deck_viewer` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
 - [ ] Vendor fonts in the 14 React decks (`index.html`, `package.json`, `vite.config.js`); set `base: './'`
 - [ ] Re-export the agentic-sdlc and pyforge-warden standalones with the reference vendored (extend `scripts/deck_export.py` only if needed)
 - [ ] `twins.py`: the scan, the React build, the bundle manifest
@@ -84,6 +85,7 @@ Type / Effort / Deps: feature / M / S-28.2, S-29.1.
 ## Boundaries & Constraints
 
 **Always:**
+- **The flag reader** (coordinator ruling 2026-09-28): `herald deck publish` (whether it builds and uploads twins) reads `pyforge.herald.deck_viewer` through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract (`75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity`). If 75.1 has not landed when this story runs, add it to `pyforge.core` in exactly 75.1's shape -- `read_boolean(key, default=False)` in `src/shared/packages/pyforge-core/src/pyforge/core/flags.py`: it resolves the tree as `cutover_root.resolve_flags_path` does, returns False for `state: DISABLED`, returns the `defaultVariant`'s value when it is a bool, and reads False with a named WARN on stderr for a missing tree, a missing key or a non-bool value, never True; with `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, reconciled on `spec-pyforge-core` -- and never write a station-local reader.
 - The scan is the one definition of "self-contained"; the portal (30.2) and the tests reuse it.
 - Fonts come from npm packages resolved at build time, through the same registry path as vite itself; no network at view time.
 - A re-exported standalone goes through `deck-export` and CAP-53's one-version rule, never a hand edit of a dated file.
@@ -91,6 +93,7 @@ Type / Effort / Deps: feature / M / S-28.2, S-29.1.
 - The PR carries the `maintenance` label.
 
 **Never:**
+- Do not write a station-local flag reader, and do not parse the flag tree from herald code.
 - Do not track `dist/`, `node_modules/` or a font binary.
 - Do not parse `.pptx` in the browser, and add no PPTXjs, jQuery or JSZip.
 - Do not publish a twin that fails the scan, or loosen the scan to let one through.

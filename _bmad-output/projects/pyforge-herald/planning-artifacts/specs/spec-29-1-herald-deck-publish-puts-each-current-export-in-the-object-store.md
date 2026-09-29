@@ -72,6 +72,7 @@ Type / Effort / Deps: feature / M / S-28.1.
 
 ## Tasks
 
+- [ ] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
 - [ ] Re-read steward Story 74.1's landed contract; if it differs from D2's reading, follow 74.1 and append the deviation to the Spec memlog
 - [ ] `deck_store.py`: the port, the S3 adapter, the in-memory fake
 - [ ] `deck_publish.py`: current-export resolution through `deck_versions`, sha256, `put_if_absent`, the manifest
@@ -84,6 +85,7 @@ Type / Effort / Deps: feature / M / S-28.1.
 ## Boundaries & Constraints
 
 **Always:**
+- **The flag reader** (coordinator ruling 2026-09-28): `herald deck publish` and `herald deck exports` read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean`, steward Story 75.1's contract (`75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity`). If 75.1 has not landed when this story runs, add it to `pyforge.core` in exactly 75.1's shape -- `read_boolean(key, default=False)` in `src/shared/packages/pyforge-core/src/pyforge/core/flags.py`: it resolves the tree as `cutover_root.resolve_flags_path` does, returns False for `state: DISABLED`, returns the `defaultVariant`'s value when it is a bool, and reads False with a named WARN on stderr for a missing tree, a missing key or a non-bool value, never True; with `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, reconciled on `spec-pyforge-core` -- and never write a station-local reader.
 - **Blocked until steward Story 74.1 has landed; the operator flips it.** Marshal's `Deps:` parser is station-local, so the cross-station precondition is a ledger gate (AGENTS.md § Known pitfalls). Do not start this story while 74.1 is unlanded.
 - Publish only the current export of each kind (CAP-53 D2, through `pyforge.herald.deck_versions`); never a second definition of current.
 - Stream: never read a whole export into memory. Hash while streaming or in bounded chunks.
@@ -92,6 +94,7 @@ Type / Effort / Deps: feature / M / S-28.1.
 - The PR carries the `maintenance` label.
 
 **Never:**
+- Do not write a station-local flag reader, and do not parse the flag tree from herald code.
 - Do not write bytes or metadata to PostgreSQL; the manifest in the store is the metadata of record (D1).
 - Do not import `config.object_storage`, `django` or any `src/platform/` module from the base herald package, and do not add a `pyforge.*` import under `src/platform/`.
 - Do not edit steward-owned files (the chart's values, the seam contract, `src/platform/config/object_storage.py`).
