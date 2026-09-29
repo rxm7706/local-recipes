@@ -4316,6 +4316,18 @@ capabilities:
     heading: "steward session check reads marshal seed check's envelope, whatever its exit code"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-163
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the object-storage seam gets its first consumer: a station streams bytes in and out by sha256 key"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-164
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "steward keys learns the GitHub Enterprise host: a read identity for the fleet scan, a PR-draft identity only for an approved proposal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1

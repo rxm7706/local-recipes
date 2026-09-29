@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-28'   # AMENDED 2026-09-28 (operator rulings): Story 72.1 amended -- CAP-5's size bound restated 1 GB -> 2 GB, the pixi stop replaced by a Kinship to spec-pyforge-mason:CAP-30 (mason Story 20.1) and an AC that the Guild's pixi does not move, virtualenv 21 -> 20 and filelock 4 -> 3 accepted on evidence; FR-34 amended in place; key, status and counts unchanged. Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-35 / CAP-162; Epic 73 / Story 73.1 minted; Story 72.1 amended (atlas's exclusion documented beside warden's, the Guild's measured size and pins); § Currency reconciliation — 2026-09-28 (later) appended. Earlier 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): Epics 74-76 minted -- Stories 74.1-74.2 (spec-pyforge-steward CAP-163, FR-36), 75.1 (CAP-164, FR-37), 76.1-76.3 (spec-feature-flag-governance CAP-5); § Currency reconciliation — 2026-09-28 (night) appended. Earlier: AMENDED 2026-09-28 (operator rulings): Story 72.1 amended -- CAP-5's size bound restated 1 GB -> 2 GB, the pixi stop replaced by a Kinship to spec-pyforge-mason:CAP-30 (mason Story 20.1) and an AC that the Guild's pixi does not move, virtualenv 21 -> 20 and filelock 4 -> 3 accepted on evidence; FR-34 amended in place; key, status and counts unchanged. Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-35 / CAP-162; Epic 73 / Story 73.1 minted; Story 72.1 amended (atlas's exclusion documented beside warden's, the Guild's measured size and pins); § Currency reconciliation — 2026-09-28 (later) appended. Earlier 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
 currency_review: "Reviewed 2026-09-24 (arch→epics cascade after the spec→prd→arch re-stamps for Story 63.4, `steward session check`) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-24): no AD added or changed. Story 63.4 already carries its own `### Story 63.4` heading (line 4179, Epic 63) with ledger key `63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point`; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-17 (arch→epics cascade after the spec→prd→arch re-stamps for the one-chain steward fold) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-17): no AD added or changed. Fold provenance heading already cites spec-pyforge-steward CAP-1..145; historical stories keep sequential epic numbers 1..64. Every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -4856,6 +4856,209 @@ report"; restoring the top-level `payload["kit"]` read fails the recorded-docume
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
+## Epic 74: The object-storage seam gets its first consumer (spec-pyforge-steward CAP-163)
+
+Minted 2026-09-28 (night) from the station Dream's entry of the same name and the operator's rulings of that date:
+Herald's deck exports are the seam's first consumer, and bytes never go in PostgreSQL. `src/platform/config/object_storage.py`
+(Story 50.3, CAP-97) shipped on 2026-09-10 with no consumer; Epic 50 is `done`, so this is a new epic. Story 74.1 is the
+contract herald's Stories 29.1 and 29.2 wait on — they are minted `blocked` on "steward 74.1" in herald's ledger, and the
+operator flips them when it lands (marshal's `Deps:` parser is station-local). **HARD boundaries:** `src/platform/` never
+imports `pyforge.*`, and the chrome never imports the host's `config` package; the store is consumed and never a workload
+the chart renders; credentials stay secret references (canopy:AD-19); no presigned URL, no new process, no second S3
+client; PostgreSQL stays at 17; Herald's metadata table, its Liquibase changeset and its `herald deck publish` verb are
+herald's, not this epic's.
+
+### Story 74.1: A station streams bytes to object storage by sha256 key — herald's deck exports wait on it
+
+As a station author whose portal must keep large bytes (Herald's deck exports first),
+I want one streaming, sha256-addressed put/get contract over the platform's object-storage seam,
+So that bytes land in the consumed store instead of PostgreSQL or git alone, and herald's Stories 29.1 / 29.2 can build on it.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-163 (FR-36; extends CAP-94..97);
+AD-1; canopy:AD-19 • flag `pyforge.steward.object_store_consumer` • unblocks herald Stories 29.1 and 29.2 (their ledger rows
+are `blocked` on this story; the operator flips them)
+**Surface:** `src/shared/packages/django-pyforge/src/django_pyforge/object_store.py` (new: `put_stream`, `open_stream`,
+`stat`, `ObjectStoreDisabled`, `StoredObject`), `src/platform/config/settings/base.py` (`OBJECT_STORAGE_BUCKET`,
+`OBJECT_STORAGE_PREFIX`, `OBJECT_STORAGE_CLIENT_FACTORY`), `src/platform/config/object_storage.py` (docstring: the seam has
+a consumer), `src/platform/config/flags.json` (the key, default off), tests: `src/platform/tests/test_object_store_seam.py`
+(new; real ephemeral `silo`, CAP-97's pattern), `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py`
+(new: the two import rules, so the station's own suite runs them).
+**Given** the seam resolves one S3 client and no feature consumes it
+**When** a caller hands `put_stream` a file object and a content type
+**Then** the bytes are spooled to a bounded temporary file while hashed, uploaded under `<prefix>/sha256/<hex>` unless that
+key exists, and a `StoredObject` (key, sha256, size, content type) comes back; `open_stream` yields the same bytes in chunks
+**And** a key that is not `sha256/<64 lowercase hex>` is refused before any client call; an unset bucket or prefix raises
+`ImproperlyConfigured` naming the setting; with the flag OFF both calls raise `ObjectStoreDisabled`; a meta-test reds a
+`src/platform` import of `pyforge.*` and a `django_pyforge` import of `config.*`;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
+### Story 74.2: The chart names the bucket and prefix per environment and reaches only the consumed store
+
+As the operator deploying the platform into an environment,
+I want the Helm chart to carry that environment's bucket and prefix and to open egress only to the consumed endpoint,
+So that each environment's objects stay apart and the store is reached without self-hosting one.
+
+**Type:** feature • **Effort:** S • **Deps:** S-74.1 • **FR/AD:** spec-pyforge-steward CAP-163 (FR-36); canopy:AD-19;
+CAP-94's dated exception • flag `pyforge.steward.object_store_consumer` (the same key as 74.1)
+**Surface:** `src/platform/deploy/charts/platform/values.yaml` (`objectStorage.enabled`, `objectStorage.bucket`,
+`objectStorage.prefix`, `networkPolicy.objectStorage` egress CIDR and port), `src/platform/deploy/charts/platform/templates/_helpers.tpl`
+(plain env for bucket and prefix, `required` when enabled), `src/platform/deploy/charts/platform/templates/networkpolicy-egress.yaml`
+(web and worker only), `src/platform/deploy/overlays/ocp/core-overrides.yaml` if it pins values, tests:
+`src/platform/tests/test_chart_invariants.py`.
+**Given** the chart wires the three object-storage secrets as optional references and names no bucket, prefix or egress
+**When** a release sets `objectStorage.enabled` with a bucket and prefix
+**Then** web and worker pods carry `OBJECT_STORAGE_BUCKET` and `OBJECT_STORAGE_PREFIX` as plain values and the credentials
+still as `secretKeyRef` only; enabled with either value empty fails the render naming it
+**And** with `networkPolicy.enabled` the egress policies of web and worker, and no other workload, allow the configured
+endpoint; no rendered manifest runs an object-store image (silo, garage, minio); disabled, the render is byte-identical to
+today's; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
+## Epic 75: `steward keys` reaches GitHub Enterprise with scoped identities (spec-pyforge-steward CAP-164)
+
+Minted 2026-09-28 (night) from the station Dream's entry *Warden's fleet scan reaches GitHub Enterprise with host-scoped
+credentials the key inventory holds* and the operator's rulings of that date: the scan covers the enterprise fleet on GHE,
+and a fleet fix PR opens only after the operator approves that proposal. Epic 1 (FR-5, FR-7) is `done`, so this is a new
+epic. Warden's Story 16.1 is minted `blocked` on "steward 75.1" in warden's ledger; the operator flips it when 75.1 lands.
+**HARD boundaries:** `.claude/skills/conda-forge-expert/scripts/_http.py` does not change (AD-2 amended 2026-09-28 instead:
+keys attaches its own issued enterprise identities; host membership stays in `keys.py`), so no CFE retro is owed; no inbound
+webhook or listener; no calendar rotation and no provider API call; a token never rides a CLI flag, argv, stdout or a
+log; the chart wiring for deployed pods lands with the story that deploys the fleet scan, as secret references only.
+
+### Story 75.1: `steward keys` resolves the GitHub Enterprise host with a read identity and a PR-draft identity
+
+As the operator whose fleet scan runs against GitHub Enterprise,
+I want steward keys to hold a read identity for the scan and a PR-draft identity only for a proposal I approved, each
+scoped to the enterprise host and handed to a child process only,
+So that the scan never holds a token that writes to a fleet repo, and warden's Story 16.1 can run.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-164 (FR-37; extends FR-5, FR-7); AD-2
+(amended 2026-09-28), AD-3, AD-8, AD-9 • flag `pyforge.steward.ghe_fleet_credentials`, read on the CLI by
+`pyforge.core.flags.read_boolean`, which this story adds in the `pyforge.core.cutover_root` shape (Story 44.12's
+precedent; Stories 76.1 and 76.3 later make it per-environment and route it through OpenFeature) • unblocks warden Story
+16.1 (its ledger row is `blocked` on this story; the operator flips it)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` (the enterprise host from
+`_http.resolve_github_api_urls`, the issued-identity attachment, the two scopes, `exec`, the audit finding),
+`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` (new: `read_boolean`) and
+`src/shared/packages/pyforge-core/tests/unit/test_flags.py`,
+`src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` (`keys exec` verb, disabled when the flag is off),
+`src/platform/config/flags.json` (the key, default off), `docs/how-to/` (issue, encrypt and record the two identities; the
+recording procedure beside `ocp-cluster-bringup.md` § 5), tests: `tests/unit/test_keys*.py`, `tests/unit/test_cli.py`
+(`test_keys_host_scoping.py`'s `JFROG_API_KEY` regression untouched and green).
+**Given** `auth_headers_for` sends a GitHub token only to github.com and the inventory holds no issued GitHub identity
+**When** `GITHUB_API_BASE_URL` names an enterprise host and the two scopes are recorded
+**Then** a `ghe-fleet-read` credential resolves a Bearer header for that host and nothing for github.com, another host or a
+look-alike; unset, nothing resolves for any enterprise host
+**And** `steward keys exec --scope ghe-fleet-read -- <argv>` runs a child whose environment carries `GH_HOST` and
+`GH_ENTERPRISE_TOKEN` and none of `GITHUB_TOKEN`, `GH_TOKEN`, `GITHUB_ENTERPRISE_TOKEN` from the parent, and a planted
+token appears in no argv, stdout, stderr or journal; `--scope ghe-fleet-pr-draft` without `--approval` exits 2 and runs
+nothing, and with one runs and journals the reference, never the token, to `.steward/keys-exec.log`; `keys list` and
+`keys audit` never print a value, and `audit` reports a payload serving both scopes; `keys rotate --scope` re-encrypts each;
+with the flag OFF `keys exec` is listed as disabled and exits 2, and the resolver resolves no enterprise host;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
+## Epic 76: The one flag tree can say what the flag rule needs (spec-feature-flag-governance CAP-5)
+
+Minted 2026-09-28 (night) from `docs/governance/spec-feature-flag-governance/SPEC.md` (the Guild's Spec, `ready`, rule date
+2026-09-28), whose *Who does the work* table gives CAP-5 to steward. Every story below binds to a CAP on a Spec that lives
+in `docs/governance/`, not in this project's `specs/` tree, so these citations are where its steward stories are
+enumerated — the same relay doctor Epic 24 uses for `spec-coverage-gate-independence` CAP-1..3, with no station CAP and no
+station FR minted. The Guild's gate (CAP-2, doctor's) reads what these stories put in the tree; per-environment values are
+the prerequisite of its "default per environment" check. A station CLI's flag reader, `pyforge.core.flags.read_boolean`,
+arrives with Story 75.1 in the `pyforge.core.cutover_root` shape (Story 44.12's precedent; `spec-pyforge-core` co-governs
+the path and is reconciled, not blocked); Story 76.1 makes it read the per-environment rendered tree (hence `Deps: S-75.1`)
+and Story 76.3 routes it through OpenFeature. All three stories are `flag-exempt: flag-infrastructure`.
+**HARD boundaries:** one tree, one provider, no egress (canopy:AD-11, amended 2026-09-28 for value-only overlays); no flagd
+daemon, no hosted flag service, no environment variable as a provider; no targeting rules (Q5); the Guild Spec and its
+memlog are not edited here; `src/platform/` never imports `pyforge.*`, and station code reads flags only through
+`pyforge.core` or `django_pyforge.flags`.
+
+### Story 76.1: The one flag tree carries per-environment values, so off in production is a value
+
+As the operator who ruled that every capability ships behind a flag,
+I want each flag's value per environment written beside the one tree, rendered into the tree each environment mounts, and
+read the same way by the host and by a station CLI,
+So that "off in production, on in staging and dev" is a reviewed value instead of an ops convention.
+
+**Type:** feature • **Effort:** M • **Deps:** S-75.1 • **FR/AD:** spec-feature-flag-governance CAP-5; canopy:AD-11 (amended
+2026-09-28); the spine's Deferred row *FILE flag env promotion overlays* • `flag-exempt: flag-infrastructure`
+**Surface:** `src/platform/config/flag-overlays.json` (new: `dev`, `staging`, `production`, value-only),
+`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` (Story 75.1's module gains the environment from
+`PYFORGE_ENVIRONMENT`, overlay composition and its validation errors, and the rendered tree; `read_boolean` reads the
+rendered tree), `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` (the host configures its FILE provider from
+the same rendered tree; a `render --environment` verb), `src/platform/deploy/charts/platform/values.yaml` and
+`templates/flags-configmap.yaml` / `_helpers.tpl` (`flags.environment`, required, one of the three; `PYFORGE_ENVIRONMENT` on
+every workload that reads flags), `pixi.toml` (a `flags-render` task only if the chart's `--set-file` needs one), tests:
+`src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`,
+`src/platform/tests/test_chart_invariants.py`.
+**Given** one tree whose `defaultVariant` is each flag's only value in every environment
+**When** the overlay document names a variant for a key in one environment
+**Then** the rendered tree for that environment carries that variant, the others keep the tree's, and the host's FILE
+provider, `evaluate_from_source` and `pyforge.core.flags.read_boolean` all read the rendered tree and agree; a tree
+`state: DISABLED` wins in every environment
+**And** an overlay key the tree lacks, a variant the flag lacks, an unknown environment, or an overlay entry that is not a
+variant name fails with a named error; the chart refuses a release without `flags.environment`; the production and dev
+ConfigMaps differ exactly by the overlay values; no evaluated value changes on landing;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
+### Story 76.2: Every flag in the tree carries its owner, story and cleanup clock in flagd metadata
+
+As the Guild's flag gate (doctor's CAP-2 story),
+I want every flag in the tree to name its owner, story, creation date, the date it went ON everywhere and its cleanup date,
+So that the 90-day clock (Q4) is read from the tree, not reconstructed from history.
+
+**Type:** feature • **Effort:** S • **Deps:** S-76.1 • **FR/AD:** spec-feature-flag-governance CAP-5 (Q4) •
+`flag-exempt: flag-infrastructure`
+**Surface:** `src/platform/config/flags.json` (flag-level `metadata` on every flag),
+`src/shared/packages/pyforge-core/src/pyforge/core/flags.py` (the metadata check, beside 76.1's overlay validation), tests:
+`src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py` (the
+provider loads the tree with metadata and evaluates as before).
+**Given** the tree's flags carry no owner, story or dates
+**When** each flag gains `metadata` with `owner`, `story`, `created`, `on_everywhere` and `cleanup_by`
+**Then** the metadata check refuses a flag missing a field or carrying a malformed date, and refuses `on_everywhere` set
+while any environment's rendered value is not ON (or empty while every one is), and `cleanup_by` other than
+`on_everywhere` + 90 days
+**And** `pyforge.three_surfaces` and `pyforge.cutover_root` carry dates read from the tree's history; a flag whose
+`cleanup_by` has already passed is named in the story's result as owing a removal story (Q4); the FILE provider evaluates
+the same values as before; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
+### Story 76.3: The ledger query's flags fold into the one tree and evaluate through OpenFeature
+
+As a reviewer holding canopy:AD-11's "two trees is a review-blocking finding",
+I want the six steward flags that read `.steward/flags.json` and `FLAGS_<NAME>` to live in the one tree and evaluate
+through OpenFeature,
+So that steward has no second flag tree and no environment-variable provider.
+
+**Type:** feature • **Effort:** M • **Deps:** S-76.1, S-76.2 • **FR/AD:** spec-feature-flag-governance CAP-5; canopy:AD-11;
+spec-pyforge-steward CAP-146..149 (Story 65.1's flags), CAP-141 (Story 61.3's glass flag) • `flag-exempt: flag-infrastructure`
+**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/flags.py` (`read_boolean` evaluates the rendered tree
+through OpenFeature's in-process FILE provider, imported function-locally; a reader that cannot evaluate reads OFF with a
+named WARN), `src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py` (`eval_flag` through
+`pyforge.core.flags.read_boolean`; the `.steward/flags.json` path and the `FLAGS_<NAME>` layer removed),
+`src/shared/packages/pyforge-steward/src/pyforge/steward/glass.py` (`enable_glass_export`), `.../steward/cli.py` (`--flag`
+help), `src/platform/config/flags.json` and `src/platform/config/flag-overlays.json` (six keys with metadata), `pixi.toml`
+(the four OpenFeature packages the platform features already pin — `openfeature-sdk`, `-flagd-api`, `-flagd-core`,
+`-provider-flagd` — added to the `pyforge-guild` and `pyforge-steward` features; the two task descriptions that name
+`FLAGS_<NAME>` and `.steward/flags.json`), `pixi.lock`, `environment.yaml` (regenerated),
+`.claude/skills/bmad-sprint-ledger-query/SKILL.md`, `docs/how-to/pixi-tasks.md`, tests:
+`src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `tests/unit/test_sprint_ledger_query.py`,
+`tests/unit/test_glass.py`, a steward meta-test that no module reads `.steward/flags.json` or a `FLAGS_` variable.
+**Given** `eval_flag` resolves `--flag`, then `FLAGS_<NAME>`, then `<repo-root>/.steward/flags.json`, with no SDK
+**When** the six flags become tree keys (`pyforge.steward.ledger_query_postgres_sync`, `…_dossier_export`,
+`…_vizro_dataset`, `…_herald_facts`, `…_jira_github_matrix`, `pyforge.steward.glass_export`), off in production, with
+metadata, and `read_boolean` evaluates through OpenFeature
+**Then** `eval_flag` reads each through `pyforge.core.flags.read_boolean`; `--flag name=value` stays a per-invocation
+override that persists nothing, accepting the tree keys (the old short names map through one table); `FLAGS_<NAME>` and
+`.steward/flags.json` are read by nothing; `steward keys exec`'s flag (Story 75.1) now evaluates through OpenFeature too
+**And** each gated formatter's OFF path refuses as today, naming the tree key; exit codes are unchanged; the meta-test reds
+a module that reads `.steward/flags.json` or a `FLAGS_` variable; the Guild stays under CAP-5's 2 GB bound, re-measured and
+recorded; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -4917,3 +5120,22 @@ seed check and reads its published envelope (AD-1), and `main()` keeps `steward 
 `pixi <0.81` cap moves the Guild's pixi. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key (`73-1`
 and `epic-73` at `backlog`, `epic-73-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`). No
 existing ledger key changed; no blocked key flipped. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`arch→epics` edge after the spine's night re-stamp (§ Currency reconciliation — 2026-09-28 (night): FR-36 / CAP-163 on
+AD-1, canopy:AD-9, canopy:AD-19 and CAP-94's exception; FR-37 / CAP-164 on AD-2 (amended), AD-3 and AD-9;
+`spec-feature-flag-governance` CAP-5 on canopy:AD-11 (amended)). Validated against it: Epic 74 decomposes CAP-163 — 74.1
+wraps CAP-97's one client factory (AD-1) and 74.2 keeps credentials as references (canopy:AD-19) with no object-store
+workload; Epic 75 decomposes CAP-164 — 75.1 attaches the issued enterprise identities under AD-2 as amended and reads the
+host from `_http.py`'s existing row (AD-9), with `_http.py` untouched, and adds the CLI's flag reader
+(`pyforge.core.flags.read_boolean`, the `cutover_root` shape); Epic 76 decomposes the Guild's CAP-5 under canopy:AD-11 as
+amended — value-only overlays and one rendered tree for host and CLI alike (76.1, `Deps: S-75.1`: it extends that
+reader), flag metadata (76.2), and the fold of steward's second tree with the reader routed through OpenFeature (76.3). No
+story depends on a later epic.
+Every new story of `type: feature` in Epics 74 and 75 carries a `flag:` block; Epic 76's three carry
+`flag-exempt: flag-infrastructure` (the Guild's rule, dated 2026-09-28). Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key (`74-1`, `74-2`, `75-1`, `76-1`..`76-3` and `epic-74`..`epic-76` at `backlog`, each
+`epic-<n>-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`). Herald's 29.1 / 29.2 and
+warden's 16.1 wait on 74.1 and 75.1 as `blocked` rows in their own ledgers; no steward key is minted `blocked`, and no
+blocked key flipped. `updated:` bumped.

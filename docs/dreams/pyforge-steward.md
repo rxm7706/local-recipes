@@ -418,8 +418,10 @@ Drift — orphaned between stations.
   - No new process.
   - The capability carries a flag block ([[feature-flag-governance]], same day).
   **Kinships:** [[pyforge-herald]] (same day), CAP-94..97, `spec-pyforge-unifying-strategy` AD-1,
-  canopy:AD-19. Owner: steward. Status: **seed**. The next `bmad-spec` pass mints the CAP (CAP-163
-  onward).
+  canopy:AD-19. Owner: steward.
+  **Amended 2026-09-28 (night, at the mint):** Herald's metadata table and its Liquibase changeset land
+  on Herald's chain, since the table is Herald's; the seam keeps metadata out and stores bytes only.
+  → CAP-163 / Epic 74 / Stories 74.1–74.2 (FR-36), specced 2026-09-28.
 - **2026-09-28 (night) — Proposed: Warden's fleet scan reaches GitHub Enterprise with host-scoped
   credentials the key inventory holds.** Source: the Warden Dream's entry of the same day (the
   security-scanning intake, archived at `archive/docs/intake/system_architecture_specification.md`).
@@ -442,8 +444,11 @@ Drift — orphaned between stations.
   - The posture follows [[work-passports-dated-extracts]]: "Security can show no PAT that opens
     their org or writes ours on their behalf".
   - The capability carries a flag block ([[feature-flag-governance]], same day).
-  **Kinships:** [[pyforge-warden]] (same day), FR-5, FR-7, canopy:AD-19. Owner: steward. Status:
-  **seed**. The next `bmad-spec` pass mints the CAP.
+  **Kinships:** [[pyforge-warden]] (same day), FR-5, FR-7, canopy:AD-19. Owner: steward.
+  **Amended 2026-09-28 (night, at the mint):** the enterprise host stays out of `_http.py`: `keys`
+  attaches its own issued enterprise identities, and AD-2 is amended to say so. The pods' secret
+  references are wired by the story that deploys the fleet scan.
+  → CAP-164 / Epic 75 / Story 75.1 (FR-37), specced 2026-09-28.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
