@@ -123,8 +123,14 @@ the host or the source.
 
   **Kinships:** [[pyforge-atlas]] (dependency history, same day), [[pyforge-mason]] (packaging,
   same day), [[pyforge-steward]] (GHE credentials, same day), CAP-7, CAP-12 and CAP-20.
-  Owner: warden. Status: **seed**. The next `bmad-spec` pass mints the CAPs (CAP-24 onward) and
-  the Non-goals amendment.
+  Owner: warden. → `spec-pyforge-warden` CAP-24 / Epic 14 / Stories 14.1–14.3 (FR-41), CAP-25 /
+  Epic 15 / Story 15.1 (FR-42; `blocked` on mason Story 21.4), CAP-26 / Epic 16 / Stories 16.1–16.4
+  (FR-43; 16.1 `blocked` on steward Story 75.1), specced 2026-09-28; the Spec's Non-goals are
+  re-rendered for the two lifted by ruling 2.
+  **Amended 2026-09-28 (spec pass):** finishing the fix needs the estate's solver at runtime, so the
+  Spec's "never invokes pixi at runtime" now reads "except the actuator's real `--open-fix-prs` path",
+  in a throwaway copy (dry-run still opens no socket); and the lifted non-Python Non-goal became its
+  own story (16.4), because it is core-scan work rather than `django-warden` work.
 
 ## Folded Dreams (2026-09-17)
 

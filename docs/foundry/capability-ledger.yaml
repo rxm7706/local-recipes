@@ -4466,6 +4466,24 @@ capabilities:
     heading: "the TEA advisory reviews the diff from the remote-tracking ref"
     mode: rebuild
     path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-24
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the fix-PR actuator finishes the fix on the estate's repos"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-25
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "SAST joins as an optional plugin: opengrep with estate-owned rules"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-26
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "Warden scans the enterprise fleet on GitHub Enterprise"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
   # atlas one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-atlas:CAP-1
     spec: pyforge-atlas
