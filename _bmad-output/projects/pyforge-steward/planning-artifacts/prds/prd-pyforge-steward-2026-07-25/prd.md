@@ -2,7 +2,8 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-09-28"   # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+# 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (brief->prd, spec->prd) — the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; no FR added. Prior 2026-09-24
@@ -2382,3 +2383,64 @@ them (two decision entries; CAP-5's success and CAP-161 re-rendered). FR-34 is a
 
 **Content changed:** this section added; FR-34's consequences amended in place. No FR renumbered or removed. `updated:`
 bumped.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`spec→prd` edge: `spec-pyforge-steward` gained CAP-163 and CAP-164 on the night of 2026-09-28, from the two
+Realization-log entries of that night (the object-storage seam's first consumer; GitHub Enterprise credentials through the
+key inventory), and a decision on its memlog (the enterprise host stays out of `_http.py`; AD-2 amended). Same-day
+reconcile; each FR is derived from its CAP (`one-chain-per-station`).
+
+### The FR space: FR-36 and FR-37 registered
+
+#### FR-36: The object-storage seam gets its first consumer — a station streams bytes in and out by sha256 key ← CAP-163
+
+A station stores and reads large bytes (Herald's deck exports first) through one streaming, content-addressed contract over
+the platform's consumed object store, never through PostgreSQL. **Consequences (testable):**
+- `django_pyforge.object_store` puts a stream under `<prefix>/sha256/<hex>` and returns the key, sha256, size and content
+  type; the same bytes land once; `get` streams them back in chunks; no whole object is held in memory or a model field.
+- The client is CAP-97's `config.object_storage.object_storage_client()`, named by a setting; the chrome builds no second
+  client and imports nothing from the host's `config` package; `src/platform/` imports no `pyforge.*`.
+- A key that is not `sha256/<64 lowercase hex>` is refused before any client call; an unset bucket or prefix raises
+  `ImproperlyConfigured` naming the setting.
+- The Helm chart names the bucket and prefix per release, carries only secret references for credentials
+  (canopy:AD-19), renders no object-store workload, and with `networkPolicy` enabled allows egress to the consumed endpoint
+  from web and worker only.
+- No presigned URLs in v1; the portal streams every byte behind OIDC and the station role.
+- Behind `pyforge.steward.object_store_consumer`: OFF, `put` and `get` refuse with `ObjectStoreDisabled`.
+
+Decomposes into **Epic 74** (Story 74.1, the contract herald's Stories 29.1 / 29.2 are minted `blocked` on; Story 74.2, the
+chart). A new epic because Epic 50, whose Stories built the seam (CAP-94..97), is `done`.
+
+#### FR-37: `steward keys` learns the GitHub Enterprise host — a read identity for the fleet scan, a PR-draft identity only for an approved proposal ← CAP-164
+
+The key inventory holds the two scoped GitHub Enterprise identities warden's fleet scan and its approved proposals need,
+and hands each token to a child process only. **Consequences (testable):**
+- The resolver resolves an issued enterprise identity for the host `_http.py`'s `GITHUB_API_BASE_URL` row names, and for
+  no other host — github.com, another host, or a look-alike get nothing; unset, nothing resolves.
+- `.steward/keys-inventory.yaml` gains two `issued` rows, `ghe-fleet-read` and `ghe-fleet-pr-draft`, each with its own
+  age payload, each rotated by `steward keys rotate --scope`; `keys list` / `keys audit` never print a value, and `audit`
+  reports one payload serving both scopes.
+- `steward keys exec --scope <scope> [--approval <ref>] -- <argv>` puts `GH_HOST` and `GH_ENTERPRISE_TOKEN` in the child's
+  environment only, removes the four ambient GitHub token variables first, and writes the token to no argv, stream or log;
+  the draft scope refuses without an approval reference and journals the reference without the token.
+- `.claude/skills/conda-forge-expert/scripts/_http.py` does not change; the `JFROG_API_KEY` cross-host regression stays
+  green; no inbound route, webhook or scheduler is added.
+- Behind `pyforge.steward.ghe_fleet_credentials`: OFF, `keys exec` is listed as disabled and exits 2, and the resolver
+  resolves no enterprise host.
+
+Decomposes into **Epic 75** (Story 75.1, the story warden's Story 16.1 is minted `blocked` on). A new epic because Epic 1,
+whose Stories built FR-5 and FR-7, is `done`.
+
+### The Guild's CAP-5 lands on this station's backlog without an FR
+
+`docs/governance/spec-feature-flag-governance/SPEC.md` (the Guild's, `ready` 2026-09-28) assigns its CAP-5 — per-environment
+flag values, flag metadata, and the fold of `.steward/flags.json` into the one tree — to steward. It decomposes into
+**Epic 76** (Stories 76.1–76.3) citing that CAP directly, and mints no station FR, as doctor Epic 24 did for
+`spec-coverage-gate-independence` CAP-1..3.
+
+**ONE kernel FR space now FR-1..FR-37** (FR-38 = next free id; the `canopy:`, `suite:` and other prefixed satellite FR
+spaces are unchanged).
+
+**Content changed:** this section added (FR-36, FR-37 registered; the Guild CAP-5 routing note). No FR renumbered or
+removed. `updated:` bumped.

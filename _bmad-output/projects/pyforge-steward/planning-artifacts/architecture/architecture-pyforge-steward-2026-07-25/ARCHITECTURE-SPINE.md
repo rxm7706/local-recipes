@@ -7,7 +7,8 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; one AD amendment owed, carried by Story 67.8. Prior 2026-09-24
@@ -67,6 +68,7 @@ graph TD
 - **Binds:** keys
 - **Prevents:** a second, divergent credential-attachment chokepoint alongside `_http.py`'s existing `skip_auth`-guarded `auth_headers_for` — the exact shape of failure that produced the `JFROG_API_KEY` cross-host leak
 - **Rule:** `steward.keys`'s host-scoping resolver imports and delegates to `_http.py`'s existing `auth_headers_for(url, skip_auth=...)` pattern for anything HTTP-shaped. A credential Steward issues that is HTTP-attachable is registered through this one resolver; no duty module constructs its own `requests`/`urllib` call carrying ambient auth headers.
+- **AMENDED 2026-09-28 (CAP-164, FR-37).** An inventory-issued, host-scoped identity — today the two GitHub Enterprise identities `ghe-fleet-read` and `ghe-fleet-pr-draft` — is attached by `steward.keys` itself, only when a URL's host is the host its scope names, and only through the same `HostScopedCredential` gate. That host is read from `_http.py`'s existing `GITHUB_API_BASE_URL` row (AD-9 holds). Every ambient credential (`JFROG_*`, `GITHUB_TOKEN` / `GH_TOKEN`, netrc) still goes through `auth_headers_for`, and `_http.py` does not change. Why: `auth_headers_for` attaches a GitHub token only to github.com, and teaching it the GHES host would send one ambient token on every CFE caller's GHES request instead of a scoped identity to one consumer, through a CFE change. A token leaves `keys` only in a child process's environment (`steward keys exec`), never on argv, stdout or a log. `keys` stays the one chokepoint.
 
 ### AD-3 — At-rest secrets are `age`-encrypted files in Git; no standing service (FR-2, PRD D2)
 
@@ -376,6 +378,7 @@ Unifying ADs in this file are **canopy AD-n**. Bare `AD-n` in epics is a review-
 - **Binds:** CAP-13, FR-33, FR-34
 - **Prevents:** a flagd daemon, WASM (`wasmtime` absent), per-surface flag code, or a Reloader sidecar to fake "no redeploy"
 - **Rule:** one JSON tree. In-cluster that file is a ConfigMap mounted read-only. The in-process FILE provider **observes the mounted file** (watch or equivalent) so a ConfigMap update becomes live **without a new process** and without rolling the Deployment. Reloader, flagd, or any sidecar for flags is parent canopy:AD-14 and a review-blocking finding. The CLI evaluates **the same bytes** — fetched from the host (authenticated) or, in local-dev only, the file at `src/platform/config/flags.json` that the ConfigMap is built from. Two trees is a review-blocking finding. No egress. Stories that import these packages are blocked until the operator-owned feedstocks exist.
+- **AMENDED 2026-09-28 (`spec-feature-flag-governance` CAP-5, Story 76.1; the Deferred row *FILE flag env promotion overlays*).** Per-environment values are one value-only overlay document beside the tree, `src/platform/config/flag-overlays.json`, keyed `dev` / `staging` / `production`; each entry maps a key the tree defines to one of that flag's variants. The tree stays the only definition of every flag. The rendered tree for an environment — the tree with each overlaid `defaultVariant` replaced — is what the ConfigMap mounts and what every evaluator reads, the host's FILE provider and the CLI alike; a flag whose `state` in the tree is `DISABLED` is off in every environment (the kill switch wins). An overlay that defines a flag, or names a key, variant or environment the tree or this rule lacks, is a second tree and a review-blocking finding. Each flag also carries flagd `metadata` (`owner`, `story`, `created`, `on_everywhere`, `cleanup_by`) that the Guild's flag gate reads (Story 76.2).
 
 #### canopy:AD-12 — Run state is published into PostgreSQL by a supervisor `[ADOPTED]`
 
@@ -573,7 +576,7 @@ flowchart LR
 | Keycloak Token Exchange / `RESOURCE_INDICATORS` | RFC-8707 flag is experimental; audience mapper is the documented interim | First CAP-6 client story that mints delegated tokens (BS-3) |
 | Additional CloudEvents extension attributes beyond `pyforgeloopdepth`, `spec_id`, git sha, SBOM purl, optional work-item id | Stream, DLQ, ceiling, `dataschema`, and Q4 identity fields are bound (canopy:AD-8 + operating-model Q4) | First producer that needs a *further* extension |
 | Supervisor ingest wire from bmad-loop | Topology is bound; Marshal hook details are station-local | Marshal + CAP-17 story |
-| FILE flag env promotion overlays | canopy:AD-11 binds one JSON schema, ConfigMap mount, and in-process watch; overlay *values* per env are ops | First CAP-13 import story |
+| FILE flag env promotion overlays | canopy:AD-11 binds one JSON schema, ConfigMap mount, and in-process watch; overlay *values* per env are ops | First CAP-13 import story — **taken up 2026-09-28 by Story 76.1** (`spec-feature-flag-governance` CAP-5; canopy:AD-11 amended) |
 | Liquibase `DATABASECHANGELOGLOCK` stuck-lock runbook | Companion already names the need; owner is ops not a second DDL path | Before first production CAP-9 Job |
 | BS-5 single DuckDB writer / `read_only=True` | Mechanism is atlas-local; absence-test still required (canopy:AD-15) | First CAP-10 story that opens `atlas.duckdb` |
 | BS-7 `PydanticFormErrorBridge` | Lands in `django-pyforge`; not a cross-station fork if chrome owns it | First CAP-10 / CAP-1 HTMX form story |
@@ -2197,3 +2200,28 @@ against every AD; both land as written:
 No port or adapter boundary moves.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`prd→arch` edge after the PRD's night re-stamp (FR-36 ← CAP-163, Epic 74; FR-37 ← CAP-164, Epic 75), plus the Guild's
+`spec-feature-flag-governance` CAP-5, which lands on this station as Epic 76. Checked against every AD; two are amended,
+the rest hold as written:
+
+- **FR-36 on AD-1 (wrap, never reimplement), canopy:AD-9, canopy:AD-19, and CAP-94's dated exception.** The consumer
+  contract (`django_pyforge.object_store`) wraps CAP-97's one client factory, named by a setting, and never builds a second
+  S3 client; `src/platform/` still imports no `pyforge.*`, and the chrome imports nothing from the host's `config`
+  package. Credentials stay secret references; the bucket and prefix are plain values per release. A consumer's metadata
+  table is its own, in `public`, under a namespaced changeset (canopy:AD-9). The store stays consumed, never a workload the
+  chart renders — canopy:AD-13's "fourth infra kind" clause is satisfied by CAP-94's exception, not reopened.
+- **FR-37 on AD-2 (amended in place), AD-3 and AD-9.** The enterprise host is read from `_http.py`'s existing
+  `GITHUB_API_BASE_URL` row (AD-9 holds: no Steward-owned URL config). The two identities are `age` payloads (AD-3 holds).
+  `auth_headers_for` never sends a GitHub token to a GHES host, so AD-2's "delegates for anything HTTP-shaped" cannot hold
+  for an inventory-issued enterprise identity without a CFE change; AD-2 is amended so `keys` attaches that one kind itself,
+  through the same `HostScopedCredential` gate, and stays the one chokepoint. `main()` keeps the exit domain: a flag-off
+  `keys exec` exits 2, the usage code it already owns (AD-8).
+- **Epic 76 on canopy:AD-11 (amended in place).** The Deferred row *FILE flag env promotion overlays* reached its trigger:
+  the Guild's rule needs "off in production" to be a value, not an ops convention. It is taken up by Story 76.1 and
+  resolved by the amendment, which keeps one tree: overlays hold values, never definitions.
+
+**Content changed:** this section; AD-2 and canopy:AD-11 each gain one dated amendment; the Deferred row *FILE flag env
+promotion overlays* names the story that takes it up. `updated:` bumped. No AD added or removed.
