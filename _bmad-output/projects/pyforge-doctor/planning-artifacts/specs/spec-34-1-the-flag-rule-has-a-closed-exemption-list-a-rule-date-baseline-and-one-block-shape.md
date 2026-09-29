@@ -2,7 +2,7 @@
 title: '34.1: The flag rule has a closed exemption list, a rule-date baseline and one block shape'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'draft'
 flag-exempt: flag-infrastructure   # the rule's own infrastructure (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -105,6 +105,44 @@ Type / Effort / Deps: feature / S / —.
 
 </intent-contract>
 
+## Code Map
+
+- `docs/governance/guild-roster.json` -- add `flag_exemptions` and `$comment_flag_exemptions` directly after `fold_exemptions`
+  (the list-of-strings comment shape). Readers take a key at a time (`pyforge.doctor.sources.one_chain._roster`), so a new key is additive.
+- `docs/governance/chain-sprawl-baseline.json`, `scripts/chain_sprawl_baseline.py` -- the shape to mirror (`$comment`, `ruling_sha`,
+  sorted list; `--snapshot` refuses over an existing file; `--prune` only removes). Read-only: it imports `pyforge.doctor.sources.one_chain`
+  and reads the working tree, so neither is copied.
+- `docs/governance/flag-rule-baseline.json` -- NEW. `scripts/flag_rule_baseline.py` -- NEW, self-contained stamper.
+- `scripts/flag_rule.py` -- NEW, pure: `classify`, `is_post_rule`, `in_scope`, two named errors. PyYAML for the frontmatter.
+- `scripts/spec_surface_allowlist.txt` -- append one reason-tagged line per new script (the `scripts/coverage_gate.py` line is the model).
+- `docs/reference/story-spec-flag-block.md` -- NEW; `docs/map.yaml` row beside `reference/station-verify-commands.md`; `docs/MAP.md`
+  re-rendered by `docs-map-render`; `docs/reference/station-verify-commands.md` gains one pointer line.
+- `tests/scripts/test_flag_rule.py` -- NEW; conventions from `tests/scripts/test_docs_gen_common.py` (`pytest.importorskip("yaml")`,
+  `sys.path` insert of `scripts/`).
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  -- read-only evidence: the one live `flag:` block (`default` is a per-environment mapping, `scope: global`).
+- PR #1654 merge: `5e977accb9643ff81f02ef9feca3e435d86816f9` (`Merge intake-triage-2026-09-28 into main`); the Spec reads `status: ready` at that commit.
+- `docs/governance/spec-feature-flag-governance/.memlog.md` -- append the surface reconcile naming every new and changed path.
+
+## Tasks & Acceptance
+
+**Execution:**
+- [ ] `docs/governance/guild-roster.json` -- add `flag_exemptions` (the five Q2 values, in Q2's order) and `$comment_flag_exemptions` -- one declared source
+- [ ] `scripts/flag_rule.py` -- pure classifier, exemptions read from the roster at call time -- the rule's machine form
+- [ ] `scripts/flag_rule_baseline.py` -- `--snapshot` (once, at the PR #1654 merge SHA) and `--prune` (only removes) -- the rule-date line
+- [ ] `docs/governance/flag-rule-baseline.json` -- stamp with the stamper, never by hand -- the pre-rule population
+- [ ] `tests/scripts/test_flag_rule.py` -- one test per AC row and per I/O row, plus the roster-is-the-source scan -- the oracle
+- [ ] `docs/reference/story-spec-flag-block.md`, `docs/map.yaml`, `docs/MAP.md`, `docs/reference/station-verify-commands.md` -- the block's one written shape and its pointer
+- [ ] `scripts/spec_surface_allowlist.txt` -- two reason-tagged lines -- the new scripts have no folder-spec surface
+- [ ] `docs/governance/spec-feature-flag-governance/.memlog.md` -- surface reconcile entry via `_bmad/scripts/memlog.py append`, plus each co-governor `spec-surface-check` names
+
+**Acceptance Criteria:**
+- Given the intent contract's ten Given/When/Then rows, when `tests/scripts/test_flag_rule.py`, `docs-currency-check`, `spec-surface-check`, `python scripts/spec_surface_reconcile.py` and `pyforge-doctor-test` run, then each exits 0.
+
+## Spec Change Log
+
+- 2026-09-29 -- planned by bmad-build-auto: status `backlog` -> `draft` -> `ready-for-dev`; Code Map, Tasks and Design Notes added; the intent contract is unchanged.
+
 ## Source
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-1 and its Q1/Q2 rulings (memlog 23),
@@ -120,6 +158,28 @@ Ledger key: `34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline
 Ledger status at mint: `backlog`.
 Policy: `marshal-policy.toml` `[epic_surfaces]` `"34"` admits the `scripts/`, `docs/governance/`, `docs/reference/` and
 `tests/scripts/` paths beside the default surface.
+
+## Design Notes
+
+- The snapshot reads `git ls-tree -r -z --name-only <sha>`, not the working tree: the population is "at the merge SHA", and `HEAD`
+  already holds specs minted after it (this one, `created: '2026-09-28'`), which are post-rule by design. `-z` because default
+  `core.quotePath` octal-quotes the accented Diátaxis path (`scripts/spec_surface_allowlist.txt`, the last line).
+- The population is `spec-<E>-<S>-*.md` minus `*.memlog.md`; a memlog matches the glob but is not a story spec.
+- `flag_rule.py` never calls `sys.exit`: it raises `FlagRuleError` subclasses (`RosterUnreadable`, `BaselineUnreadable`) that Story
+  34.2 turns into exit 2. A malformed or absent frontmatter is a `neither` verdict, never a raise.
+- Golden shape (the block is atlas 25.1's, verbatim keys):
+
+  ```yaml
+  flag:
+    key: pyforge.atlas.dependency_history
+    provider: openfeature-file
+    default: {production: off, staging: on, dev: on}
+    scope: global
+    fallback: "the legacy behaviour"
+    cleanup: 90 days after ON in every environment (Q4)
+  ```
+- `pytest.importorskip("yaml")` skips the suite in `pyforge-ci` (no PyYAML), as `test_docs_*` do; the Verification's manual check runs it in
+  `pyforge-guild`.
 
 ## Verification
 
